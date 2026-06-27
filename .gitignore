@@ -1,0 +1,15 @@
+build/
+dist/
+*.sdfbin
+*.npz
+*.log
+__pycache__/
+*.pyd
+*.dll
+*.lib
+*.exp
+datasets/build_results/
+reports/experiments/
+data/raw_stl/
+data/quarantine/
+.cache/

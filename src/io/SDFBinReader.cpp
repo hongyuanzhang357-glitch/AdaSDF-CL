@@ -1,0 +1,25 @@
+#include "adasdf/io/SDFBinReader.h"
+
+#include <filesystem>
+#include <stdexcept>
+
+#include "adasdf/io/ExistingSDFBridge.h"
+
+namespace adasdf {
+
+std::shared_ptr<SDFModel> SDFBinReader::read(const std::filesystem::path& path) {
+  if (path.empty()) {
+    throw std::runtime_error("SDFBinReader::read received an empty path.");
+  }
+  if (!std::filesystem::exists(path)) {
+    throw std::runtime_error("SDFBinReader::read file does not exist: " + path.string());
+  }
+  try {
+    return ExistingSDFBridge::loadExistingSDFBin(path);
+  } catch (const std::exception& exc) {
+    throw std::runtime_error(
+        "SDFBinReader::read failed for '" + path.string() + "': " + exc.what());
+  }
+}
+
+}  // namespace adasdf
