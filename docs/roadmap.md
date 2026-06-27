@@ -94,8 +94,9 @@ Deferred from v0.5:
 - add a standalone downstream CMake example
 - validate install tree
 - add package config tests
-- refine public API naming
-- prepare real GitHub remote and release tag
+- install CLI tools
+- add CPack source archive preparation
+- keep GitHub remote and release tag creation deferred to a later publishing step
 
 ## v0.8 Python Binding Preview
 

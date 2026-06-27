@@ -41,7 +41,7 @@ The names are generic and live in the `adasdf` namespace; the implementation sho
 
 `include/adasdf/adapters/FCLAdapter.h` is intentionally dependency-free. It sketches a migration surface without including real FCL headers. A later implementation may add a separate optional target for real FCL interop.
 
-In v0.6, `FCLAdapter::collide()` and `FCLAdapter::distance()` forward to the AdaSDF-CL object-level API and therefore use `CpuNarrowPhase` when no native pair bridge is available. This is a working FCL-style usage surface, not a full FCL integration and not a replacement for FCL broadphase managers, collision geometries, or request/result ABI compatibility.
+In v0.7, `FCLAdapter::collide()` and `FCLAdapter::distance()` forward to the AdaSDF-CL object-level API and therefore use `CpuNarrowPhase` when no native pair bridge is available. This is a working FCL-style usage surface, not a full FCL integration and not a replacement for FCL broadphase managers, collision geometries, or request/result ABI compatibility.
 
 ## Existing Project Notes
 
@@ -51,4 +51,4 @@ The parent project also has `sdf::PairCollisionSDF`, which is closer to a future
 
 ## Current Pair-Query Caveat
 
-`CpuNarrowPhase` performs AABB broadphase, symmetric SDF candidate sampling, normal stabilization, and deterministic contact reduction. It improves the quality and observability of the old fallback, but it remains an approximate SDF-sampling narrow-phase. FCL ABI compatibility, FCL broadphase integration, and certified industrial contact behavior are not provided in 0.6.0-alpha.
+`CpuNarrowPhase` performs AABB broadphase, symmetric SDF candidate sampling, normal stabilization, and deterministic contact reduction. It improves the quality and observability of the old fallback, but it remains an approximate SDF-sampling narrow-phase. FCL ABI compatibility, FCL broadphase integration, and certified industrial contact behavior are not provided in 0.7.0-alpha.

@@ -170,7 +170,7 @@ message(STATUS "")
 add_library(adasdf_cl_runtime STATIC ${ADASDF_CL_RUNTIME_SOURCES})
 add_library(adasdf::cl_runtime ALIAS adasdf_cl_runtime)
 target_compile_features(adasdf_cl_runtime PUBLIC cxx_std_17)
-target_link_libraries(adasdf_cl_runtime PUBLIC adasdf::cl)
+target_link_libraries(adasdf_cl_runtime PUBLIC adasdf_cl)
 target_compile_definitions(adasdf_cl_runtime PUBLIC
   ADASDF_CL_HAS_EXISTING_CORE=$<BOOL:${ADASDF_CL_HAS_EXISTING_CORE}>
   ADASDF_CL_ENABLE_ADAPTIVE_BUILDER=$<BOOL:${ADASDF_CL_ENABLE_ADAPTIVE_BUILDER}>
@@ -215,7 +215,16 @@ if(ADASDF_CL_BUILD_EXAMPLES)
 endif()
 
 add_executable(adasdf_build tools/adasdf_build.cpp)
-target_link_libraries(adasdf_build PRIVATE adasdf::cl_runtime)
+target_link_libraries(adasdf_build PRIVATE adasdf_cl_runtime)
+
+add_executable(adasdf_info tools/adasdf_info.cpp)
+target_link_libraries(adasdf_info PRIVATE adasdf_cl_runtime)
+
+add_executable(adasdf_query tools/adasdf_query.cpp)
+target_link_libraries(adasdf_query PRIVATE adasdf_cl_runtime)
+
+add_executable(adasdf_collide tools/adasdf_collide.cpp)
+target_link_libraries(adasdf_collide PRIVATE adasdf_cl_runtime)
 
 set(ADASDF_CL_TEST_SOURCES
   tests/test_sdf_io.cpp
@@ -261,14 +270,19 @@ if(ADASDF_CL_BUILD_TESTS)
   endforeach()
 endif()
 
-set_target_properties(adasdf_cl PROPERTIES EXPORT_NAME adasdf_cl)
-set_target_properties(adasdf_cl_runtime PROPERTIES EXPORT_NAME adasdf_cl_runtime)
+set_target_properties(adasdf_cl PROPERTIES EXPORT_NAME adasdf_cl_headers)
+set_target_properties(adasdf_cl_runtime PROPERTIES EXPORT_NAME adasdf_cl)
 set(ADASDF_CL_INSTALL_TARGETS adasdf_cl adasdf_cl_runtime)
 if(ADASDF_CL_HAS_EXISTING_CORE)
   set_target_properties(adasdf_existing_core PROPERTIES EXPORT_NAME adasdf_existing_core)
   list(APPEND ADASDF_CL_INSTALL_TARGETS adasdf_existing_core)
 endif()
 set(ADASDF_CL_INSTALL_RUNTIME_TARGET TRUE)
+set(ADASDF_CL_INSTALL_TOOL_TARGETS
+  adasdf_build
+  adasdf_info
+  adasdf_query
+  adasdf_collide)
 
 install(TARGETS ${ADASDF_CL_INSTALL_TARGETS}
   EXPORT AdaSDFCLTargets
@@ -277,7 +291,12 @@ install(TARGETS ${ADASDF_CL_INSTALL_TARGETS}
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
+install(TARGETS ${ADASDF_CL_INSTALL_TOOL_TARGETS}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+
 install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(FILES LICENSE README.md CHANGELOG.md
+  DESTINATION ${CMAKE_INSTALL_DOCDIR})
 
 install(EXPORT AdaSDFCLTargets
   FILE AdaSDFCLTargets.cmake
@@ -298,3 +317,29 @@ install(FILES
   "${CMAKE_CURRENT_BINARY_DIR}/AdaSDFCLConfig.cmake"
   "${CMAKE_CURRENT_BINARY_DIR}/AdaSDFCLConfigVersion.cmake"
   DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/AdaSDFCL)
+
+set(CPACK_PACKAGE_NAME "AdaSDF-CL")
+set(CPACK_PACKAGE_VERSION "${ADASDF_CL_VERSION_STRING}")
+set(CPACK_PACKAGE_VENDOR "AdaSDF-CL contributors")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY
+  "Adaptive Signed Distance Field Collision Library")
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
+set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
+set(CPACK_SOURCE_GENERATOR "ZIP;TGZ")
+set(CPACK_SOURCE_IGNORE_FILES
+  "/\\\\.git/"
+  "/build/"
+  "/dist/"
+  "/install/"
+  "/__pycache__/"
+  "/\\\\.cache/"
+  "\\\\.sdfbin$"
+  "\\\\.npz$"
+  "\\\\.log$"
+  "\\\\.zip$"
+  "\\\\.tar\\\\.gz$"
+  "/data/raw_stl/"
+  "/data/quarantine/"
+  "/datasets/build_results/"
+  "/reports/experiments/")
+include(CPack)

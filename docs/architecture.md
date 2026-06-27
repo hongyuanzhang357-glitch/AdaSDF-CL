@@ -48,7 +48,9 @@ This layer persists compressed models. Full `.sdfbin` should preserve enough met
 
 This layer evaluates signed distance, gradient, contact, and batch queries. CPU is the baseline. CUDA is optional and must not make the whole library unavailable when absent. Existing implementation candidates include `sdf::PairCollisionSDF`, `sdf::AllPointsSDFContact`, `sdf::StreamingBVHSDFContact`, `sdf::CudaGlobalDenseSDF`, and `sdf::CudaAllPointsSDFContact`.
 
-In v0.6, the working CPU pair-query path remains `CpuNarrowPhase`, a research-preview SDF-sampling narrow-phase used by `adasdf::collide()` and `adasdf::distance()` when `ExistingPairCollisionBridge` is unavailable. It performs world AABB broadphase, transformed candidate-point sampling, symmetric target SDF queries, normal stabilization, and deterministic contact reduction. `ExistingPairCollisionBridge` remains the reserved replacement point for the parent project's `sdf::PairCollisionSDF`; it remains disabled until the AdaSDF-CL model wrapper can safely expose native model package state, mesh ownership, and required transforms.
+In v0.7, the working CPU pair-query path remains `CpuNarrowPhase`, a research-preview SDF-sampling narrow-phase used by `adasdf::collide()` and `adasdf::distance()` when `ExistingPairCollisionBridge` is unavailable. It performs world AABB broadphase, transformed candidate-point sampling, symmetric target SDF queries, normal stabilization, and deterministic contact reduction. `ExistingPairCollisionBridge` remains the reserved replacement point for the parent project's `sdf::PairCollisionSDF`; it remains disabled until the AdaSDF-CL model wrapper can safely expose native model package state, mesh ownership, and required transforms.
+
+The v0.7 install/export layer exposes `AdaSDFCL::adasdf_cl` as the runtime package target for external CMake projects. External consumers do not need the source tree, CUDA, FCL, Python, or the existing core for compile/link smoke usage.
 
 In v0.4+, the builder bridge also runs on CPU only. CUDA remains a query/build extension point, not a required dependency.
 

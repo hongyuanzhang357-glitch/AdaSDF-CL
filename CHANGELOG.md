@@ -1,5 +1,34 @@
 # Changelog
 
+## 0.7.0-alpha
+
+External integration and packaging alpha.
+
+### Added
+
+- Install-tree validation script and summary report generation.
+- CMake package-config smoke test under `tests/package`.
+- Standalone downstream CMake example that links `AdaSDFCL::adasdf_cl`.
+- Installed command-line tools: `adasdf_info`, `adasdf_query`, and `adasdf_collide`.
+- CPack source archive configuration.
+- External integration documentation.
+- CI install/downstream smoke validation.
+- Alpha validation `--include-install` mode.
+
+### Changed
+
+- Installed `AdaSDFCL::adasdf_cl` now resolves to the runtime static library.
+- Header-only interface is exported as `AdaSDFCL::adasdf_cl_headers`.
+- Repository clean checks catch install trees, package archives, CMake generated
+  files, and downstream/package build directories.
+
+### Known Limitations
+
+- Existing `.sdfbin` point sampling still requires a build with the optional
+  existing-core bridge.
+- CUDA, FCL ABI compatibility, Python bindings, and real surrogate inference
+  remain out of scope for this alpha.
+
 ## 0.6.0-alpha
 
 Initial alpha / research-preview release candidate.

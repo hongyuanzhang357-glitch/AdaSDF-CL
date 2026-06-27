@@ -32,9 +32,9 @@ Collision and distance are related but not identical. A robotics planner may nee
 
 CUDA must remain optional. Missing CUDA should disable CUDA targets or return a clear backend error, not break CPU users.
 
-## v0.6 Runtime Status
+## v0.7 Runtime Status
 
-AdaSDF-CL v0.6 packages the v0.5 CPU SDF-sampling narrow-phase into an alpha / research-preview repository layout with version metadata, release notes, CI templates, and CMake package config skeleton.
+AdaSDF-CL v0.7 packages the CPU SDF-sampling narrow-phase into an alpha / research-preview repository layout with version metadata, CI templates, installable CMake package config files, CLI tools, and downstream integration validation.
 
 Current load/query path:
 
@@ -48,7 +48,7 @@ SDFBinReader::read(path)
   -> sdf::AdaptiveLowRankModel::queryPhi(GridInfo, point)
 ```
 
-`SDFModel::sampleGradient(point)` currently uses central finite differences around `sampleDistance()`. This is a practical fallback for v0.3, not a final analytic or autodiff gradient implementation.
+`SDFModel::sampleGradient(point)` currently uses central finite differences around `sampleDistance()`. This is a practical fallback, not a final analytic or autodiff gradient implementation.
 
 Object-level pair queries now route through `CpuNarrowPhase` when `ExistingPairCollisionBridge` is unavailable:
 

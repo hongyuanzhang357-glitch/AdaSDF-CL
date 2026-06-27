@@ -20,16 +20,24 @@ jobs:
 
       - name: Configure
         run: >
-          cmake -S . -B build
+          cmake -S . -B ../build/adasdf_cl_ci
           -DADASDF_CL_BUILD_EXAMPLES=ON
           -DADASDF_CL_BUILD_TESTS=ON
           -DADASDF_CL_USE_EXISTING_CORE=OFF
 
       - name: Build
-        run: cmake --build build --config ${{ matrix.config }}
+        run: cmake --build ../build/adasdf_cl_ci --config ${{ matrix.config }}
 
       - name: Test
-        run: ctest --test-dir build -C ${{ matrix.config }} --output-on-failure
+        run: ctest --test-dir ../build/adasdf_cl_ci -C ${{ matrix.config }} --output-on-failure
+
+      - name: Install validation
+        run: >
+          python scripts/run_install_validation.py
+          --source .
+          --build ../build/adasdf_cl_ci_install_validation
+          --install ../build/adasdf_cl_ci_install
+          --config ${{ matrix.config }}
 
       - name: Clean repo check
         run: python scripts/check_repo_clean.py .

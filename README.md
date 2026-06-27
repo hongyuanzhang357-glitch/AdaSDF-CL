@@ -2,9 +2,9 @@
 
 Adaptive Signed Distance Field Collision Library
 
-Status: 0.6.0-alpha / research preview  
-Build system: CMake  
-License: MIT  
+Status: 0.7.0-alpha / research preview
+Build system: CMake
+License: MIT
 Tests: CTest
 
 AdaSDF-CL is an alpha collision and contact library built around adaptive compressed signed distance fields. It provides an FCL-style API for SDF-based distance, collision, and contact queries while keeping CUDA, FCL, Python, and surrogate-model integrations optional.
@@ -23,7 +23,9 @@ It is intended for research-preview workflows in robotics, simulation, contact m
 - FCL-style `CollisionObject`, `CollisionRequest`, `CollisionResult`, `DistanceRequest`, and `DistanceResult`.
 - CPU approximate SDF-sampling narrow-phase with symmetric candidate queries.
 - Deterministic contact reduction controlled by `CollisionRequest::max_contacts`.
-- Command-line `adasdf_build` tool.
+- Command-line `adasdf_build`, `adasdf_info`, `adasdf_query`, and
+  `adasdf_collide` tools.
+- Installable CMake package consumed with `find_package(AdaSDFCL CONFIG REQUIRED)`.
 - Validation-card documentation for the DASH-SDF surrogate work, with runtime recommender kept as a placeholder.
 
 ## Current Status
@@ -35,12 +37,14 @@ Working:
 - Query point signed distance and gradient.
 - Run FCL-style pair collision through `CpuNarrowPhase`.
 - Run examples and tests without CUDA, FCL, Python, UI, or large datasets.
+- Install headers, libraries, tools, package config files, docs, and license metadata.
+- Consume the installed package from a standalone downstream CMake project.
 - Run repository hygiene checks.
 
 API preview / planned:
 
 - OBJ and in-memory mesh builder bridge.
-- Contact-only `.sdfbin` writer/reader.
+- Contact-only `.sdfbin` writer/reader beyond the placeholder format surface.
 - CUDA batched pair query.
 - FCL ABI-compatible adapter.
 - Python package.
@@ -55,12 +59,12 @@ cmake --build build --config Release
 ctest --test-dir build -C Release --output-on-failure
 ```
 
-For local development from the parent workspace, the v0.6 validation build used:
+For local development from a parent workspace, a v0.7 validation build can use:
 
 ```bash
-cmake -S adasdf_cl -B build/adasdf_cl-v0_6_alpha -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD_TESTS=ON -DADASDF_CL_USE_EXISTING_CORE=ON -DADASDF_CL_ENABLE_ADAPTIVE_BUILDER=ON -DADASDF_CL_ENABLE_SURROGATE_RECOMMENDER=ON
-cmake --build build/adasdf_cl-v0_6_alpha --config Debug
-ctest --test-dir build/adasdf_cl-v0_6_alpha -C Debug --output-on-failure
+cmake -S adasdf_cl -B build/adasdf_cl-v0_7 -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD_TESTS=ON -DADASDF_CL_USE_EXISTING_CORE=OFF
+cmake --build build/adasdf_cl-v0_7 --config Debug
+ctest --test-dir build/adasdf_cl-v0_7 -C Debug --output-on-failure
 ```
 
 ## Build From Source
@@ -78,7 +82,8 @@ The library can configure without the existing core. In that mode, real `.sdfbin
 
 ## Install and Use From CMake
 
-The 0.6.0-alpha tree installs headers, static library targets, and a package config skeleton:
+The 0.7.0-alpha tree installs headers, static library targets, command-line tools,
+license/readme metadata, and CMake package files:
 
 ```bash
 cmake --install build --prefix install
@@ -91,12 +96,22 @@ find_package(AdaSDFCL CONFIG REQUIRED)
 target_link_libraries(my_app PRIVATE AdaSDFCL::adasdf_cl)
 ```
 
-Full downstream install-tree validation is planned for v0.7.
+The exported `AdaSDFCL::adasdf_cl` target links the runtime library. A separate
+`AdaSDFCL::adasdf_cl_headers` target is exported for header-only inspection.
+
+Standalone install validation:
+
+```bash
+python scripts/run_install_validation.py --source . --build ../build/adasdf_cl_install_validation --install ../build/adasdf_cl_install --config Release
+```
+
+See `docs/external_integration.md` and
+`examples/downstream_cmake_project/README.md`.
 
 ## Build an Adaptive SDF From STL
 
 ```bash
-build/adasdf_cl-v0_6_alpha/Debug/adasdf_build.exe adasdf_cl/tests/data/cube_closed_ascii.stl build/cube.sdfbin --near-surface-error 1e-4 --max-memory-mb 256 --compress
+build/adasdf_cl-v0_7/Debug/adasdf_build.exe adasdf_cl/tests/data/cube_closed_ascii.stl build/cube.sdfbin --near-surface-error 1e-4 --max-memory-mb 256 --compress
 ```
 
 The CLI validates output by reloading the generated `.sdfbin`.
@@ -143,12 +158,12 @@ The current CPU narrow-phase performs approximate symmetric SDF-sampling contact
 Working:
 
 - `adasdf_build`: build an STL into `.sdfbin` and validate reload.
+- `adasdf_info`: print loaded `.sdfbin` metadata.
+- `adasdf_query`: sample one point from a loaded `.sdfbin`.
+- `adasdf_collide`: run a two-model collision query.
 
 Planned:
 
-- `adasdf_info`
-- `adasdf_query`
-- `adasdf_collide`
 - `adasdf_benchmark`
 
 See `tools/README.md`.
@@ -160,6 +175,7 @@ See `tools/README.md`.
 - `05_fcl_style_api.cpp`
 - `06_build_then_query.cpp`
 - `07_contact_reduction_demo.cpp`
+- `downstream_cmake_project`: package-only external CMake smoke example.
 
 Preview-only examples:
 
@@ -178,11 +194,17 @@ See `docs/surrogate_recommendation.md` and `docs/validation_card.md`.
 
 The current validation records:
 
-- 17/17 CTest tests passed in the v0.6 local validation path.
-- Cube STL build, `.sdfbin` round-trip, point query, pair collision, and contact reduction examples run successfully when the existing core is available.
+- CTest passes in the source build path.
+- Install validation passes for an existing-core-free package build and external
+  downstream CMake consumer.
+- CLI no-argument smoke tests print usage and return success for `adasdf_info`,
+  `adasdf_query`, and `adasdf_collide`.
+- Cube STL build, `.sdfbin` round-trip, point query, pair collision, and contact
+  reduction examples run successfully when the existing core is available.
 - `scripts/check_repo_clean.py` passes after documentation and generated-file hygiene checks.
 
-See `docs/alpha_status.md` and `docs/adasdf_cl_v0_6_alpha_release_hardening_report.md`.
+See `docs/alpha_status.md`, `docs/release_notes_v0_7_0_alpha.md`, and
+`docs/adasdf_cl_v0_7_external_integration_report.md`.
 
 ## Limitations
 
@@ -198,7 +220,6 @@ See `docs/limitations.md`.
 
 ## Roadmap
 
-- v0.6 alpha release hardening.
 - v0.7 install/package and external project integration.
 - v0.8 Python binding preview.
 - v0.9 CUDA batched query preview.

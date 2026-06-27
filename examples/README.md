@@ -57,7 +57,7 @@ Optional second model path and translation can be supplied. Key output fields:
 
 Status: API preview.
 
-CUDA batched pair query is not implemented in 0.6.0-alpha.
+CUDA batched pair query is not implemented in 0.7.0-alpha.
 
 ## 05_fcl_style_api.cpp
 
@@ -92,3 +92,18 @@ adasdf_contact_reduction_demo model.sdfbin
 ```
 
 Runs separated, near-contact, and penetrating cube scenarios and prints candidate, raw contact, reduced contact, distance, normal, and penetration statistics.
+
+## downstream_cmake_project
+
+Status: working install-tree smoke example.
+
+Build this directory outside the AdaSDF-CL source tree after installing the
+package:
+
+```bash
+cmake -S examples/downstream_cmake_project -B downstream-build -DCMAKE_PREFIX_PATH=/path/to/adasdf-cl/install
+cmake --build downstream-build --config Release
+```
+
+The example links `AdaSDFCL::adasdf_cl` and does not require CUDA, FCL, Python,
+or the AdaSDF-CL source tree after installation.

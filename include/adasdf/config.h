@@ -37,7 +37,7 @@ enum class NarrowphaseType {
 
 struct LibraryVersion {
   int major = 0;
-  int minor = 6;
+  int minor = 7;
   int patch = 0;
   const char* label = "alpha";
 };

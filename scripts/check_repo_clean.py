@@ -53,17 +53,43 @@ def main() -> int:
     ]
     forbidden_parts = {
         "build",
+        "cmakefiles",
         "dist",
         "cache",
         ".cache",
         "__pycache__",
         "build_results",
+        "install",
+        "install_tree",
+        "package-build",
+        "package_build",
+        "package-test-build",
+        "package_test_build",
+        "downstream-build",
+        "downstream_build",
+        "_cpack_packages",
         "quarantine",
         "raw_stl",
     }
     forbidden_suffixes = {
         ".npz",
         ".sdfbin",
+        ".zip",
+        ".tgz",
+    }
+    forbidden_archive_names = (
+        ".tar",
+        ".tar.gz",
+        ".tar.xz",
+        ".tar.bz2",
+    )
+    forbidden_generated_files = {
+        "cmakecache.txt",
+        "cmake_install.cmake",
+        "cpackconfig.cmake",
+        "cpacksourceconfig.cmake",
+        "ctesttestfile.cmake",
+        "install_manifest.txt",
     }
 
     for path in root.rglob("*"):
@@ -91,10 +117,16 @@ def main() -> int:
         if suffix in forbidden_suffixes:
             issues.append(f"forbidden generated artifact: {rel_text}")
 
+        lower_name = path.name.lower()
+        if lower_name.endswith(forbidden_archive_names):
+            issues.append(f"forbidden package archive: {rel_text}")
+
+        if lower_name in forbidden_generated_files:
+            issues.append(f"generated CMake file should not be committed: {rel_text}")
+
         if suffix == ".log":
             issues.append(f"log file should not be committed: {rel_text}")
 
-        lower_name = path.name.lower()
         if lower_name in {"stdout", "stderr", "stdout.txt", "stderr.txt"}:
             issues.append(f"stdout/stderr artifact: {rel_text}")
 

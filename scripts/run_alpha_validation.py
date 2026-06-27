@@ -18,6 +18,7 @@ class StepResult:
     command: list[str]
     returncode: int
     output: str
+    status: str | None = None
 
 
 def display_command(command: list[str], source: Path, build: Path) -> str:
@@ -41,6 +42,7 @@ def display_command(command: list[str], source: Path, build: Path) -> str:
                     text = "<local-path>"
         except (OSError, ValueError):
             pass
+        text = sanitize_output(text, source, build)
         rendered.append(shlex.quote(text))
     return " ".join(rendered)
 
@@ -92,7 +94,7 @@ def sanitize_output(output: str, source: Path, build: Path) -> str:
     sanitized = output
     for needle, replacement in sorted(replacements.items(), key=lambda item: len(item[0]), reverse=True):
         sanitized = sanitized.replace(needle, replacement)
-    sanitized = re.sub(r"[A-Za-z]:\\Users\\\S+", "<local-path>", sanitized)
+    sanitized = re.sub(r"[A-Za-z]:[/\\]Users[/\\]\S+", "<local-path>", sanitized)
     return sanitized
 
 
@@ -115,7 +117,7 @@ def write_report(
         "",
     ]
     for result in results:
-        status = "PASS" if result.returncode == 0 else "FAIL"
+        status = result.status or ("PASS" if result.returncode == 0 else "FAIL")
         lines.extend(
             [
                 f"### {result.name}: {status}",
@@ -141,8 +143,9 @@ def write_report(
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--source", default=".")
-    parser.add_argument("--build", default="build/adasdf_cl_alpha_validation")
+    parser.add_argument("--build", default="../build/adasdf_cl_alpha_validation")
     parser.add_argument("--config", default="Debug")
+    parser.add_argument("--include-install", action="store_true")
     args = parser.parse_args()
 
     source = Path(args.source).resolve()
@@ -170,7 +173,6 @@ def main() -> int:
         ("Configure", configure),
         ("Build", ["cmake", "--build", str(build), "--config", config]),
         ("CTest", ["ctest", "--test-dir", str(build), "-C", config, "--output-on-failure"]),
-        ("Clean Check", [sys.executable, str(source / "scripts" / "check_repo_clean.py"), str(source)]),
     ]
 
     for name, command in steps:
@@ -180,12 +182,47 @@ def main() -> int:
             write_report(report_path, results, source, build, config)
             return result.returncode
 
+    if args.include_install:
+        install_build = build.parent / "adasdf_cl_iv"
+        install_prefix = build.parent / "adasdf_cl_install"
+        install_result = run_step(
+            "Install Validation",
+            [
+                sys.executable,
+                str(source / "scripts" / "run_install_validation.py"),
+                "--source",
+                str(source),
+                "--build",
+                str(install_build),
+                "--install",
+                str(install_prefix),
+                "--config",
+                config,
+            ],
+            workspace,
+        )
+        install_result.status = "PASS" if install_result.returncode == 0 else "FAIL"
+        results.append(install_result)
+        if install_result.returncode != 0:
+            write_report(report_path, results, source, build, config)
+            return install_result.returncode
+    else:
+        results.append(
+            StepResult(
+                "Install Validation",
+                ["install-validation-skipped"],
+                0,
+                "Install validation was not requested. Re-run with --include-install.",
+                status="SKIPPED",
+            )
+        )
+
     adasdf_build = find_executable(build, "adasdf_build", config)
     load_query = find_executable(build, "adasdf_load_sdfbin_and_query", config)
     pair_collision = find_executable(build, "adasdf_collision_between_two_objects", config)
     contact_demo = find_executable(build, "adasdf_contact_reduction_demo", config)
     cube_stl = source / "tests" / "data" / "cube_closed_ascii.stl"
-    cube_sdfbin = build.parent / "cube_v0_6_alpha.sdfbin"
+    cube_sdfbin = build.parent / "cube_v0_7_alpha.sdfbin"
 
     if adasdf_build and cube_stl.exists():
         optional_steps = [
@@ -216,6 +253,16 @@ def main() -> int:
             if result.returncode != 0:
                 write_report(report_path, results, source, build, config)
                 return result.returncode
+
+    clean_result = run_step(
+        "Clean Check",
+        [sys.executable, str(source / "scripts" / "check_repo_clean.py"), str(source)],
+        workspace,
+    )
+    results.append(clean_result)
+    if clean_result.returncode != 0:
+        write_report(report_path, results, source, build, config)
+        return clean_result.returncode
 
     write_report(report_path, results, source, build, config)
     print("Alpha validation: PASS")
