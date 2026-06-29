@@ -15,6 +15,11 @@ CUDA benchmark semantics and resident query workspace.
 
 ## Benchmark Semantics
 
+v1.0.2-alpha provides CUDA benchmark semantics and a phi-only kernel benchmark
+path. The reported 1.1594 ms / 1M points result is a global phi-only kernel
+timing. It is comparable to original UI kernel-average timing. It is not the
+full contact pipeline time.
+
 `total_ms` is the full query call timing. `kernel_ms` is CUDA event kernel time.
 Original UI warmed kernel averages should be compared to:
 
@@ -22,7 +27,8 @@ Original UI warmed kernel averages should be compared to:
 adasdf_benchmark_batch_query --points 1000000 --query-backend cuda --expansion global --phi-only --kernel-only --reuse-resident --warmup 10 --repeat 50
 ```
 
-Full query rows include normals, copies, CPU postprocess, and output allocation.
+Full query total includes normals, copies, synchronization, CPU postprocessing,
+and output allocation.
 
 ## Local Validation
 
@@ -54,6 +60,7 @@ CTest Release: 41/41 PASS
 ## Known Boundaries
 
 - Full low-rank compressed SDF native GPU query is not implemented.
+- Full low-rank compressed SDF GPU-native query remains planned work.
 - CUDA compressed-direct query remains invalid.
 - CUDA pair collision is not an industrial GPU collision pipeline.
 - Block-mode CUDA lookup is improved minimally but still not equivalent to the
