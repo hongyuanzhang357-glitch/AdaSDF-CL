@@ -22,6 +22,7 @@ struct QueryEngineStats {
   double query_kernel_ms = 0.0;
   double query_total_ms = 0.0;
   double total_ms = 0.0;
+  BatchQueryTiming timing;
 };
 
 class CudaResidentExpandedSDF;

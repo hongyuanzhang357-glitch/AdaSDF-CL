@@ -86,6 +86,7 @@ bool QueryEngine::prepare() {
       break;
   }
   stats_.setup_ms = elapsedMs(t0, Clock::now());
+  stats_.timing.setup_ms = stats_.setup_ms;
   prepared_ = ok;
   return ok;
 }
@@ -176,13 +177,18 @@ BatchQueryOutput QueryEngine::queryBatch(const std::vector<Vector3>& points) {
   BatchQueryOutput output;
 
   if (cuda_active_ && resident_) {
-    output = resident_->queryBatch(points);
+    BatchQueryTiming timing;
+    output = resident_->queryBatch(points, false, nullptr, &timing);
+    timing.setup_ms = stats_.setup_ms;
     stats_.query_kernel_ms = resident_->lastKernelMs();
     stats_.query_total_ms = resident_->lastQueryMs();
+    stats_.timing = timing;
   } else {
+    const auto allocation0 = Clock::now();
     output.signed_distances.resize(points.size());
     output.gradients.resize(points.size());
     output.normals.resize(points.size());
+    const auto allocation1 = Clock::now();
     for (std::size_t i = 0; i < points.size(); ++i) {
       output.signed_distances[i] = sampleDistance(points[i]);
       output.gradients[i] = sampleGradient(points[i]);
@@ -190,6 +196,10 @@ BatchQueryOutput QueryEngine::queryBatch(const std::vector<Vector3>& points) {
     }
     stats_.query_total_ms = elapsedMs(t0, Clock::now());
     stats_.query_kernel_ms = 0.0;
+    stats_.timing = {};
+    stats_.timing.setup_ms = stats_.setup_ms;
+    stats_.timing.allocation_ms = elapsedMs(allocation0, allocation1);
+    stats_.timing.total_ms = stats_.query_total_ms;
   }
 
   stats_.num_queries += points.size();

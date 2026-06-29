@@ -1,8 +1,9 @@
 # Batch Query Benchmarking
 
-AdaSDF-CL v1.0.1-alpha includes a deterministic benchmark tool for batch
+AdaSDF-CL v1.0.2-alpha includes a deterministic benchmark tool for batch
 signed-distance, gradient, and normal queries across query backend and expansion
-modes.
+modes. It also separates full-query timing from CUDA kernel timing so results
+can be compared honestly with original UI kernel-average reports.
 
 ## Commands
 
@@ -27,7 +28,98 @@ adasdf_benchmark_batch_query --points 10000,100000,1000000 --query-backend cuda 
 adasdf_benchmark_batch_query --points 10000,100000,1000000 --query-backend cuda --expansion block --blocks 0,1,2 --out cuda_blocks.csv
 ```
 
+Original UI style kernel comparison:
+
+```bash
+adasdf_benchmark_batch_query --points 1000000 --query-backend cuda --expansion global --phi-only --kernel-only --reuse-resident --warmup 10 --repeat 50 --out cuda_global_phi_kernel.csv
+```
+
 `--backend` is accepted as a legacy alias for `--query-backend`.
+
+## CLI Modes
+
+- `--warmup N`: run N uncounted query iterations before measurement.
+- `--repeat N`: run N counted query iterations and report min/mean/max/std.
+- `--kernel-only`: derive `ns_per_query` and throughput from CUDA `kernel_ms`.
+- `--reuse-resident`: reuse CUDA query points, phi, and normal buffers across
+  warmup/repeat iterations.
+- `--phi-only`: compute signed distance only and skip finite-difference normals.
+
+`--kernel-only` is meaningful only for CUDA rows. CPU rows mark CUDA kernel
+fields as `NA`.
+
+## Benchmark Timing Semantics
+
+`total_ms` is not the same measurement as `kernel_ms`.
+
+| Field | Scope |
+| --- | --- |
+| `setup_ms` | One-time setup before query repeats. For expanded modes this includes CPU SDF expansion and, for CUDA, resident SDF upload. |
+| `expand_ms` | CPU `SDFExpander` time. |
+| `upload_sdf_ms` | CUDA upload time for expanded SDF blocks and values. |
+| `allocation_ms` | Per-query output allocation and temporary CUDA query-buffer allocation. With `--reuse-resident`, query-buffer allocation should disappear after warmup. |
+| `h2d_points_ms` | Host point packing plus H2D point copy. |
+| `kernel_ms` | CUDA event elapsed time around the expanded SDF kernel only. |
+| `sync_ms` | Host wait around CUDA event synchronization. |
+| `d2h_results_ms` | Device-to-host copy for phi and, unless `--phi-only`, normals. |
+| `postprocess_ms` | CPU conversion of downloaded normal vectors into output gradients/normals. |
+| `free_ms` | Per-query temporary CUDA query-buffer free time. |
+| `total_ms` | Full measured query call time for one repeat. |
+
+Original UI CUDA reports that state "kernel average" should be compared to
+AdaSDF-CL `kernel_ms`, preferably from `--kernel-only --phi-only
+--reuse-resident --warmup N --repeat N`. They should not be compared directly
+to `total_ms`.
+
+## Output Fields
+
+The CSV keeps v1.0.1 compatibility aliases and adds v1.0.2 timing fields:
+
+```text
+query_backend
+expansion_mode
+selected_blocks
+num_points
+expanded_memory_mb
+gpu_resident_memory_mb
+setup_ms
+expand_ms
+upload_sdf_ms
+allocation_ms
+h2d_points_ms
+kernel_ms
+sync_ms
+d2h_results_ms
+postprocess_ms
+free_ms
+total_ms
+query_kernel_ms
+query_total_ms
+ns_per_query
+queries_per_second
+fallback_count
+max_abs_phi_error
+max_normal_error
+cuda_available
+warmup
+repeat
+kernel_min_ms
+kernel_mean_ms
+kernel_max_ms
+kernel_std_ms
+total_min_ms
+total_mean_ms
+total_max_ms
+total_std_ms
+phi_only
+reuse_resident
+kernel_only
+status
+error_message
+```
+
+`query_kernel_ms` and `query_total_ms` are retained as aliases for existing
+validation scripts. `max_normal_error` is `NA` for `--phi-only` rows.
 
 ## Method
 
@@ -46,65 +138,8 @@ status=skipped
 error_message=CUDA backend unavailable
 ```
 
-`CUDA + none` is invalid because compressed-direct CUDA query is not implemented.
-
-## Output Fields
-
-```text
-query_backend
-expansion_mode
-selected_blocks
-num_points
-expanded_memory_mb
-gpu_resident_memory_mb
-setup_ms
-query_kernel_ms
-query_total_ms
-ns_per_query
-queries_per_second
-fallback_count
-max_abs_phi_error
-max_normal_error
-cuda_available
-status
-error_message
-```
-
-`query_kernel_ms` is `NA` for CPU rows. `query_total_ms` includes host-side work
-needed by the query call. `setup_ms` includes expansion and resident upload when
-those steps are required.
-
-## Local v1.0.1 Snapshot
-
-This snapshot was collected on the local CUDA validation machine with Release
-builds, `ADASDF_CL_USE_EXISTING_CORE=OFF`, and CUDA enabled through an
-ASCII-only source/build path. Values are representative, not portable
-performance claims.
-
-| Backend | Expansion | Blocks | Points | Setup ms | Kernel ms | Total ms | ns/query | Expanded MB | GPU MB | Max phi err | Max normal err |
-| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| CPU | None | all | 10,000 | 0.0024 | NA | 0.5152 | 51.52 | 0 | 0 | 0 | 0 |
-| CPU | None | all | 100,000 | 0.0008 | NA | 5.0764 | 50.764 | 0 | 0 | 0 | 0 |
-| CPU | None | all | 1,000,000 | 0.0009 | NA | 68.2956 | 68.2956 | 0 | 0 | 0 | 0 |
-| CPU | Global | all | 10,000 | 4.5047 | NA | 1.7715 | 177.15 | 2.0001 | 0 | 0.004385 | 0.873865 |
-| CPU | Global | all | 100,000 | 4.5588 | NA | 17.9953 | 179.953 | 2.0001 | 0 | 0.005406 | 0.873865 |
-| CPU | Global | all | 1,000,000 | 4.6236 | NA | 187.9024 | 187.9024 | 2.0001 | 0 | 0.006410 | 0.899688 |
-| CPU | Block | all | 10,000 | 3.4999 | NA | 2.0848 | 208.48 | 1.5006 | 0 | 0.010645 | 0.909407 |
-| CPU | Block | all | 100,000 | 3.4537 | NA | 19.8335 | 198.335 | 1.5006 | 0 | 0.011475 | 2 |
-| CPU | Block | all | 1,000,000 | 3.3005 | NA | 180.2792 | 180.2792 | 1.5006 | 0 | 0.014603 | 2 |
-| CUDA | Global | all | 10,000 | 49.4015 | 1.1606 | 1.5861 | 158.61 | 2.0001 | 2.0001 | 0.004385 | 0.873865 |
-| CUDA | Global | all | 100,000 | 5.8217 | 1.0820 | 5.2922 | 52.922 | 2.0001 | 2.0001 | 0.005406 | 0.873865 |
-| CUDA | Global | all | 1,000,000 | 5.8224 | 10.4934 | 40.7194 | 40.7194 | 2.0001 | 2.0001 | 0.006410 | 0.899688 |
-| CUDA | Block | all | 10,000 | 49.1817 | 1.3708 | 2.1142 | 211.42 | 1.5006 | 1.5005 | 0.010645 | 0.909407 |
-| CUDA | Block | all | 100,000 | 5.43 | 7.7973 | 12.1534 | 121.534 | 1.5006 | 1.5005 | 0.011475 | 2 |
-| CUDA | Block | all | 1,000,000 | 5.6849 | 79.9033 | 112.045 | 112.045 | 1.5006 | 1.5005 | 0.014603 | 2 |
-| CUDA | Block | 0,1,2 | 10,000 | 51.0544 | 1.0605 | 1.3760 | 137.6 | 0.7503 | 0.7502 | 0.009609 | 0.889931 |
-| CUDA | Block | 0,1,2 | 100,000 | 2.7632 | 3.5393 | 7.3181 | 73.181 | 0.7503 | 0.7502 | 0.011624 | 0.903103 |
-| CUDA | Block | 0,1,2 | 1,000,000 | 2.6606 | 30.8537 | 59.8738 | 59.8738 | 0.7503 | 0.7502 | 0.011744 | 0.916844 |
-
-The expanded SDF rows compare against CPU direct analytic values, so non-zero
-phi and normal errors reflect finite-resolution dense-grid interpolation and
-finite-difference normals. They should not be read as contact-quality claims.
+`CUDA + none` is invalid because compressed-direct CUDA query is not
+implemented.
 
 ## Hardware Notes
 

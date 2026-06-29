@@ -1,5 +1,31 @@
 # Changelog
 
+## 1.0.2-alpha
+
+CUDA benchmark semantics and resident query workspace.
+
+### Added
+
+- Formal `BatchQueryTiming` breakdown for setup, expansion, SDF upload, query allocation, H2D points, CUDA kernel, synchronization, D2H results, CPU postprocess, free, and total time.
+- Benchmark `--warmup`, `--repeat`, `--kernel-only`, `--reuse-resident`, and `--phi-only` modes.
+- CSV timing breakdown and min/mean/max/std fields while retaining `query_kernel_ms` and `query_total_ms` compatibility columns.
+- `CudaQueryWorkspace` for reusable CUDA query points, phi, and normal buffers.
+- CUDA expanded-SDF phi-only kernel for signed-distance-only kernel timing.
+- Benchmark and CUDA workspace/phi-only tests with graceful CUDA-unavailable skip behavior.
+- CUDA benchmark semantics, GPU backend, diagnosis, release-draft, and v1.0.2 report documentation.
+
+### Changed
+
+- Version updated to `1.0.2-alpha`.
+- CUDA expanded-SDF block lookup now directly handles single-block global dense layouts and prefers the center block for finite-difference neighbor samples before falling back to block scanning.
+- Benchmark documentation now states that `total_ms` is not comparable to original UI warmed kernel averages; `--kernel-only --phi-only --reuse-resident` is the closest comparison.
+
+### Notes
+
+- CUDA remains optional and disabled by default.
+- This release does not implement full low-rank compressed SDF native GPU query.
+- Resident query workspace reduces repeated query-buffer allocation, but the expanded SDF values are still pre-expanded on CPU before upload.
+
 ## 1.0.1-alpha
 
 Query mode, expansion mode, and GPU-resident expanded SDF query backend.

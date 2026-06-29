@@ -9,12 +9,20 @@
 #include <iostream>
 #include <limits>
 #include <memory>
+#include <numeric>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
 
 namespace {
+
+struct SeriesStats {
+  double min = 0.0;
+  double mean = 0.0;
+  double max = 0.0;
+  double stddev = 0.0;
+};
 
 struct BenchmarkRow {
   std::string query_backend;
@@ -23,14 +31,26 @@ struct BenchmarkRow {
   std::size_t num_points = 0;
   double expanded_memory_mb = 0.0;
   double gpu_resident_memory_mb = 0.0;
-  double setup_ms = 0.0;
+
+  adasdf::BatchQueryTiming timing;
   double query_kernel_ms = 0.0;
   double query_total_ms = 0.0;
   double ns_per_query = 0.0;
   double queries_per_second = 0.0;
   std::size_t fallback_count = 0;
+
   double max_abs_phi_error = 0.0;
   double max_normal_error = 0.0;
+  bool max_normal_error_na = false;
+
+  int warmup = 0;
+  int repeat = 1;
+  SeriesStats kernel_stats;
+  SeriesStats total_stats;
+  bool kernel_only = false;
+  bool phi_only = false;
+  bool reuse_resident = false;
+
   bool cuda_available = false;
   std::string status = "ok";
   std::string error_message;
@@ -114,6 +134,7 @@ double vectorError(const adasdf::Vector3& a, const adasdf::Vector3& b) {
 void computeErrors(
     const adasdf::BatchQueryOutput& reference,
     const adasdf::BatchQueryOutput& candidate,
+    bool compare_normals,
     double& max_phi_error,
     double& max_normal_error) {
   max_phi_error = 0.0;
@@ -130,10 +151,64 @@ void computeErrors(
     max_phi_error = std::max(
         max_phi_error,
         std::abs(reference.signed_distances[i] - candidate.signed_distances[i]));
-    max_normal_error = std::max(
-        max_normal_error,
-        vectorError(reference.normals[i], candidate.normals[i]));
+    if (compare_normals) {
+      max_normal_error = std::max(
+          max_normal_error,
+          vectorError(reference.normals[i], candidate.normals[i]));
+    }
   }
+}
+
+SeriesStats summarize(const std::vector<double>& values) {
+  SeriesStats stats;
+  if (values.empty()) {
+    return stats;
+  }
+  stats.min = *std::min_element(values.begin(), values.end());
+  stats.max = *std::max_element(values.begin(), values.end());
+  stats.mean = std::accumulate(values.begin(), values.end(), 0.0) /
+               static_cast<double>(values.size());
+  double sum_sq = 0.0;
+  for (const double value : values) {
+    const double delta = value - stats.mean;
+    sum_sq += delta * delta;
+  }
+  stats.stddev = std::sqrt(sum_sq / static_cast<double>(values.size()));
+  return stats;
+}
+
+adasdf::BatchQueryTiming meanTiming(
+    const std::vector<adasdf::BatchQueryTiming>& timings) {
+  adasdf::BatchQueryTiming out;
+  if (timings.empty()) {
+    return out;
+  }
+  for (const adasdf::BatchQueryTiming& timing : timings) {
+    out.setup_ms += timing.setup_ms;
+    out.expand_ms += timing.expand_ms;
+    out.upload_sdf_ms += timing.upload_sdf_ms;
+    out.h2d_points_ms += timing.h2d_points_ms;
+    out.kernel_ms += timing.kernel_ms;
+    out.d2h_results_ms += timing.d2h_results_ms;
+    out.sync_ms += timing.sync_ms;
+    out.postprocess_ms += timing.postprocess_ms;
+    out.allocation_ms += timing.allocation_ms;
+    out.free_ms += timing.free_ms;
+    out.total_ms += timing.total_ms;
+  }
+  const double n = static_cast<double>(timings.size());
+  out.setup_ms /= n;
+  out.expand_ms /= n;
+  out.upload_sdf_ms /= n;
+  out.h2d_points_ms /= n;
+  out.kernel_ms /= n;
+  out.d2h_results_ms /= n;
+  out.sync_ms /= n;
+  out.postprocess_ms /= n;
+  out.allocation_ms /= n;
+  out.free_ms /= n;
+  out.total_ms /= n;
+  return out;
 }
 
 std::string numberOrBlank(double value, bool blank) {
@@ -173,24 +248,51 @@ std::string csvField(const std::string& value) {
 
 void writeCsv(std::ostream& out, const std::vector<BenchmarkRow>& rows) {
   out << "query_backend,expansion_mode,selected_blocks,num_points,"
-         "expanded_memory_mb,gpu_resident_memory_mb,setup_ms,query_kernel_ms,"
-         "query_total_ms,ns_per_query,queries_per_second,fallback_count,"
-         "max_abs_phi_error,max_normal_error,cuda_available,status,error_message\n";
+         "expanded_memory_mb,gpu_resident_memory_mb,"
+         "setup_ms,expand_ms,upload_sdf_ms,allocation_ms,h2d_points_ms,"
+         "kernel_ms,sync_ms,d2h_results_ms,postprocess_ms,free_ms,total_ms,"
+         "query_kernel_ms,query_total_ms,ns_per_query,queries_per_second,"
+         "fallback_count,max_abs_phi_error,max_normal_error,cuda_available,"
+         "warmup,repeat,kernel_min_ms,kernel_mean_ms,kernel_max_ms,"
+         "kernel_std_ms,total_min_ms,total_mean_ms,total_max_ms,total_std_ms,"
+         "phi_only,reuse_resident,kernel_only,status,error_message\n";
   for (const BenchmarkRow& row : rows) {
-    const bool cpu_kernel_na = row.query_backend != "cuda" || row.skipped;
+    const bool cuda_kernel_na = row.query_backend != "cuda" || row.skipped;
     out << csvField(row.query_backend) << "," << csvField(row.expansion_mode) << ","
         << csvField(row.selected_blocks) << "," << row.num_points << ","
         << numberOrBlank(row.expanded_memory_mb, row.skipped) << ","
         << numberOrBlank(row.gpu_resident_memory_mb, row.skipped) << ","
-        << numberOrBlank(row.setup_ms, row.skipped) << ","
-        << numberOrNA(row.query_kernel_ms, cpu_kernel_na) << ","
+        << numberOrBlank(row.timing.setup_ms, row.skipped) << ","
+        << numberOrBlank(row.timing.expand_ms, row.skipped) << ","
+        << numberOrBlank(row.timing.upload_sdf_ms, row.skipped) << ","
+        << numberOrBlank(row.timing.allocation_ms, row.skipped) << ","
+        << numberOrBlank(row.timing.h2d_points_ms, row.skipped) << ","
+        << numberOrNA(row.timing.kernel_ms, cuda_kernel_na) << ","
+        << numberOrNA(row.timing.sync_ms, cuda_kernel_na) << ","
+        << numberOrBlank(row.timing.d2h_results_ms, row.skipped) << ","
+        << numberOrBlank(row.timing.postprocess_ms, row.skipped) << ","
+        << numberOrBlank(row.timing.free_ms, row.skipped) << ","
+        << numberOrBlank(row.timing.total_ms, row.skipped) << ","
+        << numberOrNA(row.query_kernel_ms, cuda_kernel_na) << ","
         << numberOrBlank(row.query_total_ms, row.skipped) << ","
         << numberOrBlank(row.ns_per_query, row.skipped) << ","
         << numberOrBlank(row.queries_per_second, row.skipped) << ","
         << row.fallback_count << ","
         << numberOrBlank(row.max_abs_phi_error, row.skipped) << ","
-        << numberOrBlank(row.max_normal_error, row.skipped) << ","
+        << numberOrNA(row.max_normal_error, row.max_normal_error_na || row.skipped) << ","
         << (row.cuda_available ? "true" : "false") << ","
+        << row.warmup << "," << row.repeat << ","
+        << numberOrNA(row.kernel_stats.min, cuda_kernel_na) << ","
+        << numberOrNA(row.kernel_stats.mean, cuda_kernel_na) << ","
+        << numberOrNA(row.kernel_stats.max, cuda_kernel_na) << ","
+        << numberOrNA(row.kernel_stats.stddev, cuda_kernel_na) << ","
+        << numberOrBlank(row.total_stats.min, row.skipped) << ","
+        << numberOrBlank(row.total_stats.mean, row.skipped) << ","
+        << numberOrBlank(row.total_stats.max, row.skipped) << ","
+        << numberOrBlank(row.total_stats.stddev, row.skipped) << ","
+        << (row.phi_only ? "true" : "false") << ","
+        << (row.reuse_resident ? "true" : "false") << ","
+        << (row.kernel_only ? "true" : "false") << ","
         << csvField(row.status) << "," << csvField(row.error_message) << "\n";
   }
 }
@@ -247,28 +349,62 @@ std::vector<adasdf::Vector3> makePoints(
 
 void printSummary(const std::vector<BenchmarkRow>& rows) {
   std::cout
-      << "backend | expansion | blocks | points | setup ms | query total ms | "
-         "kernel ms | ns/query | qps | fallback | max phi error | max normal error | status\n";
+      << "backend | expansion | blocks | points | setup ms | total mean ms | "
+         "kernel mean ms | ns/query | max phi error | max normal error | status\n";
   for (const BenchmarkRow& row : rows) {
     std::cout << row.query_backend << " | " << row.expansion_mode << " | "
               << row.selected_blocks << " | " << row.num_points << " | ";
     if (row.skipped) {
       std::cout << "SKIPPED | SKIPPED | SKIPPED | SKIPPED | SKIPPED | "
-                << row.fallback_count << " | SKIPPED | SKIPPED | "
-                << row.status << "\n";
+                << "SKIPPED | " << row.status << "\n";
       continue;
     }
-    std::cout << row.setup_ms << " | " << row.query_total_ms << " | ";
+    std::cout << row.timing.setup_ms << " | " << row.total_stats.mean << " | ";
     if (row.query_backend == "cuda") {
-      std::cout << row.query_kernel_ms;
+      std::cout << row.kernel_stats.mean;
     } else {
       std::cout << "NA";
     }
     std::cout << " | " << row.ns_per_query << " | "
-              << row.queries_per_second << " | " << row.fallback_count
-              << " | " << row.max_abs_phi_error << " | "
-              << row.max_normal_error << " | " << row.status << "\n";
+              << row.max_abs_phi_error << " | ";
+    if (row.max_normal_error_na) {
+      std::cout << "NA";
+    } else {
+      std::cout << row.max_normal_error;
+    }
+    std::cout << " | " << row.status << "\n";
   }
+}
+
+void applySetupTiming(BenchmarkRow& row, const adasdf::BatchQueryTiming& setup) {
+  row.timing.setup_ms = setup.setup_ms;
+  row.timing.expand_ms = setup.expand_ms;
+  row.timing.upload_sdf_ms = setup.upload_sdf_ms;
+}
+
+void finishRowFromRuns(
+    BenchmarkRow& row,
+    const std::vector<adasdf::BatchQueryTiming>& timings) {
+  row.timing.allocation_ms = 0.0;
+  row.timing.h2d_points_ms = 0.0;
+  row.timing.kernel_ms = 0.0;
+  row.timing.sync_ms = 0.0;
+  row.timing.d2h_results_ms = 0.0;
+  row.timing.postprocess_ms = 0.0;
+  row.timing.free_ms = 0.0;
+  row.timing.total_ms = 0.0;
+
+  const adasdf::BatchQueryTiming mean = meanTiming(timings);
+  row.timing.allocation_ms = mean.allocation_ms;
+  row.timing.h2d_points_ms = mean.h2d_points_ms;
+  row.timing.kernel_ms = mean.kernel_ms;
+  row.timing.sync_ms = mean.sync_ms;
+  row.timing.d2h_results_ms = mean.d2h_results_ms;
+  row.timing.postprocess_ms = mean.postprocess_ms;
+  row.timing.free_ms = mean.free_ms;
+  row.timing.total_ms = mean.total_ms;
+  row.query_kernel_ms = mean.kernel_ms;
+  row.query_total_ms = mean.total_ms;
 }
 
 }  // namespace
@@ -283,6 +419,11 @@ int main(int argc, char** argv) {
     int global_resolution = 64;
     int block_resolution = 32;
     bool keep_resident = true;
+    bool reuse_resident = false;
+    bool kernel_only = false;
+    bool phi_only = false;
+    int warmup = 0;
+    int repeat = 1;
     std::filesystem::path output_path;
 
     for (int i = 1; i < argc; ++i) {
@@ -301,20 +442,39 @@ int main(int argc, char** argv) {
         global_resolution = std::stoi(argv[++i]);
       } else if (arg == "--block-resolution" && i + 1 < argc) {
         block_resolution = std::stoi(argv[++i]);
+      } else if (arg == "--warmup" && i + 1 < argc) {
+        warmup = std::stoi(argv[++i]);
+      } else if (arg == "--repeat" && i + 1 < argc) {
+        repeat = std::stoi(argv[++i]);
+      } else if (arg == "--kernel-only") {
+        kernel_only = true;
+      } else if (arg == "--reuse-resident") {
+        reuse_resident = true;
+      } else if (arg == "--phi-only") {
+        phi_only = true;
       } else if (arg == "--keep-resident") {
         keep_resident = true;
       } else if (arg == "--out" && i + 1 < argc) {
         output_path = argv[++i];
       } else if (arg == "--help" || arg == "-h") {
         std::cout
-            << "Usage: adasdf_benchmark_batch_query --points 10000,100000,1000000 "
+            << "Usage: adasdf_benchmark_batch_query --points 10000,1000000 "
                "--query-backend cpu|cuda --expansion none|global|block "
                "[--blocks all|0,1,2] [--global-resolution 64] "
-               "[--block-resolution 32] [--keep-resident] [--out benchmark.csv]\n";
+               "[--block-resolution 32] [--warmup N] [--repeat N] "
+               "[--kernel-only] [--reuse-resident] [--phi-only] "
+               "[--keep-resident] [--out benchmark.csv]\n";
         return 0;
       } else {
         throw std::runtime_error("unknown or incomplete argument: " + arg);
       }
+    }
+
+    if (warmup < 0) {
+      throw std::runtime_error("--warmup must be non-negative");
+    }
+    if (repeat < 1) {
+      throw std::runtime_error("--repeat must be at least 1");
     }
 
     const std::vector<std::size_t> point_counts = parsePointCounts(points_arg);
@@ -348,6 +508,20 @@ int main(int argc, char** argv) {
         row.selected_blocks = adasdf::blockSelectionString(block_selection);
         row.num_points = count;
         row.cuda_available = cuda_available;
+        row.warmup = warmup;
+        row.repeat = repeat;
+        row.kernel_only = kernel_only;
+        row.phi_only = phi_only;
+        row.reuse_resident = reuse_resident;
+        row.max_normal_error_na = phi_only;
+
+        if (kernel_only && backend != adasdf::QueryBackend::CUDA) {
+          row.status = "skipped";
+          row.error_message = "kernel-only timing is only available for CUDA";
+          row.skipped = true;
+          rows.push_back(row);
+          continue;
+        }
 
         if (backend == adasdf::QueryBackend::CUDA && !cuda_available) {
           row.status = "skipped";
@@ -358,13 +532,6 @@ int main(int argc, char** argv) {
         }
 
         try {
-          adasdf::QueryModeConfig config;
-          config.backend = backend;
-          config.expansion = expansion;
-          config.block_selection = block_selection;
-          config.keep_expanded_data_resident = keep_resident;
-          config.allow_fallback_to_cpu = backend != adasdf::QueryBackend::CUDA;
-
           adasdf::ExpansionOptions expansion_options;
           expansion_options.expansion = expansion;
           expansion_options.block_selection = block_selection;
@@ -377,39 +544,140 @@ int main(int argc, char** argv) {
           const adasdf::BatchQueryOutput reference =
               adasdf::queryBatchCPU(*model, points);
 
-          adasdf::QueryEngine engine(model, config, expansion_options);
-          const auto setup0 = std::chrono::steady_clock::now();
-          if (!engine.prepare()) {
-            throw std::runtime_error("QueryEngine prepare failed");
-          }
-          const auto setup1 = std::chrono::steady_clock::now();
-          adasdf::BatchQueryOutput output = engine.queryBatch(points);
+          std::vector<adasdf::BatchQueryTiming> timings;
+          std::vector<double> kernel_values;
+          std::vector<double> total_values;
+          adasdf::BatchQueryOutput output;
 
-          const adasdf::QueryEngineStats& stats = engine.stats();
-          row.setup_ms =
-              std::chrono::duration<double, std::milli>(setup1 - setup0).count();
-          if (stats.setup_ms > 0.0) {
-            row.setup_ms = stats.setup_ms;
+          if (backend == adasdf::QueryBackend::CUDA) {
+            if (expansion == adasdf::QueryExpansionMode::None) {
+              throw std::runtime_error("CUDA benchmark requires global or block expansion");
+            }
+            adasdf::BatchQueryTiming setup_timing;
+            const auto setup0 = std::chrono::steady_clock::now();
+            const auto expand0 = std::chrono::steady_clock::now();
+            adasdf::ExpandedSDF expanded =
+                adasdf::SDFExpander::expand(*model, expansion_options);
+            const auto expand1 = std::chrono::steady_clock::now();
+            setup_timing.expand_ms =
+                std::chrono::duration<double, std::milli>(expand1 - expand0).count();
+            row.expanded_memory_mb =
+                static_cast<double>(expanded.memoryFootprintBytes()) /
+                (1024.0 * 1024.0);
+
+            adasdf::CudaResidentExpandedSDF resident;
+            const auto upload0 = std::chrono::steady_clock::now();
+            if (!resident.upload(expanded)) {
+              throw std::runtime_error("CUDA resident expanded SDF upload failed");
+            }
+            const auto upload1 = std::chrono::steady_clock::now();
+            setup_timing.upload_sdf_ms =
+                std::chrono::duration<double, std::milli>(upload1 - upload0).count();
+            setup_timing.setup_ms =
+                std::chrono::duration<double, std::milli>(
+                    std::chrono::steady_clock::now() - setup0)
+                    .count();
+            applySetupTiming(row, setup_timing);
+
+            adasdf::CudaQueryWorkspace workspace;
+            adasdf::CudaQueryWorkspace* workspace_ptr = nullptr;
+            if (reuse_resident) {
+              if (!workspace.ensureCapacity(count, !phi_only)) {
+                throw std::runtime_error("CUDA query workspace allocation failed");
+              }
+              workspace_ptr = &workspace;
+            }
+            row.gpu_resident_memory_mb =
+                static_cast<double>(
+                    resident.deviceMemoryBytes() +
+                    (workspace_ptr != nullptr ? workspace.deviceMemoryBytes() : 0)) /
+                (1024.0 * 1024.0);
+
+            for (int i = 0; i < warmup; ++i) {
+              adasdf::BatchQueryTiming ignored;
+              output = resident.queryBatch(points, phi_only, workspace_ptr, &ignored);
+            }
+
+            for (int i = 0; i < repeat; ++i) {
+              adasdf::BatchQueryTiming timing;
+              output = resident.queryBatch(points, phi_only, workspace_ptr, &timing);
+              timings.push_back(timing);
+              kernel_values.push_back(timing.kernel_ms);
+              total_values.push_back(timing.total_ms);
+            }
+          } else {
+            adasdf::QueryModeConfig config;
+            config.backend = backend;
+            config.expansion = expansion;
+            config.block_selection = block_selection;
+            config.keep_expanded_data_resident = keep_resident;
+            config.allow_fallback_to_cpu = true;
+
+            if (expansion == adasdf::QueryExpansionMode::None) {
+              for (int i = 0; i < warmup; ++i) {
+                output = adasdf::queryBatchCPU(*model, points);
+              }
+              for (int i = 0; i < repeat; ++i) {
+                adasdf::BatchQueryTiming timing;
+                output = adasdf::queryBatchCPU(*model, points, nullptr, &timing);
+                timings.push_back(timing);
+                total_values.push_back(timing.total_ms);
+              }
+            } else {
+              adasdf::QueryEngine engine(model, config, expansion_options);
+              const auto setup0 = std::chrono::steady_clock::now();
+              if (!engine.prepare()) {
+                throw std::runtime_error("QueryEngine prepare failed");
+              }
+              const auto setup1 = std::chrono::steady_clock::now();
+              row.timing.setup_ms =
+                  std::chrono::duration<double, std::milli>(setup1 - setup0).count();
+              if (engine.stats().setup_ms > 0.0) {
+                row.timing.setup_ms = engine.stats().setup_ms;
+              }
+              row.expanded_memory_mb =
+                  static_cast<double>(engine.stats().expanded_memory_bytes) /
+                  (1024.0 * 1024.0);
+              for (int i = 0; i < warmup; ++i) {
+                output = engine.queryBatch(points);
+              }
+              for (int i = 0; i < repeat; ++i) {
+                output = engine.queryBatch(points);
+                adasdf::BatchQueryTiming timing = engine.stats().timing;
+                if (timing.total_ms <= 0.0) {
+                  timing.total_ms = engine.stats().query_total_ms;
+                }
+                timings.push_back(timing);
+                total_values.push_back(timing.total_ms);
+              }
+              row.fallback_count = engine.stats().fallback_count;
+            }
           }
-          row.expanded_memory_mb =
-              static_cast<double>(stats.expanded_memory_bytes) /
-              (1024.0 * 1024.0);
-          row.gpu_resident_memory_mb =
-              static_cast<double>(stats.gpu_resident_memory_bytes) /
-              (1024.0 * 1024.0);
-          row.query_kernel_ms = stats.query_kernel_ms;
-          row.query_total_ms = stats.query_total_ms;
-          row.fallback_count = stats.fallback_count;
+
+          finishRowFromRuns(row, timings);
+          row.kernel_stats = summarize(kernel_values);
+          row.total_stats = summarize(total_values);
+          if (backend == adasdf::QueryBackend::CUDA) {
+            row.query_kernel_ms = row.kernel_stats.mean;
+          } else {
+            row.query_kernel_ms = 0.0;
+          }
+          row.query_total_ms = row.total_stats.mean;
+
+          const double reported_ms =
+              kernel_only && backend == adasdf::QueryBackend::CUDA
+                  ? row.kernel_stats.mean
+                  : row.total_stats.mean;
           row.ns_per_query =
-              count > 0 ? row.query_total_ms * 1.0e6 / static_cast<double>(count)
-                        : 0.0;
+              count > 0 ? reported_ms * 1.0e6 / static_cast<double>(count) : 0.0;
           row.queries_per_second =
-              row.query_total_ms > 0.0
-                  ? static_cast<double>(count) * 1000.0 / row.query_total_ms
+              reported_ms > 0.0
+                  ? static_cast<double>(count) * 1000.0 / reported_ms
                   : 0.0;
           computeErrors(
               reference,
               output,
+              !phi_only,
               row.max_abs_phi_error,
               row.max_normal_error);
           rows.push_back(row);
@@ -425,6 +693,9 @@ int main(int argc, char** argv) {
     printSummary(rows);
 
     if (!output_path.empty()) {
+      if (!output_path.parent_path().empty()) {
+        std::filesystem::create_directories(output_path.parent_path());
+      }
       std::ofstream file(output_path);
       if (!file) {
         throw std::runtime_error("failed to open benchmark output CSV");

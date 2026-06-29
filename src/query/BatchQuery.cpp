@@ -24,7 +24,8 @@ void fillStats(
     BatchQueryStats* stats,
     std::size_t num_points,
     double total_ms,
-    std::string backend) {
+    std::string backend,
+    const BatchQueryTiming& timing) {
   if (!stats) {
     return;
   }
@@ -35,6 +36,7 @@ void fillStats(
   stats->queries_per_second =
       total_ms > 0.0 ? static_cast<double>(num_points) * 1000.0 / total_ms : 0.0;
   stats->backend = std::move(backend);
+  stats->timing = timing;
 }
 
 }  // namespace
@@ -42,16 +44,22 @@ void fillStats(
 BatchQueryOutput queryBatchCPU(
     const SDFModel& model,
     const std::vector<Vector3>& points,
-    BatchQueryStats* stats) {
+    BatchQueryStats* stats,
+    BatchQueryTiming* timing) {
   if (!model.isValid() || !model.queryBackendAvailable()) {
     throw std::runtime_error(
         "queryBatchCPU requires a valid SDFModel with query backend support.");
   }
 
+  BatchQueryTiming local_timing;
+  const auto allocation0 = std::chrono::steady_clock::now();
   BatchQueryOutput output;
   output.signed_distances.resize(points.size());
   output.gradients.resize(points.size());
   output.normals.resize(points.size());
+  const auto allocation1 = std::chrono::steady_clock::now();
+  local_timing.allocation_ms =
+      std::chrono::duration<double, std::milli>(allocation1 - allocation0).count();
 
   const auto t0 = std::chrono::steady_clock::now();
   for (std::size_t i = 0; i < points.size(); ++i) {
@@ -62,12 +70,18 @@ BatchQueryOutput queryBatchCPU(
   const auto t1 = std::chrono::steady_clock::now();
   const double total_ms =
       std::chrono::duration<double, std::milli>(t1 - t0).count();
+  local_timing.kernel_ms = total_ms;
+  local_timing.total_ms =
+      std::chrono::duration<double, std::milli>(t1 - allocation0).count();
 
   std::string backend = "CPU batch query: sampleDistance + sampleGradient";
   if (!model.metadata().query_backend.empty()) {
     backend += " (" + model.metadata().query_backend + ")";
   }
-  fillStats(stats, points.size(), total_ms, std::move(backend));
+  if (timing != nullptr) {
+    *timing = local_timing;
+  }
+  fillStats(stats, points.size(), local_timing.total_ms, std::move(backend), local_timing);
   return output;
 }
 

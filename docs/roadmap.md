@@ -13,16 +13,19 @@
 - v0.9 surrogate-guided adaptive demo workflow and SVG contact visualization.
 - v1.0 optional CUDA batch query backend and CPU/GPU benchmark tooling.
 - v1.0.1 query mode, expansion mode, and GPU-resident expanded SDF query backend.
+- v1.0.2 CUDA benchmark timing semantics and resident query workspace.
 
-## v1.0.1-alpha Scope
+## v1.0.2-alpha Scope
 
 - explicit `QueryModeConfig` for backend, expansion, block selection, resident data, and fallback;
 - reusable `ExpandedSDF`, `SDFExpander`, and `QueryEngine` APIs;
 - CPU direct, CPU global-expanded, and CPU block-expanded query paths;
 - CUDA global-expanded and CUDA block-expanded query paths using resident GPU data;
-- deterministic benchmark CLI with backend, expansion, block, memory, setup, kernel, total-time, and error columns;
+- deterministic benchmark CLI with backend, expansion, block, memory, setup, timing breakdown, warmup/repeat, kernel-only, phi-only, total-time, and error columns;
+- reusable CUDA query workspace for benchmark repeats over resident expanded SDF data;
+- CUDA phi-only expanded SDF kernel for signed-distance-only kernel comparison;
 - CPU/CUDA query-mode tests and graceful CUDA-unavailable skip behavior;
-- documentation of the original UI CUDA dense/block-expanded reference and the v1.0.1 parity boundary.
+- documentation of the original UI CUDA dense/block-expanded reference and the v1.0.2 timing-comparison boundary.
 
 ## Future Work
 

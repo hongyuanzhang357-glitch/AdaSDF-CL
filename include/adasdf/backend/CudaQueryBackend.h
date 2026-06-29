@@ -1,11 +1,44 @@
 #pragma once
 
+#include <cstddef>
+#include <vector>
+
 #include "adasdf/geometry/AnalyticSDFModel.h"
 #include "adasdf/geometry/DemoAdaptiveSDFModel.h"
 #include "adasdf/query/ExpandedSDF.h"
 #include "adasdf/query/BatchQuery.h"
 
 namespace adasdf {
+
+class CudaQueryWorkspace {
+ public:
+  CudaQueryWorkspace() = default;
+  ~CudaQueryWorkspace();
+
+  CudaQueryWorkspace(const CudaQueryWorkspace&) = delete;
+  CudaQueryWorkspace& operator=(const CudaQueryWorkspace&) = delete;
+  CudaQueryWorkspace(CudaQueryWorkspace&& other) noexcept;
+  CudaQueryWorkspace& operator=(CudaQueryWorkspace&& other) noexcept;
+
+  bool allocate(std::size_t capacity, bool need_normals);
+  bool ensureCapacity(std::size_t capacity, bool need_normals);
+
+  bool uploadPoints(const std::vector<Vector3>& points);
+  BatchQueryOutput downloadResults(std::size_t count, bool need_normals);
+
+  void release();
+
+  std::size_t capacity() const;
+  std::size_t deviceMemoryBytes() const;
+
+ private:
+  friend class CudaResidentExpandedSDF;
+
+  void* workspace_handle_ = nullptr;
+  std::size_t capacity_ = 0;
+  std::size_t device_memory_bytes_ = 0;
+  bool need_normals_ = false;
+};
 
 class CudaQueryBackend {
  public:
@@ -35,6 +68,11 @@ class CudaResidentExpandedSDF {
   std::size_t deviceMemoryBytes() const;
 
   BatchQueryOutput queryBatch(const std::vector<Vector3>& points);
+  BatchQueryOutput queryBatch(
+      const std::vector<Vector3>& points,
+      bool phi_only,
+      CudaQueryWorkspace* workspace,
+      BatchQueryTiming* timing);
   void release();
 
   double lastKernelMs() const {
@@ -45,11 +83,16 @@ class CudaResidentExpandedSDF {
     return last_query_ms_;
   }
 
+  const BatchQueryTiming& lastTiming() const {
+    return last_timing_;
+  }
+
  private:
   void* device_handle_ = nullptr;
   std::size_t device_memory_bytes_ = 0;
   double last_kernel_ms_ = 0.0;
   double last_query_ms_ = 0.0;
+  BatchQueryTiming last_timing_;
 };
 
 }  // namespace adasdf

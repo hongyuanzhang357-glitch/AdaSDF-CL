@@ -362,6 +362,10 @@ set(ADASDF_CL_TEST_SOURCES
   tests/test_query_engine_cpu.cpp
   tests/test_query_engine_cuda.cpp
   tests/test_query_mode_cli.cpp
+  tests/test_benchmark_timing_fields.cpp
+  tests/test_benchmark_cli_modes.cpp
+  tests/test_cuda_query_workspace.cpp
+  tests/test_cuda_phi_only_kernel.cpp
   tests/test_point_cloud_generator.cpp
   tests/test_adaptive_builder.cpp
   tests/test_sdfbin_writer_roundtrip.cpp
@@ -404,6 +408,14 @@ if(ADASDF_CL_BUILD_TESTS)
       target_compile_definitions(${test_name} PRIVATE
         ADASDF_CL_QUERY_MODE_DEMO="$<TARGET_FILE_NAME:adasdf_query_mode_demo>")
     endif()
+    if(test_name STREQUAL "test_benchmark_timing_fields" OR
+        test_name STREQUAL "test_benchmark_cli_modes")
+      if(TARGET adasdf_benchmark_batch_query)
+        add_dependencies(${test_name} adasdf_benchmark_batch_query)
+        target_compile_definitions(${test_name} PRIVATE
+          ADASDF_CL_BENCHMARK_BATCH_QUERY="$<TARGET_FILE_NAME:adasdf_benchmark_batch_query>")
+      endif()
+    endif()
     add_test(NAME ${test_name} COMMAND ${test_name})
     if(test_name STREQUAL "test_make_demo_box_cli")
       set_tests_properties(${test_name} PROPERTIES
@@ -412,6 +424,13 @@ if(ADASDF_CL_BUILD_TESTS)
     if(test_name STREQUAL "test_query_mode_cli")
       set_tests_properties(${test_name} PROPERTIES
         WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_query_mode_demo>")
+    endif()
+    if(test_name STREQUAL "test_benchmark_timing_fields" OR
+        test_name STREQUAL "test_benchmark_cli_modes")
+      if(TARGET adasdf_benchmark_batch_query)
+        set_tests_properties(${test_name} PROPERTIES
+          WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_benchmark_batch_query>")
+      endif()
     endif()
   endforeach()
 endif()

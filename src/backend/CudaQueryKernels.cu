@@ -3,6 +3,7 @@
 #include <cuda_runtime.h>
 
 #include <algorithm>
+#include <chrono>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -35,6 +36,21 @@ struct ResidentExpandedSDFHandle {
   unsigned long long value_count = 0;
   std::size_t memory_bytes = 0;
 };
+
+struct CudaQueryWorkspaceHandle {
+  DeviceVec3* device_points = nullptr;
+  double* device_phi = nullptr;
+  DeviceVec3* device_normals = nullptr;
+  std::size_t capacity = 0;
+  std::size_t memory_bytes = 0;
+  bool need_normals = false;
+};
+
+using Clock = std::chrono::steady_clock;
+
+double elapsedMs(const Clock::time_point& start, const Clock::time_point& end) {
+  return std::chrono::duration<double, std::milli>(end - start).count();
+}
 
 __device__ double absDevice(double value) {
   return value < 0.0 ? -value : value;
@@ -186,6 +202,15 @@ __device__ bool sampleExpandedSDF(
     const DeviceVec3& p,
     double* phi,
     const DeviceExpandedBlock** used_block) {
+  if (block_count == 1) {
+    if (sampleExpandedBlock(blocks[0], values, p, phi)) {
+      if (used_block != nullptr) {
+        *used_block = &blocks[0];
+      }
+      return true;
+    }
+    return false;
+  }
   for (int i = 0; i < block_count; ++i) {
     if (sampleExpandedBlock(blocks[i], values, p, phi)) {
       if (used_block != nullptr) {
@@ -195,6 +220,20 @@ __device__ bool sampleExpandedSDF(
     }
   }
   return false;
+}
+
+__device__ bool sampleExpandedSDFPreferBlock(
+    const DeviceExpandedBlock* blocks,
+    int block_count,
+    const double* values,
+    const DeviceVec3& p,
+    const DeviceExpandedBlock* preferred_block,
+    double* phi) {
+  if (preferred_block != nullptr &&
+      sampleExpandedBlock(*preferred_block, values, p, phi)) {
+    return true;
+  }
+  return sampleExpandedSDF(blocks, block_count, values, p, phi, nullptr);
 }
 
 __device__ double gradientStep(const DeviceExpandedBlock& block) {
@@ -244,18 +283,18 @@ __global__ void expandedSdfKernel(
   double pz = value;
   double mz = value;
   bool ok = true;
-  ok = ok && sampleExpandedSDF(
-                 blocks, block_count, values, {p.x + h, p.y, p.z}, &px, nullptr);
-  ok = ok && sampleExpandedSDF(
-                 blocks, block_count, values, {p.x - h, p.y, p.z}, &mx, nullptr);
-  ok = ok && sampleExpandedSDF(
-                 blocks, block_count, values, {p.x, p.y + h, p.z}, &py, nullptr);
-  ok = ok && sampleExpandedSDF(
-                 blocks, block_count, values, {p.x, p.y - h, p.z}, &my, nullptr);
-  ok = ok && sampleExpandedSDF(
-                 blocks, block_count, values, {p.x, p.y, p.z + h}, &pz, nullptr);
-  ok = ok && sampleExpandedSDF(
-                 blocks, block_count, values, {p.x, p.y, p.z - h}, &mz, nullptr);
+  ok = ok && sampleExpandedSDFPreferBlock(
+                 blocks, block_count, values, {p.x + h, p.y, p.z}, used_block, &px);
+  ok = ok && sampleExpandedSDFPreferBlock(
+                 blocks, block_count, values, {p.x - h, p.y, p.z}, used_block, &mx);
+  ok = ok && sampleExpandedSDFPreferBlock(
+                 blocks, block_count, values, {p.x, p.y + h, p.z}, used_block, &py);
+  ok = ok && sampleExpandedSDFPreferBlock(
+                 blocks, block_count, values, {p.x, p.y - h, p.z}, used_block, &my);
+  ok = ok && sampleExpandedSDFPreferBlock(
+                 blocks, block_count, values, {p.x, p.y, p.z + h}, used_block, &pz);
+  ok = ok && sampleExpandedSDFPreferBlock(
+                 blocks, block_count, values, {p.x, p.y, p.z - h}, used_block, &mz);
   if (!ok) {
     normals[index] = {1.0, 0.0, 0.0};
     return;
@@ -265,6 +304,29 @@ __global__ void expandedSdfKernel(
       {(px - mx) / (2.0 * h),
        (py - my) / (2.0 * h),
        (pz - mz) / (2.0 * h)});
+}
+
+__global__ void expandedSdfPhiOnlyKernel(
+    const DeviceVec3* points,
+    std::size_t count,
+    const DeviceExpandedBlock* blocks,
+    int block_count,
+    const double* values,
+    double* phi) {
+  const std::size_t index = blockIdx.x * blockDim.x + threadIdx.x;
+  if (index >= count) {
+    return;
+  }
+
+  double value = 1.0e30;
+  sampleExpandedSDF(
+      blocks,
+      block_count,
+      values,
+      points[index],
+      &value,
+      nullptr);
+  phi[index] = value;
 }
 
 DeviceVec3 toDeviceVec3(const Vector3& value) {
@@ -280,6 +342,169 @@ void checkCuda(cudaError_t error, const char* operation) {
     throw std::runtime_error(
         std::string(operation) + " failed: " + cudaGetErrorString(error));
   }
+}
+
+void freeWorkspaceBuffers(CudaQueryWorkspaceHandle* workspace) {
+  if (workspace == nullptr) {
+    return;
+  }
+  cudaFree(workspace->device_points);
+  cudaFree(workspace->device_phi);
+  cudaFree(workspace->device_normals);
+  workspace->device_points = nullptr;
+  workspace->device_phi = nullptr;
+  workspace->device_normals = nullptr;
+  workspace->capacity = 0;
+  workspace->memory_bytes = 0;
+  workspace->need_normals = false;
+}
+
+bool ensureWorkspaceCapacity(
+    CudaQueryWorkspaceHandle* workspace,
+    std::size_t capacity,
+    bool need_normals,
+    BatchQueryTiming* timing) {
+  if (workspace == nullptr) {
+    return false;
+  }
+  if (capacity == 0) {
+    return true;
+  }
+  if (workspace->capacity >= capacity &&
+      (!need_normals || workspace->device_normals != nullptr)) {
+    workspace->need_normals = need_normals;
+    return true;
+  }
+
+  const auto t0 = Clock::now();
+  freeWorkspaceBuffers(workspace);
+  const std::size_t point_bytes = capacity * sizeof(DeviceVec3);
+  const std::size_t phi_bytes = capacity * sizeof(double);
+  try {
+    checkCuda(
+        cudaMalloc(reinterpret_cast<void**>(&workspace->device_points), point_bytes),
+        "cudaMalloc(query workspace points)");
+    checkCuda(
+        cudaMalloc(reinterpret_cast<void**>(&workspace->device_phi), phi_bytes),
+        "cudaMalloc(query workspace phi)");
+    if (need_normals) {
+      checkCuda(
+          cudaMalloc(
+              reinterpret_cast<void**>(&workspace->device_normals),
+              point_bytes),
+          "cudaMalloc(query workspace normals)");
+    }
+  } catch (...) {
+    freeWorkspaceBuffers(workspace);
+    throw;
+  }
+  workspace->capacity = capacity;
+  workspace->need_normals = need_normals;
+  workspace->memory_bytes = point_bytes + phi_bytes + (need_normals ? point_bytes : 0);
+  if (timing != nullptr) {
+    timing->allocation_ms += elapsedMs(t0, Clock::now());
+  }
+  return true;
+}
+
+std::vector<DeviceVec3> packPoints(const std::vector<Vector3>& points) {
+  std::vector<DeviceVec3> host_points;
+  host_points.reserve(points.size());
+  for (const Vector3& point : points) {
+    host_points.push_back(toDeviceVec3(point));
+  }
+  return host_points;
+}
+
+void uploadWorkspacePoints(
+    CudaQueryWorkspaceHandle* workspace,
+    const std::vector<Vector3>& points,
+    BatchQueryTiming* timing) {
+  if (workspace == nullptr || workspace->device_points == nullptr ||
+      points.size() > workspace->capacity) {
+    throw std::runtime_error("CUDA query workspace is not large enough for points.");
+  }
+  const auto t0 = Clock::now();
+  const std::vector<DeviceVec3> host_points = packPoints(points);
+  if (!host_points.empty()) {
+    checkCuda(
+        cudaMemcpy(
+            workspace->device_points,
+            host_points.data(),
+            host_points.size() * sizeof(DeviceVec3),
+            cudaMemcpyHostToDevice),
+        "cudaMemcpy(query workspace points)");
+  }
+  if (timing != nullptr) {
+    timing->h2d_points_ms += elapsedMs(t0, Clock::now());
+  }
+}
+
+BatchQueryOutput downloadWorkspaceResults(
+    CudaQueryWorkspaceHandle* workspace,
+    std::size_t count,
+    bool need_normals,
+    BatchQueryTiming* timing) {
+  if (workspace == nullptr || workspace->device_phi == nullptr ||
+      count > workspace->capacity) {
+    throw std::runtime_error("CUDA query workspace is not ready for download.");
+  }
+
+  const auto allocation0 = Clock::now();
+  BatchQueryOutput output;
+  output.signed_distances.resize(count);
+  if (need_normals) {
+    output.gradients.resize(count);
+    output.normals.resize(count);
+  }
+  const auto allocation1 = Clock::now();
+  if (timing != nullptr) {
+    timing->allocation_ms += elapsedMs(allocation0, allocation1);
+  }
+
+  if (count == 0) {
+    return output;
+  }
+
+  const auto d2h0 = Clock::now();
+  checkCuda(
+      cudaMemcpy(
+          output.signed_distances.data(),
+          workspace->device_phi,
+          count * sizeof(double),
+          cudaMemcpyDeviceToHost),
+      "cudaMemcpy(query workspace phi)");
+
+  std::vector<DeviceVec3> host_normals;
+  if (need_normals) {
+    if (workspace->device_normals == nullptr) {
+      throw std::runtime_error("CUDA query workspace normals were not allocated.");
+    }
+    host_normals.resize(count);
+    checkCuda(
+        cudaMemcpy(
+            host_normals.data(),
+            workspace->device_normals,
+            count * sizeof(DeviceVec3),
+            cudaMemcpyDeviceToHost),
+        "cudaMemcpy(query workspace normals)");
+  }
+  const auto d2h1 = Clock::now();
+  if (timing != nullptr) {
+    timing->d2h_results_ms += elapsedMs(d2h0, d2h1);
+  }
+
+  if (need_normals) {
+    const auto post0 = Clock::now();
+    for (std::size_t i = 0; i < host_normals.size(); ++i) {
+      output.gradients[i] = toVector3(host_normals[i]);
+      output.normals[i] = output.gradients[i];
+    }
+    if (timing != nullptr) {
+      timing->postprocess_ms += elapsedMs(post0, Clock::now());
+    }
+  }
+  return output;
 }
 
 }  // namespace
@@ -455,115 +680,170 @@ void* uploadExpandedSDFToCuda(
   return handle;
 }
 
+void* createQueryWorkspaceOnCuda() {
+  return new CudaQueryWorkspaceHandle();
+}
+
+bool ensureQueryWorkspaceOnCuda(
+    void* workspace_handle,
+    std::size_t capacity,
+    bool need_normals,
+    std::size_t* device_memory_bytes) {
+  if (workspace_handle == nullptr) {
+    return false;
+  }
+  auto* workspace = static_cast<CudaQueryWorkspaceHandle*>(workspace_handle);
+  ensureWorkspaceCapacity(workspace, capacity, need_normals, nullptr);
+  if (device_memory_bytes != nullptr) {
+    *device_memory_bytes = workspace->memory_bytes;
+  }
+  return true;
+}
+
+bool uploadQueryWorkspacePointsOnCuda(
+    void* workspace_handle,
+    const std::vector<Vector3>& points,
+    BatchQueryTiming* timing) {
+  if (workspace_handle == nullptr) {
+    return false;
+  }
+  auto* workspace = static_cast<CudaQueryWorkspaceHandle*>(workspace_handle);
+  uploadWorkspacePoints(workspace, points, timing);
+  return true;
+}
+
+BatchQueryOutput downloadQueryWorkspaceResultsOnCuda(
+    void* workspace_handle,
+    std::size_t count,
+    bool need_normals,
+    BatchQueryTiming* timing) {
+  if (workspace_handle == nullptr) {
+    throw std::runtime_error("downloadQueryWorkspaceResultsOnCuda received null workspace.");
+  }
+  auto* workspace = static_cast<CudaQueryWorkspaceHandle*>(workspace_handle);
+  return downloadWorkspaceResults(workspace, count, need_normals, timing);
+}
+
+void releaseQueryWorkspaceOnCuda(void* workspace_handle) {
+  if (workspace_handle == nullptr) {
+    return;
+  }
+  auto* workspace = static_cast<CudaQueryWorkspaceHandle*>(workspace_handle);
+  freeWorkspaceBuffers(workspace);
+  delete workspace;
+}
+
+std::size_t queryWorkspaceCapacityOnCuda(void* workspace_handle) {
+  if (workspace_handle == nullptr) {
+    return 0;
+  }
+  return static_cast<CudaQueryWorkspaceHandle*>(workspace_handle)->capacity;
+}
+
+std::size_t queryWorkspaceDeviceMemoryBytesOnCuda(void* workspace_handle) {
+  if (workspace_handle == nullptr) {
+    return 0;
+  }
+  return static_cast<CudaQueryWorkspaceHandle*>(workspace_handle)->memory_bytes;
+}
+
 BatchQueryOutput queryExpandedSDFOnCuda(
     void* device_handle,
     const std::vector<Vector3>& points,
-    double* kernel_ms_out) {
+    bool phi_only,
+    void* workspace_handle,
+    BatchQueryTiming* timing) {
   if (device_handle == nullptr) {
     throw std::runtime_error("queryExpandedSDFOnCuda received null resident handle.");
   }
   auto* handle = static_cast<ResidentExpandedSDFHandle*>(device_handle);
 
-  BatchQueryOutput output;
-  output.signed_distances.resize(points.size());
-  output.gradients.resize(points.size());
-  output.normals.resize(points.size());
-  if (kernel_ms_out != nullptr) {
-    *kernel_ms_out = 0.0;
-  }
+  BatchQueryTiming local_timing;
+  const auto total0 = Clock::now();
+  const bool need_normals = !phi_only;
   if (points.empty()) {
+    BatchQueryOutput output;
+    if (timing != nullptr) {
+      local_timing.total_ms = elapsedMs(total0, Clock::now());
+      *timing = local_timing;
+    }
     return output;
   }
 
-  std::vector<DeviceVec3> host_points;
-  host_points.reserve(points.size());
-  for (const Vector3& point : points) {
-    host_points.push_back(toDeviceVec3(point));
-  }
-
-  DeviceVec3* device_points = nullptr;
-  double* device_phi = nullptr;
-  DeviceVec3* device_normals = nullptr;
+  CudaQueryWorkspaceHandle* workspace =
+      static_cast<CudaQueryWorkspaceHandle*>(workspace_handle);
+  bool temporary_workspace = false;
   cudaEvent_t start{};
   cudaEvent_t stop{};
-  const std::size_t point_bytes = host_points.size() * sizeof(DeviceVec3);
-  const std::size_t phi_bytes = points.size() * sizeof(double);
 
   try {
-    checkCuda(
-        cudaMalloc(reinterpret_cast<void**>(&device_points), point_bytes),
-        "cudaMalloc(expanded query points)");
-    checkCuda(
-        cudaMalloc(reinterpret_cast<void**>(&device_phi), phi_bytes),
-        "cudaMalloc(expanded query phi)");
-    checkCuda(
-        cudaMalloc(reinterpret_cast<void**>(&device_normals), point_bytes),
-        "cudaMalloc(expanded query normals)");
-    checkCuda(
-        cudaMemcpy(
-            device_points,
-            host_points.data(),
-            point_bytes,
-            cudaMemcpyHostToDevice),
-        "cudaMemcpy(expanded query points)");
+    if (workspace == nullptr) {
+      workspace = new CudaQueryWorkspaceHandle();
+      temporary_workspace = true;
+    }
+    ensureWorkspaceCapacity(workspace, points.size(), need_normals, &local_timing);
+    uploadWorkspacePoints(workspace, points, &local_timing);
 
     checkCuda(cudaEventCreate(&start), "cudaEventCreate(start)");
     checkCuda(cudaEventCreate(&stop), "cudaEventCreate(stop)");
     constexpr int block_size = 256;
     const int grid_size =
-        static_cast<int>((host_points.size() + block_size - 1) / block_size);
+        static_cast<int>((points.size() + block_size - 1) / block_size);
     checkCuda(cudaEventRecord(start), "cudaEventRecord(start)");
-    expandedSdfKernel<<<grid_size, block_size>>>(
-        device_points,
-        host_points.size(),
-        handle->device_blocks,
-        handle->block_count,
-        handle->device_values,
-        device_phi,
-        device_normals);
-    checkCuda(cudaGetLastError(), "expandedSdfKernel launch");
+    if (phi_only) {
+      expandedSdfPhiOnlyKernel<<<grid_size, block_size>>>(
+          workspace->device_points,
+          points.size(),
+          handle->device_blocks,
+          handle->block_count,
+          handle->device_values,
+          workspace->device_phi);
+      checkCuda(cudaGetLastError(), "expandedSdfPhiOnlyKernel launch");
+    } else {
+      expandedSdfKernel<<<grid_size, block_size>>>(
+          workspace->device_points,
+          points.size(),
+          handle->device_blocks,
+          handle->block_count,
+          handle->device_values,
+          workspace->device_phi,
+          workspace->device_normals);
+      checkCuda(cudaGetLastError(), "expandedSdfKernel launch");
+    }
+    const auto sync0 = Clock::now();
     checkCuda(cudaEventRecord(stop), "cudaEventRecord(stop)");
     checkCuda(cudaEventSynchronize(stop), "cudaEventSynchronize(stop)");
+    const auto sync1 = Clock::now();
     float kernel_ms = 0.0f;
     checkCuda(cudaEventElapsedTime(&kernel_ms, start, stop), "cudaEventElapsedTime");
-    if (kernel_ms_out != nullptr) {
-      *kernel_ms_out = static_cast<double>(kernel_ms);
-    }
+    local_timing.kernel_ms = static_cast<double>(kernel_ms);
+    local_timing.sync_ms = elapsedMs(sync0, sync1);
 
-    std::vector<DeviceVec3> host_normals(points.size());
-    checkCuda(
-        cudaMemcpy(
-            output.signed_distances.data(),
-            device_phi,
-            phi_bytes,
-            cudaMemcpyDeviceToHost),
-        "cudaMemcpy(expanded phi)");
-    checkCuda(
-        cudaMemcpy(
-            host_normals.data(),
-            device_normals,
-            point_bytes,
-            cudaMemcpyDeviceToHost),
-        "cudaMemcpy(expanded normals)");
-    for (std::size_t i = 0; i < host_normals.size(); ++i) {
-      output.gradients[i] = toVector3(host_normals[i]);
-      output.normals[i] = output.gradients[i];
+    BatchQueryOutput output =
+        downloadWorkspaceResults(workspace, points.size(), need_normals, &local_timing);
+    const auto free0 = Clock::now();
+    if (temporary_workspace) {
+      freeWorkspaceBuffers(workspace);
+      delete workspace;
+      workspace = nullptr;
     }
+    local_timing.free_ms += elapsedMs(free0, Clock::now());
+    cudaEventDestroy(start);
+    cudaEventDestroy(stop);
+    local_timing.total_ms = elapsedMs(total0, Clock::now());
+    if (timing != nullptr) {
+      *timing = local_timing;
+    }
+    return output;
   } catch (...) {
     cudaEventDestroy(start);
     cudaEventDestroy(stop);
-    cudaFree(device_points);
-    cudaFree(device_phi);
-    cudaFree(device_normals);
+    if (temporary_workspace) {
+      freeWorkspaceBuffers(workspace);
+      delete workspace;
+    }
     throw;
   }
-
-  cudaEventDestroy(start);
-  cudaEventDestroy(stop);
-  cudaFree(device_points);
-  cudaFree(device_phi);
-  cudaFree(device_normals);
-  return output;
 }
 
 void releaseExpandedSDFOnCuda(void* device_handle) {
