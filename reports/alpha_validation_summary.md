@@ -13,7 +13,14 @@ cmake -S '<source>' -B '<build>' -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD
 ```
 
 ```text
+-- Building for: Visual Studio 17 2022
 -- Selecting Windows SDK version 10.0.22621.0 to target Windows 10.0.26200.
+-- The CXX compiler identification is MSVC 19.42.34444.0
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.42.34433/bin/Hostx64/x64/cl.exe - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
 --
 -- AdaSDF-CL configuration:
 --   Version: 0.7.0-alpha
@@ -24,11 +31,7 @@ cmake -S '<source>' -B '<build>' -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD
 --   Adaptive builder: ON
 --   Surrogate recommender: ON
 --   CUDA: not required
---   FCL: not required
---
--- Configuring done (0.0s)
--- Generating done (0.2s)
--- Build files have been written to: <build>
+...
 ```
 
 ### Build: PASS
@@ -40,22 +43,22 @@ cmake --build '<build>' --config Debug
 ```text
 适用于 .NET Framework MSBuild 版本 17.14.40+3e7442088
 
-  adasdf_existing_core.vcxproj -> <build>\Debug\adasdf_existing_core.lib
-  adasdf_cl_runtime.vcxproj -> <build>\Debug\adasdf_cl_runtime.lib
-  adasdf_build.vcxproj -> <build>\Debug\adasdf_build.exe
-  adasdf_build_then_query.vcxproj -> <build>\Debug\adasdf_build_then_query.exe
-  adasdf_collide.vcxproj -> <build>\Debug\adasdf_collide.exe
-  adasdf_collision_between_two_objects.vcxproj -> <build>\Debug\adasdf_collision_between_two_objects.exe
-  adasdf_contact_reduction_demo.vcxproj -> <build>\Debug\adasdf_contact_reduction_demo.exe
-  adasdf_fcl_style_api.vcxproj -> <build>\Debug\adasdf_fcl_style_api.exe
-  adasdf_info.vcxproj -> <build>\Debug\adasdf_info.exe
-  adasdf_load_sdfbin_and_query.vcxproj -> <build>\Debug\adasdf_load_sdfbin_and_query.exe
-  adasdf_query.vcxproj -> <build>\Debug\adasdf_query.exe
-  test_adaptive_builder.vcxproj -> <build>\Debug\test_adaptive_builder.exe
-  test_build_options.vcxproj -> <build>\Debug\test_build_options.exe
-  test_candidate_point_sampler.vcxproj -> <build>\Debug\test_candidate_point_sampler.exe
-  test_collision_object.vcxproj -> <build>\Debug\test_collision_object.exe
-  test_collision_query.vcxproj -> <build>\Debug\test_collision_query.exe
+  1>Checking Build System
+  Building Custom Rule <source>/CMakeLists.txt
+  AABB.cpp
+  AdaptiveBlockCompressor.cpp
+  AdaptiveLowRankModel.cpp
+  AllPointsSDFContact.cpp
+  BlockPartition.cpp
+  BVH.cpp
+  BVHCandidateSampler.cpp
+  BVHPairFilter.cpp
+  ContactPointExporter.cpp
+  ContactPipelineDecisionReport.cpp
+  ContactSummaryReport.cpp
+  DenseBlockGenerator.cpp
+  DenseBlockCache.cpp
+  FCLContactExporter.cpp
 ...
 ```
 
@@ -68,21 +71,21 @@ ctest --test-dir '<build>' -C Debug --output-on-failure
 ```text
 Test project <build>
       Start  1: test_sdf_io
- 1/17 Test  #1: test_sdf_io ......................   Passed    0.02 sec
+ 1/17 Test  #1: test_sdf_io ......................   Passed    0.04 sec
       Start  2: test_collision_query
- 2/17 Test  #2: test_collision_query .............   Passed    0.01 sec
+ 2/17 Test  #2: test_collision_query .............   Passed    0.02 sec
       Start  3: test_distance_query
- 3/17 Test  #3: test_distance_query ..............   Passed    0.01 sec
+ 3/17 Test  #3: test_distance_query ..............   Passed    0.07 sec
       Start  4: test_collision_object
- 4/17 Test  #4: test_collision_object ............   Passed    0.03 sec
+ 4/17 Test  #4: test_collision_object ............   Passed    0.04 sec
       Start  5: test_pair_distance_query
- 5/17 Test  #5: test_pair_distance_query .........   Passed    1.38 sec
+ 5/17 Test  #5: test_pair_distance_query .........   Passed    1.39 sec
       Start  6: test_pair_collision_query
- 6/17 Test  #6: test_pair_collision_query ........   Passed    1.40 sec
+ 6/17 Test  #6: test_pair_collision_query ........   Passed    1.39 sec
       Start  7: test_candidate_point_sampler
- 7/17 Test  #7: test_candidate_point_sampler .....   Passed    0.66 sec
+ 7/17 Test  #7: test_candidate_point_sampler .....   Passed    0.77 sec
       Start  8: test_contact_generator
- 8/17 Test  #8: test_contact_generator ...........   Passed    0.80 sec
+ 8/17 Test  #8: test_contact_generator ...........   Passed    0.81 sec
       Start  9: test_contact_reducer
 ...
 ```

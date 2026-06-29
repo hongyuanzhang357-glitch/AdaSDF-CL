@@ -54,9 +54,9 @@ API preview / planned:
 ## Quick Start
 
 ```bash
-cmake -S . -B build -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD_TESTS=ON
-cmake --build build --config Release
-ctest --test-dir build -C Release --output-on-failure
+cmake -S . -B ../build/adasdf_cl-quickstart -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD_TESTS=ON
+cmake --build ../build/adasdf_cl-quickstart --config Release
+ctest --test-dir ../build/adasdf_cl-quickstart -C Release --output-on-failure
 ```
 
 For local development from a parent workspace, a v0.7 validation build can use:
@@ -86,7 +86,7 @@ The 0.7.0-alpha tree installs headers, static library targets, command-line tool
 license/readme metadata, and CMake package files:
 
 ```bash
-cmake --install build --prefix install
+cmake --install ../build/adasdf_cl-quickstart --prefix ../build/adasdf_cl-install
 ```
 
 Downstream CMake preview:
@@ -111,7 +111,7 @@ See `docs/external_integration.md` and
 ## Build an Adaptive SDF From STL
 
 ```bash
-build/adasdf_cl-v0_7/Debug/adasdf_build.exe adasdf_cl/tests/data/cube_closed_ascii.stl build/cube.sdfbin --near-surface-error 1e-4 --max-memory-mb 256 --compress
+../build/adasdf_cl-v0_7/Debug/adasdf_build.exe tests/data/cube_closed_ascii.stl ../build/cube.sdfbin --near-surface-error 1e-4 --max-memory-mb 256 --compress
 ```
 
 The CLI validates output by reloading the generated `.sdfbin`.

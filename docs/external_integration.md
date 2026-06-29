@@ -6,9 +6,9 @@ external project without referencing the source tree.
 ## Build and Install
 
 ```bash
-cmake -S . -B build -DADASDF_CL_USE_EXISTING_CORE=OFF -DADASDF_CL_BUILD_TESTS=ON
-cmake --build build --config Release
-cmake --install build --config Release --prefix install
+cmake -S . -B ../build/adasdf_cl-install-demo -DADASDF_CL_USE_EXISTING_CORE=OFF -DADASDF_CL_BUILD_TESTS=ON
+cmake --build ../build/adasdf_cl-install-demo --config Release
+cmake --install ../build/adasdf_cl-install-demo --config Release --prefix ../build/adasdf_cl-install
 ```
 
 The install tree contains:

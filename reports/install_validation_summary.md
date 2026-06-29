@@ -41,24 +41,24 @@ cmake --build '<build>' --config Debug --parallel
 ```text
 适用于 .NET Framework MSBuild 版本 17.14.40+3e7442088
 
-  1>Checking Build System
-  Building Custom Rule <source>/CMakeLists.txt
   adasdf_cl_runtime.vcxproj -> <build>\Debug\adasdf_cl_runtime.lib
-  Building Custom Rule <source>/CMakeLists.txt
-  Building Custom Rule <source>/CMakeLists.txt
-  Building Custom Rule <source>/CMakeLists.txt
-  Building Custom Rule <source>/CMakeLists.txt
-  Building Custom Rule <source>/CMakeLists.txt
-  Building Custom Rule <source>/CMakeLists.txt
-  Building Custom Rule <source>/CMakeLists.txt
-  Building Custom Rule <source>/CMakeLists.txt
-  Building Custom Rule <source>/CMakeLists.txt
-  Building Custom Rule <source>/CMakeLists.txt
+  adasdf_build.vcxproj -> <build>\Debug\adasdf_build.exe
+  test_surrogate_recommender.vcxproj -> <build>\Debug\test_surrogate_recommender.exe
   test_sdfmodel_query.vcxproj -> <build>\Debug\test_sdfmodel_query.exe
+  adasdf_build_then_query.vcxproj -> <build>\Debug\adasdf_build_then_query.exe
+  test_contact_reducer.vcxproj -> <build>\Debug\test_contact_reducer.exe
+  test_sdf_io.vcxproj -> <build>\Debug\test_sdf_io.exe
+  test_cpu_narrowphase.vcxproj -> <build>\Debug\test_cpu_narrowphase.exe
   test_pair_distance_query.vcxproj -> <build>\Debug\test_pair_distance_query.exe
-  test_collision_query.vcxproj -> <build>\Debug\test_collision_query.exe
+  test_contact_only_sdfbin.vcxproj -> <build>\Debug\test_contact_only_sdfbin.exe
+  test_pair_collision_query.vcxproj -> <build>\Debug\test_pair_collision_query.exe
+  adasdf_fcl_style_api.vcxproj -> <build>\Debug\adasdf_fcl_style_api.exe
+  test_collision_object.vcxproj -> <build>\Debug\test_collision_object.exe
+  test_adaptive_builder.vcxproj -> <build>\Debug\test_adaptive_builder.exe
+  adasdf_contact_reduction_demo.vcxproj -> <build>\Debug\adasdf_contact_reduction_demo.exe
+  adasdf_collide.vcxproj -> <build>\Debug\adasdf_collide.exe
+  adasdf_query.vcxproj -> <build>\Debug\adasdf_query.exe
   adasdf_info.vcxproj -> <build>\Debug\adasdf_info.exe
-  Building Custom Rule <source>/CMakeLists.txt
 ...
 ```
 
@@ -107,18 +107,15 @@ cmake '-DADASDF_CL_INSTALL_PREFIX=<install>' '-DADASDF_CL_PACKAGE_TEST_BUILD=<bu
 -- Building AdaSDF-CL package consumer
 閫傜敤浜?.NET Framework MSBuild 鐗堟湰 17.14.40+3e7442088
 
-  1>Checking Build System
-  Building Custom Rule <local-path>
   test_find_package.vcxproj -> <local-path>
-  Building Custom Rule <local-path>
 -- Running AdaSDF-CL package consumer
 Test project <local-path>
     Start 1: AdaSDFCLPackageConsumer
-1/1 Test #1: AdaSDFCLPackageConsumer ..........   Passed    0.01 sec
+1/1 Test #1: AdaSDFCLPackageConsumer ..........   Passed    0.02 sec
 
 100% tests passed, 0 tests failed out of 1
 
-Total Test time (real) =   0.02 sec
+Total Test time (real) =   0.03 sec
 ```
 
 ### Downstream Configure: PASS
@@ -143,10 +140,7 @@ cmake --build '<workspace>/build/adasdf_cl_iv_ds' --config Debug --parallel
 ```text
 适用于 .NET Framework MSBuild 版本 17.14.40+3e7442088
 
-  1>Checking Build System
-  Building Custom Rule <source>/examples/downstream_cmake_project/CMakeLists.txt
   adasdf_downstream.vcxproj -> <build>_ds\Debug\adasdf_downstream.exe
-  Building Custom Rule <source>/examples/downstream_cmake_project/CMakeLists.txt
 ```
 
 ### Downstream Run: PASS

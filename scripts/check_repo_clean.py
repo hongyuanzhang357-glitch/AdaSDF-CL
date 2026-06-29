@@ -76,6 +76,8 @@ def main() -> int:
         ".sdfbin",
         ".zip",
         ".tgz",
+        ".7z",
+        ".rar",
     }
     forbidden_archive_names = (
         ".tar",
@@ -90,6 +92,17 @@ def main() -> int:
         "cpacksourceconfig.cmake",
         "ctesttestfile.cmake",
         "install_manifest.txt",
+    }
+    remote_placeholder_terms = [
+        "<" + "YOUR_GITHUB_REMOTE_URL" + ">",
+        "<" + "URL" + ">",
+        "github.com/" + "OWNER" + "/REPO",
+        "github.com/" + "your-org" + "/your-repo",
+        "git@github.com:" + "OWNER" + "/REPO.git",
+    ]
+    remote_placeholder_allowed = {
+        "docs/github_publication_commands.md",
+        "docs/adasdf_cl_github_publication_preflight_report.md",
     }
 
     for path in root.rglob("*"):
@@ -139,6 +152,10 @@ def main() -> int:
             for needle in forbidden_text:
                 if needle in text:
                     issues.append(f"forbidden text in {rel_text}")
+            if rel_text not in remote_placeholder_allowed:
+                for needle in remote_placeholder_terms:
+                    if needle in text:
+                        issues.append(f"remote URL placeholder in public file: {rel_text}")
 
     readme = root / "README.md"
     if readme.exists():
