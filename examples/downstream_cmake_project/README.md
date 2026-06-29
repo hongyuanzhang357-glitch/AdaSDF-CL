@@ -10,6 +10,6 @@ cmake --build build --config Release
 
 Windows multi-config generators place the executable under `build/Release/`.
 
-The example links `AdaSDFCL::adasdf_cl`, prints the public version string, and touches the runtime CPU backend. With no arguments it creates an analytic demo box, runs a point query, and performs a small collision query. Passing a `.sdfbin` path exercises `SDFBinReader::read()` and model metadata access.
+The example links `AdaSDFCL::adasdf_cl`, prints the public version string, and touches the runtime CPU backend. With no arguments it builds a core-free demo adaptive box, runs a point query, and performs a small collision query. Passing a `.sdfbin` path exercises `SDFBinReader::read()` and model metadata access.
 
-CUDA, FCL, Python, the existing research core, and the AdaSDF-CL source tree are not required for the package-only demo path.
+CUDA, FCL, Python, the existing research core, and the AdaSDF-CL source tree are not required for the package-only demo adaptive path.

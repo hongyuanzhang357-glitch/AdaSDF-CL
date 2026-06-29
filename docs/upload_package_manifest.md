@@ -1,32 +1,25 @@
 # Upload Package Manifest
 
-This manifest describes what belongs in a public AdaSDF-CL source upload for the current alpha line.
-
-## Recommended Public Tag
-
-Use `v0.8.0-alpha` for the first clone-only end-to-end demo pre-release.
-
-The earlier `v0.7.0-alpha`, `v0.7.0-alpha.1`, and `v0.7.0-alpha.2` tags are retained for traceability and should not be moved.
+Use `v0.9.0-alpha` for the surrogate-guided adaptive demo pre-release.
 
 ## Include
 
-- Source code under `include`, `src`, `tools`, `tests`, and `examples`
-- CMake packaging files under `cmake` and the root `CMakeLists.txt`
-- Public docs under `docs`
+- Source under `include`, `src`, `tools`, `tests`, and `examples`
+- Small public demo surrogate metadata under `models/surrogate/demo_v0_9`
+- CMake packaging files
+- Public docs
 - `README.md`, `CHANGELOG.md`, `LICENSE`, and `CITATION.cff`
-- GitHub CI and repository metadata
 
 ## Exclude
 
 - Build trees
 - Install trees
 - Generated archives
-- Local experiment outputs
+- Generated `.sdfbin` files
+- Generated `.svg` files
 - Raw/quarantine datasets
-- Generated `.sdfbin` files, including demo `.sdfbin` files
+- Large model artifacts, joblib files, training data, and local experiment outputs
 
-## Current Backend Note
+## Backend Note
 
-The public core-free package can configure, build, test, install, link from external CMake projects, and run a demo SDF query/collision workflow. The demo backend is analytic and box-only. Full adaptive compressed `.sdfbin` functionality currently requires existing-core enhanced builds or future standalone builder work.
-
-Existing-core downstream consumers may need additional dependency prefixes, such as vcpkg-installed packages, in `CMAKE_PREFIX_PATH`.
+v0.9 provides a demo surrogate and demo adaptive builder for analytic boxes. It does not provide a universal trained surrogate or full adaptive STL-to-compressed-SDF public builder.

@@ -118,6 +118,8 @@ int main(int argc, char** argv) {
     std::cout << "Candidate points: " << result.numCandidatePoints() << "\n";
     std::cout << "Raw contacts: " << result.numRawContacts() << "\n";
     std::cout << "Reduced contacts: " << result.numReducedContacts() << "\n";
+    std::cout << "Requested max contacts: " << request.max_contacts << "\n";
+    std::cout << "Returned contacts: " << result.contacts().size() << "\n";
     std::cout << "Contact count: " << result.contacts().size() << "\n";
     if (!result.contacts().empty()) {
       const Contact& contact = result.contacts().front();

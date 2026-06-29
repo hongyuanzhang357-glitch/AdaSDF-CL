@@ -1,5 +1,34 @@
 # Changelog
 
+## 0.9.0-alpha
+
+Surrogate-guided adaptive demo workflow and contact visualization.
+
+### Added
+
+- Experimental demo surrogate recommender.
+- Demo adaptive SDF builder using analytic box queries and adaptive metadata.
+- Demo adaptive `.sdfbin` format `ADASDF_DEMO_ADAPTIVE_SDFBIN_V1`.
+- `adasdf_recommend_demo` CLI.
+- `adasdf_build_demo_adaptive` CLI.
+- `adasdf_collide_boxes_demo` CLI with SVG output.
+- Pure SVG collision visualization writer.
+- Examples for surrogate-guided adaptive build and two-box collision with view.
+- Tests for demo recommender, adaptive metadata, adaptive sdfbin, max contacts, and SVG output.
+
+### Changed
+
+- Version updated to `0.9.0-alpha`.
+- README now documents the v0.9 clone-only surrogate-guided demo workflow.
+- Alpha validation now runs recommendation, adaptive build, info, query, collision, SVG checks, and clean checks.
+- `adasdf_collide` now reports requested and returned contact counts.
+
+### Notes
+
+- The v0.9 surrogate is experimental demo infrastructure only.
+- It is not universal, not fully trained, and not an optimality guarantee.
+- Full adaptive STL-to-compressed-SDF construction remains future work for the public standalone backend.
+
 ## 0.8.0-alpha
 
 Core-free standalone demo backend.

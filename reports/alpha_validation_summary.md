@@ -9,7 +9,7 @@
 ### Configure: PASS
 
 ```bash
-cmake -S '<source>' -B '<build>' -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD_TESTS=ON -DADASDF_CL_USE_EXISTING_CORE=OFF -DADASDF_CL_ENABLE_ADAPTIVE_BUILDER=ON -DADASDF_CL_ENABLE_SURROGATE_RECOMMENDER=ON -DADASDF_CL_ENABLE_DEMO_BACKEND=ON
+cmake -S '<source>' -B '<build>' -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD_TESTS=ON -DADASDF_CL_USE_EXISTING_CORE=OFF -DADASDF_CL_ENABLE_ADAPTIVE_BUILDER=ON -DADASDF_CL_ENABLE_SURROGATE_RECOMMENDER=ON -DADASDF_CL_ENABLE_DEMO_BACKEND=ON -DADASDF_CL_ENABLE_DEMO_SURROGATE=ON -DADASDF_CL_ENABLE_COLLISION_VIEWER=ON
 ```
 
 ```text
@@ -23,14 +23,14 @@ cmake -S '<source>' -B '<build>' -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD
 -- Detecting CXX compile features - done
 --
 -- AdaSDF-CL configuration:
---   Version: 0.8.0-alpha
+--   Version: 0.9.0-alpha
 --   Build examples: ON
 --   Build tests: ON
 --   Existing core requested: OFF
 --   Existing core found: OFF
 --   Adaptive builder: ON
 --   Surrogate recommender: ON
---   Core-free demo backend: ON
+--   Demo backend: ON
 ...
 ```
 
@@ -50,15 +50,15 @@ cmake --build '<build>' --config Release
   GpuBackend.cpp
   CompressedSDF.cpp
   AdaptiveSDFBuilder.cpp
+  DemoAdaptiveSDFBuilder.cpp
+  DemoSurrogateRecommender.cpp
   ExistingBuilderBridge.cpp
   SDFBuilder.cpp
   SurrogateRecommender.cpp
   AnalyticSDFModel.cpp
+  DemoAdaptiveSDFModel.cpp
   MeshModel.cpp
   SDFModel.cpp
-  Transform.cpp
-  ContactOnlySDFBin.cpp
-  DemoSDFBin.cpp
 ...
 ```
 
@@ -71,21 +71,21 @@ ctest --test-dir '<build>' -C Release --output-on-failure
 ```text
 Test project <build>
       Start  1: test_sdf_io
- 1/21 Test  #1: test_sdf_io ......................   Passed    0.01 sec
+ 1/27 Test  #1: test_sdf_io .......................   Passed    0.02 sec
       Start  2: test_collision_query
- 2/21 Test  #2: test_collision_query .............   Passed    0.01 sec
+ 2/27 Test  #2: test_collision_query ..............   Passed    0.02 sec
       Start  3: test_distance_query
- 3/21 Test  #3: test_distance_query ..............   Passed    0.01 sec
+ 3/27 Test  #3: test_distance_query ...............   Passed    0.02 sec
       Start  4: test_collision_object
- 4/21 Test  #4: test_collision_object ............   Passed    0.02 sec
+ 4/27 Test  #4: test_collision_object .............   Passed    0.03 sec
       Start  5: test_pair_distance_query
- 5/21 Test  #5: test_pair_distance_query .........   Passed    0.01 sec
+ 5/27 Test  #5: test_pair_distance_query ..........   Passed    0.02 sec
       Start  6: test_pair_collision_query
- 6/21 Test  #6: test_pair_collision_query ........   Passed    0.01 sec
+ 6/27 Test  #6: test_pair_collision_query .........   Passed    0.02 sec
       Start  7: test_candidate_point_sampler
- 7/21 Test  #7: test_candidate_point_sampler .....   Passed    0.01 sec
+ 7/27 Test  #7: test_candidate_point_sampler ......   Passed    0.02 sec
       Start  8: test_contact_generator
- 8/21 Test  #8: test_contact_generator ...........   Passed    0.01 sec
+ 8/27 Test  #8: test_contact_generator ............   Passed    0.02 sec
       Start  9: test_contact_reducer
 ...
 ```
@@ -110,55 +110,89 @@ Install validation: PASS
 Report: reports/install_validation_summary.md
 ```
 
-### Make Demo Box SDFBin: PASS
+### Demo Surrogate Recommendation: PASS
 
 ```bash
-'<build>/Release/adasdf_make_demo_box.exe' '<workspace>/build/cube_demo_v0_8.sdfbin'
+'<build>/Release/adasdf_recommend_demo.exe' --shape box --target-error 1e-3 --memory-mb 64 --block-memory-mb 16 --top-k 5
 ```
 
 ```text
-AdaSDF-CL demo box generator
-Output: <local-path>
+AdaSDF-CL demo surrogate recommender
+Status: experimental demo only
+Warning: experimental demo surrogate; not universal; not fully trained; not an optimality guarantee
+Surrogate: demo_v0_9
+Shape: box
+Requested top-k: 5
+
+Candidate[0]
+  target error: 0.001
+  predicted p95 error: 0.001
+  predicted memory: 0.492308 MB
+  confidence: 0.8
+  max octree level: 5
+  block resolution: 32
+  rank: 8
+  compression: demo_low_rank
+  warning: experimental demo surrogate; not universal; not fully trained; not an optimality guarantee
+
+...
+```
+
+### Build Demo Adaptive SDFBin: PASS
+
+```bash
+'<build>/Release/adasdf_build_demo_adaptive.exe' '<workspace>/build/cube_adaptive_v0_9.sdfbin' --shape box --target-error 1e-3 --memory-mb 64 --block-memory-mb 16 --use-surrogate
+```
+
+```text
+AdaSDF-CL demo adaptive builder
 Shape: box
 Center: 0 0 0
 Half extent: 0.5 0.5 0.5
-Backend: core-free analytic demo SDF backend
-Write status: success
+Target near-surface error: 0.001
+Memory limit: 64 MB
+Block memory limit: 16 MB
+Surrogate: demo_v0_9 experimental
+Warning: experimental demo surrogate; not universal; not fully trained; not an optimality guarantee
+Octree nodes: 6
+Blocks: 7
+Ranks: 8 7 6 8 7 6 8
+Output: <local-path>
 Reload validation: success
 ```
 
-### Demo Info CLI: PASS
+### Demo Adaptive Info CLI: PASS
 
 ```bash
-'<build>/Release/adasdf_info.exe' '<workspace>/build/cube_demo_v0_8.sdfbin'
+'<build>/Release/adasdf_info.exe' '<workspace>/build/cube_adaptive_v0_9.sdfbin'
 ```
 
 ```text
 AdaSDF-CL info
-Library version: 0.8.0-alpha
+Library version: 0.9.0-alpha
 Path: <local-path>
-Model name: analytic demo box
+Model name: demo adaptive analytic box
 Valid: yes
-Format: ADASDF_DEMO_SDFBIN_V1
+Format: ADASDF_DEMO_ADAPTIVE_SDFBIN_V1
 Shape: box
 Center: 0 0 0
 Half extent: 0.5 0.5 0.5
 Unit: m
-Format version: 1
-Query backend: core-free analytic demo SDF backend
-Query backend available: yes
-AABB min: -0.5 -0.5 -0.5
-AABB max: 0.5 0.5 0.5
-Fine cell count: 0
-Fine node count: 0
-Fine spacing: 0
+Target near-surface error: 0.001
+Memory limit MB: 64
+Block expand limit MB: 16
+Surrogate: demo_v0_9
+Warning: demo_surrogate_not_universal_not_fully_trained
+Demo octree nodes: 6
+Demo adaptive blocks: 7
+Block[0] resolution: 32
 ...
 ```
 
-### Demo Query CLI: PASS
+### Demo Adaptive Query CLI: PASS
 
 ```bash
-'<build>/Release/adasdf_query.exe' '<workspace>/build/cube_demo_v0_8.sdfbin' --point 0 0 0
+'<build>/Release/adasdf_query.exe' '<workspace>/build/cube_adaptive_v0_9.sdfbin' --point 0 0 0
 ```
 
 ```text
@@ -168,55 +202,45 @@ Point: 0 0 0
 Signed distance: -0.5
 Gradient: 1 0 0
 Normal: 1 0 0
-Query backend: core-free analytic demo SDF backend
+Query backend: core-free demo adaptive analytic SDF backend
 ```
 
-### Demo Collide CLI: PASS
+### Demo Collide Boxes CLI: PASS
 
 ```bash
-'<build>/Release/adasdf_collide.exe' '<workspace>/build/cube_demo_v0_8.sdfbin' '<workspace>/build/cube_demo_v0_8.sdfbin' --max-contacts 4
+'<build>/Release/adasdf_collide_boxes_demo.exe' --target-error 1e-3 --memory-mb 64 --offset 0.25 0 0 --max-contacts 8 --view '<workspace>/build/collision_v0_9.svg'
 ```
 
 ```text
-AdaSDF-CL collision query
-Model A: <local-path>
-Model B: <local-path>
-Offset B: 0 0 0
-AABB A: min=(-0.5 -0.5 -0.5) max=(0.5 0.5 0.5)
-AABB B: min=(-0.5 -0.5 -0.5) max=(0.5 0.5 0.5)
+AdaSDF-CL two-box demo collision
+Surrogate: demo_v0_9 experimental demo only
+Warning: experimental demo surrogate; not universal; not fully trained; not an optimality guarantee
+Offset B: 0.25 0 0
 Colliding: true
-Minimum distance: -0.5
+Minimum distance: -0.25
 Backend: CPU narrow-phase: symmetric SDF-sampling research preview
 Method: symmetric candidate-point SDF query + deterministic contact reduction
-Candidate points: 606
-Raw contacts: 606
-Reduced contacts: 4
-Contact count: 4
-Contact[0].point: 0 0 0
-Contact[0].normal: 1 0 0
-Contact[0].penetration_depth: 0.5
-Contact[0].signed_distance: -0.5
+Requested max contacts: 8
+Returned contacts: 8
+Contact[0]
+  point: 0 0 0
+  normal: -1 0 0
+  penetration_depth: 0.25
+Contact[1]
+  point: 0.5 -0.214286 -0.214286
+  normal: -1 -0 -0
+  penetration_depth: 0.25
 ...
 ```
 
-### Core-Free Demo Collision Example: PASS
+### Collision SVG Check: PASS
 
 ```bash
-'<build>/Release/adasdf_core_free_demo_collision.exe'
+check-collision-svg '<workspace>/build/collision_v0_9.svg'
 ```
 
 ```text
-AdaSDF-CL core-free demo collision
-Demo sdfbin: <local-path>
-Backend: core-free analytic demo SDF backend
-Colliding: true
-Minimum distance: -0.25
-Distance query: -0.25
-Contact count: 4
-Contact[0].point: 0 0 0
-Contact[0].normal: -1 0 0
-Contact[0].penetration_depth: 0.25
-Method: symmetric candidate-point SDF query + deterministic contact reduction
+collision SVG generated and contains contact markers.
 ```
 
 ### Clean Check: PASS

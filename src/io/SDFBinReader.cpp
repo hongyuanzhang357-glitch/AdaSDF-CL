@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <stdexcept>
 
+#include "adasdf/io/DemoAdaptiveSDFBin.h"
 #include "adasdf/io/DemoSDFBin.h"
 #include "adasdf/io/ExistingSDFBridge.h"
 
@@ -14,6 +15,9 @@ std::shared_ptr<SDFModel> SDFBinReader::read(const std::filesystem::path& path) 
   }
   if (!std::filesystem::exists(path)) {
     throw std::runtime_error("SDFBinReader::read file does not exist: " + path.string());
+  }
+  if (DemoAdaptiveSDFBin::canRead(path)) {
+    return DemoAdaptiveSDFBin::read(path);
   }
   if (DemoSDFBin::canRead(path)) {
     return DemoSDFBin::read(path);

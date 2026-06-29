@@ -1,24 +1,43 @@
 # Tools
 
-## adasdf_make_demo_box
+## adasdf_recommend_demo
 
 Status: working in a core-free public build.
 
-Creates a small text demo `.sdfbin` containing an analytic axis-aligned box.
+Runs the experimental v0.9 demo surrogate recommender.
+
+```bash
+adasdf_recommend_demo --shape box --target-error 1e-3 --memory-mb 64 --block-memory-mb 16 --top-k 5
+```
+
+The recommender is not universal, not fully trained, and not an optimality guarantee.
+
+## adasdf_build_demo_adaptive
+
+Status: working in a core-free public build.
+
+Builds a demo adaptive analytic box `.sdfbin` with octree, block, and rank metadata.
+
+```bash
+adasdf_build_demo_adaptive cube_adaptive.sdfbin --shape box --target-error 1e-3 --memory-mb 64 --block-memory-mb 16 --use-surrogate
+```
+
+## adasdf_collide_boxes_demo
+
+Status: working in a core-free public build.
+
+Builds two demo adaptive boxes in memory, collides them, enforces `--max-contacts`, and optionally writes an SVG view.
+
+```bash
+adasdf_collide_boxes_demo --target-error 1e-3 --memory-mb 64 --offset 0.25 0 0 --max-contacts 8 --view collision.svg
+```
+
+## adasdf_make_demo_box
+
+Creates the simpler v0.8 analytic demo `.sdfbin`.
 
 ```bash
 adasdf_make_demo_box cube_demo.sdfbin
-adasdf_make_demo_box generated/cube_demo.sdfbin --center 0 0 0 --half-extent 0.5 0.5 0.5 --unit m
-```
-
-Expected output includes:
-
-```text
-AdaSDF-CL demo box generator
-Shape: box
-Backend: core-free analytic demo SDF backend
-Write status: success
-Reload validation: success
 ```
 
 ## adasdf_build
@@ -31,64 +50,26 @@ Builds an STL into the full adaptive compressed `.sdfbin` format and validates t
 adasdf_build input.stl output.sdfbin --near-surface-error 1e-4 --max-memory-mb 256 --compress
 ```
 
-Useful options:
-
-- `--near-surface-error <value>`
-- `--max-memory-mb <value>`
-- `--block-expand-limit-mb <value>`
-- `--max-octree-level <value>`
-- `--max-rank <value>`
-- `--compress`
-- `--no-compress`
-- `--unit <name>`
-- `--use-surrogate`
-- `--top-k <value>`
-- `--verbose`
-
-If `--use-surrogate` is requested in the current alpha, the tool reports that the surrogate backend is unavailable and falls back to user-specified build options.
-
 ## adasdf_info
 
-Status: working for demo `.sdfbin` files and compatible existing-core `.sdfbin` files.
-
-Prints model metadata, format, shape information when available, AABB, memory footprint, format version, and query backend availability.
+Prints model metadata, format, shape information, AABB, memory footprint, adaptive demo metadata, format version, and query backend availability.
 
 ```bash
-adasdf_info cube_demo.sdfbin
-```
-
-Demo output includes:
-
-```text
-Format: ADASDF_DEMO_SDFBIN_V1
-Shape: box
-Query backend: core-free analytic demo SDF backend
-AABB min: -0.5 -0.5 -0.5
-AABB max: 0.5 0.5 0.5
+adasdf_info cube_adaptive.sdfbin
 ```
 
 ## adasdf_query
 
-Status: working when the loaded `.sdfbin` has an available CPU query backend.
-
 Samples one world-space point and prints signed distance, gradient, normal, and backend.
 
 ```bash
-adasdf_query cube_demo.sdfbin --point 0 0 0
+adasdf_query cube_adaptive.sdfbin --point 0 0 0
 ```
 
 ## adasdf_collide
 
-Status: working when both input `.sdfbin` files have compatible metadata and the CPU narrow-phase can sample them.
-
-Runs a two-object collision query with optional translation for object B.
+Runs a two-object collision query and reports requested/returned contact counts.
 
 ```bash
-adasdf_collide cube_demo.sdfbin cube_demo.sdfbin --offset 0.25 0 0 --max-contacts 4
+adasdf_collide object_a.sdfbin object_b.sdfbin --offset 0.25 0 0 --max-contacts 8
 ```
-
-Output includes collision state, minimum distance, backend, method, candidate points, raw contacts, reduced contacts, contact count, and first contact details when available.
-
-## Planned Tools
-
-- `adasdf_benchmark`

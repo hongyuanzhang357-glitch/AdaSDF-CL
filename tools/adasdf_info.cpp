@@ -68,6 +68,34 @@ int main(int argc, char** argv) {
       printVec("Half extent: ", analytic->halfExtent());
       std::cout << "Unit: " << analytic->unit() << "\n";
     }
+    if (const auto adaptive =
+            std::dynamic_pointer_cast<DemoAdaptiveSDFModel>(model)) {
+      const auto& description = adaptive->description();
+      std::cout << "Shape: " << adaptive->shapeName() << "\n";
+      printVec("Center: ", adaptive->center());
+      printVec("Half extent: ", adaptive->halfExtent());
+      std::cout << "Unit: " << adaptive->unit() << "\n";
+      std::cout << "Target near-surface error: "
+                << description.target_near_surface_error << "\n";
+      std::cout << "Memory limit MB: " << description.memory_limit_mb << "\n";
+      std::cout << "Block expand limit MB: "
+                << description.block_expand_limit_mb << "\n";
+      std::cout << "Surrogate: " << description.surrogate_id << "\n";
+      std::cout << "Warning: " << description.warning << "\n";
+      std::cout << "Demo octree nodes: "
+                << adaptive->octreeNodes().size() << "\n";
+      std::cout << "Demo adaptive blocks: "
+                << adaptive->blocks().size() << "\n";
+      if (!adaptive->blocks().empty()) {
+        const DemoBlockInfo& block = adaptive->blocks().front();
+        std::cout << "Block[0] resolution: " << block.resolution << "\n";
+        std::cout << "Block[0] rank: " << block.rank << "\n";
+        std::cout << "Block[0] estimated error: "
+                  << block.estimated_error << "\n";
+        std::cout << "Block[0] estimated memory KB: "
+                  << block.estimated_memory_kb << "\n";
+      }
+    }
     std::cout << "Format version: " << metadata.format_version << "\n";
     std::cout << "Query backend: "
               << (metadata.query_backend.empty() ? "unavailable" : metadata.query_backend)

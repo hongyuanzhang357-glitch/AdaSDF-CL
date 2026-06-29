@@ -17,6 +17,8 @@ option(ADASDF_CL_USE_EXISTING_CORE "Use existing OctreeBlockLowRankSDF core for 
 option(ADASDF_CL_ENABLE_ADAPTIVE_BUILDER "Enable adaptive SDF builder API" ON)
 option(ADASDF_CL_ENABLE_SURROGATE_RECOMMENDER "Enable DASH-SDF surrogate recommendation API" ON)
 option(ADASDF_CL_ENABLE_DEMO_BACKEND "Enable core-free analytic demo SDF backend" ON)
+option(ADASDF_CL_ENABLE_DEMO_SURROGATE "Enable demo surrogate recommender" ON)
+option(ADASDF_CL_ENABLE_COLLISION_VIEWER "Enable SVG collision visualization" ON)
 
 set(ADASDF_CL_EXISTING_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/.." CACHE PATH
   "Path to the existing OctreeBlockLowRankSDF project root")
@@ -54,14 +56,18 @@ set(ADASDF_CL_RUNTIME_SOURCES
   src/backend/GpuBackend.cpp
   src/compression/CompressedSDF.cpp
   src/generation/AdaptiveSDFBuilder.cpp
+  src/generation/DemoAdaptiveSDFBuilder.cpp
+  src/generation/DemoSurrogateRecommender.cpp
   src/generation/ExistingBuilderBridge.cpp
   src/generation/SDFBuilder.cpp
   src/generation/SurrogateRecommender.cpp
   src/geometry/AnalyticSDFModel.cpp
+  src/geometry/DemoAdaptiveSDFModel.cpp
   src/geometry/MeshModel.cpp
   src/geometry/SDFModel.cpp
   src/geometry/Transform.cpp
   src/io/ContactOnlySDFBin.cpp
+  src/io/DemoAdaptiveSDFBin.cpp
   src/io/DemoSDFBin.cpp
   src/io/ExistingSDFBridge.cpp
   src/io/SDFBinReader.cpp
@@ -74,7 +80,8 @@ set(ADASDF_CL_RUNTIME_SOURCES
   src/query/CpuNarrowPhase.cpp
   src/query/DistanceResult.cpp
   src/query/ExistingPairCollisionBridge.cpp
-  src/query/QueryAPI.cpp)
+  src/query/QueryAPI.cpp
+  src/visualization/CollisionSVGWriter.cpp)
 
 set(ADASDF_CL_HAS_EXISTING_CORE OFF)
 
@@ -166,7 +173,9 @@ message(STATUS "  Existing core requested: ${ADASDF_CL_USE_EXISTING_CORE}")
 message(STATUS "  Existing core found: ${ADASDF_CL_HAS_EXISTING_CORE}")
 message(STATUS "  Adaptive builder: ${ADASDF_CL_ENABLE_ADAPTIVE_BUILDER}")
 message(STATUS "  Surrogate recommender: ${ADASDF_CL_ENABLE_SURROGATE_RECOMMENDER}")
-message(STATUS "  Core-free demo backend: ${ADASDF_CL_ENABLE_DEMO_BACKEND}")
+message(STATUS "  Demo backend: ${ADASDF_CL_ENABLE_DEMO_BACKEND}")
+message(STATUS "  Demo surrogate: ${ADASDF_CL_ENABLE_DEMO_SURROGATE}")
+message(STATUS "  Collision SVG viewer: ${ADASDF_CL_ENABLE_COLLISION_VIEWER}")
 message(STATUS "  CUDA: not required")
 message(STATUS "  FCL: not required")
 message(STATUS "")
@@ -179,7 +188,9 @@ target_compile_definitions(adasdf_cl_runtime PUBLIC
   ADASDF_CL_HAS_EXISTING_CORE=$<BOOL:${ADASDF_CL_HAS_EXISTING_CORE}>
   ADASDF_CL_ENABLE_ADAPTIVE_BUILDER=$<BOOL:${ADASDF_CL_ENABLE_ADAPTIVE_BUILDER}>
   ADASDF_CL_ENABLE_SURROGATE_RECOMMENDER=$<BOOL:${ADASDF_CL_ENABLE_SURROGATE_RECOMMENDER}>
-  ADASDF_CL_ENABLE_DEMO_BACKEND=$<BOOL:${ADASDF_CL_ENABLE_DEMO_BACKEND}>)
+  ADASDF_CL_ENABLE_DEMO_BACKEND=$<BOOL:${ADASDF_CL_ENABLE_DEMO_BACKEND}>
+  ADASDF_CL_ENABLE_DEMO_SURROGATE=$<BOOL:${ADASDF_CL_ENABLE_DEMO_SURROGATE}>
+  ADASDF_CL_ENABLE_COLLISION_VIEWER=$<BOOL:${ADASDF_CL_ENABLE_COLLISION_VIEWER}>)
 
 if(ADASDF_CL_HAS_EXISTING_CORE)
   target_link_libraries(adasdf_cl_runtime PRIVATE adasdf_existing_core)
@@ -192,7 +203,9 @@ set(ADASDF_CL_EXAMPLE_SOURCES
   examples/04_batched_gpu_query.cpp
   examples/05_fcl_style_api.cpp
   examples/07_contact_reduction_demo.cpp
-  examples/08_core_free_demo_collision.cpp)
+  examples/08_core_free_demo_collision.cpp
+  examples/09_surrogate_adaptive_demo.cpp
+  examples/10_two_box_collision_with_view.cpp)
 
 if(ADASDF_CL_BUILD_EXAMPLES)
   add_executable(adasdf_load_sdfbin_and_query
@@ -219,6 +232,14 @@ if(ADASDF_CL_BUILD_EXAMPLES)
     examples/08_core_free_demo_collision.cpp)
   target_link_libraries(adasdf_core_free_demo_collision PRIVATE adasdf::cl_runtime)
 
+  add_executable(adasdf_surrogate_adaptive_demo
+    examples/09_surrogate_adaptive_demo.cpp)
+  target_link_libraries(adasdf_surrogate_adaptive_demo PRIVATE adasdf::cl_runtime)
+
+  add_executable(adasdf_two_box_collision_with_view
+    examples/10_two_box_collision_with_view.cpp)
+  target_link_libraries(adasdf_two_box_collision_with_view PRIVATE adasdf::cl_runtime)
+
   add_custom_target(adasdf_cl_api_preview_examples SOURCES
     examples/01_build_adaptive_sdf.cpp
     examples/04_batched_gpu_query.cpp)
@@ -239,6 +260,15 @@ target_link_libraries(adasdf_collide PRIVATE adasdf_cl_runtime)
 add_executable(adasdf_make_demo_box tools/adasdf_make_demo_box.cpp)
 target_link_libraries(adasdf_make_demo_box PRIVATE adasdf_cl_runtime)
 
+add_executable(adasdf_recommend_demo tools/adasdf_recommend_demo.cpp)
+target_link_libraries(adasdf_recommend_demo PRIVATE adasdf_cl_runtime)
+
+add_executable(adasdf_build_demo_adaptive tools/adasdf_build_demo_adaptive.cpp)
+target_link_libraries(adasdf_build_demo_adaptive PRIVATE adasdf_cl_runtime)
+
+add_executable(adasdf_collide_boxes_demo tools/adasdf_collide_boxes_demo.cpp)
+target_link_libraries(adasdf_collide_boxes_demo PRIVATE adasdf_cl_runtime)
+
 set(ADASDF_CL_TEST_SOURCES
   tests/test_sdf_io.cpp
   tests/test_collision_query.cpp
@@ -255,6 +285,12 @@ set(ADASDF_CL_TEST_SOURCES
   tests/test_demo_sdfbin.cpp
   tests/test_core_free_demo_collision.cpp
   tests/test_make_demo_box_cli.cpp
+  tests/test_demo_surrogate_recommender.cpp
+  tests/test_demo_adaptive_sdf_model.cpp
+  tests/test_demo_adaptive_sdfbin.cpp
+  tests/test_demo_adaptive_builder.cpp
+  tests/test_collide_boxes_demo.cpp
+  tests/test_collision_svg_writer.cpp
   tests/test_adaptive_builder.cpp
   tests/test_sdfbin_writer_roundtrip.cpp
   tests/test_surrogate_recommender.cpp
@@ -312,7 +348,10 @@ set(ADASDF_CL_INSTALL_TOOL_TARGETS
   adasdf_info
   adasdf_query
   adasdf_collide
-  adasdf_make_demo_box)
+  adasdf_make_demo_box
+  adasdf_recommend_demo
+  adasdf_build_demo_adaptive
+  adasdf_collide_boxes_demo)
 
 install(TARGETS ${ADASDF_CL_INSTALL_TARGETS}
   EXPORT AdaSDFCLTargets
@@ -366,6 +405,7 @@ set(CPACK_SOURCE_IGNORE_FILES
   "\\\\.sdfbin$"
   "\\\\.npz$"
   "\\\\.log$"
+  "\\\\.svg$"
   "\\\\.zip$"
   "\\\\.tar\\\\.gz$"
   "/data/raw_stl/"

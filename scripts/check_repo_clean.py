@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Release hygiene check for the AdaSDF-CL subtree.
 
-Generated demo `.sdfbin` files must stay in build or temporary directories.
+Generated demo `.sdfbin` and `.svg` files must stay in build or temporary
+directories.
 """
 
 from __future__ import annotations
@@ -81,6 +82,7 @@ def main() -> int:
         ".tgz",
         ".7z",
         ".rar",
+        ".svg",
     }
     forbidden_archive_names = (
         ".tar",

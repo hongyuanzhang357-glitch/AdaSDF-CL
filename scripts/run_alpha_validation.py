@@ -169,6 +169,8 @@ def main() -> int:
         "-DADASDF_CL_ENABLE_ADAPTIVE_BUILDER=ON",
         "-DADASDF_CL_ENABLE_SURROGATE_RECOMMENDER=ON",
         "-DADASDF_CL_ENABLE_DEMO_BACKEND=ON",
+        "-DADASDF_CL_ENABLE_DEMO_SURROGATE=ON",
+        "-DADASDF_CL_ENABLE_COLLISION_VIEWER=ON",
     ]
     steps = [
         ("Configure", configure),
@@ -218,15 +220,15 @@ def main() -> int:
             )
         )
 
-    demo_sdfbin = build.parent / "cube_demo_v0_8.sdfbin"
+    demo_sdfbin = build.parent / "cube_adaptive_v0_9.sdfbin"
+    collision_svg = build.parent / "collision_v0_9.svg"
+    max_contacts = 8
     required_demo_tools = {
-        "adasdf_make_demo_box": find_executable(build, "adasdf_make_demo_box", config),
+        "adasdf_recommend_demo": find_executable(build, "adasdf_recommend_demo", config),
+        "adasdf_build_demo_adaptive": find_executable(build, "adasdf_build_demo_adaptive", config),
         "adasdf_info": find_executable(build, "adasdf_info", config),
         "adasdf_query": find_executable(build, "adasdf_query", config),
-        "adasdf_collide": find_executable(build, "adasdf_collide", config),
-        "adasdf_core_free_demo_collision": find_executable(
-            build, "adasdf_core_free_demo_collision", config
-        ),
+        "adasdf_collide_boxes_demo": find_executable(build, "adasdf_collide_boxes_demo", config),
     }
     missing_demo_tools = [
         name for name, path in required_demo_tools.items() if path is None
@@ -244,15 +246,43 @@ def main() -> int:
 
     demo_steps = [
         (
-            "Make Demo Box SDFBin",
-            [str(required_demo_tools["adasdf_make_demo_box"]), str(demo_sdfbin)],
+            "Demo Surrogate Recommendation",
+            [
+                str(required_demo_tools["adasdf_recommend_demo"]),
+                "--shape",
+                "box",
+                "--target-error",
+                "1e-3",
+                "--memory-mb",
+                "64",
+                "--block-memory-mb",
+                "16",
+                "--top-k",
+                "5",
+            ],
         ),
         (
-            "Demo Info CLI",
+            "Build Demo Adaptive SDFBin",
+            [
+                str(required_demo_tools["adasdf_build_demo_adaptive"]),
+                str(demo_sdfbin),
+                "--shape",
+                "box",
+                "--target-error",
+                "1e-3",
+                "--memory-mb",
+                "64",
+                "--block-memory-mb",
+                "16",
+                "--use-surrogate",
+            ],
+        ),
+        (
+            "Demo Adaptive Info CLI",
             [str(required_demo_tools["adasdf_info"]), str(demo_sdfbin)],
         ),
         (
-            "Demo Query CLI",
+            "Demo Adaptive Query CLI",
             [
                 str(required_demo_tools["adasdf_query"]),
                 str(demo_sdfbin),
@@ -263,18 +293,22 @@ def main() -> int:
             ],
         ),
         (
-            "Demo Collide CLI",
+            "Demo Collide Boxes CLI",
             [
-                str(required_demo_tools["adasdf_collide"]),
-                str(demo_sdfbin),
-                str(demo_sdfbin),
+                str(required_demo_tools["adasdf_collide_boxes_demo"]),
+                "--target-error",
+                "1e-3",
+                "--memory-mb",
+                "64",
+                "--offset",
+                "0.25",
+                "0",
+                "0",
                 "--max-contacts",
-                "4",
+                str(max_contacts),
+                "--view",
+                str(collision_svg),
             ],
-        ),
-        (
-            "Core-Free Demo Collision Example",
-            [str(required_demo_tools["adasdf_core_free_demo_collision"])],
         ),
     ]
 
@@ -284,6 +318,39 @@ def main() -> int:
         if result.returncode != 0:
             write_report(report_path, results, source, build, config)
             return result.returncode
+        if name == "Demo Collide Boxes CLI":
+            match = re.search(r"Returned contacts:\s+(\d+)", result.output)
+            if not match or int(match.group(1)) > max_contacts:
+                result.returncode = 1
+                result.output += (
+                    "\nValidation failed: returned contacts were missing or "
+                    "exceeded requested max contacts.\n"
+                )
+                write_report(report_path, results, source, build, config)
+                return result.returncode
+
+    svg_status = 0
+    svg_output = ""
+    if not collision_svg.exists():
+        svg_status = 1
+        svg_output = "collision SVG was not generated."
+    else:
+        svg_text = collision_svg.read_text(encoding="utf-8", errors="replace")
+        if "<svg" not in svg_text or "contact-marker" not in svg_text:
+            svg_status = 1
+            svg_output = "collision SVG is missing <svg or contact markers."
+        else:
+            svg_output = "collision SVG generated and contains contact markers."
+    svg_result = StepResult(
+        "Collision SVG Check",
+        ["check-collision-svg", str(collision_svg)],
+        svg_status,
+        svg_output,
+    )
+    results.append(svg_result)
+    if svg_result.returncode != 0:
+        write_report(report_path, results, source, build, config)
+        return svg_result.returncode
 
     clean_result = run_step(
         "Clean Check",

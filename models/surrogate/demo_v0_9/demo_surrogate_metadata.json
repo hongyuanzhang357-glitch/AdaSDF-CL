@@ -1,0 +1,31 @@
+{
+  "id": "demo_v0_9",
+  "kind": "deterministic_cpp_demo_rule_table",
+  "status": "experimental_demo_only",
+  "scope": "axis_aligned_box_public_workflow_smoke_test",
+  "warnings": [
+    "not universal",
+    "not fully trained",
+    "not an optimality guarantee",
+    "not an industrial parameter selector",
+    "not a reliable recommender for arbitrary STL inputs"
+  ],
+  "inputs": [
+    "shape_type",
+    "target_near_surface_error",
+    "memory_limit_mb",
+    "block_expand_limit_mb",
+    "top_k"
+  ],
+  "outputs": [
+    "max_octree_level",
+    "base_block_cells",
+    "max_rank",
+    "predicted_p95_error",
+    "predicted_memory_mb",
+    "confidence"
+  ],
+  "contains_trained_model": false,
+  "contains_raw_training_data": false,
+  "contains_local_paths": false
+}

@@ -28,7 +28,10 @@ int main(int argc, char** argv) {
             << "\n";
 
   if (argc == 1) {
-    auto model = adasdf::AnalyticSDFModel::createBox();
+    adasdf::DemoAdaptiveBuildRequest build_request;
+    build_request.use_surrogate = true;
+    const auto build = adasdf::DemoAdaptiveSDFBuilder::build(build_request);
+    const auto model = build.model;
     const double phi = model->sampleDistance({0.0, 0.0, 0.0});
 
     adasdf::CollisionObject a(model);
@@ -41,8 +44,9 @@ int main(int argc, char** argv) {
     adasdf::CollisionResult result;
     const bool hit = adasdf::collide(a, b, request, result);
 
-    std::cout << "No .sdfbin supplied; running core-free analytic demo.\n";
+    std::cout << "No .sdfbin supplied; running core-free demo adaptive path.\n";
     std::cout << "Demo signed distance at origin: " << phi << "\n";
+    std::cout << "Demo adaptive blocks: " << model->blocks().size() << "\n";
     std::cout << "Demo colliding: " << (hit ? "true" : "false") << "\n";
     std::cout << "Demo contacts: " << result.contacts().size() << "\n";
     return backend && std::isfinite(phi) && hit ? 0 : 1;
