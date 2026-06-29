@@ -3,7 +3,10 @@
 #include <exception>
 #include <filesystem>
 #include <iostream>
+#include <stdexcept>
 #include <string>
+#include <utility>
+#include <vector>
 
 namespace {
 
@@ -15,6 +18,9 @@ void usage() {
       << "  --max-contacts value    Maximum contacts to report, default 32\n"
       << "  --tolerance value       Contact tolerance, default 1e-4\n"
       << "  --grid-resolution value Candidate grid resolution, default 8\n"
+      << "  --backend cpu|cuda      Query backend, default cpu\n"
+      << "  --expansion none|global|block\n"
+      << "  --blocks all|0,1,2      Block selection for block expansion\n"
       << "  --no-contact            Only report collision state and distance\n";
 }
 
@@ -33,6 +39,77 @@ void printAABB(const char* label, const adasdf::AABB& aabb) {
     return;
   }
   std::cout << "min=(" << aabb.min << ") max=(" << aabb.max << ")\n";
+}
+
+std::vector<std::string> splitList(const std::string& text) {
+  std::vector<std::string> values;
+  std::string current;
+  for (const char ch : text) {
+    if (ch == ',') {
+      if (!current.empty()) {
+        values.push_back(current);
+      }
+      current.clear();
+    } else {
+      current.push_back(ch);
+    }
+  }
+  if (!current.empty()) {
+    values.push_back(current);
+  }
+  return values;
+}
+
+adasdf::QueryBackend parseQueryBackend(const std::string& text) {
+  if (text == "cpu") {
+    return adasdf::QueryBackend::CPU;
+  }
+  if (text == "cuda") {
+    return adasdf::QueryBackend::CUDA;
+  }
+  if (text == "auto") {
+    return adasdf::QueryBackend::Auto;
+  }
+  throw std::runtime_error("backend must be cpu, cuda, or auto");
+}
+
+adasdf::BackendType toBackendType(adasdf::QueryBackend backend) {
+  switch (backend) {
+    case adasdf::QueryBackend::CPU:
+      return adasdf::BackendType::CPU;
+    case adasdf::QueryBackend::CUDA:
+      return adasdf::BackendType::CUDA;
+    case adasdf::QueryBackend::Auto:
+      return adasdf::BackendType::Auto;
+  }
+  return adasdf::BackendType::CPU;
+}
+
+adasdf::QueryExpansionMode parseExpansion(const std::string& text) {
+  if (text == "none") {
+    return adasdf::QueryExpansionMode::None;
+  }
+  if (text == "global") {
+    return adasdf::QueryExpansionMode::Global;
+  }
+  if (text == "block") {
+    return adasdf::QueryExpansionMode::Block;
+  }
+  if (text == "auto") {
+    return adasdf::QueryExpansionMode::Auto;
+  }
+  throw std::runtime_error("expansion must be none, global, block, or auto");
+}
+
+adasdf::BlockSelection parseBlocks(const std::string& text) {
+  if (text.empty() || text == "all") {
+    return adasdf::BlockSelection::all();
+  }
+  std::vector<int> ids;
+  for (const std::string& item : splitList(text)) {
+    ids.push_back(std::stoi(item));
+  }
+  return adasdf::BlockSelection::selected(std::move(ids));
 }
 
 }  // namespace
@@ -60,6 +137,7 @@ int main(int argc, char** argv) {
   request.enable_gradient = true;
   request.backend = BackendType::CPU;
   request.query_mode = QueryMode::Balanced;
+  bool expansion_set = false;
 
   for (int i = 3; i < argc; ++i) {
     const std::string arg = argv[i];
@@ -71,6 +149,14 @@ int main(int argc, char** argv) {
       request.contact_tolerance = std::stod(argv[++i]);
     } else if (arg == "--grid-resolution" && hasValue(i, argc)) {
       request.candidate_grid_resolution = std::stoi(argv[++i]);
+    } else if (arg == "--backend" && hasValue(i, argc)) {
+      request.query_mode_config.backend = parseQueryBackend(argv[++i]);
+      request.backend = toBackendType(request.query_mode_config.backend);
+    } else if (arg == "--expansion" && hasValue(i, argc)) {
+      request.query_mode_config.expansion = parseExpansion(argv[++i]);
+      expansion_set = true;
+    } else if (arg == "--blocks" && hasValue(i, argc)) {
+      request.query_mode_config.block_selection = parseBlocks(argv[++i]);
     } else if (arg == "--no-contact") {
       request.enable_contact = false;
       request.max_contacts = 0;
@@ -82,6 +168,9 @@ int main(int argc, char** argv) {
       usage();
       return 2;
     }
+  }
+  if (!expansion_set && request.query_mode_config.backend == QueryBackend::CUDA) {
+    request.query_mode_config.expansion = QueryExpansionMode::Global;
   }
 
   if (!std::filesystem::exists(path_a)) {
@@ -114,6 +203,12 @@ int main(int argc, char** argv) {
     std::cout << "Colliding: " << (hit ? "true" : "false") << "\n";
     std::cout << "Minimum distance: " << result.minimumDistance() << "\n";
     std::cout << "Backend: " << result.backendInfo() << "\n";
+    std::cout << "Requested query backend: "
+              << toString(request.query_mode_config.backend) << "\n";
+    std::cout << "Requested expansion: "
+              << toString(request.query_mode_config.expansion) << "\n";
+    std::cout << "Requested blocks: "
+              << blockSelectionString(request.query_mode_config.block_selection) << "\n";
     std::cout << "Method: " << result.methodInfo() << "\n";
     std::cout << "Candidate points: " << result.numCandidatePoints() << "\n";
     std::cout << "Raw contacts: " << result.numRawContacts() << "\n";

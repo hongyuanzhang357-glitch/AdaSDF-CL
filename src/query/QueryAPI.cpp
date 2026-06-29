@@ -1,6 +1,7 @@
 #include "adasdf/query/QueryAPI.h"
 
 #include <stdexcept>
+#include <string>
 
 #include "adasdf/query/CpuNarrowPhase.h"
 #include "adasdf/query/ExistingPairCollisionBridge.h"
@@ -8,11 +9,26 @@
 namespace adasdf {
 namespace {
 
-void requireCPUBackend(BackendType backend) {
-  if (backend == BackendType::CUDA) {
+void validateCollisionQueryMode(const QueryModeConfig& config) {
+  try {
+    validateQueryModeConfig(config);
+  } catch (const std::runtime_error& error) {
+    const std::string message = error.what();
+    if (message.find("CUDA backend requires pre-expanded SDF data") !=
+        std::string::npos) {
+      throw std::runtime_error(
+          "CUDA collision query requires pre-expanded SDF data.");
+    }
+    throw;
+  }
+}
+
+void validateLegacyBackend(BackendType backend, const QueryModeConfig& config) {
+  if (backend == BackendType::CUDA &&
+      config.backend == QueryBackend::CPU &&
+      config.expansion == QueryExpansionMode::None) {
     throw std::runtime_error(
-        "AdaSDF-CL v0.5 pair query supports CPU narrow-phase only; CUDA "
-        "batched pair query is still a TODO.");
+        "CUDA collision query requires pre-expanded SDF data.");
   }
 }
 
@@ -23,7 +39,8 @@ bool collide(
     const CollisionObject& obj_b,
     const CollisionRequest& request,
     CollisionResult& result) {
-  requireCPUBackend(request.backend);
+  validateLegacyBackend(request.backend, request.query_mode_config);
+  validateCollisionQueryMode(request.query_mode_config);
 
   if (ExistingPairCollisionBridge::isAvailable()) {
     return ExistingPairCollisionBridge::collide(obj_a, obj_b, request, result);
@@ -37,7 +54,8 @@ Scalar distance(
     const CollisionObject& obj_b,
     const DistanceRequest& request,
     DistanceResult& result) {
-  requireCPUBackend(request.backend);
+  validateLegacyBackend(request.backend, request.query_mode_config);
+  validateCollisionQueryMode(request.query_mode_config);
 
   if (ExistingPairCollisionBridge::isAvailable()) {
     return ExistingPairCollisionBridge::distance(obj_a, obj_b, request, result);

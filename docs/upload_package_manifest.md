@@ -1,6 +1,6 @@
 # Upload Package Manifest
 
-Use `v1.0.0-alpha` for the optional CUDA batch query benchmark pre-release.
+Use `v1.0.1-alpha` for the query-mode and GPU-resident expanded SDF pre-release.
 
 ## Include
 
@@ -24,4 +24,4 @@ Use `v1.0.0-alpha` for the optional CUDA batch query benchmark pre-release.
 
 ## Backend Note
 
-v1.0 provides CPU batch query and optional CUDA batch query for analytic/demo adaptive boxes. It does not provide full low-rank compressed SDF GPU expansion, a universal trained surrogate, or full adaptive STL-to-compressed-SDF public builder.
+v1.0.1 provides CPU direct, CPU expanded, and optional CUDA resident expanded SDF batch query modes for analytic/demo adaptive boxes. It does not provide CUDA compressed-direct query, full low-rank compressed SDF GPU expansion, a universal trained surrogate, or a full adaptive STL-to-compressed-SDF public builder.

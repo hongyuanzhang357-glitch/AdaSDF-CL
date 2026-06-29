@@ -320,7 +320,7 @@ def main() -> int:
                 str(required_demo_tools["adasdf_benchmark_batch_query"]),
                 "--points",
                 "10000,100000,1000000",
-                "--backend",
+                "--query-backend",
                 "cpu,cuda",
                 "--out",
                 str(benchmark_csv),
@@ -352,20 +352,28 @@ def main() -> int:
                 return result.returncode
             csv_text = benchmark_csv.read_text(encoding="utf-8", errors="replace")
             required_fields = [
-                "backend",
+                "query_backend",
+                "expansion_mode",
+                "selected_blocks",
                 "num_points",
-                "total_ms",
+                "expanded_memory_mb",
+                "gpu_resident_memory_mb",
+                "setup_ms",
+                "query_kernel_ms",
+                "query_total_ms",
                 "ns_per_query",
                 "queries_per_second",
+                "fallback_count",
                 "max_abs_phi_error",
                 "max_normal_error",
-                "speedup_vs_cpu",
                 "cuda_available",
+                "status",
+                "error_message",
             ]
             missing_fields = [
                 field for field in required_fields if field not in csv_text.splitlines()[0]
             ]
-            if missing_fields or "cpu,10000" not in csv_text:
+            if missing_fields or "cpu,none,all,10000" not in csv_text:
                 result.returncode = 1
                 result.output += (
                     "\nValidation failed: benchmark CSV missing fields or CPU rows: "

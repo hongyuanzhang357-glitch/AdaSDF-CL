@@ -1,5 +1,34 @@
 # Changelog
 
+## 1.0.1-alpha
+
+Query mode, expansion mode, and GPU-resident expanded SDF query backend.
+
+### Added
+
+- `QueryModeConfig` for explicit backend, expansion, block selection, CPU fallback, and resident-data settings.
+- `ExpandedSDF`, `SDFExpander`, and `QueryEngine` for CPU direct, CPU global-expanded, CPU block-expanded, CUDA global-expanded, and CUDA block-expanded query paths.
+- CUDA resident expanded SDF upload/query/release path for pre-expanded global and block dense SDF data.
+- `adasdf_query_mode_demo` CLI for CPU/CUDA query-mode smoke testing.
+- `adasdf_collide --backend`, `--expansion`, and `--blocks` options wired into collision requests.
+- Benchmark CLI flags for query backend, expansion mode, selected blocks, global/block resolution, resident data, and richer CSV fields.
+- Tests for query-mode validation, block selection, SDF expansion, CPU QueryEngine, CUDA QueryEngine, and the query-mode CLI.
+- Query-mode, GPU backend, benchmark, original UI CUDA audit, validation, release-draft, and v1.0.1 summary documentation.
+
+### Changed
+
+- Version updated to `1.0.1-alpha`.
+- `CollisionRequest` and `DistanceRequest` now carry optional query-mode configuration while preserving CPU direct defaults.
+- CUDA query validation now rejects compressed-direct mode with a clear error and requires `Global` or `Block` expansion.
+- Benchmark output now reports memory, setup time, CUDA kernel time, total query time, fallback count, numerical error, CUDA availability, status, and error message.
+
+### Notes
+
+- CUDA remains optional and disabled by default.
+- CUDA compressed-direct query is not implemented; `CUDA + None` is intentionally invalid.
+- CUDA pair collision still uses the existing CPU narrow-phase path after request validation. This release does not claim an industrial GPU contact solver.
+- The resident CUDA backend currently targets pre-expanded analytic/demo adaptive box SDF data. Full low-rank compressed SDF GPU expansion remains future work.
+
 ## 1.0.0-alpha
 
 Optional CUDA batch query backend and CPU/GPU benchmark tooling.

@@ -14,10 +14,17 @@ cmake -S '<source>' -B '<build>' -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD
 ```
 
 ```text
+-- Building for: Visual Studio 17 2022
 -- Selecting Windows SDK version 10.0.22621.0 to target Windows 10.0.26200.
+-- The CXX compiler identification is MSVC 19.42.34444.0
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.42.34433/bin/Hostx64/x64/cl.exe - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
 --
 -- AdaSDF-CL configuration:
---   Version: 1.0.0-alpha
+--   Version: 1.0.1-alpha
 --   Build examples: ON
 --   Build tests: ON
 --   Benchmarks: ON
@@ -27,13 +34,6 @@ cmake -S '<source>' -B '<build>' -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD
 --   Surrogate recommender: ON
 --   Demo backend: ON
 --   Demo surrogate: ON
---   Collision SVG viewer: ON
---   CUDA backend: OFF
---   CUDA toolkit: not found
---   FCL: not required
---
--- Configuring done (0.0s)
--- Generating done (0.4s)
 ...
 ```
 
@@ -46,6 +46,8 @@ cmake --build '<build>' --config Release --parallel
 ```text
 适用于 .NET Framework MSBuild 版本 17.14.40+3e7442088
 
+  1>Checking Build System
+  Building Custom Rule <source>/CMakeLists.txt
   FCLAdapter.cpp
   Backend.cpp
   CudaQueryBackend.cpp
@@ -62,8 +64,6 @@ cmake --build '<build>' --config Release --parallel
   DemoAdaptiveSDFModel.cpp
   MeshModel.cpp
   SDFModel.cpp
-  Transform.cpp
-  ContactOnlySDFBin.cpp
 ...
 ```
 
@@ -83,29 +83,36 @@ cmake --install '<build>' --config Release --prefix '<install>'
 -- Installing: <install>/bin/adasdf_recommend_demo.exe
 -- Installing: <install>/bin/adasdf_build_demo_adaptive.exe
 -- Installing: <install>/bin/adasdf_collide_boxes_demo.exe
+-- Installing: <install>/bin/adasdf_query_mode_demo.exe
 -- Installing: <install>/bin/adasdf_benchmark_batch_query.exe
--- Up-to-date: <install>/include
--- Up-to-date: <install>/include/adasdf
--- Up-to-date: <install>/include/adasdf/adapters
--- Up-to-date: <install>/include/adasdf/adapters/EigenAdapter.h
--- Up-to-date: <install>/include/adasdf/adapters/FCLAdapter.h
--- Up-to-date: <install>/include/adasdf/adapters/PythonBindingPlan.h
+-- Installing: <install>/include
+-- Installing: <install>/include/adasdf
+-- Installing: <install>/include/adasdf/adapters
+-- Installing: <install>/include/adasdf/adapters/EigenAdapter.h
+-- Installing: <install>/include/adasdf/adapters/FCLAdapter.h
+-- Installing: <install>/include/adasdf/adapters/PythonBindingPlan.h
 -- Installing: <install>/include/adasdf/adasdf.h
--- Up-to-date: <install>/include/adasdf/backend
--- Up-to-date: <install>/include/adasdf/backend/Backend.h
--- Up-to-date: <install>/include/adasdf/backend/CpuBackend.h
+-- Installing: <install>/include/adasdf/backend
+-- Installing: <install>/include/adasdf/backend/Backend.h
 ...
 ```
 
 ### Package Configure: PASS
 
 ```bash
-cmake -S '<source>/tests/package' -B '<workspace>/build/adasdf_cl_iv_pkg' '-DCMAKE_PREFIX_PATH=<install>'
+cmake -S '<source>/tests/package' -B '<local-path>' '-DCMAKE_PREFIX_PATH=<install>'
 ```
 
 ```text
+-- Building for: Visual Studio 17 2022
 -- Selecting Windows SDK version 10.0.22621.0 to target Windows 10.0.26200.
--- Configuring done (0.0s)
+-- The CXX compiler identification is MSVC 19.42.34444.0
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.42.34433/bin/Hostx64/x64/cl.exe - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Configuring done (1.9s)
 -- Generating done (0.0s)
 -- Build files have been written to: <build>_pkg
 ```
@@ -113,25 +120,28 @@ cmake -S '<source>/tests/package' -B '<workspace>/build/adasdf_cl_iv_pkg' '-DCMA
 ### Package Build: PASS
 
 ```bash
-cmake --build '<workspace>/build/adasdf_cl_iv_pkg' --config Release --parallel
+cmake --build '<local-path>' --config Release --parallel
 ```
 
 ```text
 适用于 .NET Framework MSBuild 版本 17.14.40+3e7442088
 
+  1>Checking Build System
+  Building Custom Rule <source>/tests/package/CMakeLists.txt
   test_find_package.cpp
   test_find_package.vcxproj -> <build>_pkg\Release\test_find_package.exe
+  Building Custom Rule <source>/tests/package/CMakeLists.txt
 ```
 
 ### Package Run: PASS
 
 ```bash
-'<workspace>/build/adasdf_cl_iv_pkg/Release/test_find_package.exe'
+'<local-path>'
 ```
 
 ```text
 AdaSDF-CL package consumer
-Version: 1.0.0-alpha
+Version: 1.0.1-alpha
 Point: 1 2 3
 Demo signed distance at origin: -0.5
 Demo adaptive blocks: 7
@@ -143,12 +153,19 @@ CPU backend available: true
 ### Downstream Configure: PASS
 
 ```bash
-cmake -S '<source>/examples/downstream_cmake_project' -B '<workspace>/build/adasdf_cl_iv_ds' '-DCMAKE_PREFIX_PATH=<install>'
+cmake -S '<source>/examples/downstream_cmake_project' -B '<local-path>' '-DCMAKE_PREFIX_PATH=<install>'
 ```
 
 ```text
+-- Building for: Visual Studio 17 2022
 -- Selecting Windows SDK version 10.0.22621.0 to target Windows 10.0.26200.
--- Configuring done (0.0s)
+-- The CXX compiler identification is MSVC 19.42.34444.0
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.42.34433/bin/Hostx64/x64/cl.exe - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Configuring done (1.6s)
 -- Generating done (0.0s)
 -- Build files have been written to: <build>_ds
 ```
@@ -156,25 +173,28 @@ cmake -S '<source>/examples/downstream_cmake_project' -B '<workspace>/build/adas
 ### Downstream Build: PASS
 
 ```bash
-cmake --build '<workspace>/build/adasdf_cl_iv_ds' --config Release --parallel
+cmake --build '<local-path>' --config Release --parallel
 ```
 
 ```text
 适用于 .NET Framework MSBuild 版本 17.14.40+3e7442088
 
+  1>Checking Build System
+  Building Custom Rule <source>/examples/downstream_cmake_project/CMakeLists.txt
   main.cpp
   adasdf_downstream.vcxproj -> <build>_ds\Release\adasdf_downstream.exe
+  Building Custom Rule <source>/examples/downstream_cmake_project/CMakeLists.txt
 ```
 
 ### Downstream Run: PASS
 
 ```bash
-'<workspace>/build/adasdf_cl_iv_ds/Release/adasdf_downstream.exe'
+'<local-path>'
 ```
 
 ```text
 AdaSDF-CL downstream example
-Version: 1.0.0-alpha
+Version: 1.0.1-alpha
 CPU backend: available
 No .sdfbin supplied; running core-free demo adaptive path.
 Demo signed distance at origin: -0.5

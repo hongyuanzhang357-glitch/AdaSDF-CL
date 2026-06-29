@@ -1,6 +1,6 @@
 # External Integration
 
-AdaSDF-CL 1.0.0-alpha installs a CMake package that can be consumed from an external project without referencing the source tree.
+AdaSDF-CL 1.0.1-alpha installs a CMake package that can be consumed from an external project without referencing the source tree.
 
 ## Build and Install
 
@@ -18,7 +18,7 @@ add_executable(my_app main.cpp)
 target_link_libraries(my_app PRIVATE AdaSDFCL::adasdf_cl)
 ```
 
-The installed runtime exposes the demo surrogate, demo adaptive builder, demo adaptive reader/writer, collision API, CPU batch query API, optional CUDA batch query API, and SVG writer.
+The installed runtime exposes the demo surrogate, demo adaptive builder, demo adaptive reader/writer, collision API, CPU batch query API, query-mode API, optional CUDA resident expanded query API, and SVG writer.
 
 ## Package Validation
 
@@ -30,4 +30,4 @@ The downstream example builds a core-free demo adaptive box, runs point and CPU 
 
 ## Optional Existing Core
 
-`ADASDF_CL_USE_EXISTING_CORE=ON` is only needed for existing-core adaptive `.sdfbin` assets. It is not required for the v1.0 demo adaptive and CPU batch query workflow.
+`ADASDF_CL_USE_EXISTING_CORE=ON` is only needed for existing-core adaptive `.sdfbin` assets. It is not required for the v1.0.1 demo adaptive, CPU query-mode, or CUDA expanded-query workflow.

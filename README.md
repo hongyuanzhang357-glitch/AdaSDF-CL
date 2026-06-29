@@ -2,21 +2,21 @@
 
 Adaptive Signed Distance Field Collision Library
 
-Status: 1.0.0-alpha / research preview
+Status: 1.0.1-alpha / research preview
 Build system: CMake
 License: MIT
 Tests: CTest
 
 AdaSDF-CL is an alpha collision and contact library built around signed distance fields. It provides an FCL-style API for distance, collision, and contact queries while keeping CUDA, FCL, Python, and full adaptive backend work optional or future-facing.
 
-v1.0.0-alpha adds CPU batch query benchmarking and an optional CUDA batch query backend for the core-free analytic/demo adaptive box path. CUDA is not required; CPU-only builds remain fully usable.
+v1.0.1-alpha adds explicit query modes, pre-expanded dense SDF layouts, and an optional CUDA-resident expanded SDF query backend for the core-free analytic/demo adaptive box path. CUDA is not required; CPU-only builds remain fully usable.
 
-## v1.0 Quick Start
+## v1.0.1 Quick Start
 
 ```bash
 git clone https://github.com/hongyuanzhang357-glitch/AdaSDF-CL.git
 cd AdaSDF-CL
-git checkout v1.0.0-alpha
+git checkout v1.0.1-alpha
 
 cmake -S . -B build -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD_TESTS=ON -DADASDF_CL_BUILD_BENCHMARKS=ON
 cmake --build build --config Release
@@ -28,7 +28,9 @@ install/bin/adasdf_build_demo_adaptive cube_adaptive.sdfbin --shape box --target
 install/bin/adasdf_info cube_adaptive.sdfbin
 install/bin/adasdf_query cube_adaptive.sdfbin --point 0 0 0
 install/bin/adasdf_collide_boxes_demo --target-error 1e-3 --memory-mb 64 --offset 0.25 0 0 --max-contacts 8 --view collision.svg
-install/bin/adasdf_benchmark_batch_query --points 10000,100000,1000000 --backend cpu,cuda --out benchmark.csv
+install/bin/adasdf_query_mode_demo --backend cpu --expansion none --points 100000
+install/bin/adasdf_query_mode_demo --backend cuda --expansion global --points 100000
+install/bin/adasdf_benchmark_batch_query --points 10000,100000,1000000 --query-backend cuda --expansion global --out benchmark.csv
 ```
 
 On Windows, installed tools usually have `.exe` suffixes, for example `install/bin/adasdf_recommend_demo.exe`.
@@ -46,8 +48,10 @@ Generated `.sdfbin` and `.svg` files should stay in build, install, or temporary
 - SVG collision visualization with box outlines, contact points, normal arrows, backend/method labels, minimum distance, and contact counts.
 - Installable CMake package consumed with `find_package(AdaSDFCL CONFIG REQUIRED)`.
 - CPU batch query API for signed distance, gradient, and normal queries.
-- Optional CUDA batch query backend for analytic/demo adaptive box SDFs.
-- Deterministic benchmark point generation and `adasdf_benchmark_batch_query`.
+- Query-mode configuration for CPU direct, CPU global-expanded, CPU block-expanded, CUDA global-expanded, and CUDA block-expanded queries.
+- `ExpandedSDF`, `SDFExpander`, and `QueryEngine` for reusable pre-expanded query preparation.
+- Optional CUDA resident expanded SDF backend for analytic/demo adaptive box SDFs.
+- Deterministic benchmark point generation and `adasdf_benchmark_batch_query` with backend, expansion, block selection, memory, setup, kernel, total-time, and error columns.
 
 ## Backend Boundary
 
@@ -101,22 +105,55 @@ Benchmarks: ON/OFF
 ## CPU/GPU Batch-Query Benchmark
 
 ```bash
-adasdf_benchmark_batch_query --points 10000,100000,1000000 --backend cpu,cuda --out benchmark.csv
+adasdf_benchmark_batch_query --points 10000,100000,1000000 --query-backend cpu --expansion none --out cpu_direct.csv
+adasdf_benchmark_batch_query --points 10000,100000,1000000 --query-backend cuda --expansion global --out cuda_global.csv
+adasdf_benchmark_batch_query --points 10000,100000,1000000 --query-backend cuda --expansion block --blocks 0,1,2 --out cuda_blocks.csv
 ```
 
-The CUDA backend is optional. If CUDA is not available, AdaSDF-CL remains fully usable in CPU mode and the benchmark prints:
+The CUDA backend is optional. If CUDA is not available, AdaSDF-CL remains fully usable in CPU mode and CUDA benchmark rows are marked as skipped.
 
 ```text
-CUDA backend unavailable; skipping GPU benchmark.
+CUDA backend unavailable
 ```
 
-v1.0.0-alpha initially supports CUDA batch queries for the core-free analytic/demo adaptive box backend. Full low-rank compressed SDF GPU expansion is planned but not yet complete.
+v1.0.1-alpha supports CUDA batch queries over pre-expanded global or block dense SDF data for the core-free analytic/demo adaptive box backend. Full low-rank compressed SDF GPU expansion is planned but not yet complete.
 
 Benchmark output fields are:
 
 ```text
-backend,num_points,total_ms,ns_per_query,queries_per_second,max_abs_phi_error,max_normal_error,speedup_vs_cpu,cuda_available
+query_backend,expansion_mode,selected_blocks,num_points,expanded_memory_mb,gpu_resident_memory_mb,setup_ms,query_kernel_ms,query_total_ms,ns_per_query,queries_per_second,fallback_count,max_abs_phi_error,max_normal_error,cuda_available,status,error_message
 ```
+
+## Query Modes
+
+The public query-mode API separates execution backend from expansion strategy:
+
+```cpp
+auto build = adasdf::DemoAdaptiveSDFBuilder::build(build_request);
+
+adasdf::ExpansionOptions expansion;
+expansion.expansion = adasdf::QueryExpansionMode::Global;
+expansion.global_resolution = 64;
+
+adasdf::QueryEngine engine(
+    build.model,
+    adasdf::QueryModeConfig::cudaGlobalExpanded(),
+    expansion);
+engine.prepare();
+
+adasdf::BatchQueryOutput output = engine.queryBatch(points);
+```
+
+Supported mode combinations:
+
+| Backend | Expansion | Status |
+| --- | --- | --- |
+| CPU | None | Direct `SDFModel` query |
+| CPU | Global | Pre-expanded dense global grid |
+| CPU | Block | Pre-expanded dense selected blocks |
+| CUDA | Global | GPU-resident dense global grid |
+| CUDA | Block | GPU-resident dense selected blocks |
+| CUDA | None | Invalid: CUDA requires pre-expanded SDF data |
 
 ## Demo Adaptive SDFBin Format
 
@@ -173,8 +210,9 @@ adasdf::collide(a, b, request, result);
 - The demo adaptive builder supports analytic boxes, not arbitrary meshes.
 - Full adaptive STL-to-compressed-SDF construction remains future work for the public standalone backend.
 - Pair collision is an approximate SDF-sampling narrow-phase.
-- CUDA support is limited to optional batch signed-distance/normal queries for analytic/demo adaptive boxes.
-- Full low-rank compressed SDF GPU expansion, CUDA pair-collision acceleration, Python bindings, and FCL ABI compatibility are not implemented.
+- CUDA support is limited to optional batch signed-distance/normal queries over pre-expanded global/block dense data for analytic/demo adaptive boxes.
+- `CUDA + None` is intentionally rejected because CUDA compressed-direct query is not implemented.
+- CUDA pair-collision acceleration, full low-rank compressed SDF GPU expansion, Python bindings, and FCL ABI compatibility are not implemented.
 
 See `docs/limitations.md`.
 
@@ -183,11 +221,13 @@ See `docs/limitations.md`.
 - `docs/demo_surrogate_recommender.md`
 - `docs/demo_adaptive_builder.md`
 - `docs/collision_visualization.md`
+- `docs/query_modes.md`
 - `docs/benchmarking.md`
 - `docs/gpu_backend.md`
 - `docs/core_free_demo_backend.md`
 - `docs/alpha_status.md`
-- `docs/github_release_draft_v1_0_0_alpha.md`
+- `docs/query_mode_and_expansion_v1_0_1_report.md`
+- `docs/github_release_draft_v1_0_1_alpha.md`
 
 ## Citation
 

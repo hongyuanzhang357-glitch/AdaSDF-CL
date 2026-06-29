@@ -1,6 +1,7 @@
-# Optional CUDA Batch Query Backend
+# Optional CUDA Query Backend
 
-AdaSDF-CL v1.0.0-alpha adds an optional CUDA batch query backend.
+AdaSDF-CL v1.0.1-alpha keeps CUDA optional and adds a GPU-resident query path
+for pre-expanded SDF data.
 
 ## Scope
 
@@ -8,16 +9,33 @@ Supported first:
 
 - core-free `AnalyticSDFModel` boxes;
 - core-free `DemoAdaptiveSDFModel` boxes;
+- global dense SDF expansion;
+- selected-block dense SDF expansion;
+- resident GPU upload of expanded values and block metadata;
 - batch signed distance;
-- batch gradient / normal output;
-- CPU/GPU numerical alignment checks.
+- batch finite-difference normal output;
+- CPU/GPU numerical comparison in tests and benchmarks.
 
 Not supported yet:
 
+- CUDA compressed-direct query with no expansion;
 - full low-rank compressed SDF GPU expansion;
 - arbitrary mesh/STL GPU SDF construction;
-- certified industrial GPU collision pipeline;
+- CUDA-accelerated pair collision;
+- certified industrial GPU contact solving;
 - FCL ABI compatibility.
+
+`CUDA + None` is invalid and reports:
+
+```text
+CUDA backend requires pre-expanded SDF data. Use Global or Block expansion.
+```
+
+The collision CLI maps the same boundary to:
+
+```text
+CUDA collision query requires pre-expanded SDF data.
+```
 
 ## CMake
 
@@ -33,7 +51,8 @@ To request CUDA:
 cmake -S . -B build-cuda -DADASDF_CL_ENABLE_CUDA=ON
 ```
 
-If CUDA is requested but unavailable, configure continues and builds the CPU runtime. The summary reports:
+If CUDA is requested but unavailable, configure continues and builds the CPU
+runtime. The summary reports:
 
 ```text
 CUDA backend: OFF
@@ -47,24 +66,79 @@ CUDA backend: ON
 CUDA toolkit: found
 ```
 
+On Windows, CUDA/MSBuild can be sensitive to non-ASCII source or build paths.
+If CUDA compiler detection or `.cu` compilation fails in a path with non-ASCII
+characters, validate again from an ASCII-only checkout, junction, or build
+directory before treating the failure as a code issue.
+
 ## Public API
 
 ```cpp
-adasdf::BatchQueryInput input;
-input.points = points;
+adasdf::ExpansionOptions expansion;
+expansion.expansion = adasdf::QueryExpansionMode::Global;
+expansion.global_resolution = 64;
 
-if (adasdf::CudaQueryBackend::isAvailable()) {
-  adasdf::BatchQueryOutput output =
-      adasdf::CudaQueryBackend::queryAnalyticBox(*model, input);
-}
+adasdf::QueryEngine engine(
+    model,
+    adasdf::QueryModeConfig::cudaGlobalExpanded(),
+    expansion);
+
+engine.prepare();
+adasdf::BatchQueryOutput output = engine.queryBatch(points);
+```
+
+For block expansion:
+
+```cpp
+adasdf::BlockSelection blocks =
+    adasdf::BlockSelection::selected({0, 1, 2});
+
+adasdf::ExpansionOptions expansion;
+expansion.expansion = adasdf::QueryExpansionMode::Block;
+expansion.block_selection = blocks;
+expansion.block_resolution = 32;
+
+adasdf::QueryModeConfig config =
+    adasdf::QueryModeConfig::cudaBlockExpanded(blocks);
+
+adasdf::QueryEngine engine(model, config, expansion);
+engine.prepare();
 ```
 
 CPU-only users can include `<adasdf/adasdf.h>` without including CUDA headers.
 
+## Runtime Model
+
+`SDFExpander` first converts the model into an `ExpandedSDF`:
+
+- `GlobalDense`: one dense grid over the model bounding box;
+- `BlockDense`: one dense grid per selected block.
+
+`CudaResidentExpandedSDF` uploads the expanded block metadata and sampled
+double-precision values once. `QueryEngine::queryBatch()` then launches the
+resident CUDA kernel and downloads signed distances and normals for the query
+points.
+
+The backend reports:
+
+- expanded host memory bytes;
+- resident GPU memory bytes;
+- setup time;
+- CUDA event kernel time;
+- total query time;
+- fallback count.
+
 ## Precision
 
-The v1.0.0-alpha CUDA kernel uses double precision to align with the CPU `Scalar` type. Float mode is intentionally not part of this alpha.
+The v1.0.1-alpha CUDA expanded SDF kernel uses double precision to align with
+the CPU `Scalar` type. Expanded-grid distance values are approximate because
+they are sampled from a finite-resolution dense grid. Normals are computed with
+finite differences and are suitable for query-mode validation, not for certified
+contact-normal quality claims.
 
 ## Testing
 
-CUDA tests are compiled in CPU-only builds and return success with a `SKIPPED` message when CUDA is unavailable. When CUDA is available, the alignment test checks max signed-distance and normal errors against tight tolerances on 1000 deterministic points.
+CUDA tests are compiled in CPU-only builds and return success with a `SKIPPED`
+message when CUDA is unavailable. When CUDA is available, the query-engine CUDA
+test covers global expansion, block expansion, resident GPU query, and exact
+rejection of `CUDA + None`.

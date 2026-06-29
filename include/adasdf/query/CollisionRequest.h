@@ -1,6 +1,7 @@
 #pragma once
 
 #include "adasdf/backend/Backend.h"
+#include "adasdf/query/QueryModeConfig.h"
 
 namespace adasdf {
 
@@ -19,6 +20,7 @@ struct CollisionRequest {
   bool symmetric_query = true;
   BackendType backend = BackendType::CPU;
   QueryMode query_mode = QueryMode::Balanced;
+  QueryModeConfig query_mode_config = QueryModeConfig::cpuDirect();
   BroadphaseType broadphase = BroadphaseType::Auto;
   NarrowphaseType narrowphase = NarrowphaseType::AdaptiveSDF;
 };

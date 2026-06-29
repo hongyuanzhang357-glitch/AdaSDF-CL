@@ -1,6 +1,6 @@
 # Limitations
 
-AdaSDF-CL 1.0.0-alpha is a research-preview library layer, not a certified industrial collision stack.
+AdaSDF-CL 1.0.1-alpha is a research-preview library layer, not a certified industrial collision stack.
 
 ## Demo Surrogate
 
@@ -25,8 +25,11 @@ AdaSDF-CL 1.0.0-alpha is a research-preview library layer, not a certified indus
 ## CUDA Batch Query
 
 - CUDA is optional and disabled by default.
-- The initial CUDA backend supports analytic/demo adaptive boxes only.
+- CUDA query requires pre-expanded global or block dense SDF data.
+- `CUDA + None` is invalid because compressed-direct GPU query is not implemented.
+- The current resident CUDA backend supports analytic/demo adaptive box expansions only.
 - Full low-rank compressed SDF GPU expansion is not implemented.
+- Expanded-grid finite-difference normals are not certified contact normals.
 - CUDA-unavailable machines should skip GPU benchmarks/tests rather than fail CPU builds.
 
 ## Not Implemented

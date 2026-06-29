@@ -110,8 +110,12 @@ set(ADASDF_CL_RUNTIME_SOURCES
   src/query/ContactReducer.cpp
   src/query/CpuNarrowPhase.cpp
   src/query/DistanceResult.cpp
+  src/query/ExpandedSDF.cpp
   src/query/ExistingPairCollisionBridge.cpp
+  src/query/QueryEngine.cpp
+  src/query/QueryModeConfig.cpp
   src/query/QueryAPI.cpp
+  src/query/SDFExpander.cpp
   src/visualization/CollisionSVGWriter.cpp)
 
 if(ADASDF_CL_HAS_CUDA_BACKEND)
@@ -314,6 +318,11 @@ target_link_libraries(adasdf_build_demo_adaptive PRIVATE adasdf_cl_runtime)
 add_executable(adasdf_collide_boxes_demo tools/adasdf_collide_boxes_demo.cpp)
 target_link_libraries(adasdf_collide_boxes_demo PRIVATE adasdf_cl_runtime)
 
+add_executable(adasdf_query_mode_demo tools/adasdf_query_mode_demo.cpp)
+target_link_libraries(adasdf_query_mode_demo PRIVATE adasdf_cl_runtime)
+set_target_properties(adasdf_query_mode_demo PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
+
 if(ADASDF_CL_BUILD_BENCHMARKS)
   add_executable(adasdf_benchmark_batch_query
     benchmarks/adasdf_benchmark_batch_query.cpp)
@@ -347,6 +356,12 @@ set(ADASDF_CL_TEST_SOURCES
   tests/test_batch_query_cpu.cpp
   tests/test_cuda_query_backend.cpp
   tests/test_cpu_gpu_alignment.cpp
+  tests/test_block_selection.cpp
+  tests/test_query_mode_config.cpp
+  tests/test_sdf_expander.cpp
+  tests/test_query_engine_cpu.cpp
+  tests/test_query_engine_cuda.cpp
+  tests/test_query_mode_cli.cpp
   tests/test_point_cloud_generator.cpp
   tests/test_adaptive_builder.cpp
   tests/test_sdfbin_writer_roundtrip.cpp
@@ -384,10 +399,19 @@ if(ADASDF_CL_BUILD_TESTS)
       target_compile_definitions(${test_name} PRIVATE
         ADASDF_CL_MAKE_DEMO_BOX="$<TARGET_FILE_NAME:adasdf_make_demo_box>")
     endif()
+    if(test_name STREQUAL "test_query_mode_cli")
+      add_dependencies(${test_name} adasdf_query_mode_demo)
+      target_compile_definitions(${test_name} PRIVATE
+        ADASDF_CL_QUERY_MODE_DEMO="$<TARGET_FILE_NAME:adasdf_query_mode_demo>")
+    endif()
     add_test(NAME ${test_name} COMMAND ${test_name})
     if(test_name STREQUAL "test_make_demo_box_cli")
       set_tests_properties(${test_name} PROPERTIES
         WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_make_demo_box>")
+    endif()
+    if(test_name STREQUAL "test_query_mode_cli")
+      set_tests_properties(${test_name} PROPERTIES
+        WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_query_mode_demo>")
     endif()
   endforeach()
 endif()
@@ -409,7 +433,8 @@ set(ADASDF_CL_INSTALL_TOOL_TARGETS
   adasdf_make_demo_box
   adasdf_recommend_demo
   adasdf_build_demo_adaptive
-  adasdf_collide_boxes_demo)
+  adasdf_collide_boxes_demo
+  adasdf_query_mode_demo)
 if(ADASDF_CL_BUILD_BENCHMARKS)
   list(APPEND ADASDF_CL_INSTALL_TOOL_TARGETS adasdf_benchmark_batch_query)
 endif()
