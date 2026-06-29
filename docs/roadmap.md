@@ -17,14 +17,6 @@
 - working load/query example
 - basic runtime tests
 
-Deferred from v0.2:
-
-- object-object `distance()`
-- object-object `collide()`
-- analytic low-rank gradient
-- CUDA batched query
-- FCL adapter execution
-
 ## v0.3 Pair Query API Validation
 
 - `CollisionObject` transform-aware world AABB
@@ -35,14 +27,6 @@ Deferred from v0.2:
 - command-line pair-query and FCL-style examples
 - graceful real `.sdfbin` tests
 
-Deferred from v0.3:
-
-- direct `sdf::PairCollisionSDF` bridge
-- high-precision adaptive narrowphase
-- CUDA batched pair query
-- real optional FCL dependency adapter
-- differentiable Jacobians
-
 ## v0.4 Adaptive Builder Bridge
 
 - STL mesh input through `ExistingBuilderBridge`
@@ -52,14 +36,6 @@ Deferred from v0.3:
 - DASH-SDF `SurrogateRecommender` placeholder with no fake predictions
 - builder, writer, surrogate, and round-trip tests
 
-Deferred from v0.4:
-
-- OBJ mesh loader bridge
-- in-memory `MeshModel` adaptive builder
-- exact absolute-error controller in the old adaptive compression policy
-- real DASH-SDF runtime integration
-- contact-only `.sdfbin` writer/reader
-
 ## v0.5 CPU Narrow-Phase and Contact Reduction
 
 - `CpuNarrowPhase` named research-preview backend
@@ -68,14 +44,6 @@ Deferred from v0.4:
 - `ContactReducer` for deterministic merge and `max_contacts` enforcement
 - improved `CollisionResult` and `DistanceResult` statistics
 - contact reduction demo and CPU narrow-phase tests
-
-Deferred from v0.5:
-
-- CUDA batched narrow-phase
-- strict global closest-distance solver
-- certified industrial contact solver
-- direct `sdf::PairCollisionSDF` bridge
-- FCL ABI compatibility
 
 ## v0.6 Alpha Release Hardening
 
@@ -96,7 +64,6 @@ Deferred from v0.5:
 - add package config tests
 - install CLI tools
 - add CPack source archive preparation
-- keep GitHub remote and release tag creation deferred to a later publishing step
 
 ## v0.7.0-alpha.1 CI-Fixed Pre-Release
 
@@ -112,19 +79,22 @@ Deferred from v0.5:
 - state that clone-only end-to-end public collision demos are planned for a later version
 - keep core algorithms, public API, and CMake install/export behavior unchanged
 
-## v0.8 Python Binding Preview
+## v0.8.0-alpha Core-Free Standalone Demo Backend
+
+- add `AnalyticSDFModel` for axis-aligned box SDF queries
+- add demo `.sdfbin` text format with magic `ADASDF_DEMO_SDFBIN_V1`
+- add `adasdf_make_demo_box`
+- support demo `.sdfbin` in `adasdf_info`, `adasdf_query`, and `adasdf_collide`
+- add core-free collision example and tests
+- validate clone-only build/install/query/collide workflow
+- document that this is a demo backend, not the full adaptive compressed SDF builder
+
+## v0.9 Python Binding Preview
 
 - define Python package layout
 - expose model load/query basics
 - expose build options and collision request/result wrappers
 - keep native runtime optional and documented
-
-## v0.9 CUDA Batched Query Preview
-
-- prototype CUDA batched point/query path
-- add optional GPU test gating
-- keep CPU path as default
-- document hardware and driver requirements
 
 ## v1.0 Stable Research Release
 
@@ -134,3 +104,4 @@ Deferred from v0.5:
 - CI
 - benchmark suite
 - citation release
+- production-quality public adaptive backend plan

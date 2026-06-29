@@ -165,9 +165,10 @@ def main() -> int:
         str(build),
         "-DADASDF_CL_BUILD_EXAMPLES=ON",
         "-DADASDF_CL_BUILD_TESTS=ON",
-        "-DADASDF_CL_USE_EXISTING_CORE=ON",
+        "-DADASDF_CL_USE_EXISTING_CORE=OFF",
         "-DADASDF_CL_ENABLE_ADAPTIVE_BUILDER=ON",
         "-DADASDF_CL_ENABLE_SURROGATE_RECOMMENDER=ON",
+        "-DADASDF_CL_ENABLE_DEMO_BACKEND=ON",
     ]
     steps = [
         ("Configure", configure),
@@ -217,42 +218,72 @@ def main() -> int:
             )
         )
 
-    adasdf_build = find_executable(build, "adasdf_build", config)
-    load_query = find_executable(build, "adasdf_load_sdfbin_and_query", config)
-    pair_collision = find_executable(build, "adasdf_collision_between_two_objects", config)
-    contact_demo = find_executable(build, "adasdf_contact_reduction_demo", config)
-    cube_stl = source / "tests" / "data" / "cube_closed_ascii.stl"
-    cube_sdfbin = build.parent / "cube_v0_7_alpha.sdfbin"
+    demo_sdfbin = build.parent / "cube_demo_v0_8.sdfbin"
+    required_demo_tools = {
+        "adasdf_make_demo_box": find_executable(build, "adasdf_make_demo_box", config),
+        "adasdf_info": find_executable(build, "adasdf_info", config),
+        "adasdf_query": find_executable(build, "adasdf_query", config),
+        "adasdf_collide": find_executable(build, "adasdf_collide", config),
+        "adasdf_core_free_demo_collision": find_executable(
+            build, "adasdf_core_free_demo_collision", config
+        ),
+    }
+    missing_demo_tools = [
+        name for name, path in required_demo_tools.items() if path is None
+    ]
+    if missing_demo_tools:
+        result = StepResult(
+            "Core-Free Demo Tool Discovery",
+            ["find-demo-tools"],
+            1,
+            "Missing executable(s): " + ", ".join(missing_demo_tools),
+        )
+        results.append(result)
+        write_report(report_path, results, source, build, config)
+        return result.returncode
 
-    if adasdf_build and cube_stl.exists():
-        optional_steps = [
-            (
-                "Build Cube SDFBin",
-                [
-                    str(adasdf_build),
-                    str(cube_stl),
-                    str(cube_sdfbin),
-                    "--near-surface-error",
-                    "1e-4",
-                    "--max-memory-mb",
-                    "256",
-                    "--compress",
-                ],
-            )
-        ]
-        if load_query:
-            optional_steps.append(("Load Query Example", [str(load_query), str(cube_sdfbin)]))
-        if pair_collision:
-            optional_steps.append(("Pair Collision Example", [str(pair_collision), str(cube_sdfbin)]))
-        if contact_demo:
-            optional_steps.append(("Contact Reduction Demo", [str(contact_demo), str(cube_sdfbin)]))
+    demo_steps = [
+        (
+            "Make Demo Box SDFBin",
+            [str(required_demo_tools["adasdf_make_demo_box"]), str(demo_sdfbin)],
+        ),
+        (
+            "Demo Info CLI",
+            [str(required_demo_tools["adasdf_info"]), str(demo_sdfbin)],
+        ),
+        (
+            "Demo Query CLI",
+            [
+                str(required_demo_tools["adasdf_query"]),
+                str(demo_sdfbin),
+                "--point",
+                "0",
+                "0",
+                "0",
+            ],
+        ),
+        (
+            "Demo Collide CLI",
+            [
+                str(required_demo_tools["adasdf_collide"]),
+                str(demo_sdfbin),
+                str(demo_sdfbin),
+                "--max-contacts",
+                "4",
+            ],
+        ),
+        (
+            "Core-Free Demo Collision Example",
+            [str(required_demo_tools["adasdf_core_free_demo_collision"])],
+        ),
+    ]
 
-        for name, command in optional_steps:
-            result = run_step(name, command, workspace)
-            results.append(result)
-            if result.returncode != 0:
-                write_report(report_path, results, source, build, config)
-                return result.returncode
+    for name, command in demo_steps:
+        result = run_step(name, command, workspace)
+        results.append(result)
+        if result.returncode != 0:
+            write_report(report_path, results, source, build, config)
+            return result.returncode
 
     clean_result = run_step(
         "Clean Check",

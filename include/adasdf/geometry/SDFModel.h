@@ -36,6 +36,7 @@ struct SDFSample {
 struct SDFMetadata {
   std::string model_name;
   std::string source_path;
+  std::string format_name;
   std::string query_backend;
 
   int format_version = 0;
@@ -67,6 +68,10 @@ class SDFModel : public CollisionGeometry {
 
     virtual Scalar sampleDistance(const Vector3& point) const = 0;
     virtual bool canSampleDistance() const = 0;
+    virtual bool canSampleGradient() const {
+      return false;
+    }
+    virtual Vector3 sampleGradient(const Vector3& point) const;
     virtual Scalar finiteDifferenceStep() const = 0;
     virtual std::string backendName() const = 0;
     virtual bool canWriteSDFBin() const {
@@ -142,6 +147,7 @@ class SDFModel : public CollisionGeometry {
   void setBoundingBox(const AABB& bounds);
   void setBlockMetadata(std::vector<SDFBlockMetadata> metadata);
   void setMetadata(const SDFMetadata& metadata);
+  void setMemoryFootprintBytes(std::size_t bytes);
   void setNativeHandle(std::shared_ptr<NativeHandle> native_handle);
   void setValid(bool valid);
 

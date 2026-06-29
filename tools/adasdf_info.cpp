@@ -59,6 +59,15 @@ int main(int argc, char** argv) {
     std::cout << "Path: " << path.string() << "\n";
     std::cout << "Model name: " << model->debugName() << "\n";
     std::cout << "Valid: " << yesNo(model->isValid()) << "\n";
+    if (!metadata.format_name.empty()) {
+      std::cout << "Format: " << metadata.format_name << "\n";
+    }
+    if (const auto analytic = std::dynamic_pointer_cast<AnalyticSDFModel>(model)) {
+      std::cout << "Shape: " << analytic->shapeName() << "\n";
+      printVec("Center: ", analytic->center());
+      printVec("Half extent: ", analytic->halfExtent());
+      std::cout << "Unit: " << analytic->unit() << "\n";
+    }
     std::cout << "Format version: " << metadata.format_version << "\n";
     std::cout << "Query backend: "
               << (metadata.query_backend.empty() ? "unavailable" : metadata.query_backend)

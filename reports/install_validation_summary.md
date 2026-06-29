@@ -17,18 +17,19 @@ cmake -S '<source>' -B '<build>' -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD
 -- Selecting Windows SDK version 10.0.22621.0 to target Windows 10.0.26200.
 --
 -- AdaSDF-CL configuration:
---   Version: 0.7.0-alpha.2
+--   Version: 0.8.0-alpha
 --   Build examples: ON
 --   Build tests: ON
 --   Existing core requested: OFF
 --   Existing core found: OFF
 --   Adaptive builder: ON
 --   Surrogate recommender: ON
+--   Core-free demo backend: ON
 --   CUDA: not required
 --   FCL: not required
 --
 -- Configuring done (0.0s)
--- Generating done (0.2s)
+-- Generating done (0.3s)
 -- Build files have been written to: <build>
 ```
 
@@ -49,16 +50,16 @@ cmake --build '<build>' --config Release --parallel
   ExistingBuilderBridge.cpp
   SDFBuilder.cpp
   SurrogateRecommender.cpp
+  AnalyticSDFModel.cpp
   MeshModel.cpp
   SDFModel.cpp
   Transform.cpp
   ContactOnlySDFBin.cpp
+  DemoSDFBin.cpp
   ExistingSDFBridge.cpp
   SDFBinReader.cpp
   SDFBinWriter.cpp
   CandidatePointSampler.cpp
-  CollisionObject.cpp
-  CollisionResult.cpp
 ...
 ```
 
@@ -74,13 +75,14 @@ cmake --install '<build>' --config Release --prefix '<install>'
 -- Installing: <install>/bin/adasdf_info.exe
 -- Installing: <install>/bin/adasdf_query.exe
 -- Installing: <install>/bin/adasdf_collide.exe
+-- Installing: <install>/bin/adasdf_make_demo_box.exe
 -- Up-to-date: <install>/include
 -- Up-to-date: <install>/include/adasdf
 -- Up-to-date: <install>/include/adasdf/adapters
 -- Up-to-date: <install>/include/adasdf/adapters/EigenAdapter.h
 -- Up-to-date: <install>/include/adasdf/adapters/FCLAdapter.h
 -- Up-to-date: <install>/include/adasdf/adapters/PythonBindingPlan.h
--- Up-to-date: <install>/include/adasdf/adasdf.h
+-- Installing: <install>/include/adasdf/adasdf.h
 -- Up-to-date: <install>/include/adasdf/backend
 -- Up-to-date: <install>/include/adasdf/backend/Backend.h
 -- Up-to-date: <install>/include/adasdf/backend/CpuBackend.h
@@ -88,7 +90,6 @@ cmake --install '<build>' --config Release --prefix '<install>'
 -- Up-to-date: <install>/include/adasdf/compression
 -- Up-to-date: <install>/include/adasdf/compression/CompressedSDF.h
 -- Up-to-date: <install>/include/adasdf/compression/CompressionOptions.h
--- Up-to-date: <install>/include/adasdf/compression/LowRankBlock.h
 ...
 ```
 
@@ -126,8 +127,9 @@ cmake --build '<workspace>/build/adasdf_cl_iv_pkg' --config Release --parallel
 
 ```text
 AdaSDF-CL package consumer
-Version: 0.7.0-alpha.2
+Version: 0.8.0-alpha
 Point: 1 2 3
+Demo signed distance at origin: -0.5
 CPU backend available: true
 ```
 
@@ -165,7 +167,10 @@ cmake --build '<workspace>/build/adasdf_cl_iv_ds' --config Release --parallel
 
 ```text
 AdaSDF-CL downstream example
-Version: 0.7.0-alpha.2
+Version: 0.8.0-alpha
 CPU backend: available
-No .sdfbin supplied; package integration smoke test complete.
+No .sdfbin supplied; running core-free analytic demo.
+Demo signed distance at origin: -0.5
+Demo colliding: true
+Demo contacts: 4
 ```

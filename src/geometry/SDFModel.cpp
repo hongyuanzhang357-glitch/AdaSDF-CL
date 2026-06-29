@@ -22,6 +22,10 @@ void SDFModel::NativeHandle::writeSDFBin(const std::filesystem::path&) const {
   throw std::runtime_error("This SDFModel native handle cannot write .sdfbin.");
 }
 
+Vector3 SDFModel::NativeHandle::sampleGradient(const Vector3&) const {
+  throw std::runtime_error("This SDFModel native handle cannot sample gradients.");
+}
+
 SDFModel::SDFModel(std::shared_ptr<CompressedSDF> compressed_sdf)
     : compressed_sdf_(std::move(compressed_sdf)) {
   valid_ = static_cast<bool>(compressed_sdf_);
@@ -55,6 +59,13 @@ Vector3 SDFModel::sampleGradient(const Vector3& point_world) const {
   if (!native_handle_ || !native_handle_->canSampleDistance()) {
     throw std::runtime_error(
         "SDFModel has no available query backend for gradient sampling.");
+  }
+  if (native_handle_->canSampleGradient()) {
+    const Vector3 gradient = native_handle_->sampleGradient(point_world);
+    if (!finite(gradient)) {
+      throw std::runtime_error("SDFModel native gradient produced non-finite values.");
+    }
+    return gradient;
   }
 
   double h = native_handle_->finiteDifferenceStep();
@@ -121,6 +132,10 @@ void SDFModel::setMetadata(const SDFMetadata& metadata) {
     memory_footprint_bytes_ =
         static_cast<std::size_t>(metadata.total_low_rank_memory_mb * 1024.0 * 1024.0);
   }
+}
+
+void SDFModel::setMemoryFootprintBytes(std::size_t bytes) {
+  memory_footprint_bytes_ = bytes;
 }
 
 void SDFModel::setNativeHandle(std::shared_ptr<NativeHandle> native_handle) {

@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Release hygiene check for the AdaSDF-CL subtree."""
+"""Release hygiene check for the AdaSDF-CL subtree.
+
+Generated demo `.sdfbin` files must stay in build or temporary directories.
+"""
 
 from __future__ import annotations
 

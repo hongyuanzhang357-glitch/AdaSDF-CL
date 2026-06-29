@@ -13,11 +13,11 @@ Executable paths depend on the CMake generator and configuration.
 
 Status: API preview.
 
-Shows the intended adaptive builder API shape. Prefer `06_build_then_query.cpp` or `adasdf_build` for a working STL build path in the current alpha.
+Shows the intended adaptive builder API shape. Prefer `06_build_then_query.cpp` or `adasdf_build` for a working STL build path when the existing core is available.
 
 ## 02_load_sdfbin_and_query.cpp
 
-Status: working when a compatible `.sdfbin` and existing-core bridge are available.
+Status: working when a compatible `.sdfbin` and query backend are available.
 
 Expected command:
 
@@ -32,7 +32,7 @@ Key output fields:
 - memory footprint;
 - query backend;
 - signed distance;
-- finite-difference gradient;
+- gradient;
 - normal.
 
 ## 03_collision_between_two_objects.cpp
@@ -57,7 +57,7 @@ Optional second model path and translation can be supplied. Key output fields:
 
 Status: API preview.
 
-CUDA batched pair query is not implemented in 0.7.0-alpha.2.
+CUDA batched pair query is not implemented in 0.8.0-alpha.
 
 ## 05_fcl_style_api.cpp
 
@@ -93,17 +93,27 @@ adasdf_contact_reduction_demo model.sdfbin
 
 Runs separated, near-contact, and penetrating cube scenarios and prints candidate, raw contact, reduced contact, distance, normal, and penetration statistics.
 
+## 08_core_free_demo_collision.cpp
+
+Status: working in a core-free public build.
+
+Expected command:
+
+```bash
+adasdf_core_free_demo_collision
+```
+
+Creates an analytic box, writes a demo `.sdfbin`, reloads it, runs pair collision, runs distance, and prints first contact details.
+
 ## downstream_cmake_project
 
 Status: working install-tree smoke example.
 
-Build this directory outside the AdaSDF-CL source tree after installing the
-package:
+Build this directory outside the AdaSDF-CL source tree after installing the package:
 
 ```bash
 cmake -S examples/downstream_cmake_project -B downstream-build -DCMAKE_PREFIX_PATH=/path/to/adasdf-cl/install
 cmake --build downstream-build --config Release
 ```
 
-The example links `AdaSDFCL::adasdf_cl` and does not require CUDA, FCL, Python,
-or the AdaSDF-CL source tree after installation.
+The example links `AdaSDFCL::adasdf_cl` and does not require CUDA, FCL, Python, the existing research core, or the AdaSDF-CL source tree after installation.

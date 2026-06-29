@@ -1,6 +1,7 @@
 #include <adasdf/adasdf.h>
 
 #include <exception>
+#include <cmath>
 #include <filesystem>
 #include <iostream>
 
@@ -27,8 +28,24 @@ int main(int argc, char** argv) {
             << "\n";
 
   if (argc == 1) {
-    std::cout << "No .sdfbin supplied; package integration smoke test complete.\n";
-    return backend ? 0 : 1;
+    auto model = adasdf::AnalyticSDFModel::createBox();
+    const double phi = model->sampleDistance({0.0, 0.0, 0.0});
+
+    adasdf::CollisionObject a(model);
+    adasdf::CollisionObject b(model);
+    b.setTransform(adasdf::Transform::fromTranslation({0.25, 0.0, 0.0}));
+
+    adasdf::CollisionRequest request;
+    request.enable_contact = true;
+    request.max_contacts = 4;
+    adasdf::CollisionResult result;
+    const bool hit = adasdf::collide(a, b, request, result);
+
+    std::cout << "No .sdfbin supplied; running core-free analytic demo.\n";
+    std::cout << "Demo signed distance at origin: " << phi << "\n";
+    std::cout << "Demo colliding: " << (hit ? "true" : "false") << "\n";
+    std::cout << "Demo contacts: " << result.contacts().size() << "\n";
+    return backend && std::isfinite(phi) && hit ? 0 : 1;
   }
   if (argc != 2) {
     std::cerr << "Usage: adasdf_downstream [model.sdfbin]\n";

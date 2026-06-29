@@ -25,7 +25,7 @@ The names are generic and live in the `adasdf` namespace; the implementation sho
 ## Integration Modes
 
 1. Standalone AdaSDF-CL
-   - Load `.sdfbin`.
+   - Generate or load a demo `.sdfbin`, or load an existing-core `.sdfbin` when that optional backend is available.
    - Create `CollisionObject`s.
    - Call `collide()` or `distance()`.
 
@@ -41,14 +41,14 @@ The names are generic and live in the `adasdf` namespace; the implementation sho
 
 `include/adasdf/adapters/FCLAdapter.h` is intentionally dependency-free. It sketches a migration surface without including real FCL headers. A later implementation may add a separate optional target for real FCL interop.
 
-In v0.7, `FCLAdapter::collide()` and `FCLAdapter::distance()` forward to the AdaSDF-CL object-level API and therefore use `CpuNarrowPhase` when no native pair bridge is available. This is a working FCL-style usage surface, not a full FCL integration and not a replacement for FCL broadphase managers, collision geometries, or request/result ABI compatibility.
+In v0.8, `FCLAdapter::collide()` and `FCLAdapter::distance()` forward to the AdaSDF-CL object-level API and therefore use `CpuNarrowPhase` when no native pair bridge is available. This is a working FCL-style usage surface, not a full FCL integration and not a replacement for FCL broadphase managers, collision geometries, or request/result ABI compatibility.
 
 ## Existing Project Notes
 
 The parent project already has `include/sdf/FCLAdapter.h` guarded by `SDF_HAS_FCL`. That code should inform the future optional adapter, but the public AdaSDF-CL interface should keep FCL optional.
 
-The parent project also has `sdf::PairCollisionSDF`, which is closer to a future native pair-query backend than the current research-preview narrow-phase. It currently requires native `sdf::SDFModelPackage`, `sdf::Mesh`, and `sdf::Transform3D` inputs. AdaSDF-CL does not yet expose enough native state and mesh ownership from a loaded `.sdfbin` to call it safely, so `ExistingPairCollisionBridge::isAvailable()` remains false.
+The parent project also has `sdf::PairCollisionSDF`, which is closer to a future native pair-query backend than the current research-preview narrow-phase. It currently requires native `sdf::SDFModelPackage`, `sdf::Mesh`, and `sdf::Transform3D` inputs. AdaSDF-CL does not yet expose enough native state and mesh ownership from a loaded existing-core `.sdfbin` to call it safely, so `ExistingPairCollisionBridge::isAvailable()` remains false.
 
 ## Current Pair-Query Caveat
 
-`CpuNarrowPhase` performs AABB broadphase, symmetric SDF candidate sampling, normal stabilization, and deterministic contact reduction. It improves the quality and observability of the old fallback, but it remains an approximate SDF-sampling narrow-phase. FCL ABI compatibility, FCL broadphase integration, and certified industrial contact behavior are not provided in 0.7.0-alpha.2.
+`CpuNarrowPhase` performs AABB broadphase, symmetric SDF candidate sampling, normal stabilization, and deterministic contact reduction. It works with the v0.8 analytic demo backend and existing-core-backed models with query support, but it remains an approximate SDF-sampling narrow-phase. FCL ABI compatibility, FCL broadphase integration, and certified industrial contact behavior are not provided in 0.8.0-alpha.

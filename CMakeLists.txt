@@ -16,6 +16,7 @@ option(ADASDF_CL_ENABLE_CUDA "Reserve CUDA backend integration hooks" OFF)
 option(ADASDF_CL_USE_EXISTING_CORE "Use existing OctreeBlockLowRankSDF core for sdfbin loading and query" ON)
 option(ADASDF_CL_ENABLE_ADAPTIVE_BUILDER "Enable adaptive SDF builder API" ON)
 option(ADASDF_CL_ENABLE_SURROGATE_RECOMMENDER "Enable DASH-SDF surrogate recommendation API" ON)
+option(ADASDF_CL_ENABLE_DEMO_BACKEND "Enable core-free analytic demo SDF backend" ON)
 
 set(ADASDF_CL_EXISTING_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/.." CACHE PATH
   "Path to the existing OctreeBlockLowRankSDF project root")
@@ -56,10 +57,12 @@ set(ADASDF_CL_RUNTIME_SOURCES
   src/generation/ExistingBuilderBridge.cpp
   src/generation/SDFBuilder.cpp
   src/generation/SurrogateRecommender.cpp
+  src/geometry/AnalyticSDFModel.cpp
   src/geometry/MeshModel.cpp
   src/geometry/SDFModel.cpp
   src/geometry/Transform.cpp
   src/io/ContactOnlySDFBin.cpp
+  src/io/DemoSDFBin.cpp
   src/io/ExistingSDFBridge.cpp
   src/io/SDFBinReader.cpp
   src/io/SDFBinWriter.cpp
@@ -163,6 +166,7 @@ message(STATUS "  Existing core requested: ${ADASDF_CL_USE_EXISTING_CORE}")
 message(STATUS "  Existing core found: ${ADASDF_CL_HAS_EXISTING_CORE}")
 message(STATUS "  Adaptive builder: ${ADASDF_CL_ENABLE_ADAPTIVE_BUILDER}")
 message(STATUS "  Surrogate recommender: ${ADASDF_CL_ENABLE_SURROGATE_RECOMMENDER}")
+message(STATUS "  Core-free demo backend: ${ADASDF_CL_ENABLE_DEMO_BACKEND}")
 message(STATUS "  CUDA: not required")
 message(STATUS "  FCL: not required")
 message(STATUS "")
@@ -174,7 +178,8 @@ target_link_libraries(adasdf_cl_runtime PUBLIC adasdf_cl)
 target_compile_definitions(adasdf_cl_runtime PUBLIC
   ADASDF_CL_HAS_EXISTING_CORE=$<BOOL:${ADASDF_CL_HAS_EXISTING_CORE}>
   ADASDF_CL_ENABLE_ADAPTIVE_BUILDER=$<BOOL:${ADASDF_CL_ENABLE_ADAPTIVE_BUILDER}>
-  ADASDF_CL_ENABLE_SURROGATE_RECOMMENDER=$<BOOL:${ADASDF_CL_ENABLE_SURROGATE_RECOMMENDER}>)
+  ADASDF_CL_ENABLE_SURROGATE_RECOMMENDER=$<BOOL:${ADASDF_CL_ENABLE_SURROGATE_RECOMMENDER}>
+  ADASDF_CL_ENABLE_DEMO_BACKEND=$<BOOL:${ADASDF_CL_ENABLE_DEMO_BACKEND}>)
 
 if(ADASDF_CL_HAS_EXISTING_CORE)
   target_link_libraries(adasdf_cl_runtime PRIVATE adasdf_existing_core)
@@ -186,7 +191,8 @@ set(ADASDF_CL_EXAMPLE_SOURCES
   examples/03_collision_between_two_objects.cpp
   examples/04_batched_gpu_query.cpp
   examples/05_fcl_style_api.cpp
-  examples/07_contact_reduction_demo.cpp)
+  examples/07_contact_reduction_demo.cpp
+  examples/08_core_free_demo_collision.cpp)
 
 if(ADASDF_CL_BUILD_EXAMPLES)
   add_executable(adasdf_load_sdfbin_and_query
@@ -209,6 +215,10 @@ if(ADASDF_CL_BUILD_EXAMPLES)
     examples/07_contact_reduction_demo.cpp)
   target_link_libraries(adasdf_contact_reduction_demo PRIVATE adasdf::cl_runtime)
 
+  add_executable(adasdf_core_free_demo_collision
+    examples/08_core_free_demo_collision.cpp)
+  target_link_libraries(adasdf_core_free_demo_collision PRIVATE adasdf::cl_runtime)
+
   add_custom_target(adasdf_cl_api_preview_examples SOURCES
     examples/01_build_adaptive_sdf.cpp
     examples/04_batched_gpu_query.cpp)
@@ -226,6 +236,9 @@ target_link_libraries(adasdf_query PRIVATE adasdf_cl_runtime)
 add_executable(adasdf_collide tools/adasdf_collide.cpp)
 target_link_libraries(adasdf_collide PRIVATE adasdf_cl_runtime)
 
+add_executable(adasdf_make_demo_box tools/adasdf_make_demo_box.cpp)
+target_link_libraries(adasdf_make_demo_box PRIVATE adasdf_cl_runtime)
+
 set(ADASDF_CL_TEST_SOURCES
   tests/test_sdf_io.cpp
   tests/test_collision_query.cpp
@@ -238,6 +251,10 @@ set(ADASDF_CL_TEST_SOURCES
   tests/test_contact_reducer.cpp
   tests/test_cpu_narrowphase.cpp
   tests/test_build_options.cpp
+  tests/test_analytic_sdf_model.cpp
+  tests/test_demo_sdfbin.cpp
+  tests/test_core_free_demo_collision.cpp
+  tests/test_make_demo_box_cli.cpp
   tests/test_adaptive_builder.cpp
   tests/test_sdfbin_writer_roundtrip.cpp
   tests/test_surrogate_recommender.cpp
@@ -259,14 +276,26 @@ if(ADASDF_CL_BUILD_TESTS)
   enable_testing()
   set(ADASDF_CL_TEST_CUBE_STL
     "${CMAKE_CURRENT_SOURCE_DIR}/tests/data/cube_closed_ascii.stl")
+  set(ADASDF_CL_TEST_TEMP_DIR
+    "${CMAKE_CURRENT_BINARY_DIR}/adasdf_cl_test_tmp")
   foreach(test_source IN LISTS ADASDF_CL_TEST_SOURCES)
     get_filename_component(test_name "${test_source}" NAME_WE)
     add_executable(${test_name} "${test_source}")
     target_link_libraries(${test_name} PRIVATE adasdf::cl_runtime)
     target_compile_definitions(${test_name} PRIVATE
       ADASDF_CL_TEST_FIXTURE="${ADASDF_CL_TEST_FIXTURE}"
-      ADASDF_CL_TEST_CUBE_STL="${ADASDF_CL_TEST_CUBE_STL}")
+      ADASDF_CL_TEST_CUBE_STL="${ADASDF_CL_TEST_CUBE_STL}"
+      ADASDF_CL_TEST_TEMP_DIR="${ADASDF_CL_TEST_TEMP_DIR}")
+    if(test_name STREQUAL "test_make_demo_box_cli")
+      add_dependencies(${test_name} adasdf_make_demo_box)
+      target_compile_definitions(${test_name} PRIVATE
+        ADASDF_CL_MAKE_DEMO_BOX="$<TARGET_FILE_NAME:adasdf_make_demo_box>")
+    endif()
     add_test(NAME ${test_name} COMMAND ${test_name})
+    if(test_name STREQUAL "test_make_demo_box_cli")
+      set_tests_properties(${test_name} PROPERTIES
+        WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_make_demo_box>")
+    endif()
   endforeach()
 endif()
 
@@ -282,7 +311,8 @@ set(ADASDF_CL_INSTALL_TOOL_TARGETS
   adasdf_build
   adasdf_info
   adasdf_query
-  adasdf_collide)
+  adasdf_collide
+  adasdf_make_demo_box)
 
 install(TARGETS ${ADASDF_CL_INSTALL_TARGETS}
   EXPORT AdaSDFCLTargets

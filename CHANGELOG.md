@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.8.0-alpha
+
+Core-free standalone demo backend.
+
+### Added
+
+- Analytic box SDF model.
+- Core-free demo `.sdfbin` format.
+- `adasdf_make_demo_box` CLI.
+- Core-free point query and collision demo.
+- Demo `.sdfbin` reader/writer.
+- Core-free demo collision example.
+- Tests for analytic SDF, demo `.sdfbin`, make-demo-box CLI, and core-free collision.
+
+### Changed
+
+- README now includes a clone-only demo workflow.
+- CLI documentation includes the core-free demo workflow.
+- Alpha validation now runs the v0.8 make/info/query/collide demo path without the existing core.
+
+### Notes
+
+- This is a demo backend for public integration and learning.
+- It is not a replacement for the full adaptive compressed SDF builder.
+- Full adaptive STL-to-sdfbin construction remains future work for the public standalone backend.
+
 ## 0.7.0-alpha.2
 
 Documentation hotfix after external downstream collision testing.

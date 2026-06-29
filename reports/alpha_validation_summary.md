@@ -9,7 +9,7 @@
 ### Configure: PASS
 
 ```bash
-cmake -S '<source>' -B '<build>' -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD_TESTS=ON -DADASDF_CL_USE_EXISTING_CORE=ON -DADASDF_CL_ENABLE_ADAPTIVE_BUILDER=ON -DADASDF_CL_ENABLE_SURROGATE_RECOMMENDER=ON
+cmake -S '<source>' -B '<build>' -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD_TESTS=ON -DADASDF_CL_USE_EXISTING_CORE=OFF -DADASDF_CL_ENABLE_ADAPTIVE_BUILDER=ON -DADASDF_CL_ENABLE_SURROGATE_RECOMMENDER=ON -DADASDF_CL_ENABLE_DEMO_BACKEND=ON
 ```
 
 ```text
@@ -23,14 +23,14 @@ cmake -S '<source>' -B '<build>' -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD
 -- Detecting CXX compile features - done
 --
 -- AdaSDF-CL configuration:
---   Version: 0.7.0-alpha.2
+--   Version: 0.8.0-alpha
 --   Build examples: ON
 --   Build tests: ON
---   Existing core requested: ON
---   Existing core found: ON
+--   Existing core requested: OFF
+--   Existing core found: OFF
 --   Adaptive builder: ON
 --   Surrogate recommender: ON
---   CUDA: not required
+--   Core-free demo backend: ON
 ...
 ```
 
@@ -45,20 +45,20 @@ cmake --build '<build>' --config Release
 
   1>Checking Build System
   Building Custom Rule <source>/CMakeLists.txt
-  AABB.cpp
-  AdaptiveBlockCompressor.cpp
-  AdaptiveLowRankModel.cpp
-  AllPointsSDFContact.cpp
-  BlockPartition.cpp
-  BVH.cpp
-  BVHCandidateSampler.cpp
-  BVHPairFilter.cpp
-  ContactPointExporter.cpp
-  ContactPipelineDecisionReport.cpp
-  ContactSummaryReport.cpp
-  DenseBlockGenerator.cpp
-  DenseBlockCache.cpp
-  FCLContactExporter.cpp
+  FCLAdapter.cpp
+  Backend.cpp
+  GpuBackend.cpp
+  CompressedSDF.cpp
+  AdaptiveSDFBuilder.cpp
+  ExistingBuilderBridge.cpp
+  SDFBuilder.cpp
+  SurrogateRecommender.cpp
+  AnalyticSDFModel.cpp
+  MeshModel.cpp
+  SDFModel.cpp
+  Transform.cpp
+  ContactOnlySDFBin.cpp
+  DemoSDFBin.cpp
 ...
 ```
 
@@ -71,21 +71,21 @@ ctest --test-dir '<build>' -C Release --output-on-failure
 ```text
 Test project <build>
       Start  1: test_sdf_io
- 1/17 Test  #1: test_sdf_io ......................   Passed    0.02 sec
+ 1/21 Test  #1: test_sdf_io ......................   Passed    0.01 sec
       Start  2: test_collision_query
- 2/17 Test  #2: test_collision_query .............   Passed    0.01 sec
+ 2/21 Test  #2: test_collision_query .............   Passed    0.01 sec
       Start  3: test_distance_query
- 3/17 Test  #3: test_distance_query ..............   Passed    0.01 sec
+ 3/21 Test  #3: test_distance_query ..............   Passed    0.01 sec
       Start  4: test_collision_object
- 4/17 Test  #4: test_collision_object ............   Passed    0.02 sec
+ 4/21 Test  #4: test_collision_object ............   Passed    0.02 sec
       Start  5: test_pair_distance_query
- 5/17 Test  #5: test_pair_distance_query .........   Passed    0.05 sec
+ 5/21 Test  #5: test_pair_distance_query .........   Passed    0.01 sec
       Start  6: test_pair_collision_query
- 6/17 Test  #6: test_pair_collision_query ........   Passed    0.05 sec
+ 6/21 Test  #6: test_pair_collision_query ........   Passed    0.01 sec
       Start  7: test_candidate_point_sampler
- 7/17 Test  #7: test_candidate_point_sampler .....   Passed    0.03 sec
+ 7/21 Test  #7: test_candidate_point_sampler .....   Passed    0.01 sec
       Start  8: test_contact_generator
- 8/17 Test  #8: test_contact_generator ...........   Passed    0.03 sec
+ 8/21 Test  #8: test_contact_generator ...........   Passed    0.01 sec
       Start  9: test_contact_reducer
 ...
 ```
@@ -110,109 +110,113 @@ Install validation: PASS
 Report: reports/install_validation_summary.md
 ```
 
-### Build Cube SDFBin: PASS
+### Make Demo Box SDFBin: PASS
 
 ```bash
-'<build>/Release/adasdf_build.exe' '<source>/tests/data/cube_closed_ascii.stl' '<workspace>/build/cube_v0_7_alpha.sdfbin' --near-surface-error 1e-4 --max-memory-mb 256 --compress
+'<build>/Release/adasdf_make_demo_box.exe' '<workspace>/build/cube_demo_v0_8.sdfbin'
 ```
 
 ```text
-AdaSDF-CL adaptive builder
-Input mesh: <local-path>
-Output sdfbin: <local-path>
-Near-surface error: 0.0001
-Max memory: 256 MB
-Max octree level: 5
-Compression: enabled
-Surrogate recommendation: disabled
-Build status: success
-AABB min: -0.025 -0.025 -0.025
-AABB max: 1.025 1.025 1.025
-Memory footprint: 10432 bytes
+AdaSDF-CL demo box generator
+Output: <local-path>
+Shape: box
+Center: 0 0 0
+Half extent: 0.5 0.5 0.5
+Backend: core-free analytic demo SDF backend
+Write status: success
 Reload validation: success
 ```
 
-### Load Query Example: PASS
+### Demo Info CLI: PASS
 
 ```bash
-'<build>/Release/adasdf_load_sdfbin_and_query.exe' '<workspace>/build/cube_v0_7_alpha.sdfbin'
+'<build>/Release/adasdf_info.exe' '<workspace>/build/cube_demo_v0_8.sdfbin'
 ```
 
 ```text
-AdaSDF-CL sdfbin query example
-File: <local-path>
-Valid: true
-AABB min: -0.025 -0.025 -0.025
-AABB max: 1.025 1.025 1.025
-Memory footprint: 10432 bytes
-Near-surface error: 0.00740882
-Backend: existing sdf::AdaptiveLowRankModel CPU query
-
-Query point: 0.5 0.5 0.5
-Signed distance: -0.499912
-Gradient: -3.38354e-15 0 0
-Normal: 0 0 0
-Gradient norm: 3.38354e-15
-
-Query point: -0.025 -0.025 -0.025
-Signed distance: 0.0442556
-Gradient: -0.152103 -0.152103 -0.152103
+AdaSDF-CL info
+Library version: 0.8.0-alpha
+Path: <local-path>
+Model name: analytic demo box
+Valid: yes
+Format: ADASDF_DEMO_SDFBIN_V1
+Shape: box
+Center: 0 0 0
+Half extent: 0.5 0.5 0.5
+Unit: m
+Format version: 1
+Query backend: core-free analytic demo SDF backend
+Query backend available: yes
+AABB min: -0.5 -0.5 -0.5
+AABB max: 0.5 0.5 0.5
+Fine cell count: 0
+Fine node count: 0
+Fine spacing: 0
 ...
 ```
 
-### Pair Collision Example: PASS
+### Demo Query CLI: PASS
 
 ```bash
-'<build>/Release/adasdf_collision_between_two_objects.exe' '<workspace>/build/cube_v0_7_alpha.sdfbin'
+'<build>/Release/adasdf_query.exe' '<workspace>/build/cube_demo_v0_8.sdfbin' --point 0 0 0
 ```
 
 ```text
-AdaSDF-CL pair collision example
+AdaSDF-CL point query
+Path: <local-path>
+Point: 0 0 0
+Signed distance: -0.5
+Gradient: 1 0 0
+Normal: 1 0 0
+Query backend: core-free analytic demo SDF backend
+```
+
+### Demo Collide CLI: PASS
+
+```bash
+'<build>/Release/adasdf_collide.exe' '<workspace>/build/cube_demo_v0_8.sdfbin' '<workspace>/build/cube_demo_v0_8.sdfbin' --max-contacts 4
+```
+
+```text
+AdaSDF-CL collision query
 Model A: <local-path>
 Model B: <local-path>
-AABB A: min=(-0.025 -0.025 -0.025) max=(1.025 1.025 1.025)
-AABB B: min=(-0.015 -0.025 -0.025) max=(1.035 1.025 1.025)
-Query mode: Balanced
+Offset B: 0 0 0
+AABB A: min=(-0.5 -0.5 -0.5) max=(0.5 0.5 0.5)
+AABB B: min=(-0.5 -0.5 -0.5) max=(0.5 0.5 0.5)
+Colliding: true
+Minimum distance: -0.5
 Backend: CPU narrow-phase: symmetric SDF-sampling research preview
 Method: symmetric candidate-point SDF query + deterministic contact reduction
-Colliding: true
-Minimum distance: -0.489924
 Candidate points: 606
-Raw contacts: 2
-Reduced contacts: 2
-Contact count: 2
-Contact[0].point: 0.5 0.5 0.5
-Contact[0].normal: -1 2.77893e-15 -2.77893e-15
-Contact[0].penetration_depth: 0.489924
-Number of SDF queries: 4242
+Raw contacts: 606
+Reduced contacts: 4
+Contact count: 4
+Contact[0].point: 0 0 0
+Contact[0].normal: 1 0 0
+Contact[0].penetration_depth: 0.5
+Contact[0].signed_distance: -0.5
+...
 ```
 
-### Contact Reduction Demo: PASS
+### Core-Free Demo Collision Example: PASS
 
 ```bash
-'<build>/Release/adasdf_contact_reduction_demo.exe' '<workspace>/build/cube_v0_7_alpha.sdfbin'
+'<build>/Release/adasdf_core_free_demo_collision.exe'
 ```
 
 ```text
-AdaSDF-CL contact reduction demo
-Model: <local-path>
-
-Scenario: separated
-Offset: 1.25 0 0
-Query mode: Balanced
-Backend: CPU narrow-phase: symmetric SDF-sampling research preview
-Method: AABB broadphase lower-bound distance
-Distance: 0.2
-Colliding: false
-Candidate points: 0
-Raw contacts: 0
-Reduced contacts: 0
-SDF queries: 0
-Distance method: AABB broadphase lower-bound distance
-
-Scenario: near_contact
-Offset: 1 0 0
-...
+AdaSDF-CL core-free demo collision
+Demo sdfbin: <local-path>
+Backend: core-free analytic demo SDF backend
+Colliding: true
+Minimum distance: -0.25
+Distance query: -0.25
+Contact count: 4
+Contact[0].point: 0 0 0
+Contact[0].normal: -1 0 0
+Contact[0].penetration_depth: 0.25
+Method: symmetric candidate-point SDF query + deterministic contact reduction
 ```
 
 ### Clean Check: PASS
