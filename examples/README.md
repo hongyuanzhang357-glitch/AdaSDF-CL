@@ -57,7 +57,7 @@ Optional second model path and translation can be supplied. Key output fields:
 
 Status: API preview.
 
-CUDA batched pair query is not implemented in 0.7.0-alpha.1.
+CUDA batched pair query is not implemented in 0.7.0-alpha.2.
 
 ## 05_fcl_style_api.cpp
 

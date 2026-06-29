@@ -105,6 +105,13 @@ Deferred from v0.5:
 - include the Ubuntu install validation portability fix
 - keep core algorithms and public API unchanged
 
+## v0.7.0-alpha.2 External Test Documentation Hotfix
+
+- document the external collision test verdict as PARTIAL
+- clarify core-free public builds versus existing-core enhanced builds
+- state that clone-only end-to-end public collision demos are planned for a later version
+- keep core algorithms, public API, and CMake install/export behavior unchanged
+
 ## v0.8 Python Binding Preview
 
 - define Python package layout

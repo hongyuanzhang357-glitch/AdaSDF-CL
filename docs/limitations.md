@@ -1,6 +1,13 @@
 # Limitations
 
-AdaSDF-CL 0.7.0-alpha.1 is a research-preview library layer, not a certified industrial collision stack.
+AdaSDF-CL 0.7.0-alpha.2 is a research-preview library layer, not a certified industrial collision stack.
+
+## Backend Availability
+
+- Core-free builds currently cannot generate, read, or query real `.sdfbin` models.
+- Real `.sdfbin` generation, reading, point query, and pair collision currently require existing-core enhanced builds.
+- Existing-core downstream consumers may need additional dependency prefixes, such as vcpkg-installed dependencies, in `CMAKE_PREFIX_PATH`.
+- The public core-free package is suitable for API review, CMake integration testing, and compile/link smoke tests, but it is not yet a clone-only end-to-end public collision demo.
 
 ## Pair Collision
 

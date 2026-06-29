@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.7.0-alpha.2
+
+Documentation hotfix after external downstream collision testing.
+
+### Changed
+
+- Clarified the difference between core-free public builds and existing-core enhanced builds.
+- Documented that core-free builds can compile, install, and link, but cannot yet generate/read real `.sdfbin` models.
+- Added external collision test summary.
+- Updated README limitations for public users.
+
+### Notes
+
+- No core algorithm changes.
+- No public API changes.
+- No CMake install/export changes.
+
 ## 0.7.0-alpha.1
 
 CI-fixed alpha / research-preview release candidate.

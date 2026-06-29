@@ -2,7 +2,7 @@
 
 Adaptive Signed Distance Field Collision Library
 
-Status: 0.7.0-alpha.1 / research preview
+Status: 0.7.0-alpha.2 / research preview
 Build system: CMake
 License: MIT
 Tests: CTest
@@ -51,6 +51,46 @@ API preview / planned:
 - Real DASH-SDF surrogate backend.
 - Strict global closest-distance solver.
 
+## Current Backend Status
+
+AdaSDF-CL currently has two build modes.
+
+### Core-Free Public Build
+
+The public repository can be configured, built, tested, installed, and consumed
+by external CMake projects without the original research core.
+
+This mode supports:
+
+- CMake install/export.
+- `find_package(AdaSDFCL CONFIG REQUIRED)`.
+- Public headers and API preview.
+- CLI tool installation.
+- External compile/link smoke tests.
+
+However, in v0.7.0-alpha.2, the core-free build does not yet provide a
+standalone backend for generating, reading, or querying real `.sdfbin` models.
+
+### Existing-Core Enhanced Build
+
+When configured with `ADASDF_CL_USE_EXISTING_CORE=ON` and a valid
+`ADASDF_CL_EXISTING_ROOT`, AdaSDF-CL can use the existing research core to:
+
+- Build `.sdfbin` from STL.
+- Read `.sdfbin`.
+- Query signed distance and gradient.
+- Run CPU SDF-sampling pair collision.
+
+This path is functional in the author's local environment but is not yet a fully
+self-contained public distribution. Downstream users may need to provide the
+existing core dependency prefix, such as vcpkg-installed dependencies.
+
+### Practical Implication
+
+The current public alpha is suitable for API review, CMake integration testing,
+and early research discussion. A clone-only end-to-end public collision demo is
+planned for a later version.
+
 ## Quick Start
 
 ```bash
@@ -82,7 +122,7 @@ The library can configure without the existing core. In that mode, real `.sdfbin
 
 ## Install and Use From CMake
 
-The 0.7.0-alpha.1 tree installs headers, static library targets, command-line tools,
+The 0.7.0-alpha.2 tree installs headers, static library targets, command-line tools,
 license/readme metadata, and CMake package files:
 
 ```bash
@@ -110,6 +150,9 @@ See `docs/external_integration.md` and
 
 ## Build an Adaptive SDF From STL
 
+Real STL-to-`.sdfbin` generation currently requires an existing-core enhanced
+build.
+
 ```bash
 ../build/adasdf_cl-v0_7/Debug/adasdf_build.exe tests/data/cube_closed_ascii.stl ../build/cube.sdfbin --near-surface-error 1e-4 --max-memory-mb 256 --compress
 ```
@@ -117,6 +160,9 @@ See `docs/external_integration.md` and
 The CLI validates output by reloading the generated `.sdfbin`.
 
 ## Query Signed Distance and Normal
+
+Real `.sdfbin` query examples require a readable model from an existing-core
+enhanced build.
 
 ```cpp
 #include <adasdf/adasdf.h>
@@ -132,6 +178,9 @@ adasdf::Vector3 normal = model->sampleNormal(p);
 Gradients currently use central finite differences over the loaded SDF query.
 
 ## FCL-Style Pair Collision
+
+Real pair-collision examples require readable `.sdfbin` models from an
+existing-core enhanced build.
 
 ```cpp
 #include <adasdf/adasdf.h>
@@ -203,7 +252,8 @@ The current validation records:
   reduction examples run successfully when the existing core is available.
 - `scripts/check_repo_clean.py` passes after documentation and generated-file hygiene checks.
 
-See `docs/alpha_status.md`, `docs/github_release_draft_v0_7_0_alpha_1.md`,
+See `docs/alpha_status.md`, `docs/github_release_draft_v0_7_0_alpha_2.md`,
+`docs/external_collision_test_summary_v0_7_0_alpha_1.md`,
 `docs/release_notes_v0_7_0_alpha.md`, and
 `docs/adasdf_cl_v0_7_external_integration_report.md`.
 
@@ -214,6 +264,9 @@ See `docs/alpha_status.md`, `docs/github_release_draft_v0_7_0_alpha_1.md`,
 - Contact reduction is a deterministic heuristic, not a manifold optimizer.
 - CUDA batched pair query is not implemented.
 - FCL ABI compatibility is not provided.
+- Core-free builds currently cannot generate, read, or query real `.sdfbin` models.
+- Real `.sdfbin` functionality currently requires an existing-core enhanced build.
+- Existing-core downstream consumers may need additional dependency prefixes.
 - The surrogate recommender is a placeholder unless a future backend is explicitly connected.
 - Contact-only `.sdfbin` remains planned.
 

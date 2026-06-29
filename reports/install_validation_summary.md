@@ -17,7 +17,7 @@ cmake -S '<source>' -B '<build>' -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD
 -- Selecting Windows SDK version 10.0.22621.0 to target Windows 10.0.26200.
 --
 -- AdaSDF-CL configuration:
---   Version: 0.7.0-alpha.1
+--   Version: 0.7.0-alpha.2
 --   Build examples: ON
 --   Build tests: ON
 --   Existing core requested: OFF
@@ -41,8 +41,6 @@ cmake --build '<build>' --config Release --parallel
 ```text
 适用于 .NET Framework MSBuild 版本 17.14.40+3e7442088
 
-  1>Checking Build System
-  Building Custom Rule <source>/CMakeLists.txt
   FCLAdapter.cpp
   Backend.cpp
   GpuBackend.cpp
@@ -59,6 +57,8 @@ cmake --build '<build>' --config Release --parallel
   SDFBinReader.cpp
   SDFBinWriter.cpp
   CandidatePointSampler.cpp
+  CollisionObject.cpp
+  CollisionResult.cpp
 ...
 ```
 
@@ -102,12 +102,6 @@ cmake -S '<source>/tests/package' -B '<workspace>/build/adasdf_cl_iv_pkg' '-DCMA
 -- Selecting Windows SDK version 10.0.22621.0 to target Windows 10.0.26200.
 -- Configuring done (0.0s)
 -- Generating done (0.0s)
-CMake Warning:
-  Manually-specified variables were not used by the project:
-
-    CMAKE_PREFIX_PATH
-
-
 -- Build files have been written to: <build>_pkg
 ```
 
@@ -120,11 +114,8 @@ cmake --build '<workspace>/build/adasdf_cl_iv_pkg' --config Release --parallel
 ```text
 适用于 .NET Framework MSBuild 版本 17.14.40+3e7442088
 
-  1>Checking Build System
-  Building Custom Rule <source>/tests/package/CMakeLists.txt
   test_find_package.cpp
   test_find_package.vcxproj -> <build>_pkg\Release\test_find_package.exe
-  Building Custom Rule <source>/tests/package/CMakeLists.txt
 ```
 
 ### Package Run: PASS
@@ -135,7 +126,7 @@ cmake --build '<workspace>/build/adasdf_cl_iv_pkg' --config Release --parallel
 
 ```text
 AdaSDF-CL package consumer
-Version: 0.7.0-alpha.1
+Version: 0.7.0-alpha.2
 Point: 1 2 3
 CPU backend available: true
 ```
@@ -162,11 +153,8 @@ cmake --build '<workspace>/build/adasdf_cl_iv_ds' --config Release --parallel
 ```text
 适用于 .NET Framework MSBuild 版本 17.14.40+3e7442088
 
-  1>Checking Build System
-  Building Custom Rule <source>/examples/downstream_cmake_project/CMakeLists.txt
   main.cpp
   adasdf_downstream.vcxproj -> <build>_ds\Release\adasdf_downstream.exe
-  Building Custom Rule <source>/examples/downstream_cmake_project/CMakeLists.txt
 ```
 
 ### Downstream Run: PASS
@@ -177,7 +165,7 @@ cmake --build '<workspace>/build/adasdf_cl_iv_ds' --config Release --parallel
 
 ```text
 AdaSDF-CL downstream example
-Version: 0.7.0-alpha.1
+Version: 0.7.0-alpha.2
 CPU backend: available
 No .sdfbin supplied; package integration smoke test complete.
 ```

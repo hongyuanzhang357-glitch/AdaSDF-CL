@@ -23,7 +23,7 @@ cmake -S '<source>' -B '<build>' -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD
 -- Detecting CXX compile features - done
 --
 -- AdaSDF-CL configuration:
---   Version: 0.7.0-alpha.1
+--   Version: 0.7.0-alpha.2
 --   Build examples: ON
 --   Build tests: ON
 --   Existing core requested: ON
@@ -71,21 +71,21 @@ ctest --test-dir '<build>' -C Release --output-on-failure
 ```text
 Test project <build>
       Start  1: test_sdf_io
- 1/17 Test  #1: test_sdf_io ......................   Passed    0.05 sec
+ 1/17 Test  #1: test_sdf_io ......................   Passed    0.02 sec
       Start  2: test_collision_query
- 2/17 Test  #2: test_collision_query .............   Passed    0.03 sec
+ 2/17 Test  #2: test_collision_query .............   Passed    0.01 sec
       Start  3: test_distance_query
- 3/17 Test  #3: test_distance_query ..............   Passed    0.05 sec
+ 3/17 Test  #3: test_distance_query ..............   Passed    0.01 sec
       Start  4: test_collision_object
- 4/17 Test  #4: test_collision_object ............   Passed    0.05 sec
+ 4/17 Test  #4: test_collision_object ............   Passed    0.02 sec
       Start  5: test_pair_distance_query
  5/17 Test  #5: test_pair_distance_query .........   Passed    0.05 sec
       Start  6: test_pair_collision_query
  6/17 Test  #6: test_pair_collision_query ........   Passed    0.05 sec
       Start  7: test_candidate_point_sampler
- 7/17 Test  #7: test_candidate_point_sampler .....   Passed    0.04 sec
+ 7/17 Test  #7: test_candidate_point_sampler .....   Passed    0.03 sec
       Start  8: test_contact_generator
- 8/17 Test  #8: test_contact_generator ...........   Passed    0.04 sec
+ 8/17 Test  #8: test_contact_generator ...........   Passed    0.03 sec
       Start  9: test_contact_reducer
 ...
 ```

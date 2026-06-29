@@ -1,7 +1,8 @@
-# GitHub Publication Checklist for AdaSDF-CL v0.7.0-alpha.1
+# GitHub Publication Checklist for AdaSDF-CL v0.7.0-alpha.2
 
-The original `v0.7.0-alpha` tag is retained for traceability. The recommended
-first public pre-release is `v0.7.0-alpha.1`.
+The original `v0.7.0-alpha` and `v0.7.0-alpha.1` tags are retained for
+traceability. The recommended documentation-hotfix pre-release is
+`v0.7.0-alpha.2`.
 
 ## Repository Safety
 
@@ -45,10 +46,11 @@ first public pre-release is `v0.7.0-alpha.1`.
 - [ ] Remote URL confirmed.
 - [ ] Remote added.
 - [ ] Branch pushed.
-- [ ] Recommended `v0.7.0-alpha.1` tag pushed.
+- [ ] Recommended `v0.7.0-alpha.2` tag pushed.
 - [ ] Original `v0.7.0-alpha` tag retained unchanged.
+- [ ] Original `v0.7.0-alpha.1` tag retained unchanged.
 - [ ] GitHub Actions passed on GitHub.
-- [ ] GitHub pre-release created from `v0.7.0-alpha.1`.
+- [ ] GitHub pre-release created from `v0.7.0-alpha.2`.
 
-Publication items should be checked as `main`, the `v0.7.0-alpha.1` tag, CI, and
+Publication items should be checked as `main`, the `v0.7.0-alpha.2` tag, CI, and
 the GitHub pre-release are completed.

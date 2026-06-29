@@ -1,6 +1,6 @@
 # External Integration
 
-AdaSDF-CL 0.7.0-alpha.1 installs a CMake package that can be consumed from an
+AdaSDF-CL 0.7.0-alpha.2 installs a CMake package that can be consumed from an
 external project without referencing the source tree.
 
 ## Build and Install
@@ -48,6 +48,15 @@ This script configures AdaSDF-CL without the existing core, installs it, builds
 write existing OctreeBlockLowRankSDF-backed `.sdfbin` assets. External package
 consumers can compile, link, and use the public API without CUDA, FCL, Python, or
 the existing core.
+
+Core-free builds currently do not provide a standalone backend for generating,
+reading, or querying real `.sdfbin` models. Real `.sdfbin` functionality
+currently requires an existing-core enhanced build.
+
+Downstream consumers of an existing-core enhanced install may need to add the
+existing core's dependency prefix to `CMAKE_PREFIX_PATH`, for example a
+vcpkg-installed dependency prefix that provides packages such as
+`nlohmann_json`.
 
 ## Source Archives
 
