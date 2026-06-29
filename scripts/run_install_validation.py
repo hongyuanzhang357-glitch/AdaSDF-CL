@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import shlex
 import subprocess
@@ -95,17 +96,59 @@ def brief_output(output: str, max_lines: int = 20) -> str:
     return "\n".join(lines[:max_lines] + ["..."])
 
 
-def downstream_executable(build: Path, config: str) -> Path | None:
-    suffix = ".exe" if sys.platform.startswith("win") else ""
+def cmake_build_type_args(config: str) -> list[str]:
+    generator = os.environ.get("CMAKE_GENERATOR", "").lower()
+    multi_config_terms = ("multi-config", "visual studio", "xcode")
+    if any(term in generator for term in multi_config_terms):
+        return []
+    if sys.platform.startswith("win") and not generator:
+        return []
+    return [f"-DCMAKE_BUILD_TYPE={config}"]
+
+
+def find_executable(build: Path, target_name: str, config: str) -> Path:
+    target_names = [target_name, f"{target_name}.exe"]
+    if sys.platform.startswith("win"):
+        target_names.reverse()
+
     candidates = [
-        build / config / f"adasdf_downstream{suffix}",
-        build / f"adasdf_downstream{suffix}",
+        *(build / config / target for target in target_names),
+        *(build / target for target in target_names),
     ]
     for candidate in candidates:
-        if candidate.exists():
+        if candidate.is_file():
             return candidate
-    matches = list(build.rglob(f"adasdf_downstream{suffix}"))
-    return matches[0] if matches else None
+
+    for target in target_names:
+        matches = [path for path in build.rglob(target) if path.is_file()]
+        if matches:
+            return matches[0]
+
+    checked = "\n".join(f"- {candidate}" for candidate in candidates)
+    raise FileNotFoundError(
+        f"Could not locate executable target '{target_name}' under {build}.\n"
+        f"Checked:\n{checked}"
+    )
+
+
+def print_failure(
+    result: StepResult,
+    source: Path,
+    build: Path,
+    install: Path,
+) -> None:
+    print(f"Install validation failed during: {result.name}", file=sys.stderr)
+    print(
+        "Command: "
+        + display_command(result.command, source, build, install),
+        file=sys.stderr,
+    )
+    if result.output.strip():
+        print("Output:", file=sys.stderr)
+        print(
+            brief_output(sanitize_output(result.output, source, build, install), max_lines=80),
+            file=sys.stderr,
+        )
 
 
 def write_report(
@@ -181,7 +224,7 @@ def main() -> int:
         report_path.unlink()
 
     workspace = source.parent
-    package_script = source / "tests" / "package" / "run_package_test.cmake"
+    package_source = source / "tests" / "package"
     downstream_source = source / "examples" / "downstream_cmake_project"
 
     steps: list[tuple[str, list[str]]] = [
@@ -199,21 +242,50 @@ def main() -> int:
                 "-DADASDF_CL_ENABLE_ADAPTIVE_BUILDER=ON",
                 "-DADASDF_CL_ENABLE_SURROGATE_RECOMMENDER=ON",
                 f"-DCMAKE_INSTALL_PREFIX={install}",
+                *cmake_build_type_args(config),
             ],
         ),
         ("Build", ["cmake", "--build", str(build), "--config", config, "--parallel"]),
         ("Install", ["cmake", "--install", str(build), "--config", config, "--prefix", str(install)]),
         (
-            "Package Config Test",
+            "Package Configure",
             [
                 "cmake",
-                f"-DADASDF_CL_INSTALL_PREFIX={install}",
-                f"-DADASDF_CL_PACKAGE_TEST_BUILD={package_build}",
-                f"-DADASDF_CL_CONFIG={config}",
-                "-P",
-                str(package_script),
+                "-S",
+                str(package_source),
+                "-B",
+                str(package_build),
+                f"-DCMAKE_PREFIX_PATH={install}",
+                *cmake_build_type_args(config),
             ],
         ),
+        ("Package Build", ["cmake", "--build", str(package_build), "--config", config, "--parallel"]),
+    ]
+
+    results: list[StepResult] = []
+    for name, command in steps:
+        print(f"[install-validation] {name}", flush=True)
+        result = run_step(name, command, workspace)
+        results.append(result)
+        if result.returncode != 0:
+            write_report(report_path, results, source, build, install, config)
+            print_failure(result, source, build, install)
+            return result.returncode
+
+    try:
+        package_exe = find_executable(package_build, "test_find_package", config)
+    except FileNotFoundError as exc:
+        result = StepResult("Package Run", ["test_find_package"], 1, str(exc))
+    else:
+        print("[install-validation] Package Run", flush=True)
+        result = run_step("Package Run", [str(package_exe)], workspace)
+    results.append(result)
+    if result.returncode != 0:
+        write_report(report_path, results, source, build, install, config)
+        print_failure(result, source, build, install)
+        return result.returncode
+
+    downstream_steps: list[tuple[str, list[str]]] = [
         (
             "Downstream Configure",
             [
@@ -223,34 +295,37 @@ def main() -> int:
                 "-B",
                 str(downstream_build),
                 f"-DCMAKE_PREFIX_PATH={install}",
-                f"-DCMAKE_BUILD_TYPE={config}",
+                *cmake_build_type_args(config),
             ],
         ),
         ("Downstream Build", ["cmake", "--build", str(downstream_build), "--config", config, "--parallel"]),
     ]
-
-    results: list[StepResult] = []
-    for name, command in steps:
+    for name, command in downstream_steps:
+        print(f"[install-validation] {name}", flush=True)
         result = run_step(name, command, workspace)
         results.append(result)
         if result.returncode != 0:
             write_report(report_path, results, source, build, install, config)
+            print_failure(result, source, build, install)
             return result.returncode
 
-    exe = downstream_executable(downstream_build, config)
-    if exe is None:
+    try:
+        downstream_exe = find_executable(downstream_build, "adasdf_downstream", config)
+    except FileNotFoundError as exc:
         result = StepResult(
             "Downstream Run",
             ["adasdf_downstream"],
             1,
-            "Could not locate downstream executable after build.",
+            str(exc),
         )
     else:
-        result = run_step("Downstream Run", [str(exe)], workspace)
+        print("[install-validation] Downstream Run", flush=True)
+        result = run_step("Downstream Run", [str(downstream_exe)], workspace)
     results.append(result)
 
     write_report(report_path, results, source, build, install, config)
     if result.returncode != 0:
+        print_failure(result, source, build, install)
         return result.returncode
 
     print("Install validation: PASS")
