@@ -1,22 +1,19 @@
 # GitHub Publication Commands
 
-Do not run these commands until the GitHub repository URL has been confirmed.
-No remote has been added by the preflight process.
+The original `v0.7.0-alpha` tag is retained for traceability. The recommended
+first public pre-release is `v0.7.0-alpha.1`.
 
 ```bash
-# 1. Create an empty GitHub repository first, then set the remote:
-git remote add origin <YOUR_GITHUB_REMOTE_URL>
-
-# 2. Verify remote:
+# 1. Verify remote:
 git remote -v
 
-# 3. Push main branch:
-git branch -M main
-git push -u origin main
+# 2. Push main branch:
+git push origin main
 
-# 4. Push alpha tag:
-git push origin v0.7.0-alpha
+# 3. Push the recommended alpha.1 tag:
+git push origin v0.7.0-alpha.1
 ```
 
-Current local branch before publication is expected to be `master`. The command
-above renames it to `main` immediately before the first push.
+Do not move or force-push the original `v0.7.0-alpha` tag. Do not create a
+GitHub Release for `v0.7.0-alpha`; create the first public pre-release from
+`v0.7.0-alpha.1`.

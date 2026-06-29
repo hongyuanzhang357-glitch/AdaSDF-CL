@@ -1,8 +1,8 @@
 # Alpha Status
 
-AdaSDF-CL 0.7.0-alpha is a research-preview release candidate.
+AdaSDF-CL 0.7.0-alpha.1 is a research-preview release candidate.
 
-## What Works in 0.7.0-alpha
+## What Works in 0.7.0-alpha.1
 
 - STL cube build through the adaptive builder bridge when the existing core is available.
 - `.sdfbin` reader/writer round-trip for existing-core-backed models.

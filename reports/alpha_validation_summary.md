@@ -2,7 +2,7 @@
 
 - Source: `<source>`
 - Build: `<build>`
-- Config: `Debug`
+- Config: `Release`
 
 ## Results
 
@@ -23,7 +23,7 @@ cmake -S '<source>' -B '<build>' -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD
 -- Detecting CXX compile features - done
 --
 -- AdaSDF-CL configuration:
---   Version: 0.7.0-alpha
+--   Version: 0.7.0-alpha.1
 --   Build examples: ON
 --   Build tests: ON
 --   Existing core requested: ON
@@ -37,7 +37,7 @@ cmake -S '<source>' -B '<build>' -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD
 ### Build: PASS
 
 ```bash
-cmake --build '<build>' --config Debug
+cmake --build '<build>' --config Release
 ```
 
 ```text
@@ -65,27 +65,27 @@ cmake --build '<build>' --config Debug
 ### CTest: PASS
 
 ```bash
-ctest --test-dir '<build>' -C Debug --output-on-failure
+ctest --test-dir '<build>' -C Release --output-on-failure
 ```
 
 ```text
 Test project <build>
       Start  1: test_sdf_io
- 1/17 Test  #1: test_sdf_io ......................   Passed    0.04 sec
+ 1/17 Test  #1: test_sdf_io ......................   Passed    0.05 sec
       Start  2: test_collision_query
- 2/17 Test  #2: test_collision_query .............   Passed    0.02 sec
+ 2/17 Test  #2: test_collision_query .............   Passed    0.03 sec
       Start  3: test_distance_query
- 3/17 Test  #3: test_distance_query ..............   Passed    0.07 sec
+ 3/17 Test  #3: test_distance_query ..............   Passed    0.05 sec
       Start  4: test_collision_object
- 4/17 Test  #4: test_collision_object ............   Passed    0.04 sec
+ 4/17 Test  #4: test_collision_object ............   Passed    0.05 sec
       Start  5: test_pair_distance_query
- 5/17 Test  #5: test_pair_distance_query .........   Passed    1.39 sec
+ 5/17 Test  #5: test_pair_distance_query .........   Passed    0.05 sec
       Start  6: test_pair_collision_query
- 6/17 Test  #6: test_pair_collision_query ........   Passed    1.39 sec
+ 6/17 Test  #6: test_pair_collision_query ........   Passed    0.05 sec
       Start  7: test_candidate_point_sampler
- 7/17 Test  #7: test_candidate_point_sampler .....   Passed    0.77 sec
+ 7/17 Test  #7: test_candidate_point_sampler .....   Passed    0.04 sec
       Start  8: test_contact_generator
- 8/17 Test  #8: test_contact_generator ...........   Passed    0.81 sec
+ 8/17 Test  #8: test_contact_generator ...........   Passed    0.04 sec
       Start  9: test_contact_reducer
 ...
 ```
@@ -93,10 +93,19 @@ Test project <build>
 ### Install Validation: PASS
 
 ```bash
-'<local-path>' '<source>/scripts/run_install_validation.py' --source '<source>' --build '<workspace>/build/adasdf_cl_iv' --install '<workspace>/build/adasdf_cl_install' --config Debug
+'<local-path>' '<source>/scripts/run_install_validation.py' --source '<source>' --build '<workspace>/build/adasdf_cl_iv' --install '<workspace>/build/adasdf_cl_install' --config Release
 ```
 
 ```text
+[install-validation] Configure
+[install-validation] Build
+[install-validation] Install
+[install-validation] Package Configure
+[install-validation] Package Build
+[install-validation] Package Run
+[install-validation] Downstream Configure
+[install-validation] Downstream Build
+[install-validation] Downstream Run
 Install validation: PASS
 Report: reports/install_validation_summary.md
 ```
@@ -104,7 +113,7 @@ Report: reports/install_validation_summary.md
 ### Build Cube SDFBin: PASS
 
 ```bash
-'<build>/Debug/adasdf_build.exe' '<source>/tests/data/cube_closed_ascii.stl' '<workspace>/build/cube_v0_7_alpha.sdfbin' --near-surface-error 1e-4 --max-memory-mb 256 --compress
+'<build>/Release/adasdf_build.exe' '<source>/tests/data/cube_closed_ascii.stl' '<workspace>/build/cube_v0_7_alpha.sdfbin' --near-surface-error 1e-4 --max-memory-mb 256 --compress
 ```
 
 ```text
@@ -126,7 +135,7 @@ Reload validation: success
 ### Load Query Example: PASS
 
 ```bash
-'<build>/Debug/adasdf_load_sdfbin_and_query.exe' '<workspace>/build/cube_v0_7_alpha.sdfbin'
+'<build>/Release/adasdf_load_sdfbin_and_query.exe' '<workspace>/build/cube_v0_7_alpha.sdfbin'
 ```
 
 ```text
@@ -154,7 +163,7 @@ Gradient: -0.152103 -0.152103 -0.152103
 ### Pair Collision Example: PASS
 
 ```bash
-'<build>/Debug/adasdf_collision_between_two_objects.exe' '<workspace>/build/cube_v0_7_alpha.sdfbin'
+'<build>/Release/adasdf_collision_between_two_objects.exe' '<workspace>/build/cube_v0_7_alpha.sdfbin'
 ```
 
 ```text
@@ -181,7 +190,7 @@ Number of SDF queries: 4242
 ### Contact Reduction Demo: PASS
 
 ```bash
-'<build>/Debug/adasdf_contact_reduction_demo.exe' '<workspace>/build/cube_v0_7_alpha.sdfbin'
+'<build>/Release/adasdf_contact_reduction_demo.exe' '<workspace>/build/cube_v0_7_alpha.sdfbin'
 ```
 
 ```text

@@ -1,6 +1,6 @@
 # Limitations
 
-AdaSDF-CL 0.7.0-alpha is a research-preview library layer, not a certified industrial collision stack.
+AdaSDF-CL 0.7.0-alpha.1 is a research-preview library layer, not a certified industrial collision stack.
 
 ## Pair Collision
 

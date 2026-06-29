@@ -2,7 +2,7 @@
 
 Adaptive Signed Distance Field Collision Library
 
-Status: 0.7.0-alpha / research preview
+Status: 0.7.0-alpha.1 / research preview
 Build system: CMake
 License: MIT
 Tests: CTest
@@ -82,7 +82,7 @@ The library can configure without the existing core. In that mode, real `.sdfbin
 
 ## Install and Use From CMake
 
-The 0.7.0-alpha tree installs headers, static library targets, command-line tools,
+The 0.7.0-alpha.1 tree installs headers, static library targets, command-line tools,
 license/readme metadata, and CMake package files:
 
 ```bash
@@ -203,7 +203,8 @@ The current validation records:
   reduction examples run successfully when the existing core is available.
 - `scripts/check_repo_clean.py` passes after documentation and generated-file hygiene checks.
 
-See `docs/alpha_status.md`, `docs/release_notes_v0_7_0_alpha.md`, and
+See `docs/alpha_status.md`, `docs/github_release_draft_v0_7_0_alpha_1.md`,
+`docs/release_notes_v0_7_0_alpha.md`, and
 `docs/adasdf_cl_v0_7_external_integration_report.md`.
 
 ## Limitations

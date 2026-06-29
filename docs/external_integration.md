@@ -1,6 +1,6 @@
 # External Integration
 
-AdaSDF-CL 0.7.0-alpha installs a CMake package that can be consumed from an
+AdaSDF-CL 0.7.0-alpha.1 installs a CMake package that can be consumed from an
 external project without referencing the source tree.
 
 ## Build and Install

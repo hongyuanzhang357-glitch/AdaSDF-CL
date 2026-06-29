@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.7.0-alpha.1
+
+CI-fixed alpha / research-preview release candidate.
+
+### Fixed
+
+- Fixed Ubuntu install validation portability.
+- Improved downstream package validation for Linux single-config generators and Windows multi-config generators.
+- Preserved Windows Visual Studio compatibility.
+
+### Notes
+
+- No core algorithm changes.
+- No public API changes.
+- `v0.7.0-alpha` is retained as the initial preflight tag but should not be used as the recommended public release.
+
 ## 0.7.0-alpha
 
 External integration and packaging alpha.

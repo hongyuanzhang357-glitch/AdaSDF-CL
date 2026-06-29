@@ -17,7 +17,7 @@ cmake -S '<source>' -B '<build>' -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD
 -- Selecting Windows SDK version 10.0.22621.0 to target Windows 10.0.26200.
 --
 -- AdaSDF-CL configuration:
---   Version: 0.7.0-alpha
+--   Version: 0.7.0-alpha.1
 --   Build examples: ON
 --   Build tests: ON
 --   Existing core requested: OFF
@@ -43,22 +43,22 @@ cmake --build '<build>' --config Release --parallel
 
   1>Checking Build System
   Building Custom Rule <source>/CMakeLists.txt
-  adasdf_cl_runtime.vcxproj -> <build>\Release\adasdf_cl_runtime.lib
-  Building Custom Rule <source>/CMakeLists.txt
-  Building Custom Rule <source>/CMakeLists.txt
-  Building Custom Rule <source>/CMakeLists.txt
-  Building Custom Rule <source>/CMakeLists.txt
-  Building Custom Rule <source>/CMakeLists.txt
-  Building Custom Rule <source>/CMakeLists.txt
-  Building Custom Rule <source>/CMakeLists.txt
-  Building Custom Rule <source>/CMakeLists.txt
-  Building Custom Rule <source>/CMakeLists.txt
-  Building Custom Rule <source>/CMakeLists.txt
-  Building Custom Rule <source>/CMakeLists.txt
-  Building Custom Rule <source>/CMakeLists.txt
-  test_contact_only_sdfbin.vcxproj -> <build>\Release\test_contact_only_sdfbin.exe
-  adasdf_collision_between_two_objects.vcxproj -> <build>\Release\adasdf_collision_between_two_objects.exe
-  Building Custom Rule <source>/CMakeLists.txt
+  FCLAdapter.cpp
+  Backend.cpp
+  GpuBackend.cpp
+  CompressedSDF.cpp
+  AdaptiveSDFBuilder.cpp
+  ExistingBuilderBridge.cpp
+  SDFBuilder.cpp
+  SurrogateRecommender.cpp
+  MeshModel.cpp
+  SDFModel.cpp
+  Transform.cpp
+  ContactOnlySDFBin.cpp
+  ExistingSDFBridge.cpp
+  SDFBinReader.cpp
+  SDFBinWriter.cpp
+  CandidatePointSampler.cpp
 ...
 ```
 
@@ -69,11 +69,11 @@ cmake --install '<build>' --config Release --prefix '<install>'
 ```
 
 ```text
--- Up-to-date: <install>/lib/adasdf_cl_runtime.lib
--- Up-to-date: <install>/bin/adasdf_build.exe
--- Up-to-date: <install>/bin/adasdf_info.exe
--- Up-to-date: <install>/bin/adasdf_query.exe
--- Up-to-date: <install>/bin/adasdf_collide.exe
+-- Installing: <install>/lib/adasdf_cl_runtime.lib
+-- Installing: <install>/bin/adasdf_build.exe
+-- Installing: <install>/bin/adasdf_info.exe
+-- Installing: <install>/bin/adasdf_query.exe
+-- Installing: <install>/bin/adasdf_collide.exe
 -- Up-to-date: <install>/include
 -- Up-to-date: <install>/include/adasdf
 -- Up-to-date: <install>/include/adasdf/adapters
@@ -95,20 +95,26 @@ cmake --install '<build>' --config Release --prefix '<install>'
 ### Package Configure: PASS
 
 ```bash
-cmake -S '<source>/tests/package' -B '<workspace>/build/adasdf_cl-ci-fix-install-validation_pkg' '-DCMAKE_PREFIX_PATH=<install>'
+cmake -S '<source>/tests/package' -B '<workspace>/build/adasdf_cl_iv_pkg' '-DCMAKE_PREFIX_PATH=<install>'
 ```
 
 ```text
 -- Selecting Windows SDK version 10.0.22621.0 to target Windows 10.0.26200.
 -- Configuring done (0.0s)
 -- Generating done (0.0s)
+CMake Warning:
+  Manually-specified variables were not used by the project:
+
+    CMAKE_PREFIX_PATH
+
+
 -- Build files have been written to: <build>_pkg
 ```
 
 ### Package Build: PASS
 
 ```bash
-cmake --build '<workspace>/build/adasdf_cl-ci-fix-install-validation_pkg' --config Release --parallel
+cmake --build '<workspace>/build/adasdf_cl_iv_pkg' --config Release --parallel
 ```
 
 ```text
@@ -116,6 +122,7 @@ cmake --build '<workspace>/build/adasdf_cl-ci-fix-install-validation_pkg' --conf
 
   1>Checking Build System
   Building Custom Rule <source>/tests/package/CMakeLists.txt
+  test_find_package.cpp
   test_find_package.vcxproj -> <build>_pkg\Release\test_find_package.exe
   Building Custom Rule <source>/tests/package/CMakeLists.txt
 ```
@@ -123,12 +130,12 @@ cmake --build '<workspace>/build/adasdf_cl-ci-fix-install-validation_pkg' --conf
 ### Package Run: PASS
 
 ```bash
-'<workspace>/build/adasdf_cl-ci-fix-install-validation_pkg/Release/test_find_package.exe'
+'<workspace>/build/adasdf_cl_iv_pkg/Release/test_find_package.exe'
 ```
 
 ```text
 AdaSDF-CL package consumer
-Version: 0.7.0-alpha
+Version: 0.7.0-alpha.1
 Point: 1 2 3
 CPU backend available: true
 ```
@@ -136,7 +143,7 @@ CPU backend available: true
 ### Downstream Configure: PASS
 
 ```bash
-cmake -S '<source>/examples/downstream_cmake_project' -B '<workspace>/build/adasdf_cl-ci-fix-install-validation_ds' '-DCMAKE_PREFIX_PATH=<install>'
+cmake -S '<source>/examples/downstream_cmake_project' -B '<workspace>/build/adasdf_cl_iv_ds' '-DCMAKE_PREFIX_PATH=<install>'
 ```
 
 ```text
@@ -149,7 +156,7 @@ cmake -S '<source>/examples/downstream_cmake_project' -B '<workspace>/build/adas
 ### Downstream Build: PASS
 
 ```bash
-cmake --build '<workspace>/build/adasdf_cl-ci-fix-install-validation_ds' --config Release --parallel
+cmake --build '<workspace>/build/adasdf_cl_iv_ds' --config Release --parallel
 ```
 
 ```text
@@ -157,6 +164,7 @@ cmake --build '<workspace>/build/adasdf_cl-ci-fix-install-validation_ds' --confi
 
   1>Checking Build System
   Building Custom Rule <source>/examples/downstream_cmake_project/CMakeLists.txt
+  main.cpp
   adasdf_downstream.vcxproj -> <build>_ds\Release\adasdf_downstream.exe
   Building Custom Rule <source>/examples/downstream_cmake_project/CMakeLists.txt
 ```
@@ -164,12 +172,12 @@ cmake --build '<workspace>/build/adasdf_cl-ci-fix-install-validation_ds' --confi
 ### Downstream Run: PASS
 
 ```bash
-'<workspace>/build/adasdf_cl-ci-fix-install-validation_ds/Release/adasdf_downstream.exe'
+'<workspace>/build/adasdf_cl_iv_ds/Release/adasdf_downstream.exe'
 ```
 
 ```text
 AdaSDF-CL downstream example
-Version: 0.7.0-alpha
+Version: 0.7.0-alpha.1
 CPU backend: available
 No .sdfbin supplied; package integration smoke test complete.
 ```

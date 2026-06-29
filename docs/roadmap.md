@@ -98,6 +98,13 @@ Deferred from v0.5:
 - add CPack source archive preparation
 - keep GitHub remote and release tag creation deferred to a later publishing step
 
+## v0.7.0-alpha.1 CI-Fixed Pre-Release
+
+- preserve the original `v0.7.0-alpha` preflight tag for traceability
+- publish `v0.7.0-alpha.1` as the recommended first public pre-release
+- include the Ubuntu install validation portability fix
+- keep core algorithms and public API unchanged
+
 ## v0.8 Python Binding Preview
 
 - define Python package layout
