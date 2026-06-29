@@ -1,6 +1,6 @@
 # Limitations
 
-AdaSDF-CL 0.9.0-alpha is a research-preview library layer, not a certified industrial collision stack.
+AdaSDF-CL 1.0.0-alpha is a research-preview library layer, not a certified industrial collision stack.
 
 ## Demo Surrogate
 
@@ -21,6 +21,13 @@ AdaSDF-CL 0.9.0-alpha is a research-preview library layer, not a certified indus
 - Pair collision uses `CpuNarrowPhase`, an approximate SDF-sampling narrow-phase.
 - Contact reduction is deterministic but not a manifold optimizer.
 - Distance for overlapping AABBs is approximate and sample based.
+
+## CUDA Batch Query
+
+- CUDA is optional and disabled by default.
+- The initial CUDA backend supports analytic/demo adaptive boxes only.
+- Full low-rank compressed SDF GPU expansion is not implemented.
+- CUDA-unavailable machines should skip GPU benchmarks/tests rather than fail CPU builds.
 
 ## Not Implemented
 

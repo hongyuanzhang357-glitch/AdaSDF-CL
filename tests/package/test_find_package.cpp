@@ -2,10 +2,10 @@
 
 #include <cmath>
 #include <iostream>
+#include <vector>
 
 int main() {
-  static_assert(adasdf::versionMajor() == 0, "unexpected major version");
-  static_assert(adasdf::versionMinor() >= 9, "package test expects v0.9 or newer");
+  static_assert(adasdf::versionMajor() >= 1, "package test expects v1.0 or newer");
 
   adasdf::CollisionRequest request;
   request.backend = adasdf::BackendType::CPU;
@@ -18,13 +18,25 @@ int main() {
   build_request.use_surrogate = true;
   const auto build = adasdf::DemoAdaptiveSDFBuilder::build(build_request);
   const double phi = build.model->sampleDistance({0.0, 0.0, 0.0});
+  const std::vector<adasdf::Vector3> points = {
+      {0.0, 0.0, 0.0},
+      {0.75, 0.0, 0.0}};
+  adasdf::BatchQueryStats stats;
+  const auto batch = adasdf::queryBatchCPU(*build.model, points, &stats);
 
   std::cout << "AdaSDF-CL package consumer\n";
   std::cout << "Version: " << adasdf::versionString() << "\n";
   std::cout << "Point: " << point << "\n";
   std::cout << "Demo signed distance at origin: " << phi << "\n";
   std::cout << "Demo adaptive blocks: " << build.model->blocks().size() << "\n";
+  std::cout << "Batch query points: " << stats.num_points << "\n";
+  std::cout << "CUDA batch backend available: "
+            << (adasdf::CudaQueryBackend::isAvailable() ? "true" : "false")
+            << "\n";
   std::cout << "CPU backend available: "
             << (backend && backend->available() ? "true" : "false") << "\n";
-  return backend && std::isfinite(phi) ? 0 : 1;
+  return backend && std::isfinite(phi) &&
+          batch.signed_distances.size() == points.size()
+      ? 0
+      : 1;
 }

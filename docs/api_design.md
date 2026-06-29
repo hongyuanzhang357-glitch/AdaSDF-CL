@@ -62,7 +62,7 @@ CollisionObject + Transform
   -> CollisionResult / DistanceResult
 ```
 
-This path is a research-preview narrow-phase. It is more stable than the v0.3 API-validation fallback, but it is still an approximate SDF-sampling method. `ExistingPairCollisionBridge` remains the future adapter surface for `sdf::PairCollisionSDF`, but it is not enabled until AdaSDF-CL can safely align native handles, source mesh ownership, and transforms. CUDA batch query, the real optional FCL adapter, Python bindings, certified contact solving, and differentiable Jacobians remain explicit TODOs.
+This path is a research-preview narrow-phase. It is more stable than the v0.3 API-validation fallback, but it is still an approximate SDF-sampling method. `ExistingPairCollisionBridge` remains the future adapter surface for `sdf::PairCollisionSDF`, but it is not enabled until AdaSDF-CL can safely align native handles, source mesh ownership, and transforms. v1.0.0-alpha adds optional CUDA batch query for analytic/demo adaptive boxes only; CUDA pair collision, full low-rank SDF GPU expansion, the real optional FCL adapter, Python bindings, certified contact solving, and differentiable Jacobians remain explicit TODOs.
 
 The new adaptive builder path is:
 

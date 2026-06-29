@@ -12,6 +12,18 @@ adasdf_recommend_demo --shape box --target-error 1e-3 --memory-mb 64 --block-mem
 
 The recommender is not universal, not fully trained, and not an optimality guarantee.
 
+## adasdf_benchmark_batch_query
+
+Status: working in CPU mode; CUDA rows run only when the optional CUDA backend is available.
+
+Runs deterministic batch signed-distance, gradient, and normal benchmarks for 10k/100k/1M points.
+
+```bash
+adasdf_benchmark_batch_query --points 10000,100000,1000000 --backend cpu,cuda --out benchmark.csv
+```
+
+When CUDA is unavailable, the tool prints `CUDA backend unavailable; skipping GPU benchmark.` and keeps CPU benchmark rows.
+
 ## adasdf_build_demo_adaptive
 
 Status: working in a core-free public build.

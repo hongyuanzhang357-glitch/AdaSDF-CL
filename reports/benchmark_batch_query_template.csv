@@ -1,0 +1,7 @@
+backend,num_points,total_ms,ns_per_query,queries_per_second,max_abs_phi_error,max_normal_error,speedup_vs_cpu,cuda_available
+cpu,10000,,,,0,0,1,false
+cuda,10000,,,,,,,false
+cpu,100000,,,,0,0,1,false
+cuda,100000,,,,,,,false
+cpu,1000000,,,,0,0,1,false
+cuda,1000000,,,,,,,false

@@ -9,7 +9,7 @@
 ### Configure: PASS
 
 ```bash
-cmake -S '<source>' -B '<build>' -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD_TESTS=ON -DADASDF_CL_USE_EXISTING_CORE=OFF -DADASDF_CL_ENABLE_ADAPTIVE_BUILDER=ON -DADASDF_CL_ENABLE_SURROGATE_RECOMMENDER=ON -DADASDF_CL_ENABLE_DEMO_BACKEND=ON -DADASDF_CL_ENABLE_DEMO_SURROGATE=ON -DADASDF_CL_ENABLE_COLLISION_VIEWER=ON
+cmake -S '<source>' -B '<build>' -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD_TESTS=ON -DADASDF_CL_BUILD_BENCHMARKS=ON -DADASDF_CL_USE_EXISTING_CORE=OFF -DADASDF_CL_ENABLE_ADAPTIVE_BUILDER=ON -DADASDF_CL_ENABLE_SURROGATE_RECOMMENDER=ON -DADASDF_CL_ENABLE_DEMO_BACKEND=ON -DADASDF_CL_ENABLE_DEMO_SURROGATE=ON -DADASDF_CL_ENABLE_COLLISION_VIEWER=ON -DADASDF_CL_ENABLE_CUDA=ON
 ```
 
 ```text
@@ -21,16 +21,16 @@ cmake -S '<source>' -B '<build>' -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD
 -- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.42.34433/bin/Hostx64/x64/cl.exe - skipped
 -- Detecting CXX compile features
 -- Detecting CXX compile features - done
+-- Looking for a CUDA compiler
+-- Looking for a CUDA compiler - NOTFOUND
+CMake Warning at CMakeLists.txt:72 (message):
+  ADASDF_CL_ENABLE_CUDA=ON but no CUDA compiler was found.  Building without
+  CUDA batch query kernels.
+
+
 --
 -- AdaSDF-CL configuration:
---   Version: 0.9.0-alpha
---   Build examples: ON
---   Build tests: ON
---   Existing core requested: OFF
---   Existing core found: OFF
---   Adaptive builder: ON
---   Surrogate recommender: ON
---   Demo backend: ON
+--   Version: 1.0.0-alpha
 ...
 ```
 
@@ -47,7 +47,9 @@ cmake --build '<build>' --config Release
   Building Custom Rule <source>/CMakeLists.txt
   FCLAdapter.cpp
   Backend.cpp
+  CudaQueryBackend.cpp
   GpuBackend.cpp
+  PointCloudGenerator.cpp
   CompressedSDF.cpp
   AdaptiveSDFBuilder.cpp
   DemoAdaptiveSDFBuilder.cpp
@@ -57,8 +59,6 @@ cmake --build '<build>' --config Release
   SurrogateRecommender.cpp
   AnalyticSDFModel.cpp
   DemoAdaptiveSDFModel.cpp
-  MeshModel.cpp
-  SDFModel.cpp
 ...
 ```
 
@@ -71,21 +71,21 @@ ctest --test-dir '<build>' -C Release --output-on-failure
 ```text
 Test project <build>
       Start  1: test_sdf_io
- 1/27 Test  #1: test_sdf_io .......................   Passed    0.02 sec
+ 1/31 Test  #1: test_sdf_io .......................   Passed    0.01 sec
       Start  2: test_collision_query
- 2/27 Test  #2: test_collision_query ..............   Passed    0.02 sec
+ 2/31 Test  #2: test_collision_query ..............   Passed    0.01 sec
       Start  3: test_distance_query
- 3/27 Test  #3: test_distance_query ...............   Passed    0.02 sec
+ 3/31 Test  #3: test_distance_query ...............   Passed    0.01 sec
       Start  4: test_collision_object
- 4/27 Test  #4: test_collision_object .............   Passed    0.03 sec
+ 4/31 Test  #4: test_collision_object .............   Passed    0.04 sec
       Start  5: test_pair_distance_query
- 5/27 Test  #5: test_pair_distance_query ..........   Passed    0.02 sec
+ 5/31 Test  #5: test_pair_distance_query ..........   Passed    0.02 sec
       Start  6: test_pair_collision_query
- 6/27 Test  #6: test_pair_collision_query .........   Passed    0.02 sec
+ 6/31 Test  #6: test_pair_collision_query .........   Passed    0.01 sec
       Start  7: test_candidate_point_sampler
- 7/27 Test  #7: test_candidate_point_sampler ......   Passed    0.02 sec
+ 7/31 Test  #7: test_candidate_point_sampler ......   Passed    0.02 sec
       Start  8: test_contact_generator
- 8/27 Test  #8: test_contact_generator ............   Passed    0.02 sec
+ 8/31 Test  #8: test_contact_generator ............   Passed    0.03 sec
       Start  9: test_contact_reducer
 ...
 ```
@@ -141,7 +141,7 @@ Candidate[0]
 ### Build Demo Adaptive SDFBin: PASS
 
 ```bash
-'<build>/Release/adasdf_build_demo_adaptive.exe' '<workspace>/build/cube_adaptive_v0_9.sdfbin' --shape box --target-error 1e-3 --memory-mb 64 --block-memory-mb 16 --use-surrogate
+'<build>/Release/adasdf_build_demo_adaptive.exe' '<workspace>/build/cube_adaptive_v1.sdfbin' --shape box --target-error 1e-3 --memory-mb 64 --block-memory-mb 16 --use-surrogate
 ```
 
 ```text
@@ -164,12 +164,12 @@ Reload validation: success
 ### Demo Adaptive Info CLI: PASS
 
 ```bash
-'<build>/Release/adasdf_info.exe' '<workspace>/build/cube_adaptive_v0_9.sdfbin'
+'<build>/Release/adasdf_info.exe' '<workspace>/build/cube_adaptive_v1.sdfbin'
 ```
 
 ```text
 AdaSDF-CL info
-Library version: 0.9.0-alpha
+Library version: 1.0.0-alpha
 Path: <local-path>
 Model name: demo adaptive analytic box
 Valid: yes
@@ -192,7 +192,7 @@ Block[0] resolution: 32
 ### Demo Adaptive Query CLI: PASS
 
 ```bash
-'<build>/Release/adasdf_query.exe' '<workspace>/build/cube_adaptive_v0_9.sdfbin' --point 0 0 0
+'<build>/Release/adasdf_query.exe' '<workspace>/build/cube_adaptive_v1.sdfbin' --point 0 0 0
 ```
 
 ```text
@@ -208,7 +208,7 @@ Query backend: core-free demo adaptive analytic SDF backend
 ### Demo Collide Boxes CLI: PASS
 
 ```bash
-'<build>/Release/adasdf_collide_boxes_demo.exe' --target-error 1e-3 --memory-mb 64 --offset 0.25 0 0 --max-contacts 8 --view '<workspace>/build/collision_v0_9.svg'
+'<build>/Release/adasdf_collide_boxes_demo.exe' --target-error 1e-3 --memory-mb 64 --offset 0.25 0 0 --max-contacts 8 --view '<workspace>/build/collision_v1.svg'
 ```
 
 ```text
@@ -233,10 +233,31 @@ Contact[1]
 ...
 ```
 
+### Batch Query Benchmark: PASS (CUDA SKIPPED)
+
+```bash
+'<build>/benchmarks/Release/adasdf_benchmark_batch_query.exe' --points 10000,100000,1000000 --backend cpu,cuda --out '<workspace>/build/adasdf_batch_benchmark_v1.csv'
+```
+
+```text
+CUDA backend unavailable; skipping GPU benchmark.
+backend,num_points,total_ms,ns_per_query,queries_per_second,max_abs_phi_error,max_normal_error,speedup_vs_cpu,cuda_available
+cpu,10000,0.4619,46.19,21649707.73,0,0,1,false
+cuda,10000,,,,,,,false
+cpu,100000,4.6786,46.786,21373915.27,0,0,1,false
+cuda,100000,,,,,,,false
+cpu,1000000,47.3823,47.3823,21104927.37,0,0,1,false
+cuda,1000000,,,,,,,false
+N points | CPU total ms | CPU ns/query | GPU total ms | GPU ns/query | Speedup | Max phi error | Max normal error
+10000 | 0.4619 | 46.19 | SKIPPED | SKIPPED | SKIPPED | SKIPPED | SKIPPED
+100000 | 4.6786 | 46.786 | SKIPPED | SKIPPED | SKIPPED | SKIPPED | SKIPPED
+1000000 | 47.3823 | 47.3823 | SKIPPED | SKIPPED | SKIPPED | SKIPPED | SKIPPED
+```
+
 ### Collision SVG Check: PASS
 
 ```bash
-check-collision-svg '<workspace>/build/collision_v0_9.svg'
+check-collision-svg '<workspace>/build/collision_v1.svg'
 ```
 
 ```text

@@ -1,5 +1,31 @@
 # Changelog
 
+## 1.0.0-alpha
+
+Optional CUDA batch query backend and CPU/GPU benchmark tooling.
+
+### Added
+
+- CPU batch signed-distance, gradient, and normal query API.
+- Optional CUDA batch query backend for the core-free analytic/demo adaptive box path.
+- CUDA box signed-distance and normal kernels compiled only when CUDA is explicitly enabled and available.
+- Deterministic benchmark point-cloud generator with volume, near-surface, and mixed distributions.
+- `adasdf_benchmark_batch_query` CLI for 10k/100k/1M CPU and optional CUDA benchmarking.
+- CPU/GPU alignment and graceful CUDA-unavailable tests.
+- Benchmarking, GPU backend, release draft, and benchmark report templates.
+
+### Changed
+
+- Version updated to `1.0.0-alpha`.
+- CMake now reports CUDA backend availability, CUDA toolkit discovery, and benchmark build status.
+- Alpha validation now runs the batch query benchmark and marks CUDA GPU rows as skipped when unavailable.
+
+### Notes
+
+- CUDA remains optional. CPU-only configure/build/test/install remains supported.
+- The v1.0.0-alpha CUDA path initially supports analytic/demo adaptive boxes.
+- Full low-rank compressed SDF GPU expansion and an industrial GPU collision pipeline remain future work.
+
 ## 0.9.0-alpha
 
 Surrogate-guided adaptive demo workflow and contact visualization.

@@ -1,11 +1,11 @@
 #pragma once
 
 #ifndef ADASDF_CL_VERSION_MAJOR
-#define ADASDF_CL_VERSION_MAJOR 0
+#define ADASDF_CL_VERSION_MAJOR 1
 #endif
 
 #ifndef ADASDF_CL_VERSION_MINOR
-#define ADASDF_CL_VERSION_MINOR 9
+#define ADASDF_CL_VERSION_MINOR 0
 #endif
 
 #ifndef ADASDF_CL_VERSION_PATCH
@@ -35,7 +35,7 @@ inline constexpr const char* versionSuffix() {
 }
 
 inline constexpr const char* versionString() {
-  return "0.9.0-alpha";
+  return "1.0.0-alpha";
 }
 
 }  // namespace adasdf

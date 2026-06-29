@@ -4,6 +4,7 @@
 #include <cmath>
 #include <filesystem>
 #include <iostream>
+#include <vector>
 
 namespace {
 
@@ -33,6 +34,12 @@ int main(int argc, char** argv) {
     const auto build = adasdf::DemoAdaptiveSDFBuilder::build(build_request);
     const auto model = build.model;
     const double phi = model->sampleDistance({0.0, 0.0, 0.0});
+    const std::vector<adasdf::Vector3> points = {
+        {0.0, 0.0, 0.0},
+        {0.75, 0.0, 0.0},
+        {0.0, 0.75, 0.0}};
+    adasdf::BatchQueryStats stats;
+    const auto batch = adasdf::queryBatchCPU(*model, points, &stats);
 
     adasdf::CollisionObject a(model);
     adasdf::CollisionObject b(model);
@@ -47,9 +54,18 @@ int main(int argc, char** argv) {
     std::cout << "No .sdfbin supplied; running core-free demo adaptive path.\n";
     std::cout << "Demo signed distance at origin: " << phi << "\n";
     std::cout << "Demo adaptive blocks: " << model->blocks().size() << "\n";
+    std::cout << "Demo batch query points: " << batch.signed_distances.size()
+              << "\n";
+    std::cout << "CUDA batch backend: "
+              << (adasdf::CudaQueryBackend::isAvailable() ? "available"
+                                                           : "unavailable")
+              << "\n";
     std::cout << "Demo colliding: " << (hit ? "true" : "false") << "\n";
     std::cout << "Demo contacts: " << result.contacts().size() << "\n";
-    return backend && std::isfinite(phi) && hit ? 0 : 1;
+    return backend && std::isfinite(phi) &&
+            batch.signed_distances.size() == points.size() && hit
+        ? 0
+        : 1;
   }
   if (argc != 2) {
     std::cerr << "Usage: adasdf_downstream [model.sdfbin]\n";

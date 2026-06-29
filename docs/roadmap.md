@@ -11,21 +11,23 @@
 - v0.7 install/package and external integration.
 - v0.8 core-free standalone analytic demo backend.
 - v0.9 surrogate-guided adaptive demo workflow and SVG contact visualization.
+- v1.0 optional CUDA batch query backend and CPU/GPU benchmark tooling.
 
-## v0.9.0-alpha Scope
+## v1.0.0-alpha Scope
 
-- demo surrogate recommender;
-- demo adaptive SDF builder;
-- demo adaptive `.sdfbin`;
-- user max-contact flow;
-- SVG collision visualization;
-- external downstream demo adaptive path.
+- CPU batch signed-distance, gradient, and normal query baseline;
+- optional CUDA batch query backend for analytic/demo adaptive boxes;
+- deterministic benchmark point generation;
+- 10k/100k/1M CPU/GPU benchmark CLI and CSV summary;
+- CPU/GPU numerical alignment tests when CUDA is available;
+- graceful CUDA-unavailable skip behavior.
 
 ## Future Work
 
 - public standalone adaptive STL-to-compressed-SDF builder;
 - real trained surrogate integration with public artifacts and validation cards;
 - Python package;
-- CUDA batched query;
+- full low-rank compressed SDF GPU expansion;
+- CUDA-accelerated pair collision pipeline;
 - optional real FCL adapter;
 - stricter distance and contact quality benchmarks.

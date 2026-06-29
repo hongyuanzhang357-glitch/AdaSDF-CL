@@ -12,7 +12,8 @@ include(CMakePackageConfigHelpers)
 
 option(ADASDF_CL_BUILD_EXAMPLES "Expose AdaSDF-CL example source targets" OFF)
 option(ADASDF_CL_BUILD_TESTS "Expose AdaSDF-CL interface test source targets" OFF)
-option(ADASDF_CL_ENABLE_CUDA "Reserve CUDA backend integration hooks" OFF)
+option(ADASDF_CL_BUILD_BENCHMARKS "Build AdaSDF-CL benchmark tools" ON)
+option(ADASDF_CL_ENABLE_CUDA "Enable optional CUDA batch query backend" OFF)
 option(ADASDF_CL_USE_EXISTING_CORE "Use existing OctreeBlockLowRankSDF core for sdfbin loading and query" ON)
 option(ADASDF_CL_ENABLE_ADAPTIVE_BUILDER "Enable adaptive SDF builder API" ON)
 option(ADASDF_CL_ENABLE_SURROGATE_RECOMMENDER "Enable DASH-SDF surrogate recommendation API" ON)
@@ -50,10 +51,39 @@ target_compile_definitions(adasdf_cl INTERFACE
   ADASDF_CL_VERSION_SUFFIX="${ADASDF_CL_VERSION_SUFFIX}"
   ADASDF_CL_ENABLE_CUDA=$<BOOL:${ADASDF_CL_ENABLE_CUDA}>)
 
+set(ADASDF_CL_HAS_CUDA_BACKEND OFF)
+set(ADASDF_CL_CUDA_TOOLKIT_STATUS "not found")
+
+if(ADASDF_CL_ENABLE_CUDA)
+  include(CheckLanguage)
+  check_language(CUDA)
+  if(CMAKE_CUDA_COMPILER)
+    enable_language(CUDA)
+    find_package(CUDAToolkit QUIET)
+    if(CUDAToolkit_FOUND)
+      set(ADASDF_CL_HAS_CUDA_BACKEND ON)
+      set(ADASDF_CL_CUDA_TOOLKIT_STATUS "found")
+    else()
+      message(WARNING
+        "ADASDF_CL_ENABLE_CUDA=ON but CUDAToolkit was not found. "
+        "Building without CUDA batch query kernels.")
+    endif()
+  else()
+    message(WARNING
+      "ADASDF_CL_ENABLE_CUDA=ON but no CUDA compiler was found. "
+      "Building without CUDA batch query kernels.")
+  endif()
+endif()
+
+target_compile_definitions(adasdf_cl INTERFACE
+  ADASDF_CL_HAS_CUDA_BACKEND=$<BOOL:${ADASDF_CL_HAS_CUDA_BACKEND}>)
+
 set(ADASDF_CL_RUNTIME_SOURCES
   src/adapters/FCLAdapter.cpp
   src/backend/Backend.cpp
+  src/backend/CudaQueryBackend.cpp
   src/backend/GpuBackend.cpp
+  src/benchmark/PointCloudGenerator.cpp
   src/compression/CompressedSDF.cpp
   src/generation/AdaptiveSDFBuilder.cpp
   src/generation/DemoAdaptiveSDFBuilder.cpp
@@ -73,6 +103,7 @@ set(ADASDF_CL_RUNTIME_SOURCES
   src/io/SDFBinReader.cpp
   src/io/SDFBinWriter.cpp
   src/query/CandidatePointSampler.cpp
+  src/query/BatchQuery.cpp
   src/query/CollisionObject.cpp
   src/query/CollisionResult.cpp
   src/query/ContactGenerator.cpp
@@ -82,6 +113,11 @@ set(ADASDF_CL_RUNTIME_SOURCES
   src/query/ExistingPairCollisionBridge.cpp
   src/query/QueryAPI.cpp
   src/visualization/CollisionSVGWriter.cpp)
+
+if(ADASDF_CL_HAS_CUDA_BACKEND)
+  list(APPEND ADASDF_CL_RUNTIME_SOURCES
+    src/backend/CudaQueryKernels.cu)
+endif()
 
 set(ADASDF_CL_HAS_EXISTING_CORE OFF)
 
@@ -169,6 +205,7 @@ message(STATUS "AdaSDF-CL configuration:")
 message(STATUS "  Version: ${ADASDF_CL_VERSION_STRING}")
 message(STATUS "  Build examples: ${ADASDF_CL_BUILD_EXAMPLES}")
 message(STATUS "  Build tests: ${ADASDF_CL_BUILD_TESTS}")
+message(STATUS "  Benchmarks: ${ADASDF_CL_BUILD_BENCHMARKS}")
 message(STATUS "  Existing core requested: ${ADASDF_CL_USE_EXISTING_CORE}")
 message(STATUS "  Existing core found: ${ADASDF_CL_HAS_EXISTING_CORE}")
 message(STATUS "  Adaptive builder: ${ADASDF_CL_ENABLE_ADAPTIVE_BUILDER}")
@@ -176,7 +213,8 @@ message(STATUS "  Surrogate recommender: ${ADASDF_CL_ENABLE_SURROGATE_RECOMMENDE
 message(STATUS "  Demo backend: ${ADASDF_CL_ENABLE_DEMO_BACKEND}")
 message(STATUS "  Demo surrogate: ${ADASDF_CL_ENABLE_DEMO_SURROGATE}")
 message(STATUS "  Collision SVG viewer: ${ADASDF_CL_ENABLE_COLLISION_VIEWER}")
-message(STATUS "  CUDA: not required")
+message(STATUS "  CUDA backend: ${ADASDF_CL_HAS_CUDA_BACKEND}")
+message(STATUS "  CUDA toolkit: ${ADASDF_CL_CUDA_TOOLKIT_STATUS}")
 message(STATUS "  FCL: not required")
 message(STATUS "")
 
@@ -190,10 +228,17 @@ target_compile_definitions(adasdf_cl_runtime PUBLIC
   ADASDF_CL_ENABLE_SURROGATE_RECOMMENDER=$<BOOL:${ADASDF_CL_ENABLE_SURROGATE_RECOMMENDER}>
   ADASDF_CL_ENABLE_DEMO_BACKEND=$<BOOL:${ADASDF_CL_ENABLE_DEMO_BACKEND}>
   ADASDF_CL_ENABLE_DEMO_SURROGATE=$<BOOL:${ADASDF_CL_ENABLE_DEMO_SURROGATE}>
-  ADASDF_CL_ENABLE_COLLISION_VIEWER=$<BOOL:${ADASDF_CL_ENABLE_COLLISION_VIEWER}>)
+  ADASDF_CL_ENABLE_COLLISION_VIEWER=$<BOOL:${ADASDF_CL_ENABLE_COLLISION_VIEWER}>
+  ADASDF_CL_HAS_CUDA_BACKEND=$<BOOL:${ADASDF_CL_HAS_CUDA_BACKEND}>)
 
 if(ADASDF_CL_HAS_EXISTING_CORE)
   target_link_libraries(adasdf_cl_runtime PRIVATE adasdf_existing_core)
+endif()
+
+if(ADASDF_CL_HAS_CUDA_BACKEND)
+  target_link_libraries(adasdf_cl_runtime PUBLIC CUDA::cudart)
+  set_property(TARGET adasdf_cl_runtime PROPERTY CUDA_STANDARD 17)
+  set_property(TARGET adasdf_cl_runtime PROPERTY CUDA_STANDARD_REQUIRED ON)
 endif()
 
 set(ADASDF_CL_EXAMPLE_SOURCES
@@ -269,6 +314,14 @@ target_link_libraries(adasdf_build_demo_adaptive PRIVATE adasdf_cl_runtime)
 add_executable(adasdf_collide_boxes_demo tools/adasdf_collide_boxes_demo.cpp)
 target_link_libraries(adasdf_collide_boxes_demo PRIVATE adasdf_cl_runtime)
 
+if(ADASDF_CL_BUILD_BENCHMARKS)
+  add_executable(adasdf_benchmark_batch_query
+    benchmarks/adasdf_benchmark_batch_query.cpp)
+  target_link_libraries(adasdf_benchmark_batch_query PRIVATE adasdf_cl_runtime)
+  set_target_properties(adasdf_benchmark_batch_query PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/benchmarks")
+endif()
+
 set(ADASDF_CL_TEST_SOURCES
   tests/test_sdf_io.cpp
   tests/test_collision_query.cpp
@@ -291,6 +344,10 @@ set(ADASDF_CL_TEST_SOURCES
   tests/test_demo_adaptive_builder.cpp
   tests/test_collide_boxes_demo.cpp
   tests/test_collision_svg_writer.cpp
+  tests/test_batch_query_cpu.cpp
+  tests/test_cuda_query_backend.cpp
+  tests/test_cpu_gpu_alignment.cpp
+  tests/test_point_cloud_generator.cpp
   tests/test_adaptive_builder.cpp
   tests/test_sdfbin_writer_roundtrip.cpp
   tests/test_surrogate_recommender.cpp
@@ -343,6 +400,7 @@ if(ADASDF_CL_HAS_EXISTING_CORE)
   list(APPEND ADASDF_CL_INSTALL_TARGETS adasdf_existing_core)
 endif()
 set(ADASDF_CL_INSTALL_RUNTIME_TARGET TRUE)
+set(ADASDF_CL_INSTALL_HAS_CUDA_BACKEND ${ADASDF_CL_HAS_CUDA_BACKEND})
 set(ADASDF_CL_INSTALL_TOOL_TARGETS
   adasdf_build
   adasdf_info
@@ -352,6 +410,9 @@ set(ADASDF_CL_INSTALL_TOOL_TARGETS
   adasdf_recommend_demo
   adasdf_build_demo_adaptive
   adasdf_collide_boxes_demo)
+if(ADASDF_CL_BUILD_BENCHMARKS)
+  list(APPEND ADASDF_CL_INSTALL_TOOL_TARGETS adasdf_benchmark_batch_query)
+endif()
 
 install(TARGETS ${ADASDF_CL_INSTALL_TARGETS}
   EXPORT AdaSDFCLTargets

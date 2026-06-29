@@ -51,4 +51,4 @@ The parent project also has `sdf::PairCollisionSDF`, which is closer to a future
 
 ## Current Pair-Query Caveat
 
-`CpuNarrowPhase` performs AABB broadphase, symmetric SDF candidate sampling, normal stabilization, and deterministic contact reduction. It works with the v0.9 demo adaptive backend and existing-core-backed models with query support, but it remains an approximate SDF-sampling narrow-phase. FCL ABI compatibility, FCL broadphase integration, and certified industrial contact behavior are not provided in 0.9.0-alpha.
+`CpuNarrowPhase` performs AABB broadphase, symmetric SDF candidate sampling, normal stabilization, and deterministic contact reduction. It works with the v1.0 demo adaptive backend and existing-core-backed models with query support, but it remains an approximate SDF-sampling narrow-phase. FCL ABI compatibility, FCL broadphase integration, CUDA pair-collision acceleration, and certified industrial contact behavior are not provided in 1.0.0-alpha.

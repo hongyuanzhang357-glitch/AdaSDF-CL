@@ -165,12 +165,14 @@ def main() -> int:
         str(build),
         "-DADASDF_CL_BUILD_EXAMPLES=ON",
         "-DADASDF_CL_BUILD_TESTS=ON",
+        "-DADASDF_CL_BUILD_BENCHMARKS=ON",
         "-DADASDF_CL_USE_EXISTING_CORE=OFF",
         "-DADASDF_CL_ENABLE_ADAPTIVE_BUILDER=ON",
         "-DADASDF_CL_ENABLE_SURROGATE_RECOMMENDER=ON",
         "-DADASDF_CL_ENABLE_DEMO_BACKEND=ON",
         "-DADASDF_CL_ENABLE_DEMO_SURROGATE=ON",
         "-DADASDF_CL_ENABLE_COLLISION_VIEWER=ON",
+        "-DADASDF_CL_ENABLE_CUDA=ON",
     ]
     steps = [
         ("Configure", configure),
@@ -220,8 +222,9 @@ def main() -> int:
             )
         )
 
-    demo_sdfbin = build.parent / "cube_adaptive_v0_9.sdfbin"
-    collision_svg = build.parent / "collision_v0_9.svg"
+    demo_sdfbin = build.parent / "cube_adaptive_v1.sdfbin"
+    collision_svg = build.parent / "collision_v1.svg"
+    benchmark_csv = build.parent / "adasdf_batch_benchmark_v1.csv"
     max_contacts = 8
     required_demo_tools = {
         "adasdf_recommend_demo": find_executable(build, "adasdf_recommend_demo", config),
@@ -229,6 +232,7 @@ def main() -> int:
         "adasdf_info": find_executable(build, "adasdf_info", config),
         "adasdf_query": find_executable(build, "adasdf_query", config),
         "adasdf_collide_boxes_demo": find_executable(build, "adasdf_collide_boxes_demo", config),
+        "adasdf_benchmark_batch_query": find_executable(build, "adasdf_benchmark_batch_query", config),
     }
     missing_demo_tools = [
         name for name, path in required_demo_tools.items() if path is None
@@ -310,6 +314,18 @@ def main() -> int:
                 str(collision_svg),
             ],
         ),
+        (
+            "Batch Query Benchmark",
+            [
+                str(required_demo_tools["adasdf_benchmark_batch_query"]),
+                "--points",
+                "10000,100000,1000000",
+                "--backend",
+                "cpu,cuda",
+                "--out",
+                str(benchmark_csv),
+            ],
+        ),
     ]
 
     for name, command in demo_steps:
@@ -328,6 +344,38 @@ def main() -> int:
                 )
                 write_report(report_path, results, source, build, config)
                 return result.returncode
+        if name == "Batch Query Benchmark":
+            if not benchmark_csv.exists():
+                result.returncode = 1
+                result.output += "\nValidation failed: benchmark CSV was not generated.\n"
+                write_report(report_path, results, source, build, config)
+                return result.returncode
+            csv_text = benchmark_csv.read_text(encoding="utf-8", errors="replace")
+            required_fields = [
+                "backend",
+                "num_points",
+                "total_ms",
+                "ns_per_query",
+                "queries_per_second",
+                "max_abs_phi_error",
+                "max_normal_error",
+                "speedup_vs_cpu",
+                "cuda_available",
+            ]
+            missing_fields = [
+                field for field in required_fields if field not in csv_text.splitlines()[0]
+            ]
+            if missing_fields or "cpu,10000" not in csv_text:
+                result.returncode = 1
+                result.output += (
+                    "\nValidation failed: benchmark CSV missing fields or CPU rows: "
+                    + ", ".join(missing_fields)
+                    + "\n"
+                )
+                write_report(report_path, results, source, build, config)
+                return result.returncode
+            if "CUDA backend unavailable" in result.output:
+                result.status = "PASS (CUDA SKIPPED)"
 
     svg_status = 0
     svg_output = ""

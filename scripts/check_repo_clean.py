@@ -13,8 +13,10 @@ from pathlib import Path
 
 TEXT_SUFFIXES = {
     ".cmake",
+    ".csv",
     ".cpp",
     ".cff",
+    ".cu",
     ".h",
     ".hpp",
     ".json",

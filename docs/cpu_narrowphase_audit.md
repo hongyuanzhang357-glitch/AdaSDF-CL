@@ -91,4 +91,4 @@ New behavior:
 
 ## Remaining Limitations
 
-`CpuNarrowPhase` is still an approximate SDF-sampling research-preview backend. It does not provide CUDA batch execution, FCL ABI compatibility, a strict global closest-distance solve, or certified industrial contact behavior.
+`CpuNarrowPhase` is still an approximate SDF-sampling research-preview backend. v1.0.0-alpha provides optional CUDA batch query for analytic/demo adaptive boxes, but this narrow-phase does not provide CUDA pair-collision execution, FCL ABI compatibility, a strict global closest-distance solve, or certified industrial contact behavior.

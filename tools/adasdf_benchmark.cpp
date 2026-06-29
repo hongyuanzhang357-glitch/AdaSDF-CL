@@ -1,7 +1,7 @@
 #include <iostream>
 
 int main(int, char**) {
-  std::cerr << "adasdf_benchmark is an interface-preview placeholder. "
-            << "TODO: connect to CPU/CUDA benchmark paths.\n";
+  std::cerr << "adasdf_benchmark is retained as a legacy placeholder. "
+            << "Use adasdf_benchmark_batch_query for CPU/CUDA batch benchmarks.\n";
   return 2;
 }

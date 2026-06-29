@@ -10,16 +10,17 @@
 ### Configure: PASS
 
 ```bash
-cmake -S '<source>' -B '<build>' -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD_TESTS=ON -DADASDF_CL_USE_EXISTING_CORE=OFF -DADASDF_CL_ENABLE_ADAPTIVE_BUILDER=ON -DADASDF_CL_ENABLE_SURROGATE_RECOMMENDER=ON '-DCMAKE_INSTALL_PREFIX=<install>'
+cmake -S '<source>' -B '<build>' -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD_TESTS=ON -DADASDF_CL_BUILD_BENCHMARKS=ON -DADASDF_CL_USE_EXISTING_CORE=OFF -DADASDF_CL_ENABLE_ADAPTIVE_BUILDER=ON -DADASDF_CL_ENABLE_SURROGATE_RECOMMENDER=ON -DADASDF_CL_ENABLE_DEMO_BACKEND=ON -DADASDF_CL_ENABLE_DEMO_SURROGATE=ON -DADASDF_CL_ENABLE_COLLISION_VIEWER=ON -DADASDF_CL_ENABLE_CUDA=OFF '-DCMAKE_INSTALL_PREFIX=<install>'
 ```
 
 ```text
 -- Selecting Windows SDK version 10.0.22621.0 to target Windows 10.0.26200.
 --
 -- AdaSDF-CL configuration:
---   Version: 0.9.0-alpha
+--   Version: 1.0.0-alpha
 --   Build examples: ON
 --   Build tests: ON
+--   Benchmarks: ON
 --   Existing core requested: OFF
 --   Existing core found: OFF
 --   Adaptive builder: ON
@@ -27,12 +28,13 @@ cmake -S '<source>' -B '<build>' -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD
 --   Demo backend: ON
 --   Demo surrogate: ON
 --   Collision SVG viewer: ON
---   CUDA: not required
+--   CUDA backend: OFF
+--   CUDA toolkit: not found
 --   FCL: not required
 --
 -- Configuring done (0.0s)
 -- Generating done (0.4s)
--- Build files have been written to: <build>
+...
 ```
 
 ### Build: PASS
@@ -46,7 +48,9 @@ cmake --build '<build>' --config Release --parallel
 
   FCLAdapter.cpp
   Backend.cpp
+  CudaQueryBackend.cpp
   GpuBackend.cpp
+  PointCloudGenerator.cpp
   CompressedSDF.cpp
   AdaptiveSDFBuilder.cpp
   DemoAdaptiveSDFBuilder.cpp
@@ -60,8 +64,6 @@ cmake --build '<build>' --config Release --parallel
   SDFModel.cpp
   Transform.cpp
   ContactOnlySDFBin.cpp
-  DemoAdaptiveSDFBin.cpp
-  DemoSDFBin.cpp
 ...
 ```
 
@@ -81,6 +83,7 @@ cmake --install '<build>' --config Release --prefix '<install>'
 -- Installing: <install>/bin/adasdf_recommend_demo.exe
 -- Installing: <install>/bin/adasdf_build_demo_adaptive.exe
 -- Installing: <install>/bin/adasdf_collide_boxes_demo.exe
+-- Installing: <install>/bin/adasdf_benchmark_batch_query.exe
 -- Up-to-date: <install>/include
 -- Up-to-date: <install>/include/adasdf
 -- Up-to-date: <install>/include/adasdf/adapters
@@ -91,7 +94,6 @@ cmake --install '<build>' --config Release --prefix '<install>'
 -- Up-to-date: <install>/include/adasdf/backend
 -- Up-to-date: <install>/include/adasdf/backend/Backend.h
 -- Up-to-date: <install>/include/adasdf/backend/CpuBackend.h
--- Up-to-date: <install>/include/adasdf/backend/GpuBackend.h
 ...
 ```
 
@@ -129,10 +131,12 @@ cmake --build '<workspace>/build/adasdf_cl_iv_pkg' --config Release --parallel
 
 ```text
 AdaSDF-CL package consumer
-Version: 0.9.0-alpha
+Version: 1.0.0-alpha
 Point: 1 2 3
 Demo signed distance at origin: -0.5
 Demo adaptive blocks: 7
+Batch query points: 2
+CUDA batch backend available: false
 CPU backend available: true
 ```
 
@@ -170,11 +174,13 @@ cmake --build '<workspace>/build/adasdf_cl_iv_ds' --config Release --parallel
 
 ```text
 AdaSDF-CL downstream example
-Version: 0.9.0-alpha
+Version: 1.0.0-alpha
 CPU backend: available
 No .sdfbin supplied; running core-free demo adaptive path.
 Demo signed distance at origin: -0.5
 Demo adaptive blocks: 7
+Demo batch query points: 3
+CUDA batch backend: unavailable
 Demo colliding: true
 Demo contacts: 4
 ```

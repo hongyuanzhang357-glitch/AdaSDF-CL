@@ -1,39 +1,70 @@
-# GPU Backend
+# Optional CUDA Batch Query Backend
 
-CUDA support is a planned optional backend. The CPU library must remain usable without CUDA.
+AdaSDF-CL v1.0.0-alpha adds an optional CUDA batch query backend.
 
-## Current Parent Project Assets
+## Scope
 
-The existing project includes:
+Supported first:
 
-- `include/sdf/cuda/CudaGlobalDenseSDF.h`
-- `include/sdf/cuda/CudaAllPointsSDFContact.h`
-- `src/cuda/CudaGlobalDenseSDF.cu`
-- `src/cuda/CudaAllPointsSDFContact.cu`
-- CUDA tests and UI benchmark reports
+- core-free `AnalyticSDFModel` boxes;
+- core-free `DemoAdaptiveSDFModel` boxes;
+- batch signed distance;
+- batch gradient / normal output;
+- CPU/GPU numerical alignment checks.
 
-These should be wrapped after the public CPU model and query API stabilizes.
+Not supported yet:
 
-## Public API Hooks
+- full low-rank compressed SDF GPU expansion;
+- arbitrary mesh/STL GPU SDF construction;
+- certified industrial GPU collision pipeline;
+- FCL ABI compatibility.
 
-- `BackendType::CUDA`
-- `GpuBackend`
-- `BatchedCollisionRequest`
-- `collideBatch(...)`
-- `CollisionRequest::backend`
-- `DistanceRequest::backend`
+## CMake
 
-## Behavior Requirements
+CUDA is disabled by default:
 
-- CUDA should be opt-in at configure time.
-- Missing CUDA should not prevent a CPU build.
-- Runtime backend errors should be explicit.
-- CPU/CUDA result differences should be tested with tolerances.
-- Benchmark tools should record upload, kernel, download, reduction, and total times separately.
+```bash
+cmake -S . -B build -DADASDF_CL_ENABLE_CUDA=OFF
+```
 
-## TODO
+To request CUDA:
 
-- Define GPU memory ownership for `SDFModel::DeviceHandle`.
-- Decide when `BackendType::Auto` chooses CUDA.
-- Add batched contact output buffers with stable layout.
-- Add tests comparing CUDA to CPU on representative `.sdfbin` models.
+```bash
+cmake -S . -B build-cuda -DADASDF_CL_ENABLE_CUDA=ON
+```
+
+If CUDA is requested but unavailable, configure continues and builds the CPU runtime. The summary reports:
+
+```text
+CUDA backend: OFF
+CUDA toolkit: not found
+```
+
+If CUDA is available:
+
+```text
+CUDA backend: ON
+CUDA toolkit: found
+```
+
+## Public API
+
+```cpp
+adasdf::BatchQueryInput input;
+input.points = points;
+
+if (adasdf::CudaQueryBackend::isAvailable()) {
+  adasdf::BatchQueryOutput output =
+      adasdf::CudaQueryBackend::queryAnalyticBox(*model, input);
+}
+```
+
+CPU-only users can include `<adasdf/adasdf.h>` without including CUDA headers.
+
+## Precision
+
+The v1.0.0-alpha CUDA kernel uses double precision to align with the CPU `Scalar` type. Float mode is intentionally not part of this alpha.
+
+## Testing
+
+CUDA tests are compiled in CPU-only builds and return success with a `SKIPPED` message when CUDA is unavailable. When CUDA is available, the alignment test checks max signed-distance and normal errors against tight tolerances on 1000 deterministic points.
