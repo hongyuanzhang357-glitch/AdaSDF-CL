@@ -275,6 +275,7 @@ def main() -> int:
             [
                 str(required_demo_tools["adasdf_mesh_check"]),
                 str(mesh_fixture),
+                "--readiness",
                 "--out",
                 str(mesh_report),
                 "--json",
@@ -431,6 +432,8 @@ def main() -> int:
                 "AdaSDF-CL mesh diagnostics",
                 "Format: ascii",
                 "Watertight: yes",
+                "SDF build readiness: Ready",
+                "Score:",
                 "Boundary edges: 0",
                 "Recommendation:",
             ]
@@ -439,7 +442,15 @@ def main() -> int:
             ]
             report_text = mesh_report.read_text(encoding="utf-8", errors="replace")
             json_text = mesh_json.read_text(encoding="utf-8", errors="replace")
-            if missing_lines or "Watertight" not in report_text or "\"triangle_count\"" not in json_text:
+            if (
+                missing_lines
+                or "Watertight" not in report_text
+                or "SDF Build Readiness" not in report_text
+                or "Score" not in report_text
+                or "\"triangle_count\"" not in json_text
+                or "\"readiness\"" not in json_text
+                or "\"score\"" not in json_text
+            ):
                 result.returncode = 1
                 result.output += (
                     "\nValidation failed: mesh diagnostics output missing: "

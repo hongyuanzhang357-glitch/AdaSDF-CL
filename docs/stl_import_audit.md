@@ -1,7 +1,8 @@
 # STL Import Audit
 
-v1.2.0-alpha introduces the first public STL import preflight path. The goal is
-to make STL readiness visible before users attempt SDF construction.
+v1.3.0-alpha extends the public STL import preflight path with mesh readiness
+scoring and repair suggestions. The goal is to make STL suitability visible
+before users attempt SDF construction.
 
 | Capability | Status | API / Tool | Notes |
 | --- | --- | --- | --- |
@@ -19,6 +20,9 @@ to make STL readiness visible before users attempt SDF construction.
 | Markdown report | Implemented | `MeshDiagnosticsWriter` | Human-readable. |
 | JSON-like report | Implemented | `MeshDiagnosticsWriter` | Lightweight scripting. |
 | CLI preflight | Implemented | `adasdf_mesh_check` | Exit code 2 for critical mesh issues. |
+| Readiness score | Implemented | `MeshReadiness` | 0-100 SDF build suitability heuristic. |
+| Severity classification | Implemented | `MeshIssueSeverity` | Info, warning, and critical issues. |
+| Repair suggestions | Implemented | `MeshReadinessReport` | Text guidance only; no input modification. |
 | Mesh repair | Planned | - | Not implemented. |
 | Self-intersection detection | Planned | - | Not implemented. |
 | Full arbitrary-STL adaptive SDF builder | Planned | - | Existing-core bridge is separate. |
@@ -26,16 +30,17 @@ to make STL readiness visible before users attempt SDF construction.
 
 ## Import Boundary
 
-The v1.2 STL reader is diagnostic infrastructure. It reads triangles into a
-simple public `TriangleMesh`, but it does not convert arbitrary STL files into
-adaptive compressed SDF assets.
+The STL reader and readiness scorer are diagnostic infrastructure. They read
+triangles into a simple public `TriangleMesh` and classify suitability, but they
+do not convert arbitrary STL files into adaptive compressed SDF assets.
 
 Recommended preflight:
 
 ```bash
-adasdf_mesh_check robot_link.stl --out robot_link_mesh_report.md
+adasdf_mesh_check robot_link.stl --readiness --out robot_link_mesh_report.md
 ```
 
 If the report shows boundary edges, non-manifold edges, degenerate triangles, or
 scale warnings, users should fix the source mesh or consciously accept the risk
-before future SDF construction.
+before future SDF construction. Readiness is a preflight heuristic, not an
+industrial certification or automatic repair pass.

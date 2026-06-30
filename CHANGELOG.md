@@ -1,5 +1,36 @@
 # Changelog
 
+## 1.3.0-alpha
+
+Mesh build readiness and repair suggestions.
+
+### Added
+
+- `MeshReadiness` module for SDF build suitability assessment.
+- Severity-ranked mesh issues with info, warning, and critical levels.
+- 0-100 readiness score and `Ready`, `UsableWithWarnings`, `Poor`, and
+  `NotRecommended` levels.
+- Recommended preprocessing and repair suggestions for common STL issues.
+- `adasdf_mesh_check --readiness`, `--strict`, `--lenient`,
+  `--require-watertight`, and `--allow-open`.
+- Combined diagnostics + readiness Markdown and JSON-like report output.
+- Mesh readiness docs, release draft, tests, and validation coverage.
+
+### Changed
+
+- Version updated to `1.3.0-alpha`.
+- Install validation and alpha validation now require readiness report output.
+- README, roadmap, capability matrix, and public positioning docs now include
+  SDF build readiness.
+
+### Notes
+
+- This is a readiness and suggestion release, not an automatic mesh repair
+  engine.
+- Input STL files are never modified.
+- Mesh repair, self-intersection detection, and standalone arbitrary-STL SDF
+  building remain planned work.
+
 ## 1.2.0-alpha
 
 STL mesh diagnostics and import audit.

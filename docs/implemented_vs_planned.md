@@ -20,6 +20,8 @@
 - ASCII and binary STL reader for diagnostics.
 - STL mesh diagnostics preflight for AABB, scale, watertight, boundary,
   non-manifold, duplicate, degenerate, component, and isolated-vertex checks.
+- Mesh readiness scoring, severity classification, and repair suggestions for
+  SDF build preflight.
 - Markdown and JSON-like mesh diagnostics reports.
 - `adasdf_mesh_check` CLI and CPU-only mesh diagnostics demo.
 - External CMake install/export and downstream example.
@@ -38,8 +40,9 @@
   planned.
 - Real asset bridge: existing-core fixtures and sampled expansion bridge exist
   when direct query support is available.
-- STL import audit: diagnostics are implemented, but no repair or standalone
-  arbitrary-STL SDF build follows from the report yet.
+- STL import audit: diagnostics and readiness suggestions are implemented, but
+  no automatic repair or standalone arbitrary-STL SDF build follows from the
+  report yet.
 
 ## Planned
 

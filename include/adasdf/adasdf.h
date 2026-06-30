@@ -11,6 +11,7 @@
 #include "adasdf/mesh/TriangleMesh.h"
 #include "adasdf/mesh/STLReader.h"
 #include "adasdf/mesh/MeshDiagnostics.h"
+#include "adasdf/mesh/MeshReadiness.h"
 #include "adasdf/mesh/MeshDiagnosticsWriter.h"
 #include "adasdf/generation/BuildOptions.h"
 #include "adasdf/generation/SDFBuilder.h"

@@ -99,6 +99,7 @@ set(ADASDF_CL_RUNTIME_SOURCES
   src/mesh/TriangleMesh.cpp
   src/mesh/STLReader.cpp
   src/mesh/MeshDiagnostics.cpp
+  src/mesh/MeshReadiness.cpp
   src/mesh/MeshDiagnosticsWriter.cpp
   src/io/ContactOnlySDFBin.cpp
   src/io/DemoAdaptiveSDFBin.cpp
@@ -419,7 +420,9 @@ set(ADASDF_CL_TEST_SOURCES
   tests/test_stl_reader.cpp
   tests/test_mesh_diagnostics.cpp
   tests/test_mesh_diagnostics_writer.cpp
+  tests/test_mesh_readiness.cpp
   tests/test_mesh_check_cli.cpp
+  tests/test_mesh_check_readiness_cli.cpp
   tests/test_mesh_diagnostics_fixtures.cpp)
 
 file(GLOB_RECURSE ADASDF_CL_DISCOVERED_FIXTURES
@@ -470,7 +473,8 @@ if(ADASDF_CL_BUILD_TESTS)
       target_compile_definitions(${test_name} PRIVATE
         ADASDF_CL_CAPABILITIES="$<TARGET_FILE_NAME:adasdf_capabilities>")
     endif()
-    if(test_name STREQUAL "test_mesh_check_cli")
+    if(test_name STREQUAL "test_mesh_check_cli" OR
+        test_name STREQUAL "test_mesh_check_readiness_cli")
       add_dependencies(${test_name} adasdf_mesh_check)
       target_compile_definitions(${test_name} PRIVATE
         ADASDF_CL_MESH_CHECK="$<TARGET_FILE_NAME:adasdf_mesh_check>")
@@ -509,7 +513,8 @@ if(ADASDF_CL_BUILD_TESTS)
       set_tests_properties(${test_name} PROPERTIES
         WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_capabilities>")
     endif()
-    if(test_name STREQUAL "test_mesh_check_cli")
+    if(test_name STREQUAL "test_mesh_check_cli" OR
+        test_name STREQUAL "test_mesh_check_readiness_cli")
       set_tests_properties(${test_name} PROPERTIES
         WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_mesh_check>")
     endif()

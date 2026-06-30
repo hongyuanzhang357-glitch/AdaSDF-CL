@@ -38,6 +38,7 @@ int main() {
       "docs/query_backend_matrix.md",
       "docs/contact_output_matrix.md",
       "docs/mesh_diagnostics.md",
+      "docs/mesh_readiness.md",
       "docs/stl_import_audit.md",
       "docs/public_positioning.md"};
 

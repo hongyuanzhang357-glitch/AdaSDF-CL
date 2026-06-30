@@ -13,6 +13,8 @@ only, Planned, Not implemented.
 | Build / Input | existing-core STL-to-sdfbin bridge | Existing-core only | v0.4 | `AdaptiveSDFBuilder`, `adasdf_build` | Requires existing research core. |
 | Build / Input | arbitrary STL standalone public builder | Planned | - | - | Existing-core bridge exists, but no core-free general STL builder yet. |
 | Build / Input | mesh diagnostics | Implemented | v1.2 | `MeshDiagnostics`, `adasdf_mesh_check` | Preflight only, no repair. |
+| Build / Input | mesh readiness scoring | Implemented | v1.3 | `MeshReadiness`, `adasdf_mesh_check --readiness` | Preflight suitability score and suggestions. |
+| Build / Input | repair suggestions | Implemented | v1.3 | `MeshReadinessReport` | Text guidance only; input STL is not modified. |
 | Build / Input | mesh repair | Planned | - | - | Not implemented. |
 | Build / Input | unit / scale report | Partial | v0.9 | `adasdf_info` | Metadata shown when available. |
 | SDF storage / model | demo text `.sdfbin` | Implemented | v0.8 | `DemoSDFBin` | Core-free analytic demo format. |
@@ -52,6 +54,8 @@ only, Planned, Not implemented.
 | Accuracy / Reliability | fallback statistics | Implemented | v1.1.0 | `fallback_count`, `fallback_rate` | Quality and benchmark. |
 | Accuracy / Reliability | mesh AABB / scale report | Implemented | v1.2 | `MeshDiagnosticsReport` | Prompts users to confirm units. |
 | Accuracy / Reliability | boundary / non-manifold edge report | Implemented | v1.2 | `MeshDiagnosticsReport` | Topology-level preflight. |
+| Accuracy / Reliability | mesh issue severity classification | Implemented | v1.3 | `MeshIssueSeverity` | Info, warning, and critical. |
+| Accuracy / Reliability | SDF build readiness score | Implemented | v1.3 | `MeshReadinessReport::score` | 0-100 heuristic, not certification. |
 | Accuracy / Reliability | self-intersection detection | Planned | - | - | Not implemented. |
 | Accuracy / Reliability | per-contact error bound | Planned | - | - | Not implemented. |
 | Accuracy / Reliability | query confidence | Planned | - | - | Not implemented. |

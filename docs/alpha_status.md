@@ -1,10 +1,10 @@
 # Alpha Status
 
-AdaSDF-CL 1.2.0-alpha is a research-preview release candidate.
+AdaSDF-CL 1.3.0-alpha is a research-preview release candidate.
 
-The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`, and
-`v1.1.0-alpha`, and `v1.1.1-alpha` tags are retained for traceability. The
-recommended public pre-release is `v1.2.0-alpha`.
+The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`,
+`v1.1.0-alpha`, `v1.1.1-alpha`, and `v1.2.0-alpha` tags are retained for
+traceability. The recommended public pre-release is `v1.3.0-alpha`.
 
 ## What Works
 
@@ -33,8 +33,10 @@ recommended public pre-release is `v1.2.0-alpha`.
 - `adasdf_expansion_quality` CLI with CSV output.
 - `adasdf_capabilities` CLI and capability walkthrough example.
 - ASCII and binary STL reader for diagnostics.
-- `TriangleMesh`, `MeshDiagnostics`, and `MeshDiagnosticsWriter`.
-- `adasdf_mesh_check` CLI with Markdown and JSON-like reports.
+- `TriangleMesh`, `MeshDiagnostics`, `MeshReadiness`, and
+  `MeshDiagnosticsWriter`.
+- `adasdf_mesh_check` CLI with diagnostics, readiness scoring, Markdown, and
+  JSON-like reports.
 - Project-generated STL diagnostics fixtures.
 - Capability, query backend, contact output, FCL complement, and public
   positioning documentation.
@@ -64,17 +66,22 @@ v1.2.0-alpha is an STL mesh diagnostics release. It reads STL files and reports
 preflight topology/scale issues. It does not repair meshes, detect
 self-intersections, or build arbitrary-STL adaptive SDF assets.
 
+v1.3.0-alpha is a mesh readiness release. It turns diagnostics into severity
+classification, a 0-100 SDF build readiness score, and repair suggestions. It
+does not modify input STL files and is not an automatic mesh repair engine.
+
 Benchmark `total_ms` is a full query timing. Benchmark `kernel_ms` is CUDA kernel event timing. Original UI warmed kernel-average numbers should be compared to `--kernel-only --output phi --reuse-resident` rows.
 
 `output=phi` computes signed distance only. `output=phi,normal` computes signed distance plus finite-difference normals. `--device-only` skips result download and correctness checks and should be used only for GPU-side performance analysis.
 
 ## Validation Snapshot
 
-- Expected tests: 59.
+- Expected tests: 61.
 - Expected install validation: PASS with `ADASDF_CL_USE_EXISTING_CORE=OFF`.
 - Expected alpha validation: PASS.
 - Expected clean check: PASS.
 - Target external collision test verdict for v0.9.0-alpha: PASS for the demo adaptive workflow.
 - Expected CUDA-unavailable behavior: GPU benchmark/tests SKIPPED, not FAILED.
-- Current v1.2.0-alpha local CPU CTest result: 59/59 PASS.
-- Current v1.2.0-alpha local CUDA CTest result through an ASCII-only source/build path: 59/59 PASS.
+- Current v1.3.0-alpha local CPU CTest result: 61/61 PASS.
+- Current v1.3.0-alpha local CUDA CTest result through an ASCII-only
+  source/build path: 61/61 PASS.

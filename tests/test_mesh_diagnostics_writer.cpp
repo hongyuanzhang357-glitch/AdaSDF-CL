@@ -40,12 +40,19 @@ int main() {
     }
     auto report = adasdf::MeshDiagnostics::analyze(read.mesh);
     report.raw_triangle_count = read.raw_triangle_count;
+    const auto readiness = adasdf::MeshReadiness::evaluate(report);
 
     const std::string markdown =
         adasdf::MeshDiagnosticsWriter::toMarkdown(report);
     const std::string json = adasdf::MeshDiagnosticsWriter::toJson(report);
+    const std::string readiness_markdown =
+        adasdf::MeshDiagnosticsWriter::readinessToMarkdown(readiness);
+    const std::string combined_json =
+        adasdf::MeshDiagnosticsWriter::combinedJson(report, readiness);
     if (!contains(markdown, "Watertight") ||
-        !contains(json, "\"triangle_count\"")) {
+        !contains(json, "\"triangle_count\"") ||
+        !contains(readiness_markdown, "SDF Build Readiness") ||
+        !contains(combined_json, "\"readiness\"")) {
       std::cerr << "diagnostics writer output missing required fields\n";
       return 1;
     }

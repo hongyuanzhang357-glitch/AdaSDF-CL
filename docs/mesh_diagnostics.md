@@ -5,8 +5,9 @@ future SDF construction. It helps users inspect whether an STL is a reasonable
 candidate for adaptive SDF building, FCL fallback experiments, or a future
 CollisionWorld pipeline.
 
-This is not a mesh repair tool and not a full standalone arbitrary-STL adaptive
-SDF builder.
+AdaSDF-CL v1.3.0-alpha adds `MeshReadiness` on top of these diagnostics. This
+is not a mesh repair tool, not industrial certification, and not a full
+standalone arbitrary-STL adaptive SDF builder.
 
 ## Supported Input
 
@@ -82,6 +83,7 @@ adasdf_mesh_check model.stl
 adasdf_mesh_check model.stl --out mesh_report.md
 adasdf_mesh_check model.stl --json mesh_report.json
 adasdf_mesh_check model.stl --tolerance 1e-12 --area-eps 1e-14
+adasdf_mesh_check model.stl --readiness --out mesh_readiness_report.md
 ```
 
 Options:
@@ -92,6 +94,10 @@ Options:
 - `--area-eps value`: degenerate triangle area threshold.
 - `--no-duplicate-check`: skip duplicate-triangle detection.
 - `--no-components`: skip connected-component detection.
+- `--readiness`: add SDF build readiness score, issue severity, and
+  preprocessing suggestions.
+- `--strict`: require watertight input and strict readiness checks.
+- `--lenient`: allow open meshes as readiness warnings.
 - `--verbose`: print warnings and errors.
 
 ## Return Codes
@@ -115,6 +121,9 @@ Markdown reports contain:
 
 JSON-like reports expose the same core fields for lightweight scripting without
 adding a third-party JSON dependency.
+
+When `--readiness` is enabled, reports also include SDF Build Readiness, Score,
+Critical Issues, Warnings, and Recommended Preprocessing Steps.
 
 ## Current Limits
 

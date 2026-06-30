@@ -317,12 +317,25 @@ def main() -> int:
         if result.returncode == 0:
             result = run_step(
                 "Installed Mesh Check CLI",
-                [str(mesh_check_exe), str(mesh_fixture), "--out", str(mesh_report)],
+                [
+                    str(mesh_check_exe),
+                    str(mesh_fixture),
+                    "--readiness",
+                    "--out",
+                    str(mesh_report),
+                ],
                 workspace,
             )
         if (
             result.returncode == 0
-            and ("Watertight: yes" not in result.output or not mesh_report.exists())
+            and (
+                "Watertight: yes" not in result.output
+                or "SDF build readiness: Ready" not in result.output
+                or "Score:" not in result.output
+                or not mesh_report.exists()
+                or "SDF Build Readiness"
+                not in mesh_report.read_text(encoding="utf-8", errors="replace")
+            )
         ):
             result.returncode = 1
             result.output += "\nValidation failed: installed mesh_check output/report is missing.\n"

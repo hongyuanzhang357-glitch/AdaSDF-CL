@@ -21,16 +21,20 @@ Status: working in a core-free public build.
 Runs STL mesh diagnostics before SDF construction. It reads ASCII or binary STL
 and reports counts, AABB/scale, watertight status, boundary edges,
 non-manifold edges, degenerate triangles, duplicate triangles, connected
-components, isolated vertices, and recommendations.
+components, isolated vertices, readiness score, issue severity, and repair
+suggestions.
 
 ```bash
 adasdf_mesh_check model.stl
 adasdf_mesh_check model.stl --out mesh_report.md
 adasdf_mesh_check model.stl --json mesh_report.json --tolerance 1e-12
+adasdf_mesh_check model.stl --readiness --out mesh_report.md
+adasdf_mesh_check model.stl --readiness --strict
+adasdf_mesh_check model.stl --readiness --lenient
 ```
 
-This is a preflight diagnostic tool. It does not repair meshes and does not
-build a full arbitrary-STL adaptive SDF.
+This is a preflight diagnostic and readiness tool. It does not modify or repair
+meshes and does not build a full arbitrary-STL adaptive SDF.
 
 ## adasdf_recommend_demo
 

@@ -46,6 +46,49 @@ void writeStringArray(
   out << "\n";
 }
 
+void writeIssueArray(
+    std::ostringstream& out,
+    const char* key,
+    const std::vector<MeshIssue>& issues,
+    bool comma) {
+  out << "  \"" << key << "\": [\n";
+  for (std::size_t i = 0; i < issues.size(); ++i) {
+    const MeshIssue& issue = issues[i];
+    out << "    {\n";
+    out << "      \"severity\": \"" << toString(issue.severity) << "\",\n";
+    out << "      \"code\": \"" << escapeJson(issue.code) << "\",\n";
+    out << "      \"message\": \"" << escapeJson(issue.message) << "\",\n";
+    out << "      \"suggestion\": \"" << escapeJson(issue.suggestion) << "\"\n";
+    out << "    }";
+    if (i + 1 < issues.size()) {
+      out << ",";
+    }
+    out << "\n";
+  }
+  out << "  ]";
+  if (comma) {
+    out << ",";
+  }
+  out << "\n";
+}
+
+void writeIssueGroup(
+    std::ostringstream& out,
+    const MeshReadinessReport& readiness,
+    MeshIssueSeverity severity) {
+  bool wrote = false;
+  for (const MeshIssue& issue : readiness.issues) {
+    if (issue.severity == severity) {
+      out << "- " << issue.code << ": " << issue.message << "\n";
+      out << "  Suggestion: " << issue.suggestion << "\n";
+      wrote = true;
+    }
+  }
+  if (!wrote) {
+    out << "- none\n";
+  }
+}
+
 void ensureParent(const std::filesystem::path& path) {
   if (!path.parent_path().empty()) {
     std::filesystem::create_directories(path.parent_path());
@@ -173,6 +216,87 @@ std::string MeshDiagnosticsWriter::toJson(
   writeStringArray(out, "errors", report.errors, true);
   out << "  \"recommendation\": \"" << escapeJson(report.recommendation)
       << "\"\n";
+  out << "}\n";
+  return out.str();
+}
+
+std::string MeshDiagnosticsWriter::readinessToMarkdown(
+    const MeshReadinessReport& readiness) {
+  std::ostringstream out;
+  out << "# SDF Build Readiness Report\n\n";
+  out << "## SDF Build Readiness\n\n";
+  out << "- Level: " << toString(readiness.level) << "\n";
+  out << "- Score: " << readiness.score << " / 100\n";
+  out << "- Recommended for SDF build: "
+      << yesNo(readiness.recommended_for_sdf_build) << "\n";
+  out << "- Recommended for contact query: "
+      << yesNo(readiness.recommended_for_contact_query) << "\n";
+  out << "- Summary: " << readiness.summary << "\n\n";
+
+  out << "## Critical Issues\n\n";
+  writeIssueGroup(out, readiness, MeshIssueSeverity::Critical);
+  out << "\n## Warnings\n\n";
+  writeIssueGroup(out, readiness, MeshIssueSeverity::Warning);
+  out << "\n## Info\n\n";
+  writeIssueGroup(out, readiness, MeshIssueSeverity::Info);
+
+  out << "\n## Recommended Preprocessing Steps\n\n";
+  for (std::size_t i = 0; i < readiness.recommended_steps.size(); ++i) {
+    out << (i + 1) << ". " << readiness.recommended_steps[i] << "\n";
+  }
+  out << "\nReadiness is a preflight heuristic, not an industrial "
+         "certification or automatic mesh repair.\n";
+  return out.str();
+}
+
+std::string MeshDiagnosticsWriter::readinessToJson(
+    const MeshReadinessReport& readiness) {
+  std::ostringstream out;
+  out << "{\n";
+  out << "  \"level\": \"" << toString(readiness.level) << "\",\n";
+  out << "  \"score\": " << readiness.score << ",\n";
+  out << "  \"recommended_for_sdf_build\": "
+      << (readiness.recommended_for_sdf_build ? "true" : "false") << ",\n";
+  out << "  \"recommended_for_contact_query\": "
+      << (readiness.recommended_for_contact_query ? "true" : "false")
+      << ",\n";
+  out << "  \"summary\": \"" << escapeJson(readiness.summary) << "\",\n";
+  writeIssueArray(out, "issues", readiness.issues, true);
+  writeStringArray(out, "recommended_steps", readiness.recommended_steps, false);
+  out << "}\n";
+  return out.str();
+}
+
+std::string MeshDiagnosticsWriter::combinedMarkdown(
+    const MeshDiagnosticsReport& diagnostics,
+    const MeshReadinessReport& readiness) {
+  return toMarkdown(diagnostics) + "\n\n" + readinessToMarkdown(readiness);
+}
+
+std::string MeshDiagnosticsWriter::combinedJson(
+    const MeshDiagnosticsReport& diagnostics,
+    const MeshReadinessReport& readiness) {
+  std::ostringstream out;
+  out << "{\n";
+  out << "  \"diagnostics\": ";
+  const std::string diagnostics_json = toJson(diagnostics);
+  for (std::size_t i = 0; i < diagnostics_json.size(); ++i) {
+    const char ch = diagnostics_json[i];
+    out << ch;
+    if (ch == '\n' && i + 1 < diagnostics_json.size()) {
+      out << "  ";
+    }
+  }
+  out << ",\n";
+  out << "  \"readiness\": ";
+  const std::string readiness_json = readinessToJson(readiness);
+  for (std::size_t i = 0; i < readiness_json.size(); ++i) {
+    const char ch = readiness_json[i];
+    out << ch;
+    if (ch == '\n' && i + 1 < readiness_json.size()) {
+      out << "  ";
+    }
+  }
   out << "}\n";
   return out.str();
 }

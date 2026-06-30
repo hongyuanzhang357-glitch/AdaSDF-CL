@@ -23,8 +23,10 @@
   walkthrough example.
 - v1.2 STL mesh diagnostics, import audit, Markdown/JSON reports, and
   project-generated STL diagnostic fixtures.
+- v1.3 mesh build readiness scoring, severity classification, and repair
+  suggestions.
 
-## v1.2.0-alpha Scope
+## v1.3.0-alpha Scope
 
 - explicit `QueryModeConfig` for backend, expansion, block selection, resident data, and fallback;
 - reusable `ExpandedSDF`, `SDFExpander`, and `QueryEngine` APIs;
@@ -60,12 +62,16 @@
 - topology-level watertight, boundary-edge, non-manifold-edge, duplicate,
   degenerate, component, isolated-vertex, AABB, and scale checks;
 - `adasdf_mesh_check` CLI with Markdown and JSON-like report output;
+- `MeshReadiness` scoring from diagnostics to SDF build suitability;
+- severity classification for info, warning, and critical mesh issues;
+- repair and preprocessing suggestions without modifying input STL files;
+- `adasdf_mesh_check --readiness` with strict and lenient modes;
 - CPU-only mesh diagnostics example;
 - project-generated STL diagnostics fixtures.
 
 The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`, and
-`v1.1.0-alpha`, and `v1.1.1-alpha` tags are retained for traceability. The
-recommended public pre-release is `v1.2.0-alpha`.
+`v1.1.0-alpha`, `v1.1.1-alpha`, and `v1.2.0-alpha` tags are retained for
+traceability. The recommended public pre-release is `v1.3.0-alpha`.
 
 ## Future Work
 

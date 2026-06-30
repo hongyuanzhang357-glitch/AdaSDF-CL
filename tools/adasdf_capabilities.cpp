@@ -45,6 +45,7 @@ int main(int argc, char** argv) {
         "CUDA global/block expanded query when CUDA is enabled",
         "ASCII and binary STL reader for mesh diagnostics",
         "STL mesh diagnostics preflight report",
+        "SDF build readiness scoring and repair suggestions",
         "expansion quality audit",
         "sign mismatch and near-surface mismatch metrics",
         "SVG collision view",
@@ -89,10 +90,12 @@ int main(int argc, char** argv) {
       std::cout << "\nMesh diagnostics:\n";
       std::cout << "- ASCII / binary STL reader for diagnostics\n";
       std::cout << "- watertight, boundary, non-manifold, duplicate, degenerate, component, and scale checks\n";
-      std::cout << "- preflight only; no mesh repair or full STL-to-SDF builder\n";
+      std::cout << "- readiness score, severity classification, and repair suggestions\n";
+      std::cout << "- preflight only; no automatic mesh repair or full STL-to-SDF builder\n";
       std::cout << "\nDocumentation:\n";
       std::cout << "- docs/capability_matrix.md\n";
       std::cout << "- docs/mesh_diagnostics.md\n";
+      std::cout << "- docs/mesh_readiness.md\n";
       std::cout << "- docs/stl_import_audit.md\n";
       std::cout << "- docs/implemented_vs_planned.md\n";
       std::cout << "- docs/fcl_complement_strategy.md\n";
