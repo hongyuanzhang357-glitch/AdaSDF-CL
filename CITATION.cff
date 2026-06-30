@@ -2,7 +2,7 @@ cff-version: 1.2.0
 message: "If you use AdaSDF-CL in academic work, please cite this software."
 title: "AdaSDF-CL: Adaptive Signed Distance Field Collision Library"
 type: software
-version: "1.1.1-alpha"
+version: "1.2.0-alpha"
 date-released: "2026-06-30"
 license: "MIT"
 authors:

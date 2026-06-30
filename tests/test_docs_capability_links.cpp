@@ -37,6 +37,8 @@ int main() {
       "docs/fcl_complement_strategy.md",
       "docs/query_backend_matrix.md",
       "docs/contact_output_matrix.md",
+      "docs/mesh_diagnostics.md",
+      "docs/stl_import_audit.md",
       "docs/public_positioning.md"};
 
   for (const std::string& doc : docs) {

@@ -13,6 +13,7 @@ cmake --build build --config Release
 - `09_surrogate_adaptive_demo.cpp`: user target error and memory constraints -> demo surrogate -> demo adaptive SDF -> query.
 - `10_two_box_collision_with_view.cpp`: build two demo adaptive boxes, collide, enforce `max_contacts`, and write an SVG collision view.
 - `11_capability_walkthrough.cpp`: v1.1.1 CPU-only walkthrough that prints version, query modes, a point query, a collision contact, and expansion quality metrics.
+- `12_mesh_diagnostics_demo.cpp`: v1.2 CPU-only STL mesh diagnostics demo that reads an STL, prints a summary, and can write a Markdown report.
 - `downstream_cmake_project`: package-only external CMake smoke example with a no-input demo adaptive path.
 
 ## Existing-Core Examples

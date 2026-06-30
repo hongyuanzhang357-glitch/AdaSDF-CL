@@ -62,4 +62,4 @@ adasdf_collide a.sdfbin b.sdfbin --backend sdf
 adasdf_collide a.stl b.stl --backend hybrid
 ```
 
-FCL backend is planned, not implemented in v1.1.1-alpha.
+FCL backend is planned, not implemented in v1.2.0-alpha.

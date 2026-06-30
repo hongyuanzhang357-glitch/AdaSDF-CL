@@ -226,9 +226,13 @@ def main() -> int:
     collision_svg = build.parent / "collision_v1.svg"
     benchmark_csv = build.parent / "adasdf_batch_benchmark_v1.csv"
     quality_csv = build.parent / "adasdf_expansion_quality_v1.csv"
+    mesh_fixture = source / "tests" / "data" / "mesh_diagnostics" / "closed_cube_ascii.stl"
+    mesh_report = build.parent / "closed_cube_mesh_report.md"
+    mesh_json = build.parent / "closed_cube_mesh_report.json"
     max_contacts = 8
     required_demo_tools = {
         "adasdf_capabilities": find_executable(build, "adasdf_capabilities", config),
+        "adasdf_mesh_check": find_executable(build, "adasdf_mesh_check", config),
         "adasdf_recommend_demo": find_executable(build, "adasdf_recommend_demo", config),
         "adasdf_build_demo_adaptive": find_executable(build, "adasdf_build_demo_adaptive", config),
         "adasdf_info": find_executable(build, "adasdf_info", config),
@@ -264,6 +268,17 @@ def main() -> int:
             "Capability Walkthrough Example",
             [
                 str(required_demo_tools["adasdf_capability_walkthrough"]),
+            ],
+        ),
+        (
+            "Mesh Diagnostics CLI",
+            [
+                str(required_demo_tools["adasdf_mesh_check"]),
+                str(mesh_fixture),
+                "--out",
+                str(mesh_report),
+                "--json",
+                str(mesh_json),
             ],
         ),
         (
@@ -401,6 +416,33 @@ def main() -> int:
                 result.returncode = 1
                 result.output += (
                     "\nValidation failed: walkthrough output missing: "
+                    + ", ".join(missing_lines)
+                    + "\n"
+                )
+                write_report(report_path, results, source, build, config)
+                return result.returncode
+        if name == "Mesh Diagnostics CLI":
+            if not mesh_report.exists() or not mesh_json.exists():
+                result.returncode = 1
+                result.output += "\nValidation failed: mesh reports were not generated.\n"
+                write_report(report_path, results, source, build, config)
+                return result.returncode
+            required_lines = [
+                "AdaSDF-CL mesh diagnostics",
+                "Format: ascii",
+                "Watertight: yes",
+                "Boundary edges: 0",
+                "Recommendation:",
+            ]
+            missing_lines = [
+                line for line in required_lines if line not in result.output
+            ]
+            report_text = mesh_report.read_text(encoding="utf-8", errors="replace")
+            json_text = mesh_json.read_text(encoding="utf-8", errors="replace")
+            if missing_lines or "Watertight" not in report_text or "\"triangle_count\"" not in json_text:
+                result.returncode = 1
+                result.output += (
+                    "\nValidation failed: mesh diagnostics output missing: "
                     + ", ".join(missing_lines)
                     + "\n"
                 )

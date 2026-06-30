@@ -17,6 +17,11 @@
   fields.
 - ExpandedSDF quality audit.
 - Sign mismatch, ambiguous sign, and near-surface mismatch metrics.
+- ASCII and binary STL reader for diagnostics.
+- STL mesh diagnostics preflight for AABB, scale, watertight, boundary,
+  non-manifold, duplicate, degenerate, component, and isolated-vertex checks.
+- Markdown and JSON-like mesh diagnostics reports.
+- `adasdf_mesh_check` CLI and CPU-only mesh diagnostics demo.
 - External CMake install/export and downstream example.
 
 ## Partial / Experimental
@@ -33,11 +38,14 @@
   planned.
 - Real asset bridge: existing-core fixtures and sampled expansion bridge exist
   when direct query support is available.
+- STL import audit: diagnostics are implemented, but no repair or standalone
+  arbitrary-STL SDF build follows from the report yet.
 
 ## Planned
 
 - Standalone arbitrary STL adaptive builder.
-- Mesh diagnostics and mesh repair.
+- Mesh repair.
+- Self-intersection detection.
 - FCL fallback backend.
 - CollisionWorld broadphase.
 - CCD.

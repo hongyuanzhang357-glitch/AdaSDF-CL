@@ -14,6 +14,24 @@ adasdf_capabilities --verbose
 
 This tool does not require CUDA or the existing core.
 
+## adasdf_mesh_check
+
+Status: working in a core-free public build.
+
+Runs STL mesh diagnostics before SDF construction. It reads ASCII or binary STL
+and reports counts, AABB/scale, watertight status, boundary edges,
+non-manifold edges, degenerate triangles, duplicate triangles, connected
+components, isolated vertices, and recommendations.
+
+```bash
+adasdf_mesh_check model.stl
+adasdf_mesh_check model.stl --out mesh_report.md
+adasdf_mesh_check model.stl --json mesh_report.json --tolerance 1e-12
+```
+
+This is a preflight diagnostic tool. It does not repair meshes and does not
+build a full arbitrary-STL adaptive SDF.
+
 ## adasdf_recommend_demo
 
 Status: working in a core-free public build.

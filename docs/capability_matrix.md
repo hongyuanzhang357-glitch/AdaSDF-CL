@@ -7,9 +7,12 @@ only, Planned, Not implemented.
 | --- | --- | --- | --- | --- | --- |
 | Build / Input | core-free analytic demo box | Implemented | v0.8 | `AnalyticSDFModel`, `adasdf_make_demo_box` | Public standalone path. |
 | Build / Input | demo adaptive SDF | Implemented | v0.9 | `DemoAdaptiveSDFBuilder`, `adasdf_build_demo_adaptive` | Demo analytic backend with adaptive metadata. |
+| Build / Input | STL reader | Implemented | v1.2 | `STLReader` | Diagnostics-oriented reader. |
+| Build / Input | ASCII STL | Implemented | v1.2 | `STLReader` | Common ASCII STL syntax. |
+| Build / Input | Binary STL | Implemented | v1.2 | `STLReader` | Validates binary triangle count against file size. |
 | Build / Input | existing-core STL-to-sdfbin bridge | Existing-core only | v0.4 | `AdaptiveSDFBuilder`, `adasdf_build` | Requires existing research core. |
-| Build / Input | arbitrary STL standalone public builder | Planned | - | - | No core-free general STL builder yet. |
-| Build / Input | mesh diagnostics | Planned | - | - | Not implemented. |
+| Build / Input | arbitrary STL standalone public builder | Planned | - | - | Existing-core bridge exists, but no core-free general STL builder yet. |
+| Build / Input | mesh diagnostics | Implemented | v1.2 | `MeshDiagnostics`, `adasdf_mesh_check` | Preflight only, no repair. |
 | Build / Input | mesh repair | Planned | - | - | Not implemented. |
 | Build / Input | unit / scale report | Partial | v0.9 | `adasdf_info` | Metadata shown when available. |
 | SDF storage / model | demo text `.sdfbin` | Implemented | v0.8 | `DemoSDFBin` | Core-free analytic demo format. |
@@ -47,6 +50,9 @@ only, Planned, Not implemented.
 | Accuracy / Reliability | ambiguous sign | Implemented | v1.1.0 | `ambiguous_sign_rate` | Separate from mismatch. |
 | Accuracy / Reliability | near-surface sign mismatch | Implemented | v1.1.0 | `near_surface_sign_mismatch_rate` | Contact-risk indicator. |
 | Accuracy / Reliability | fallback statistics | Implemented | v1.1.0 | `fallback_count`, `fallback_rate` | Quality and benchmark. |
+| Accuracy / Reliability | mesh AABB / scale report | Implemented | v1.2 | `MeshDiagnosticsReport` | Prompts users to confirm units. |
+| Accuracy / Reliability | boundary / non-manifold edge report | Implemented | v1.2 | `MeshDiagnosticsReport` | Topology-level preflight. |
+| Accuracy / Reliability | self-intersection detection | Planned | - | - | Not implemented. |
 | Accuracy / Reliability | per-contact error bound | Planned | - | - | Not implemented. |
 | Accuracy / Reliability | query confidence | Planned | - | - | Not implemented. |
 | Integration | CMake install/export | Implemented | v0.7 | install targets | Public package. |

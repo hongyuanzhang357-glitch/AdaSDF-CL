@@ -21,8 +21,10 @@
   reporting, and sampled existing-core expansion bridge.
 - v1.1.1 capability exposure, public positioning, capability CLI, and
   walkthrough example.
+- v1.2 STL mesh diagnostics, import audit, Markdown/JSON reports, and
+  project-generated STL diagnostic fixtures.
 
-## v1.1.1-alpha Scope
+## v1.2.0-alpha Scope
 
 - explicit `QueryModeConfig` for backend, expansion, block selection, resident data, and fallback;
 - reusable `ExpandedSDF`, `SDFExpander`, and `QueryEngine` APIs;
@@ -52,14 +54,23 @@
 - query backend and contact output matrices;
 - `adasdf_capabilities` CLI;
 - CPU-only capability walkthrough example.
+- `TriangleMesh`, `STLReader`, `MeshDiagnostics`, and
+  `MeshDiagnosticsWriter`;
+- ASCII and binary STL reader for diagnostics;
+- topology-level watertight, boundary-edge, non-manifold-edge, duplicate,
+  degenerate, component, isolated-vertex, AABB, and scale checks;
+- `adasdf_mesh_check` CLI with Markdown and JSON-like report output;
+- CPU-only mesh diagnostics example;
+- project-generated STL diagnostics fixtures.
 
 The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`, and
-`v1.1.0-alpha` tags are retained for traceability. The recommended public
-pre-release is `v1.1.1-alpha`.
+`v1.1.0-alpha`, and `v1.1.1-alpha` tags are retained for traceability. The
+recommended public pre-release is `v1.2.0-alpha`.
 
 ## Future Work
 
 - public standalone adaptive STL-to-compressed-SDF builder;
+- mesh repair and self-intersection detection;
 - real trained surrogate integration with public artifacts and validation cards;
 - Python package;
 - full low-rank compressed SDF GPU expansion and compressed-direct CUDA query;

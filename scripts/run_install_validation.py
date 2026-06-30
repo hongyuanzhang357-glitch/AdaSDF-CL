@@ -301,6 +301,38 @@ def main() -> int:
         return result.returncode
 
     try:
+        mesh_check_exe = find_executable(install, "adasdf_mesh_check", config)
+    except FileNotFoundError as exc:
+        result = StepResult("Installed Mesh Check CLI", ["adasdf_mesh_check"], 1, str(exc))
+    else:
+        print("[install-validation] Installed Mesh Check CLI", flush=True)
+        mesh_fixture = source / "tests" / "data" / "mesh_diagnostics" / "closed_cube_ascii.stl"
+        mesh_report = build.parent / "install_validation_mesh_report.md"
+        usage = run_step(
+            "Installed Mesh Check CLI",
+            [str(mesh_check_exe)],
+            workspace,
+        )
+        result = usage
+        if result.returncode == 0:
+            result = run_step(
+                "Installed Mesh Check CLI",
+                [str(mesh_check_exe), str(mesh_fixture), "--out", str(mesh_report)],
+                workspace,
+            )
+        if (
+            result.returncode == 0
+            and ("Watertight: yes" not in result.output or not mesh_report.exists())
+        ):
+            result.returncode = 1
+            result.output += "\nValidation failed: installed mesh_check output/report is missing.\n"
+    results.append(result)
+    if result.returncode != 0:
+        write_report(report_path, results, source, build, install, config)
+        print_failure(result, source, build, install)
+        return result.returncode
+
+    try:
         package_exe = find_executable(package_build, "test_find_package", config)
     except FileNotFoundError as exc:
         result = StepResult("Package Run", ["test_find_package"], 1, str(exc))

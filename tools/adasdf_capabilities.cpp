@@ -43,6 +43,8 @@ int main(int argc, char** argv) {
         "point signed-distance, gradient, and normal query",
         "CPU direct/global/block query",
         "CUDA global/block expanded query when CUDA is enabled",
+        "ASCII and binary STL reader for mesh diagnostics",
+        "STL mesh diagnostics preflight report",
         "expansion quality audit",
         "sign mismatch and near-surface mismatch metrics",
         "SVG collision view",
@@ -55,7 +57,8 @@ int main(int argc, char** argv) {
         "block-expanded query for local contact regions"};
     static const char* const planned[] = {
         "standalone arbitrary STL builder",
-        "mesh diagnostics and repair",
+        "mesh repair",
+        "self-intersection detection",
         "FCL fallback backend",
         "CollisionWorld broadphase",
         "CCD",
@@ -83,8 +86,14 @@ int main(int argc, char** argv) {
       std::cout << "- contact point, normal, penetration depth, signed distance\n";
       std::cout << "- raw/reduced contact counts and max contact cap\n";
       std::cout << "- stable robot-grade manifold clustering and CCD are planned\n";
+      std::cout << "\nMesh diagnostics:\n";
+      std::cout << "- ASCII / binary STL reader for diagnostics\n";
+      std::cout << "- watertight, boundary, non-manifold, duplicate, degenerate, component, and scale checks\n";
+      std::cout << "- preflight only; no mesh repair or full STL-to-SDF builder\n";
       std::cout << "\nDocumentation:\n";
       std::cout << "- docs/capability_matrix.md\n";
+      std::cout << "- docs/mesh_diagnostics.md\n";
+      std::cout << "- docs/stl_import_audit.md\n";
       std::cout << "- docs/implemented_vs_planned.md\n";
       std::cout << "- docs/fcl_complement_strategy.md\n";
       std::cout << "- docs/query_backend_matrix.md\n";

@@ -1,5 +1,34 @@
 # Changelog
 
+## 1.2.0-alpha
+
+STL mesh diagnostics and import audit.
+
+### Added
+
+- ASCII / binary STL reader for diagnostics.
+- Triangle mesh diagnostics module.
+- Detection of degenerate triangles, duplicate triangles, boundary edges,
+  non-manifold edges, connected components, isolated vertices, and scale
+  warnings.
+- Markdown and JSON-like diagnostics reports.
+- `adasdf_mesh_check` CLI.
+- Mesh diagnostics demo example.
+- Project-generated diagnostic STL fixtures.
+
+### Changed
+
+- Version updated to `1.2.0-alpha`.
+- Capability, positioning, roadmap, README, install validation, and alpha
+  validation docs now include the STL diagnostics preflight path.
+
+### Notes
+
+- This is a preflight diagnostics release.
+- It does not yet implement a full standalone arbitrary-STL adaptive SDF
+  builder.
+- Mesh repair and self-intersection detection remain planned work.
+
 ## 1.1.1-alpha
 
 Capability exposure and public positioning release.
