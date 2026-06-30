@@ -96,6 +96,17 @@ ExpandedBlock makeDenseBlock(
   return block;
 }
 
+void applyQueryPolicy(ExpandedSDF& expanded, const ExpansionOptions& options) {
+  ExpandedSDFQueryPolicy policy;
+  policy.near_surface_band = options.near_surface_band;
+  policy.sign_epsilon = options.sign_epsilon;
+  policy.clamp_outside_expanded_domain =
+      options.clamp_outside_expanded_domain;
+  policy.allow_direct_fallback_outside =
+      options.allow_direct_fallback_outside;
+  expanded.setQueryPolicy(policy);
+}
+
 std::vector<SDFBlockMetadata> selectedMetadata(
     const SDFModel& model,
     const BlockSelection& selection) {
@@ -155,7 +166,9 @@ ExpandedSDF SDFExpander::expand(
           resolution,
           resolution,
           resolution);
-      return ExpandedSDF::globalDense(std::move(block));
+      ExpandedSDF expanded = ExpandedSDF::globalDense(std::move(block));
+      applyQueryPolicy(expanded, normalized);
+      return expanded;
     }
     case QueryExpansionMode::Block: {
       requireModel(model);
@@ -179,7 +192,9 @@ ExpandedSDF SDFExpander::expand(
             resolution,
             resolution));
       }
-      return ExpandedSDF::blockDense(std::move(blocks));
+      ExpandedSDF expanded = ExpandedSDF::blockDense(std::move(blocks));
+      applyQueryPolicy(expanded, normalized);
+      return expanded;
     }
     case QueryExpansionMode::None:
       throw std::runtime_error("SDFExpander cannot expand QueryExpansionMode::None.");

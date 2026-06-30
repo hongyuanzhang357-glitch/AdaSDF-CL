@@ -225,12 +225,14 @@ def main() -> int:
     demo_sdfbin = build.parent / "cube_adaptive_v1.sdfbin"
     collision_svg = build.parent / "collision_v1.svg"
     benchmark_csv = build.parent / "adasdf_batch_benchmark_v1.csv"
+    quality_csv = build.parent / "adasdf_expansion_quality_v1.csv"
     max_contacts = 8
     required_demo_tools = {
         "adasdf_recommend_demo": find_executable(build, "adasdf_recommend_demo", config),
         "adasdf_build_demo_adaptive": find_executable(build, "adasdf_build_demo_adaptive", config),
         "adasdf_info": find_executable(build, "adasdf_info", config),
         "adasdf_query": find_executable(build, "adasdf_query", config),
+        "adasdf_expansion_quality": find_executable(build, "adasdf_expansion_quality", config),
         "adasdf_collide_boxes_demo": find_executable(build, "adasdf_collide_boxes_demo", config),
         "adasdf_benchmark_batch_query": find_executable(build, "adasdf_benchmark_batch_query", config),
     }
@@ -294,6 +296,21 @@ def main() -> int:
                 "0",
                 "0",
                 "0",
+            ],
+        ),
+        (
+            "Expansion Quality CLI",
+            [
+                str(required_demo_tools["adasdf_expansion_quality"]),
+                str(demo_sdfbin),
+                "--expansion",
+                "global",
+                "--global-resolution",
+                "32",
+                "--samples",
+                "1000",
+                "--out",
+                str(quality_csv),
             ],
         ),
         (
@@ -367,6 +384,16 @@ def main() -> int:
                 "max_abs_phi_error",
                 "max_normal_error",
                 "cuda_available",
+                "max_abs_error",
+                "mean_abs_error",
+                "rms_error",
+                "p95_abs_error",
+                "sign_mismatch_count",
+                "sign_mismatch_rate",
+                "ambiguous_sign_count",
+                "ambiguous_sign_rate",
+                "near_surface_sign_mismatch_rate",
+                "fallback_rate",
                 "status",
                 "error_message",
             ]
@@ -384,6 +411,38 @@ def main() -> int:
                 return result.returncode
             if "CUDA backend unavailable" in result.output:
                 result.status = "PASS (CUDA SKIPPED)"
+        if name == "Expansion Quality CLI":
+            if not quality_csv.exists():
+                result.returncode = 1
+                result.output += "\nValidation failed: quality CSV was not generated.\n"
+                write_report(report_path, results, source, build, config)
+                return result.returncode
+            csv_text = quality_csv.read_text(encoding="utf-8", errors="replace")
+            required_fields = [
+                "max_abs_error",
+                "mean_abs_error",
+                "rms_error",
+                "p95_abs_error",
+                "sign_mismatch_count",
+                "sign_mismatch_rate",
+                "ambiguous_sign_count",
+                "ambiguous_sign_rate",
+                "near_surface_sign_mismatch_rate",
+                "fallback_count",
+                "fallback_rate",
+                "worst_point_id",
+            ]
+            header = csv_text.splitlines()[0] if csv_text.splitlines() else ""
+            missing_fields = [field for field in required_fields if field not in header]
+            if missing_fields:
+                result.returncode = 1
+                result.output += (
+                    "\nValidation failed: quality CSV missing fields: "
+                    + ", ".join(missing_fields)
+                    + "\n"
+                )
+                write_report(report_path, results, source, build, config)
+                return result.returncode
 
     svg_status = 0
     svg_output = ""

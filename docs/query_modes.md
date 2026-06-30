@@ -1,6 +1,6 @@
 # Query Modes And Expansion Modes
 
-AdaSDF-CL v1.0.1-alpha separates query execution into two decisions:
+AdaSDF-CL separates query execution into two decisions:
 
 - backend: where the query runs;
 - expansion: what representation is queried.
@@ -55,6 +55,9 @@ expansion.block_selection = adasdf::BlockSelection::selected({0, 1, 2});
 expansion.global_resolution = 64;
 expansion.block_resolution = 32;
 expansion.padding = 0.0;
+expansion.near_surface_band = 1e-3;
+expansion.sign_epsilon = 1e-9;
+expansion.allow_direct_fallback_outside = true;
 ```
 
 `Global` expansion creates one dense grid over the model bounding box. `Block`
@@ -65,6 +68,12 @@ sorts and deduplicates the requested block IDs and rejects negative IDs.
 If a model has no block metadata, block expansion uses one synthetic block over
 the model bounding box. If block metadata exists and a requested block ID is not
 present, expansion fails.
+
+`global_resolution` controls the global dense grid. `block_resolution` controls
+per-block dense grids. `padding` expands the sampled domain. `near_surface_band`
+and `sign_epsilon` feed quality metrics. Outside-domain expanded queries either
+throw for caller-managed fallback or clamp to the expanded domain when
+`clamp_outside_expanded_domain=true`.
 
 ## QueryEngine
 
@@ -102,6 +111,7 @@ adasdf_query_mode_demo --backend cpu --expansion none --points 100000
 adasdf_query_mode_demo --backend cpu --expansion global --points 100000
 adasdf_query_mode_demo --backend cuda --expansion global --points 100000
 adasdf_query_mode_demo --backend cuda --expansion block --blocks 0,1,2 --points 100000
+adasdf_query_mode_demo --backend cpu --expansion global --quality-audit --samples 10000
 ```
 
 Collision CLI request wiring:
@@ -124,5 +134,8 @@ dense samples through trilinear interpolation. Distance and normal values can
 therefore differ from CPU direct values, especially near cell boundaries or
 where finite-difference normals cross discontinuities.
 
-Use expanded modes to validate query plumbing and GPU-resident throughput. Do
-not treat v1.0.1-alpha expanded-grid normals as certified contact normals.
+Use `ExpansionQuality::compareAgainstDirect()` or `adasdf_expansion_quality` to
+measure max/mean/RMS/p95 error, strict sign mismatch, ambiguous sign,
+near-surface sign mismatch, and fallback rate. Use expanded modes to validate
+query plumbing and GPU-resident throughput. Do not treat expanded-grid normals
+as certified contact normals.

@@ -13,16 +13,7 @@ cmake -S '<source>' -B '<build>' -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD
 ```
 
 ```text
--- Building for: Visual Studio 17 2022
 -- Selecting Windows SDK version 10.0.22621.0 to target Windows 10.0.26200.
--- The CXX compiler identification is MSVC 19.42.34444.0
--- Detecting CXX compiler ABI info
--- Detecting CXX compiler ABI info - done
--- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.42.34433/bin/Hostx64/x64/cl.exe - skipped
--- Detecting CXX compile features
--- Detecting CXX compile features - done
--- Looking for a CUDA compiler
--- Looking for a CUDA compiler - NOTFOUND
 CMake Warning at CMakeLists.txt:72 (message):
   ADASDF_CL_ENABLE_CUDA=ON but no CUDA compiler was found.  Building without
   CUDA batch query kernels.
@@ -30,7 +21,16 @@ CMake Warning at CMakeLists.txt:72 (message):
 
 --
 -- AdaSDF-CL configuration:
---   Version: 1.0.2-alpha
+--   Version: 1.1.0-alpha
+--   Build examples: ON
+--   Build tests: ON
+--   Benchmarks: ON
+--   Existing core requested: OFF
+--   Existing core found: OFF
+--   Adaptive builder: ON
+--   Surrogate recommender: ON
+--   Demo backend: ON
+--   Demo surrogate: ON
 ...
 ```
 
@@ -45,20 +45,20 @@ cmake --build '<build>' --config Release
 
   1>Checking Build System
   Building Custom Rule <source>/CMakeLists.txt
-  FCLAdapter.cpp
-  Backend.cpp
-  CudaQueryBackend.cpp
-  GpuBackend.cpp
-  PointCloudGenerator.cpp
-  CompressedSDF.cpp
-  AdaptiveSDFBuilder.cpp
-  DemoAdaptiveSDFBuilder.cpp
-  DemoSurrogateRecommender.cpp
-  ExistingBuilderBridge.cpp
-  SDFBuilder.cpp
-  SurrogateRecommender.cpp
-  AnalyticSDFModel.cpp
-  DemoAdaptiveSDFModel.cpp
+  adasdf_cl_runtime.vcxproj -> <build>\Release\adasdf_cl_runtime.lib
+  Building Custom Rule <source>/CMakeLists.txt
+  adasdf_benchmark_batch_query.vcxproj -> <build>\benchmarks\Release\adasdf_benchmark_batch_query.exe
+  Building Custom Rule <source>/CMakeLists.txt
+  adasdf_build.vcxproj -> <build>\Release\adasdf_build.exe
+  Building Custom Rule <source>/CMakeLists.txt
+  adasdf_build_demo_adaptive.vcxproj -> <build>\Release\adasdf_build_demo_adaptive.exe
+  Building Custom Rule <source>/CMakeLists.txt
+  adasdf_build_then_query.vcxproj -> <build>\Release\adasdf_build_then_query.exe
+  Building Custom Rule <source>/CMakeLists.txt
+  adasdf_collide.vcxproj -> <build>\Release\adasdf_collide.exe
+  Building Custom Rule <source>/CMakeLists.txt
+  adasdf_collide_boxes_demo.vcxproj -> <build>\Release\adasdf_collide_boxes_demo.exe
+  Building Custom Rule <source>/CMakeLists.txt
 ...
 ```
 
@@ -71,21 +71,21 @@ ctest --test-dir '<build>' -C Release --output-on-failure
 ```text
 Test project <build>
       Start  1: test_sdf_io
- 1/41 Test  #1: test_sdf_io .......................   Passed    0.01 sec
+ 1/51 Test  #1: test_sdf_io ...........................   Passed    0.01 sec
       Start  2: test_collision_query
- 2/41 Test  #2: test_collision_query ..............   Passed    0.01 sec
+ 2/51 Test  #2: test_collision_query ..................   Passed    0.01 sec
       Start  3: test_distance_query
- 3/41 Test  #3: test_distance_query ...............   Passed    0.02 sec
+ 3/51 Test  #3: test_distance_query ...................   Passed    0.01 sec
       Start  4: test_collision_object
- 4/41 Test  #4: test_collision_object .............   Passed    0.01 sec
+ 4/51 Test  #4: test_collision_object .................   Passed    0.01 sec
       Start  5: test_pair_distance_query
- 5/41 Test  #5: test_pair_distance_query ..........   Passed    0.02 sec
+ 5/51 Test  #5: test_pair_distance_query ..............   Passed    0.01 sec
       Start  6: test_pair_collision_query
- 6/41 Test  #6: test_pair_collision_query .........   Passed    0.01 sec
+ 6/51 Test  #6: test_pair_collision_query .............   Passed    0.01 sec
       Start  7: test_candidate_point_sampler
- 7/41 Test  #7: test_candidate_point_sampler ......   Passed    0.01 sec
+ 7/51 Test  #7: test_candidate_point_sampler ..........   Passed    0.02 sec
       Start  8: test_contact_generator
- 8/41 Test  #8: test_contact_generator ............   Passed    0.01 sec
+ 8/51 Test  #8: test_contact_generator ................   Passed    0.03 sec
       Start  9: test_contact_reducer
 ...
 ```
@@ -169,7 +169,7 @@ Reload validation: success
 
 ```text
 AdaSDF-CL info
-Library version: 1.0.2-alpha
+Library version: 1.1.0-alpha
 Path: <local-path>
 Model name: demo adaptive analytic box
 Valid: yes
@@ -203,6 +203,34 @@ Signed distance: -0.5
 Gradient: 1 0 0
 Normal: 1 0 0
 Query backend: core-free demo adaptive analytic SDF backend
+```
+
+### Expansion Quality CLI: PASS
+
+```bash
+'<build>/tools/Release/adasdf_expansion_quality.exe' '<workspace>/build/cube_adaptive_v1.sdfbin' --expansion global --global-resolution 32 --samples 1000 --out '<workspace>/build/adasdf_expansion_quality_v1.csv'
+```
+
+```text
+AdaSDF-CL expansion quality audit
+Model: <local-path>
+Expansion: global
+Blocks: all
+Resolution: 32
+Samples: 1000
+Finite samples: 1000
+Max abs error: 0.00709197
+Mean abs error: 0.000112949
+RMS error: 0.00065218
+P95 abs error: 0.000222009
+Sign mismatch count: 0
+Sign mismatch rate: 0
+Ambiguous sign count: 256
+Ambiguous sign rate: 0.256
+Near-surface samples: 501
+Near-surface sign mismatch count: 0
+Near-surface sign mismatch rate: 0
+...
 ```
 
 ### Demo Collide Boxes CLI: PASS
@@ -240,20 +268,20 @@ Contact[1]
 ```
 
 ```text
-query_backend,expansion_mode,selected_blocks,num_points,expanded_memory_mb,gpu_resident_memory_mb,setup_ms,expand_ms,upload_sdf_ms,allocation_ms,h2d_points_ms,kernel_ms,sync_ms,d2h_results_ms,postprocess_ms,free_ms,total_ms,query_kernel_ms,query_total_ms,ns_per_query,queries_per_second,fallback_count,max_abs_phi_error,max_normal_error,cuda_available,warmup,repeat,kernel_min_ms,kernel_mean_ms,kernel_max_ms,kernel_std_ms,total_min_ms,total_mean_ms,total_max_ms,total_std_ms,phi_only,reuse_resident,kernel_only,status,error_message
-cpu,none,all,10000,0,0,0,0,0,0.0889,0,NA,NA,0,0,0,0.469,NA,0.469,46.9,21321961.62,0,0,0,false,0,1,NA,NA,NA,NA,0.469,0.469,0.469,0,false,false,false,ok,
-cpu,none,all,100000,0,0,0,0,0,0.77,0,NA,NA,0,0,0,4.7405,NA,4.7405,47.405,21094821.22,0,0,0,false,0,1,NA,NA,NA,NA,4.7405,4.7405,4.7405,0,false,false,false,ok,
-cpu,none,all,1000000,0,0,0,0,0,7.4975,0,NA,NA,0,0,0,47.0205,NA,47.0205,47.0205,21267319.57,0,0,0,false,0,1,NA,NA,NA,NA,47.0205,47.0205,47.0205,0,false,false,false,ok,
-cuda,global,all,10000,,,,,,,,NA,NA,,,,,NA,,,,0,,NA,false,0,1,NA,NA,NA,NA,,,,,false,false,false,skipped,CUDA backend unavailable
-cuda,global,all,100000,,,,,,,,NA,NA,,,,,NA,,,,0,,NA,false,0,1,NA,NA,NA,NA,,,,,false,false,false,skipped,CUDA backend unavailable
-cuda,global,all,1000000,,,,,,,,NA,NA,,,,,NA,,,,0,,NA,false,0,1,NA,NA,NA,NA,,,,,false,false,false,skipped,CUDA backend unavailable
-backend | expansion | blocks | points | setup ms | total mean ms | kernel mean ms | ns/query | max phi error | max normal error | status
-cpu | none | all | 10000 | 0 | 0.469 | NA | 46.9 | 0 | 0 | ok
-cpu | none | all | 100000 | 0 | 4.7405 | NA | 47.405 | 0 | 0 | ok
-cpu | none | all | 1000000 | 0 | 47.0205 | NA | 47.0205 | 0 | 0 | ok
-cuda | global | all | 10000 | SKIPPED | SKIPPED | SKIPPED | SKIPPED | SKIPPED | SKIPPED | skipped
-cuda | global | all | 100000 | SKIPPED | SKIPPED | SKIPPED | SKIPPED | SKIPPED | SKIPPED | skipped
-cuda | global | all | 1000000 | SKIPPED | SKIPPED | SKIPPED | SKIPPED | SKIPPED | SKIPPED | skipped
+query_backend,expansion_mode,selected_blocks,num_points,expanded_memory_mb,gpu_resident_memory_mb,setup_ms,expand_ms,upload_sdf_ms,allocation_ms,h2d_points_ms,kernel_ms,sync_ms,d2h_results_ms,postprocess_ms,free_ms,total_ms,query_kernel_ms,query_total_ms,ns_per_query,queries_per_second,fallback_count,max_abs_phi_error,max_normal_error,cuda_available,max_abs_error,mean_abs_error,rms_error,p95_abs_error,sign_mismatch_count,sign_mismatch_rate,ambiguous_sign_count,ambiguous_sign_rate,near_surface_sign_mismatch_count,near_surface_sign_mismatch_rate,fallback_rate,warmup,repeat,kernel_min_ms,kernel_mean_ms,kernel_max_ms,kernel_std_ms,total_min_ms,total_mean_ms,total_max_ms,total_std_ms,output_mode,phi_only,reuse_resident,kernel_only,workspace_reused,allocation_count,workspace_capacity,workspace_device_memory_mb,block_lookup_count,block_scan_count,center_block_hit_rate,neighbor_same_block_rate,download_results,correctness_checked,host_memory,layout,status,error_message
+cpu,none,all,10000,0,0,0,0,0,0.0987,0,NA,NA,0,0,0,0.5077,NA,0.5077,50.77,19696671.26,0,0,0,false,0,0,0,0,0,0,0,0,0,0,0,0,1,NA,NA,NA,NA,0.5077,0.5077,0.5077,0,"phi,normal",false,false,false,false,0,0,0,0,0,0,0,true,true,paged,aos,ok,
+cpu,none,all,100000,0,0,0,0,0,0.861,0,NA,NA,0,0,0,5.3507,NA,5.3507,53.507,18689143.48,0,0,0,false,0,0,0,0,0,0,0,0,0,0,0,0,1,NA,NA,NA,NA,5.3507,5.3507,5.3507,0,"phi,normal",false,false,false,false,0,0,0,0,0,0,0,true,true,paged,aos,ok,
+cpu,none,all,1000000,0,0,0,0,0,7.875,0,NA,NA,0,0,0,49.5954,NA,49.5954,49.5954,20163160.29,0,0,0,false,0,0,0,0,0,0,0,0,0,0,0,0,1,NA,NA,NA,NA,49.5954,49.5954,49.5954,0,"phi,normal",false,false,false,false,0,0,0,0,0,0,0,true,true,paged,aos,ok,
+cuda,global,all,10000,,,,,,,,NA,NA,,,,,NA,,,,0,,NA,false,,,,,0,,0,,0,,,0,1,NA,NA,NA,NA,,,,,"phi,normal",false,false,false,false,0,0,,0,0,,,true,true,paged,aos,skipped,CUDA backend unavailable
+cuda,global,all,100000,,,,,,,,NA,NA,,,,,NA,,,,0,,NA,false,,,,,0,,0,,0,,,0,1,NA,NA,NA,NA,,,,,"phi,normal",false,false,false,false,0,0,,0,0,,,true,true,paged,aos,skipped,CUDA backend unavailable
+cuda,global,all,1000000,,,,,,,,NA,NA,,,,,NA,,,,0,,NA,false,,,,,0,,0,,0,,,0,1,NA,NA,NA,NA,,,,,"phi,normal",false,false,false,false,0,0,,0,0,,,true,true,paged,aos,skipped,CUDA backend unavailable
+backend | expansion | output | blocks | points | setup ms | total mean ms | kernel mean ms | ns/query | max phi error | max normal error | status
+cpu | none | phi,normal | all | 10000 | 0 | 0.5077 | NA | 50.77 | 0 | 0 | ok
+cpu | none | phi,normal | all | 100000 | 0 | 5.3507 | NA | 53.507 | 0 | 0 | ok
+cpu | none | phi,normal | all | 1000000 | 0 | 49.5954 | NA | 49.5954 | 0 | 0 | ok
+cuda | global | phi,normal | all | 10000 | SKIPPED | SKIPPED | SKIPPED | SKIPPED | SKIPPED | SKIPPED | skipped
+cuda | global | phi,normal | all | 100000 | SKIPPED | SKIPPED | SKIPPED | SKIPPED | SKIPPED | SKIPPED | skipped
+cuda | global | phi,normal | all | 1000000 | SKIPPED | SKIPPED | SKIPPED | SKIPPED | SKIPPED | SKIPPED | skipped
 ```
 
 ### Collision SVG Check: PASS

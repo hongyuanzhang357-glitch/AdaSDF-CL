@@ -1,5 +1,46 @@
 # Changelog
 
+## 1.1.0-alpha
+
+Expanded-SDF accuracy audit, sign-mismatch metrics, and sampled existing-core
+expansion bridge.
+
+### Added
+
+- `ExpansionQuality` module for deterministic direct-vs-expanded SDF quality
+  audits.
+- Sign classification helpers and strict sign-mismatch metrics with ambiguous
+  sign accounting.
+- Near-surface sign-mismatch reporting for contact-risk interpretation.
+- Expanded `ExpansionOptions` for global/block resolution, padding,
+  near-surface band, sign epsilon, quality-audit settings, outside-domain
+  clamping, and direct fallback policy.
+- `adasdf_expansion_quality` CLI for `.sdfbin` quality audits with CSV output.
+- Benchmark CSV quality fields: max/mean/RMS/p95 error, sign mismatch,
+  ambiguous sign, near-surface sign mismatch, fallback count, and fallback rate.
+- Query-mode demo `--quality-audit` options.
+- Tests for expansion quality, sign metrics, resolution control,
+  existing-core sampled expansion bridge behavior, and the quality CLI.
+- Expanded-SDF accuracy, sign-mismatch, existing-core bridge, v1.1 report, and
+  release-draft documentation.
+
+### Changed
+
+- Version updated to `1.1.0-alpha`.
+- Block-expanded queries choose overlapping blocks by smaller cell size, then
+  deterministic block id priority.
+- ExpandedSDF can carry query policy for clamp/fallback interpretation.
+- Existing-core models that expose `SDFModel::sampleDistance()` can be expanded
+  through the same sampled `SDFExpander` bridge as demo models.
+
+### Notes
+
+- CUDA remains optional and is not required for v1.1 quality audits.
+- Existing-core tests gracefully skip when the existing core or fixture is not
+  available.
+- v1.1 expands existing-core models by sampling into ExpandedSDF layouts; it
+  does not implement native low-rank compressed GPU query.
+
 ## 1.0.3-alpha
 
 CUDA full-query benchmark and expanded-SDF query-path optimization.

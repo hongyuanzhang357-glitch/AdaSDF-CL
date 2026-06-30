@@ -23,6 +23,13 @@ struct ExpandedBlock {
   std::vector<double> values;
 };
 
+struct ExpandedSDFQueryPolicy {
+  double near_surface_band = 1e-3;
+  double sign_epsilon = 1e-9;
+  bool clamp_outside_expanded_domain = false;
+  bool allow_direct_fallback_outside = true;
+};
+
 class ExpandedSDF {
  public:
   ExpandedSDF() = default;
@@ -42,6 +49,14 @@ class ExpandedSDF {
   const std::vector<ExpandedBlock>& blocks() const {
     return blocks_;
   }
+  AABB boundingBox() const;
+
+  void setQueryPolicy(const ExpandedSDFQueryPolicy& policy) {
+    policy_ = policy;
+  }
+  const ExpandedSDFQueryPolicy& queryPolicy() const {
+    return policy_;
+  }
 
   std::size_t memoryFootprintBytes() const;
 
@@ -55,6 +70,7 @@ class ExpandedSDF {
   ExpandedSDFLayout layout_ = ExpandedSDFLayout::GlobalDense;
   std::vector<ExpandedBlock> blocks_;
   std::vector<int> block_ids_;
+  ExpandedSDFQueryPolicy policy_;
 };
 
 const char* toString(ExpandedSDFLayout layout);

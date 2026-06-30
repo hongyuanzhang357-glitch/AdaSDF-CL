@@ -1,9 +1,10 @@
 # Batch Query Benchmarking
 
-AdaSDF-CL v1.0.3-alpha includes a deterministic benchmark tool for batch
+AdaSDF-CL v1.1.0-alpha includes a deterministic benchmark tool for batch
 signed-distance, gradient, and normal queries across query backend and expansion
 modes. It also separates full-query timing from CUDA kernel timing so results
-can be compared honestly with original UI kernel-average reports.
+can be compared honestly with original UI kernel-average reports. Expanded
+rows also report direct-vs-expanded quality metrics.
 
 ## Commands
 
@@ -18,6 +19,7 @@ CPU expanded paths:
 ```bash
 adasdf_benchmark_batch_query --points 10000,100000,1000000 --query-backend cpu --expansion global --out cpu_global.csv
 adasdf_benchmark_batch_query --points 10000,100000,1000000 --query-backend cpu --expansion block --blocks all --out cpu_block_all.csv
+adasdf_benchmark_batch_query --points 10000 --query-backend cpu --expansion global --global-resolution 64 --near-surface-band 1e-3 --out cpu_global_quality.csv
 ```
 
 CUDA resident expanded paths:
@@ -50,6 +52,9 @@ adasdf_benchmark_batch_query --points 1000000 --query-backend cuda --expansion g
 - `--phi-only`: legacy alias for `--output phi`.
 - `--device-only` / `--no-download`: keep CUDA results on device after kernel
   synchronization. This skips D2H download and correctness checks.
+- `--near-surface-band value`: classify direct-query samples near the surface
+  for near-surface sign mismatch metrics.
+- `--sign-epsilon value`: classify inside/outside/ambiguous SDF signs.
 
 `--kernel-only` is meaningful only for CUDA rows. CPU rows mark CUDA kernel
 fields as `NA`.
@@ -111,6 +116,17 @@ fallback_count
 max_abs_phi_error
 max_normal_error
 cuda_available
+max_abs_error
+mean_abs_error
+rms_error
+p95_abs_error
+sign_mismatch_count
+sign_mismatch_rate
+ambiguous_sign_count
+ambiguous_sign_rate
+near_surface_sign_mismatch_count
+near_surface_sign_mismatch_rate
+fallback_rate
 warmup
 repeat
 kernel_min_ms
@@ -146,6 +162,12 @@ validation scripts. `phi_only` is retained as a compatibility column.
 `max_normal_error` is `NA` for `--output phi` rows. `correctness_checked=false`
 means the row skipped result download, normally because `--device-only` was set.
 
+The v1.1 quality fields compare expanded query output against CPU direct output
+at the same points. `sign_mismatch_count` only counts strict inside/outside
+disagreement. Ambiguous signs, where `abs(phi) <= sign_epsilon`, are reported
+separately. `near_surface_sign_mismatch_rate` is computed over direct-query
+samples whose `abs(phi)` is within `near_surface_band`.
+
 ## Method
 
 - Model: core-free demo adaptive analytic box SDF.
@@ -155,6 +177,8 @@ means the row skipped result download, normally because `--device-only` was set.
 - CPU expanded: trilinear interpolation over `ExpandedSDF`.
 - CUDA expanded: resident GPU global or block dense SDF query.
 - Reference: CPU direct query at the same points.
+- Quality metrics: CPU direct signed distance is the reference; expanded CPU or
+  downloaded CUDA output is the candidate.
 
 Selected block mode is intended for local contact-region point distributions.
 For global uniform point clouds, selected blocks can be slower or less

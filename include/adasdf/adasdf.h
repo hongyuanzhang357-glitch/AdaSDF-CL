@@ -28,6 +28,7 @@
 #include "adasdf/query/QueryModeConfig.h"
 #include "adasdf/query/ExpandedSDF.h"
 #include "adasdf/query/SDFExpander.h"
+#include "adasdf/query/ExpansionQuality.h"
 #include "adasdf/query/QueryEngine.h"
 #include "adasdf/query/CandidatePointSampler.h"
 #include "adasdf/query/CpuNarrowPhase.h"

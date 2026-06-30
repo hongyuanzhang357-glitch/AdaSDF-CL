@@ -17,7 +17,7 @@ cmake -S '<source>' -B '<build>' -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD
 -- Selecting Windows SDK version 10.0.22621.0 to target Windows 10.0.26200.
 --
 -- AdaSDF-CL configuration:
---   Version: 1.0.2-alpha
+--   Version: 1.1.0-alpha
 --   Build examples: ON
 --   Build tests: ON
 --   Benchmarks: ON
@@ -33,7 +33,7 @@ cmake -S '<source>' -B '<build>' -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD
 --   FCL: not required
 --
 -- Configuring done (0.0s)
--- Generating done (0.5s)
+-- Generating done (0.4s)
 ...
 ```
 
@@ -46,24 +46,24 @@ cmake --build '<build>' --config Release --parallel
 ```text
 适用于 .NET Framework MSBuild 版本 17.14.40+3e7442088
 
-  FCLAdapter.cpp
-  Backend.cpp
-  CudaQueryBackend.cpp
-  GpuBackend.cpp
-  PointCloudGenerator.cpp
-  CompressedSDF.cpp
-  AdaptiveSDFBuilder.cpp
-  DemoAdaptiveSDFBuilder.cpp
-  DemoSurrogateRecommender.cpp
-  ExistingBuilderBridge.cpp
-  SDFBuilder.cpp
-  SurrogateRecommender.cpp
-  AnalyticSDFModel.cpp
-  DemoAdaptiveSDFModel.cpp
-  MeshModel.cpp
-  SDFModel.cpp
-  Transform.cpp
-  ContactOnlySDFBin.cpp
+  adasdf_cl_runtime.vcxproj -> <build>\Release\adasdf_cl_runtime.lib
+  test_demo_adaptive_builder.vcxproj -> <build>\Release\test_demo_adaptive_builder.exe
+  test_surrogate_recommender.vcxproj -> <build>\Release\test_surrogate_recommender.exe
+  adasdf_build_then_query.vcxproj -> <build>\Release\adasdf_build_then_query.exe
+  adasdf_two_box_collision_with_view.vcxproj -> <build>\Release\adasdf_two_box_collision_with_view.exe
+  test_demo_surrogate_recommender.vcxproj -> <build>\Release\test_demo_surrogate_recommender.exe
+  test_collision_query.vcxproj -> <build>\Release\test_collision_query.exe
+  test_pair_collision_query.vcxproj -> <build>\Release\test_pair_collision_query.exe
+  test_contact_only_sdfbin.vcxproj -> <build>\Release\test_contact_only_sdfbin.exe
+  test_sign_mismatch_metrics.vcxproj -> <build>\Release\test_sign_mismatch_metrics.exe
+  test_expansion_resolution_control.vcxproj -> <build>\Release\test_expansion_resolution_control.exe
+  test_demo_sdfbin.vcxproj -> <build>\Release\test_demo_sdfbin.exe
+  test_demo_adaptive_sdfbin.vcxproj -> <build>\Release\test_demo_adaptive_sdfbin.exe
+  test_cuda_phi_only_kernel.vcxproj -> <build>\Release\test_cuda_phi_only_kernel.exe
+  test_collide_boxes_demo.vcxproj -> <build>\Release\test_collide_boxes_demo.exe
+  test_collision_object.vcxproj -> <build>\Release\test_collision_object.exe
+  test_cpu_gpu_alignment.vcxproj -> <build>\Release\test_cpu_gpu_alignment.exe
+  test_expansion_quality.vcxproj -> <build>\Release\test_expansion_quality.exe
 ...
 ```
 
@@ -74,26 +74,26 @@ cmake --install '<build>' --config Release --prefix '<install>'
 ```
 
 ```text
--- Installing: <install>/lib/adasdf_cl_runtime.lib
--- Installing: <install>/bin/adasdf_build.exe
--- Installing: <install>/bin/adasdf_info.exe
--- Installing: <install>/bin/adasdf_query.exe
--- Installing: <install>/bin/adasdf_collide.exe
--- Installing: <install>/bin/adasdf_make_demo_box.exe
--- Installing: <install>/bin/adasdf_recommend_demo.exe
--- Installing: <install>/bin/adasdf_build_demo_adaptive.exe
--- Installing: <install>/bin/adasdf_collide_boxes_demo.exe
--- Installing: <install>/bin/adasdf_query_mode_demo.exe
--- Installing: <install>/bin/adasdf_benchmark_batch_query.exe
+-- Up-to-date: <install>/lib/adasdf_cl_runtime.lib
+-- Up-to-date: <install>/bin/adasdf_build.exe
+-- Up-to-date: <install>/bin/adasdf_info.exe
+-- Up-to-date: <install>/bin/adasdf_query.exe
+-- Up-to-date: <install>/bin/adasdf_collide.exe
+-- Up-to-date: <install>/bin/adasdf_make_demo_box.exe
+-- Up-to-date: <install>/bin/adasdf_recommend_demo.exe
+-- Up-to-date: <install>/bin/adasdf_build_demo_adaptive.exe
+-- Up-to-date: <install>/bin/adasdf_collide_boxes_demo.exe
+-- Up-to-date: <install>/bin/adasdf_query_mode_demo.exe
+-- Up-to-date: <install>/bin/adasdf_expansion_quality.exe
+-- Up-to-date: <install>/bin/adasdf_benchmark_batch_query.exe
 -- Up-to-date: <install>/include
 -- Up-to-date: <install>/include/adasdf
 -- Up-to-date: <install>/include/adasdf/adapters
 -- Up-to-date: <install>/include/adasdf/adapters/EigenAdapter.h
 -- Up-to-date: <install>/include/adasdf/adapters/FCLAdapter.h
 -- Up-to-date: <install>/include/adasdf/adapters/PythonBindingPlan.h
--- Installing: <install>/include/adasdf/adasdf.h
+-- Up-to-date: <install>/include/adasdf/adasdf.h
 -- Up-to-date: <install>/include/adasdf/backend
--- Up-to-date: <install>/include/adasdf/backend/Backend.h
 ...
 ```
 
@@ -119,7 +119,6 @@ cmake --build '<workspace>/build/adasdf_cl_iv_pkg' --config Release --parallel
 ```text
 适用于 .NET Framework MSBuild 版本 17.14.40+3e7442088
 
-  test_find_package.cpp
   test_find_package.vcxproj -> <build>_pkg\Release\test_find_package.exe
 ```
 
@@ -131,7 +130,7 @@ cmake --build '<workspace>/build/adasdf_cl_iv_pkg' --config Release --parallel
 
 ```text
 AdaSDF-CL package consumer
-Version: 1.0.2-alpha
+Version: 1.1.0-alpha
 Point: 1 2 3
 Demo signed distance at origin: -0.5
 Demo adaptive blocks: 7
@@ -162,7 +161,6 @@ cmake --build '<workspace>/build/adasdf_cl_iv_ds' --config Release --parallel
 ```text
 适用于 .NET Framework MSBuild 版本 17.14.40+3e7442088
 
-  main.cpp
   adasdf_downstream.vcxproj -> <build>_ds\Release\adasdf_downstream.exe
 ```
 
@@ -174,7 +172,7 @@ cmake --build '<workspace>/build/adasdf_cl_iv_ds' --config Release --parallel
 
 ```text
 AdaSDF-CL downstream example
-Version: 1.0.2-alpha
+Version: 1.1.0-alpha
 CPU backend: available
 No .sdfbin supplied; running core-free demo adaptive path.
 Demo signed distance at origin: -0.5

@@ -42,6 +42,17 @@ struct BenchmarkRow {
   double max_abs_phi_error = 0.0;
   double max_normal_error = 0.0;
   bool max_normal_error_na = false;
+  double max_abs_error = 0.0;
+  double mean_abs_error = 0.0;
+  double rms_error = 0.0;
+  double p95_abs_error = 0.0;
+  int sign_mismatch_count = 0;
+  double sign_mismatch_rate = 0.0;
+  int ambiguous_sign_count = 0;
+  double ambiguous_sign_rate = 0.0;
+  int near_surface_sign_mismatch_count = 0;
+  double near_surface_sign_mismatch_rate = 0.0;
+  double fallback_rate = 0.0;
 
   int warmup = 0;
   int repeat = 1;
@@ -182,6 +193,102 @@ void computeErrors(
   }
 }
 
+double percentile95(std::vector<double> values) {
+  if (values.empty()) {
+    return 0.0;
+  }
+  std::sort(values.begin(), values.end());
+  const double rank = 0.95 * static_cast<double>(values.size() - 1);
+  const auto index = static_cast<std::size_t>(std::ceil(rank));
+  return values[std::min(index, values.size() - 1)];
+}
+
+adasdf::ExpansionQualityReport computeQualityFromOutputs(
+    const std::vector<adasdf::Vector3>& points,
+    const adasdf::BatchQueryOutput& reference,
+    const adasdf::BatchQueryOutput& candidate,
+    double near_surface_band,
+    double sign_epsilon,
+    std::size_t fallback_count) {
+  adasdf::ExpansionQualityReport report;
+  report.num_samples = static_cast<int>(std::min(
+      reference.signed_distances.size(),
+      candidate.signed_distances.size()));
+  report.fallback_count = static_cast<int>(fallback_count);
+
+  std::vector<double> abs_errors;
+  abs_errors.reserve(static_cast<std::size_t>(report.num_samples));
+  double sum_abs = 0.0;
+  double sum_sq = 0.0;
+
+  for (int i = 0; i < report.num_samples; ++i) {
+    const double direct_phi = reference.signed_distances[static_cast<std::size_t>(i)];
+    const double expanded_phi = candidate.signed_distances[static_cast<std::size_t>(i)];
+    if (!std::isfinite(direct_phi) || !std::isfinite(expanded_phi)) {
+      continue;
+    }
+    const double abs_error = std::abs(direct_phi - expanded_phi);
+    abs_errors.push_back(abs_error);
+    ++report.num_finite_samples;
+    sum_abs += abs_error;
+    sum_sq += abs_error * abs_error;
+    if (abs_error > report.max_abs_error) {
+      report.max_abs_error = abs_error;
+      report.worst_point_id = i;
+      if (static_cast<std::size_t>(i) < points.size()) {
+        report.worst_point = points[static_cast<std::size_t>(i)];
+      }
+      report.worst_direct_phi = direct_phi;
+      report.worst_expanded_phi = expanded_phi;
+    }
+
+    const adasdf::SDFSignClass direct_sign =
+        adasdf::classifySDFSign(direct_phi, sign_epsilon);
+    const adasdf::SDFSignClass expanded_sign =
+        adasdf::classifySDFSign(expanded_phi, sign_epsilon);
+    if (direct_sign == adasdf::SDFSignClass::Ambiguous ||
+        expanded_sign == adasdf::SDFSignClass::Ambiguous) {
+      ++report.ambiguous_sign_count;
+    } else if (adasdf::isStrictSignMismatch(
+                   direct_phi,
+                   expanded_phi,
+                   sign_epsilon)) {
+      ++report.sign_mismatch_count;
+    }
+    if (std::abs(direct_phi) <= near_surface_band) {
+      ++report.near_surface_sample_count;
+      if (adasdf::isStrictSignMismatch(
+              direct_phi,
+              expanded_phi,
+              sign_epsilon)) {
+        ++report.near_surface_sign_mismatch_count;
+      }
+    }
+  }
+
+  if (report.num_finite_samples > 0) {
+    const double finite = static_cast<double>(report.num_finite_samples);
+    report.mean_abs_error = sum_abs / finite;
+    report.rms_error = std::sqrt(sum_sq / finite);
+    report.p95_abs_error = percentile95(abs_errors);
+    report.sign_mismatch_rate =
+        static_cast<double>(report.sign_mismatch_count) / finite;
+    report.ambiguous_sign_rate =
+        static_cast<double>(report.ambiguous_sign_count) / finite;
+  }
+  if (report.near_surface_sample_count > 0) {
+    report.near_surface_sign_mismatch_rate =
+        static_cast<double>(report.near_surface_sign_mismatch_count) /
+        static_cast<double>(report.near_surface_sample_count);
+  }
+  if (report.num_samples > 0) {
+    report.fallback_rate =
+        static_cast<double>(report.fallback_count) /
+        static_cast<double>(report.num_samples);
+  }
+  return report;
+}
+
 SeriesStats summarize(const std::vector<double>& values) {
   SeriesStats stats;
   if (values.empty()) {
@@ -287,6 +394,10 @@ void writeCsv(std::ostream& out, const std::vector<BenchmarkRow>& rows) {
          "kernel_ms,sync_ms,d2h_results_ms,postprocess_ms,free_ms,total_ms,"
          "query_kernel_ms,query_total_ms,ns_per_query,queries_per_second,"
          "fallback_count,max_abs_phi_error,max_normal_error,cuda_available,"
+         "max_abs_error,mean_abs_error,rms_error,p95_abs_error,"
+         "sign_mismatch_count,sign_mismatch_rate,ambiguous_sign_count,"
+         "ambiguous_sign_rate,near_surface_sign_mismatch_count,"
+         "near_surface_sign_mismatch_rate,fallback_rate,"
          "warmup,repeat,kernel_min_ms,kernel_mean_ms,kernel_max_ms,"
          "kernel_std_ms,total_min_ms,total_mean_ms,total_max_ms,total_std_ms,"
          "output_mode,phi_only,reuse_resident,kernel_only,"
@@ -320,6 +431,17 @@ void writeCsv(std::ostream& out, const std::vector<BenchmarkRow>& rows) {
         << numberOrBlank(row.max_abs_phi_error, row.skipped) << ","
         << numberOrNA(row.max_normal_error, row.max_normal_error_na || row.skipped) << ","
         << (row.cuda_available ? "true" : "false") << ","
+        << numberOrBlank(row.max_abs_error, row.skipped) << ","
+        << numberOrBlank(row.mean_abs_error, row.skipped) << ","
+        << numberOrBlank(row.rms_error, row.skipped) << ","
+        << numberOrBlank(row.p95_abs_error, row.skipped) << ","
+        << row.sign_mismatch_count << ","
+        << numberOrBlank(row.sign_mismatch_rate, row.skipped) << ","
+        << row.ambiguous_sign_count << ","
+        << numberOrBlank(row.ambiguous_sign_rate, row.skipped) << ","
+        << row.near_surface_sign_mismatch_count << ","
+        << numberOrBlank(row.near_surface_sign_mismatch_rate, row.skipped) << ","
+        << numberOrBlank(row.fallback_rate, row.skipped) << ","
         << row.warmup << "," << row.repeat << ","
         << numberOrNA(row.kernel_stats.min, cuda_kernel_na) << ","
         << numberOrNA(row.kernel_stats.mean, cuda_kernel_na) << ","
@@ -491,6 +613,8 @@ int main(int argc, char** argv) {
     bool expansion_was_set = false;
     int global_resolution = 64;
     int block_resolution = 32;
+    double near_surface_band = 1e-3;
+    double sign_epsilon = 1e-9;
     bool keep_resident = true;
     bool reuse_resident = false;
     bool kernel_only = false;
@@ -516,6 +640,10 @@ int main(int argc, char** argv) {
         global_resolution = std::stoi(argv[++i]);
       } else if (arg == "--block-resolution" && i + 1 < argc) {
         block_resolution = std::stoi(argv[++i]);
+      } else if (arg == "--near-surface-band" && i + 1 < argc) {
+        near_surface_band = std::stod(argv[++i]);
+      } else if (arg == "--sign-epsilon" && i + 1 < argc) {
+        sign_epsilon = std::stod(argv[++i]);
       } else if (arg == "--warmup" && i + 1 < argc) {
         warmup = std::stoi(argv[++i]);
       } else if (arg == "--repeat" && i + 1 < argc) {
@@ -542,6 +670,7 @@ int main(int argc, char** argv) {
                "[--block-resolution 32] [--warmup N] [--repeat N] "
                "[--kernel-only] [--reuse-resident] "
                "[--output phi|phi,normal] [--phi-only] [--device-only] "
+               "[--near-surface-band 1e-3] [--sign-epsilon 1e-9] "
                "[--keep-resident] [--out benchmark.csv]\n";
         return 0;
       } else {
@@ -631,6 +760,8 @@ int main(int argc, char** argv) {
           expansion_options.global_resolution = global_resolution;
           expansion_options.block_resolution = block_resolution;
           expansion_options.padding = 0.0;
+          expansion_options.near_surface_band = near_surface_band;
+          expansion_options.sign_epsilon = sign_epsilon;
 
           const std::vector<adasdf::Vector3> points =
               makePoints(*model, block_selection, count);
@@ -796,6 +927,29 @@ int main(int argc, char** argv) {
                 adasdf::includesNormals(output_mode),
                 row.max_abs_phi_error,
                 row.max_normal_error);
+            if (expansion != adasdf::QueryExpansionMode::None) {
+              const adasdf::ExpansionQualityReport quality =
+                  computeQualityFromOutputs(
+                      points,
+                      reference,
+                      output,
+                      near_surface_band,
+                      sign_epsilon,
+                      row.fallback_count);
+              row.max_abs_error = quality.max_abs_error;
+              row.mean_abs_error = quality.mean_abs_error;
+              row.rms_error = quality.rms_error;
+              row.p95_abs_error = quality.p95_abs_error;
+              row.sign_mismatch_count = quality.sign_mismatch_count;
+              row.sign_mismatch_rate = quality.sign_mismatch_rate;
+              row.ambiguous_sign_count = quality.ambiguous_sign_count;
+              row.ambiguous_sign_rate = quality.ambiguous_sign_rate;
+              row.near_surface_sign_mismatch_count =
+                  quality.near_surface_sign_mismatch_count;
+              row.near_surface_sign_mismatch_rate =
+                  quality.near_surface_sign_mismatch_rate;
+              row.fallback_rate = quality.fallback_rate;
+            }
           } else {
             row.correctness_checked = false;
             row.timing.correctness_checked = false;

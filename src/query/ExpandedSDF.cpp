@@ -64,13 +64,31 @@ bool blockContains(const ExpandedBlock& block, const Vector3& p) {
          p.z >= block.min_corner.z - eps && p.z <= block.max_corner.z + eps;
 }
 
-double sampleBlock(const ExpandedBlock& block, const Vector3& p) {
+double blockCellSize(const ExpandedBlock& block) {
+  const double hx = (block.max_corner.x - block.min_corner.x) /
+                    static_cast<double>(std::max(1, block.resolution_x - 1));
+  const double hy = (block.max_corner.y - block.min_corner.y) /
+                    static_cast<double>(std::max(1, block.resolution_y - 1));
+  const double hz = (block.max_corner.z - block.min_corner.z) /
+                    static_cast<double>(std::max(1, block.resolution_z - 1));
+  return std::min({hx, hy, hz});
+}
+
+Vector3 clampToBlock(const ExpandedBlock& block, const Vector3& p) {
+  return {
+      std::max(block.min_corner.x, std::min(block.max_corner.x, p.x)),
+      std::max(block.min_corner.y, std::min(block.max_corner.y, p.y)),
+      std::max(block.min_corner.z, std::min(block.max_corner.z, p.z))};
+}
+
+double sampleBlock(const ExpandedBlock& block, const Vector3& point, bool clamp) {
   if (!blockValid(block)) {
     throw std::runtime_error("ExpandedSDF block is invalid.");
   }
-  if (!blockContains(block, p)) {
+  if (!blockContains(block, point) && !clamp) {
     throw std::runtime_error("Point is outside the expanded SDF block.");
   }
+  const Vector3 p = clamp ? clampToBlock(block, point) : point;
 
   const double sx = (p.x - block.min_corner.x) /
                     (block.max_corner.x - block.min_corner.x) *
@@ -120,11 +138,25 @@ double spacingForGradient(const ExpandedBlock& block) {
 
 const ExpandedBlock& blockForPoint(
     const std::vector<ExpandedBlock>& blocks,
-    const Vector3& p) {
+    const Vector3& p,
+    bool clamp) {
+  const ExpandedBlock* best = nullptr;
+  double best_cell_size = std::numeric_limits<double>::infinity();
   for (const ExpandedBlock& block : blocks) {
     if (blockContains(block, p)) {
-      return block;
+      const double cell_size = blockCellSize(block);
+      if (best == nullptr || cell_size < best_cell_size ||
+          (cell_size == best_cell_size && block.block_id < best->block_id)) {
+        best = &block;
+        best_cell_size = cell_size;
+      }
     }
+  }
+  if (best != nullptr) {
+    return *best;
+  }
+  if (clamp && !blocks.empty()) {
+    return blocks.front();
   }
   throw std::runtime_error("Point is outside the expanded SDF domain.");
 }
@@ -149,6 +181,12 @@ ExpandedSDF ExpandedSDF::blockDense(std::vector<ExpandedBlock> blocks) {
   if (blocks.empty()) {
     throw std::runtime_error("Block expanded SDF requires at least one block.");
   }
+  std::sort(
+      blocks.begin(),
+      blocks.end(),
+      [](const ExpandedBlock& a, const ExpandedBlock& b) {
+        return a.block_id < b.block_id;
+      });
   ExpandedSDF expanded;
   expanded.layout_ = ExpandedSDFLayout::BlockDense;
   for (const ExpandedBlock& block : blocks) {
@@ -185,6 +223,28 @@ bool ExpandedSDF::hasBlock(int block_id) const {
          block_ids_.end();
 }
 
+AABB ExpandedSDF::boundingBox() const {
+  AABB bounds;
+  for (const ExpandedBlock& block : blocks_) {
+    if (!blockValid(block)) {
+      continue;
+    }
+    if (!bounds.valid) {
+      bounds.min = block.min_corner;
+      bounds.max = block.max_corner;
+      bounds.valid = true;
+    } else {
+      bounds.min.x = std::min(bounds.min.x, block.min_corner.x);
+      bounds.min.y = std::min(bounds.min.y, block.min_corner.y);
+      bounds.min.z = std::min(bounds.min.z, block.min_corner.z);
+      bounds.max.x = std::max(bounds.max.x, block.max_corner.x);
+      bounds.max.y = std::max(bounds.max.y, block.max_corner.y);
+      bounds.max.z = std::max(bounds.max.z, block.max_corner.z);
+    }
+  }
+  return bounds;
+}
+
 std::size_t ExpandedSDF::memoryFootprintBytes() const {
   std::size_t bytes = sizeof(*this) + block_ids_.size() * sizeof(int);
   for (const ExpandedBlock& block : blocks_) {
@@ -204,11 +264,15 @@ bool ExpandedSDF::contains(const Vector3& p) const {
 }
 
 double ExpandedSDF::sampleDistance(const Vector3& p) const {
-  return sampleBlock(blockForPoint(blocks_, p), p);
+  return sampleBlock(
+      blockForPoint(blocks_, p, policy_.clamp_outside_expanded_domain),
+      p,
+      policy_.clamp_outside_expanded_domain);
 }
 
 Vector3 ExpandedSDF::sampleGradient(const Vector3& p) const {
-  const ExpandedBlock& block = blockForPoint(blocks_, p);
+  const ExpandedBlock& block =
+      blockForPoint(blocks_, p, policy_.clamp_outside_expanded_domain);
   const double h = spacingForGradient(block);
   if (!(h > 0.0) || !std::isfinite(h)) {
     return {1.0, 0.0, 0.0};
@@ -227,9 +291,18 @@ Vector3 ExpandedSDF::sampleGradient(const Vector3& p) const {
     return normalizedOrFallback({gx, gy, gz});
   } catch (const std::exception&) {
     return normalizedOrFallback({
-        sampleDistance(p) - sampleBlock(block, {std::max(block.min_corner.x, p.x - h), p.y, p.z}),
-        sampleDistance(p) - sampleBlock(block, {p.x, std::max(block.min_corner.y, p.y - h), p.z}),
-        sampleDistance(p) - sampleBlock(block, {p.x, p.y, std::max(block.min_corner.z, p.z - h)})});
+        sampleDistance(p) - sampleBlock(
+                                block,
+                                {std::max(block.min_corner.x, p.x - h), p.y, p.z},
+                                true),
+        sampleDistance(p) - sampleBlock(
+                                block,
+                                {p.x, std::max(block.min_corner.y, p.y - h), p.z},
+                                true),
+        sampleDistance(p) - sampleBlock(
+                                block,
+                                {p.x, p.y, std::max(block.min_corner.z, p.z - h)},
+                                true)});
   }
 }
 

@@ -13,7 +13,9 @@ void usage() {
   std::cout
       << "Usage: adasdf_query_mode_demo --backend cpu|cuda "
          "--expansion none|global|block [--blocks all|0,1,2] "
-         "[--points 100000] [--global-resolution 64] [--block-resolution 32]\n";
+         "[--points 100000] [--global-resolution 64] [--block-resolution 32] "
+         "[--quality-audit] [--samples 10000] [--near-surface-band 1e-3] "
+         "[--sign-epsilon 1e-9]\n";
 }
 
 bool hasValue(int index, int argc) {
@@ -138,6 +140,10 @@ int main(int argc, char** argv) {
     std::size_t point_count = 100000;
     int global_resolution = 64;
     int block_resolution = 32;
+    bool quality_audit = false;
+    int quality_samples = 10000;
+    double near_surface_band = 1e-3;
+    double sign_epsilon = 1e-9;
 
     if (argc == 1) {
       usage();
@@ -158,6 +164,14 @@ int main(int argc, char** argv) {
         global_resolution = std::stoi(argv[++i]);
       } else if (arg == "--block-resolution" && hasValue(i, argc)) {
         block_resolution = std::stoi(argv[++i]);
+      } else if (arg == "--quality-audit") {
+        quality_audit = true;
+      } else if (arg == "--samples" && hasValue(i, argc)) {
+        quality_samples = std::stoi(argv[++i]);
+      } else if (arg == "--near-surface-band" && hasValue(i, argc)) {
+        near_surface_band = std::stod(argv[++i]);
+      } else if (arg == "--sign-epsilon" && hasValue(i, argc)) {
+        sign_epsilon = std::stod(argv[++i]);
       } else if (arg == "--help" || arg == "-h") {
         usage();
         return 0;
@@ -195,6 +209,10 @@ int main(int argc, char** argv) {
     expansion_options.block_selection = blocks;
     expansion_options.global_resolution = global_resolution;
     expansion_options.block_resolution = block_resolution;
+    expansion_options.near_surface_band = near_surface_band;
+    expansion_options.sign_epsilon = sign_epsilon;
+    expansion_options.enable_quality_audit = quality_audit;
+    expansion_options.audit_sample_count = quality_samples;
 
     adasdf::QueryEngine engine(build.model, config, expansion_options);
     const bool prepared = engine.prepare();
@@ -223,6 +241,38 @@ int main(int argc, char** argv) {
               << "\n";
     std::cout << "query_total_ms: " << stats.query_total_ms << "\n";
     std::cout << "fallback_count: " << stats.fallback_count << "\n";
+    if (quality_audit && expansion != adasdf::QueryExpansionMode::None) {
+      const adasdf::ExpandedSDF expanded =
+          adasdf::SDFExpander::expand(*build.model, expansion_options);
+      adasdf::ExpansionQualityOptions quality_options;
+      quality_options.num_samples = quality_samples;
+      quality_options.near_surface_band = near_surface_band;
+      quality_options.sign_epsilon = sign_epsilon;
+      const adasdf::ExpansionQualityReport report =
+          adasdf::ExpansionQuality::compareAgainstDirect(
+              *build.model,
+              expanded,
+              quality_options);
+      std::cout << "quality_samples: " << report.num_samples << "\n";
+      std::cout << "quality_finite_samples: "
+                << report.num_finite_samples << "\n";
+      std::cout << "quality_max_abs_error: "
+                << report.max_abs_error << "\n";
+      std::cout << "quality_mean_abs_error: "
+                << report.mean_abs_error << "\n";
+      std::cout << "quality_rms_error: " << report.rms_error << "\n";
+      std::cout << "quality_p95_abs_error: "
+                << report.p95_abs_error << "\n";
+      std::cout << "quality_sign_mismatch_rate: "
+                << report.sign_mismatch_rate << "\n";
+      std::cout << "quality_near_surface_sign_mismatch_rate: "
+                << report.near_surface_sign_mismatch_rate << "\n";
+      std::cout << "quality_fallback_count: "
+                << report.fallback_count << "\n";
+    } else if (quality_audit) {
+      std::cout << "quality_status: skipped\n";
+      std::cout << "quality_reason: expansion none has no ExpandedSDF candidate\n";
+    }
     std::cout << "description: " << engine.description() << "\n";
     std::cout << "status: ok\n";
     return 0;

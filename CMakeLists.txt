@@ -111,6 +111,7 @@ set(ADASDF_CL_RUNTIME_SOURCES
   src/query/CpuNarrowPhase.cpp
   src/query/DistanceResult.cpp
   src/query/ExpandedSDF.cpp
+  src/query/ExpansionQuality.cpp
   src/query/ExistingPairCollisionBridge.cpp
   src/query/QueryEngine.cpp
   src/query/QueryModeConfig.cpp
@@ -323,6 +324,11 @@ target_link_libraries(adasdf_query_mode_demo PRIVATE adasdf_cl_runtime)
 set_target_properties(adasdf_query_mode_demo PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
 
+add_executable(adasdf_expansion_quality tools/adasdf_expansion_quality.cpp)
+target_link_libraries(adasdf_expansion_quality PRIVATE adasdf_cl_runtime)
+set_target_properties(adasdf_expansion_quality PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
+
 if(ADASDF_CL_BUILD_BENCHMARKS)
   add_executable(adasdf_benchmark_batch_query
     benchmarks/adasdf_benchmark_batch_query.cpp)
@@ -359,6 +365,11 @@ set(ADASDF_CL_TEST_SOURCES
   tests/test_block_selection.cpp
   tests/test_query_mode_config.cpp
   tests/test_sdf_expander.cpp
+  tests/test_expansion_quality.cpp
+  tests/test_sign_mismatch_metrics.cpp
+  tests/test_expansion_resolution_control.cpp
+  tests/test_existing_core_expansion_bridge.cpp
+  tests/test_expansion_quality_cli.cpp
   tests/test_query_engine_cpu.cpp
   tests/test_query_engine_cuda.cpp
   tests/test_query_mode_cli.cpp
@@ -413,6 +424,11 @@ if(ADASDF_CL_BUILD_TESTS)
       target_compile_definitions(${test_name} PRIVATE
         ADASDF_CL_QUERY_MODE_DEMO="$<TARGET_FILE_NAME:adasdf_query_mode_demo>")
     endif()
+    if(test_name STREQUAL "test_expansion_quality_cli")
+      add_dependencies(${test_name} adasdf_expansion_quality)
+      target_compile_definitions(${test_name} PRIVATE
+        ADASDF_CL_EXPANSION_QUALITY="$<TARGET_FILE_NAME:adasdf_expansion_quality>")
+    endif()
     if(test_name STREQUAL "test_benchmark_timing_fields" OR
         test_name STREQUAL "test_benchmark_cli_modes" OR
         test_name STREQUAL "test_benchmark_output_modes" OR
@@ -432,6 +448,10 @@ if(ADASDF_CL_BUILD_TESTS)
     if(test_name STREQUAL "test_query_mode_cli")
       set_tests_properties(${test_name} PROPERTIES
         WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_query_mode_demo>")
+    endif()
+    if(test_name STREQUAL "test_expansion_quality_cli")
+      set_tests_properties(${test_name} PROPERTIES
+        WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_expansion_quality>")
     endif()
     if(test_name STREQUAL "test_benchmark_timing_fields" OR
         test_name STREQUAL "test_benchmark_cli_modes" OR
@@ -464,7 +484,8 @@ set(ADASDF_CL_INSTALL_TOOL_TARGETS
   adasdf_recommend_demo
   adasdf_build_demo_adaptive
   adasdf_collide_boxes_demo
-  adasdf_query_mode_demo)
+  adasdf_query_mode_demo
+  adasdf_expansion_quality)
 if(ADASDF_CL_BUILD_BENCHMARKS)
   list(APPEND ADASDF_CL_INSTALL_TOOL_TARGETS adasdf_benchmark_batch_query)
 endif()

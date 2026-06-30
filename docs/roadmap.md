@@ -17,8 +17,10 @@
 - v1.0.2-alpha.1 CI portability hotfix for Linux benchmark CLI tests.
 - v1.0.3 CUDA benchmark output modes, no-download timing, workspace reporting,
   and block lookup fast-path refinement.
+- v1.1 ExpandedSDF accuracy audit, sign mismatch metrics, near-surface risk
+  reporting, and sampled existing-core expansion bridge.
 
-## v1.0.3-alpha Scope
+## v1.1.0-alpha Scope
 
 - explicit `QueryModeConfig` for backend, expansion, block selection, resident data, and fallback;
 - reusable `ExpandedSDF`, `SDFExpander`, and `QueryEngine` APIs;
@@ -35,9 +37,18 @@
 - reusable output-buffer path for resident CUDA benchmark repeats;
 - block neighbor fallback that avoids rescanning the already-tested center block;
 - benchmark workspace and block lookup CSV fields.
+- expanded-grid resolution, padding, near-surface band, and sign-epsilon
+  quality controls;
+- deterministic `ExpansionQuality` direct-vs-expanded audit reports;
+- sign mismatch, ambiguous sign, near-surface sign mismatch, fallback count,
+  and fallback-rate metrics;
+- `adasdf_expansion_quality` CLI and query-mode demo quality audit option;
+- sampled existing-core `.sdfbin` to `ExpandedSDF` bridge when direct query is
+  available, with graceful skip when the existing core is unavailable.
 
-The original `v1.0.2-alpha` and `v1.0.2-alpha.1` tags are retained for
-traceability. The recommended public pre-release is `v1.0.3-alpha`.
+The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, and `v1.0.3-alpha` tags are
+retained for traceability. The recommended public pre-release is
+`v1.1.0-alpha`.
 
 ## Future Work
 

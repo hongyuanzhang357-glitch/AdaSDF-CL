@@ -13,10 +13,19 @@ struct ExpansionOptions {
   int global_resolution = 64;
   int block_resolution = 32;
 
+  double padding = 0.0;
+  double near_surface_band = 1e-3;
+
   bool include_distance_values = true;
   bool include_gradient_values = false;
 
-  double padding = 0.0;
+  bool enable_quality_audit = false;
+  int audit_sample_count = 10000;
+
+  bool clamp_outside_expanded_domain = false;
+  bool allow_direct_fallback_outside = true;
+
+  double sign_epsilon = 1e-9;
 };
 
 class SDFExpander {

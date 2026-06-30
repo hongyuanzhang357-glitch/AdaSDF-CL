@@ -2,23 +2,23 @@
 
 Adaptive Signed Distance Field Collision Library
 
-Status: 1.0.3-alpha / research preview
+Status: 1.1.0-alpha / research preview
 Build system: CMake
 License: MIT
 Tests: CTest
 
 AdaSDF-CL is an alpha collision and contact library built around signed distance fields. It provides an FCL-style API for distance, collision, and contact queries while keeping CUDA, FCL, Python, and full adaptive backend work optional or future-facing.
 
-v1.0.3-alpha keeps the v1.0.2 CUDA benchmark semantics and resident query workspace, and adds explicit output modes, CUDA device-only benchmark timing, reusable output-buffer paths, workspace reporting, and a block lookup fallback fast path. CUDA is not required; CPU-only builds remain fully usable.
+v1.1.0-alpha adds ExpandedSDF accuracy audits, sign mismatch metrics, near-surface risk reporting, and a sampled existing-core expansion bridge on top of the v1.0 CUDA benchmark/query-mode work. CUDA and the existing research core remain optional; CPU-only builds remain fully usable.
 
-The original `v1.0.2-alpha` and `v1.0.2-alpha.1` tags are retained for traceability. The recommended public pre-release is `v1.0.3-alpha`.
+The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, and `v1.0.3-alpha` tags are retained for traceability. The recommended public pre-release is `v1.1.0-alpha`.
 
-## v1.0.3-alpha Quick Start
+## v1.1.0-alpha Quick Start
 
 ```bash
 git clone https://github.com/hongyuanzhang357-glitch/AdaSDF-CL.git
 cd AdaSDF-CL
-git checkout v1.0.3-alpha
+git checkout v1.1.0-alpha
 
 cmake -S . -B build -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD_TESTS=ON -DADASDF_CL_BUILD_BENCHMARKS=ON
 cmake --build build --config Release
@@ -29,6 +29,8 @@ install/bin/adasdf_recommend_demo --shape box --target-error 1e-3 --memory-mb 64
 install/bin/adasdf_build_demo_adaptive cube_adaptive.sdfbin --shape box --target-error 1e-3 --memory-mb 64 --block-memory-mb 16 --use-surrogate
 install/bin/adasdf_info cube_adaptive.sdfbin
 install/bin/adasdf_query cube_adaptive.sdfbin --point 0 0 0
+install/bin/adasdf_expansion_quality cube_adaptive.sdfbin --expansion global --global-resolution 64 --samples 10000
+install/bin/adasdf_expansion_quality cube_adaptive.sdfbin --expansion block --blocks all --block-resolution 32 --samples 10000
 install/bin/adasdf_collide_boxes_demo --target-error 1e-3 --memory-mb 64 --offset 0.25 0 0 --max-contacts 8 --view collision.svg
 install/bin/adasdf_query_mode_demo --backend cpu --expansion none --points 100000
 install/bin/adasdf_query_mode_demo --backend cuda --expansion global --points 100000
@@ -57,6 +59,9 @@ Generated `.sdfbin` and `.svg` files should stay in build, install, or temporary
 - CUDA phi-only expanded SDF kernel for signed-distance-only benchmark comparison.
 - Explicit benchmark output modes: `--output phi` and `--output phi,normal`.
 - CUDA device-only benchmark mode for no-download GPU-side timing.
+- ExpandedSDF quality audit comparing expanded queries against direct model queries.
+- Sign mismatch, ambiguous sign, near-surface sign mismatch, and fallback-rate metrics.
+- `adasdf_expansion_quality` CLI for global/block expansion quality reports.
 - Deterministic benchmark point generation and `adasdf_benchmark_batch_query` with backend, expansion, block selection, memory, setup, timing breakdown, warmup/repeat statistics, kernel-only mode, workspace reuse fields, block lookup fields, and error columns.
 
 ## Backend Boundary
@@ -125,7 +130,18 @@ The CUDA backend is optional. If CUDA is not available, AdaSDF-CL remains fully 
 CUDA backend unavailable
 ```
 
-v1.0.3-alpha supports CUDA batch queries over pre-expanded global or block dense SDF data for the core-free analytic/demo adaptive box backend. Full low-rank compressed SDF GPU expansion is planned but not yet complete.
+v1.1.0-alpha supports CUDA batch queries over pre-expanded global or block dense SDF data for the core-free analytic/demo adaptive box backend. Full low-rank compressed SDF GPU expansion is planned but not yet complete.
+
+## Expanded SDF Quality Audit
+
+```bash
+adasdf_expansion_quality cube_adaptive.sdfbin --expansion global --global-resolution 64 --samples 10000
+adasdf_expansion_quality cube_adaptive.sdfbin --expansion block --blocks all --block-resolution 32 --samples 10000
+```
+
+The audit reports absolute error, p95 error, sign mismatch rate, near-surface sign mismatch rate, and fallback count by comparing expanded queries against the direct model query.
+
+Expanded query modes trade memory for query speed. GPU queries require expanded SDF layouts. The current bridge expands models by sampling; full low-rank GPU-native query remains planned work.
 
 ### Benchmark timing semantics
 
@@ -136,7 +152,7 @@ v1.0.3-alpha supports CUDA batch queries over pre-expanded global or block dense
 Benchmark output fields are:
 
 ```text
-query_backend,expansion_mode,selected_blocks,num_points,expanded_memory_mb,gpu_resident_memory_mb,setup_ms,expand_ms,upload_sdf_ms,allocation_ms,h2d_points_ms,kernel_ms,sync_ms,d2h_results_ms,postprocess_ms,free_ms,total_ms,query_kernel_ms,query_total_ms,ns_per_query,queries_per_second,fallback_count,max_abs_phi_error,max_normal_error,cuda_available,warmup,repeat,kernel_min_ms,kernel_mean_ms,kernel_max_ms,kernel_std_ms,total_min_ms,total_mean_ms,total_max_ms,total_std_ms,output_mode,phi_only,reuse_resident,kernel_only,workspace_reused,allocation_count,workspace_capacity,workspace_device_memory_mb,block_lookup_count,block_scan_count,center_block_hit_rate,neighbor_same_block_rate,download_results,correctness_checked,host_memory,layout,status,error_message
+query_backend,expansion_mode,selected_blocks,num_points,expanded_memory_mb,gpu_resident_memory_mb,setup_ms,expand_ms,upload_sdf_ms,allocation_ms,h2d_points_ms,kernel_ms,sync_ms,d2h_results_ms,postprocess_ms,free_ms,total_ms,query_kernel_ms,query_total_ms,ns_per_query,queries_per_second,fallback_count,max_abs_phi_error,max_normal_error,cuda_available,max_abs_error,mean_abs_error,rms_error,p95_abs_error,sign_mismatch_count,sign_mismatch_rate,ambiguous_sign_count,ambiguous_sign_rate,near_surface_sign_mismatch_count,near_surface_sign_mismatch_rate,fallback_rate,warmup,repeat,kernel_min_ms,kernel_mean_ms,kernel_max_ms,kernel_std_ms,total_min_ms,total_mean_ms,total_max_ms,total_std_ms,output_mode,phi_only,reuse_resident,kernel_only,workspace_reused,allocation_count,workspace_capacity,workspace_device_memory_mb,block_lookup_count,block_scan_count,center_block_hit_rate,neighbor_same_block_rate,download_results,correctness_checked,host_memory,layout,status,error_message
 ```
 
 ## Query Modes

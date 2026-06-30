@@ -147,7 +147,8 @@ double QueryEngine::sampleDistance(const Vector3& p) {
   try {
     return expanded_.sampleDistance(p);
   } catch (const std::exception&) {
-    if (!config_.allow_fallback_to_cpu) {
+    if (!config_.allow_fallback_to_cpu ||
+        !expansion_options_.allow_direct_fallback_outside) {
       throw;
     }
     ++stats_.fallback_count;
@@ -163,7 +164,8 @@ Vector3 QueryEngine::sampleGradient(const Vector3& p) {
   try {
     return expanded_.sampleGradient(p);
   } catch (const std::exception&) {
-    if (!config_.allow_fallback_to_cpu) {
+    if (!config_.allow_fallback_to_cpu ||
+        !expansion_options_.allow_direct_fallback_outside) {
       throw;
     }
     ++stats_.fallback_count;

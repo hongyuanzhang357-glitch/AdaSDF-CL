@@ -1,8 +1,9 @@
 # Optional CUDA Query Backend
 
-AdaSDF-CL v1.0.3-alpha keeps CUDA optional and provides a GPU-resident query
+AdaSDF-CL v1.1.0-alpha keeps CUDA optional and provides a GPU-resident query
 path for pre-expanded SDF data. It also adds reusable CUDA query workspaces and
-a phi-only kernel for benchmark comparisons.
+a phi-only kernel for benchmark comparisons. Accuracy audits remain CPU-side
+and compare expanded layouts against direct SDF queries.
 
 ## Scope
 
@@ -19,11 +20,13 @@ Supported first:
 - batch phi-only output for signed-distance-only kernel timing;
 - device-only no-download benchmark timing;
 - CPU/GPU numerical comparison in tests and benchmarks.
+- direct-vs-expanded quality metrics after CUDA results are downloaded.
 
 Not supported yet:
 
 - CUDA compressed-direct query with no expansion;
 - full low-rank compressed SDF GPU expansion;
+- GPU-native low-rank quality audit without sampled expansion;
 - arbitrary mesh/STL GPU SDF construction;
 - CUDA-accelerated pair collision;
 - certified industrial GPU contact solving;
@@ -192,11 +195,16 @@ The backend reports:
 - fallback count.
 - workspace reuse status, allocation count, capacity, and device memory;
 - lightweight block lookup counters for benchmark interpretation.
+- quality fields in benchmark CSV when results are downloaded.
 
 `total_ms` and `kernel_ms` are intentionally different. `kernel_ms` is CUDA
 event time around the kernel. `total_ms` includes allocation, point upload,
 synchronization, result download, CPU postprocess, and temporary buffer free
 when no reusable workspace is provided.
+
+Quality metrics are not produced for `--device-only` rows because those rows do
+not download candidate values to CPU memory. Use normal downloaded benchmark
+rows or `adasdf_expansion_quality` for correctness and sign-risk analysis.
 
 ## Precision
 
