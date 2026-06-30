@@ -228,6 +228,7 @@ def main() -> int:
     quality_csv = build.parent / "adasdf_expansion_quality_v1.csv"
     max_contacts = 8
     required_demo_tools = {
+        "adasdf_capabilities": find_executable(build, "adasdf_capabilities", config),
         "adasdf_recommend_demo": find_executable(build, "adasdf_recommend_demo", config),
         "adasdf_build_demo_adaptive": find_executable(build, "adasdf_build_demo_adaptive", config),
         "adasdf_info": find_executable(build, "adasdf_info", config),
@@ -235,6 +236,7 @@ def main() -> int:
         "adasdf_expansion_quality": find_executable(build, "adasdf_expansion_quality", config),
         "adasdf_collide_boxes_demo": find_executable(build, "adasdf_collide_boxes_demo", config),
         "adasdf_benchmark_batch_query": find_executable(build, "adasdf_benchmark_batch_query", config),
+        "adasdf_capability_walkthrough": find_executable(build, "adasdf_capability_walkthrough", config),
     }
     missing_demo_tools = [
         name for name, path in required_demo_tools.items() if path is None
@@ -251,6 +253,19 @@ def main() -> int:
         return result.returncode
 
     demo_steps = [
+        (
+            "Capabilities CLI",
+            [
+                str(required_demo_tools["adasdf_capabilities"]),
+                "--verbose",
+            ],
+        ),
+        (
+            "Capability Walkthrough Example",
+            [
+                str(required_demo_tools["adasdf_capability_walkthrough"]),
+            ],
+        ),
         (
             "Demo Surrogate Recommendation",
             [
@@ -351,6 +366,46 @@ def main() -> int:
         if result.returncode != 0:
             write_report(report_path, results, source, build, config)
             return result.returncode
+        if name == "Capabilities CLI":
+            required_lines = [
+                "AdaSDF-CL version:",
+                "Implemented:",
+                "Experimental / partial:",
+                "Planned:",
+                "docs/capability_matrix.md",
+            ]
+            missing_lines = [
+                line for line in required_lines if line not in result.output
+            ]
+            if missing_lines:
+                result.returncode = 1
+                result.output += (
+                    "\nValidation failed: capabilities output missing: "
+                    + ", ".join(missing_lines)
+                    + "\n"
+                )
+                write_report(report_path, results, source, build, config)
+                return result.returncode
+        if name == "Capability Walkthrough Example":
+            required_lines = [
+                "AdaSDF-CL capability walkthrough",
+                "Point phi:",
+                "Collision hit:",
+                "Expansion p95 abs error:",
+                "Status: ok",
+            ]
+            missing_lines = [
+                line for line in required_lines if line not in result.output
+            ]
+            if missing_lines:
+                result.returncode = 1
+                result.output += (
+                    "\nValidation failed: walkthrough output missing: "
+                    + ", ".join(missing_lines)
+                    + "\n"
+                )
+                write_report(report_path, results, source, build, config)
+                return result.returncode
         if name == "Demo Collide Boxes CLI":
             match = re.search(r"Returned contacts:\s+(\d+)", result.output)
             if not match or int(match.group(1)) > max_contacts:

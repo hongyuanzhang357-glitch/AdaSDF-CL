@@ -1,5 +1,19 @@
 # Tools
 
+## adasdf_capabilities
+
+Status: working in a core-free public build.
+
+Prints the public capability summary, current boundaries, and documentation
+links for the v1.1.1 capability exposure release.
+
+```bash
+adasdf_capabilities
+adasdf_capabilities --verbose
+```
+
+This tool does not require CUDA or the existing core.
+
 ## adasdf_recommend_demo
 
 Status: working in a core-free public build.
@@ -76,6 +90,15 @@ Samples one world-space point and prints signed distance, gradient, normal, and 
 
 ```bash
 adasdf_query cube_adaptive.sdfbin --point 0 0 0
+```
+
+## adasdf_expansion_quality
+
+Audits expanded SDF query quality against the model query path and reports
+absolute error, sign mismatch, near-surface mismatch, and fallback statistics.
+
+```bash
+adasdf_expansion_quality cube_adaptive.sdfbin --expansion global --global-resolution 32 --samples 1000 --out quality.csv
 ```
 
 ## adasdf_collide

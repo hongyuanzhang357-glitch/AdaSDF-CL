@@ -255,7 +255,8 @@ set(ADASDF_CL_EXAMPLE_SOURCES
   examples/07_contact_reduction_demo.cpp
   examples/08_core_free_demo_collision.cpp
   examples/09_surrogate_adaptive_demo.cpp
-  examples/10_two_box_collision_with_view.cpp)
+  examples/10_two_box_collision_with_view.cpp
+  examples/11_capability_walkthrough.cpp)
 
 if(ADASDF_CL_BUILD_EXAMPLES)
   add_executable(adasdf_load_sdfbin_and_query
@@ -289,6 +290,10 @@ if(ADASDF_CL_BUILD_EXAMPLES)
   add_executable(adasdf_two_box_collision_with_view
     examples/10_two_box_collision_with_view.cpp)
   target_link_libraries(adasdf_two_box_collision_with_view PRIVATE adasdf::cl_runtime)
+
+  add_executable(adasdf_capability_walkthrough
+    examples/11_capability_walkthrough.cpp)
+  target_link_libraries(adasdf_capability_walkthrough PRIVATE adasdf::cl_runtime)
 
   add_custom_target(adasdf_cl_api_preview_examples SOURCES
     examples/01_build_adaptive_sdf.cpp
@@ -327,6 +332,11 @@ set_target_properties(adasdf_query_mode_demo PROPERTIES
 add_executable(adasdf_expansion_quality tools/adasdf_expansion_quality.cpp)
 target_link_libraries(adasdf_expansion_quality PRIVATE adasdf_cl_runtime)
 set_target_properties(adasdf_expansion_quality PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
+
+add_executable(adasdf_capabilities tools/adasdf_capabilities.cpp)
+target_link_libraries(adasdf_capabilities PRIVATE adasdf_cl_runtime)
+set_target_properties(adasdf_capabilities PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
 
 if(ADASDF_CL_BUILD_BENCHMARKS)
@@ -388,7 +398,10 @@ set(ADASDF_CL_TEST_SOURCES
   tests/test_surrogate_recommender.cpp
   tests/test_contact_only_sdfbin.cpp
   tests/test_sdfbin_real_load.cpp
-  tests/test_sdfmodel_query.cpp)
+  tests/test_sdfmodel_query.cpp
+  tests/test_capabilities_cli.cpp
+  tests/test_capability_walkthrough_example.cpp
+  tests/test_docs_capability_links.cpp)
 
 file(GLOB_RECURSE ADASDF_CL_DISCOVERED_FIXTURES
   "${ADASDF_CL_EXISTING_ROOT}/models/*.sdfbin")
@@ -413,7 +426,8 @@ if(ADASDF_CL_BUILD_TESTS)
     target_compile_definitions(${test_name} PRIVATE
       ADASDF_CL_TEST_FIXTURE="${ADASDF_CL_TEST_FIXTURE}"
       ADASDF_CL_TEST_CUBE_STL="${ADASDF_CL_TEST_CUBE_STL}"
-      ADASDF_CL_TEST_TEMP_DIR="${ADASDF_CL_TEST_TEMP_DIR}")
+      ADASDF_CL_TEST_TEMP_DIR="${ADASDF_CL_TEST_TEMP_DIR}"
+      ADASDF_CL_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
     if(test_name STREQUAL "test_make_demo_box_cli")
       add_dependencies(${test_name} adasdf_make_demo_box)
       target_compile_definitions(${test_name} PRIVATE
@@ -428,6 +442,17 @@ if(ADASDF_CL_BUILD_TESTS)
       add_dependencies(${test_name} adasdf_expansion_quality)
       target_compile_definitions(${test_name} PRIVATE
         ADASDF_CL_EXPANSION_QUALITY="$<TARGET_FILE_NAME:adasdf_expansion_quality>")
+    endif()
+    if(test_name STREQUAL "test_capabilities_cli")
+      add_dependencies(${test_name} adasdf_capabilities)
+      target_compile_definitions(${test_name} PRIVATE
+        ADASDF_CL_CAPABILITIES="$<TARGET_FILE_NAME:adasdf_capabilities>")
+    endif()
+    if(test_name STREQUAL "test_capability_walkthrough_example" AND
+        TARGET adasdf_capability_walkthrough)
+      add_dependencies(${test_name} adasdf_capability_walkthrough)
+      target_compile_definitions(${test_name} PRIVATE
+        ADASDF_CL_CAPABILITY_WALKTHROUGH="$<TARGET_FILE_NAME:adasdf_capability_walkthrough>")
     endif()
     if(test_name STREQUAL "test_benchmark_timing_fields" OR
         test_name STREQUAL "test_benchmark_cli_modes" OR
@@ -452,6 +477,15 @@ if(ADASDF_CL_BUILD_TESTS)
     if(test_name STREQUAL "test_expansion_quality_cli")
       set_tests_properties(${test_name} PROPERTIES
         WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_expansion_quality>")
+    endif()
+    if(test_name STREQUAL "test_capabilities_cli")
+      set_tests_properties(${test_name} PROPERTIES
+        WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_capabilities>")
+    endif()
+    if(test_name STREQUAL "test_capability_walkthrough_example" AND
+        TARGET adasdf_capability_walkthrough)
+      set_tests_properties(${test_name} PROPERTIES
+        WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_capability_walkthrough>")
     endif()
     if(test_name STREQUAL "test_benchmark_timing_fields" OR
         test_name STREQUAL "test_benchmark_cli_modes" OR
@@ -485,7 +519,8 @@ set(ADASDF_CL_INSTALL_TOOL_TARGETS
   adasdf_build_demo_adaptive
   adasdf_collide_boxes_demo
   adasdf_query_mode_demo
-  adasdf_expansion_quality)
+  adasdf_expansion_quality
+  adasdf_capabilities)
 if(ADASDF_CL_BUILD_BENCHMARKS)
   list(APPEND ADASDF_CL_INSTALL_TOOL_TARGETS adasdf_benchmark_batch_query)
 endif()

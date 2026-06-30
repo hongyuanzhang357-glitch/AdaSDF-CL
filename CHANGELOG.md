@@ -1,5 +1,31 @@
 # Changelog
 
+## 1.1.1-alpha
+
+Capability exposure and public positioning release.
+
+### Added
+
+- Capability matrix.
+- Implemented / partial / planned feature overview.
+- FCL complement strategy documentation.
+- Query backend matrix.
+- Contact output matrix.
+- Public positioning guide.
+- `adasdf_capabilities` CLI.
+- Capability walkthrough example.
+
+### Changed
+
+- Version updated to `1.1.1-alpha`.
+- Reworked README to better expose implemented features and planned roadmap.
+
+### Notes
+
+- No core algorithm changes.
+- No public API breaking changes.
+- AdaSDF-CL remains an FCL-style SDF backend under development, not a drop-in FCL replacement.
+
 ## 1.1.0-alpha
 
 Expanded-SDF accuracy audit, sign-mismatch metrics, and sampled existing-core

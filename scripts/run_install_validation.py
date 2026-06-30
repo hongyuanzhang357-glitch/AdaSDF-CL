@@ -278,6 +278,29 @@ def main() -> int:
             return result.returncode
 
     try:
+        capabilities_exe = find_executable(install, "adasdf_capabilities", config)
+    except FileNotFoundError as exc:
+        result = StepResult("Installed Capabilities CLI", ["adasdf_capabilities"], 1, str(exc))
+    else:
+        print("[install-validation] Installed Capabilities CLI", flush=True)
+        result = run_step(
+            "Installed Capabilities CLI",
+            [str(capabilities_exe), "--verbose"],
+            workspace,
+        )
+        if (
+            result.returncode == 0
+            and "AdaSDF-CL version:" not in result.output
+        ):
+            result.returncode = 1
+            result.output += "\nValidation failed: installed capabilities CLI output is missing version.\n"
+    results.append(result)
+    if result.returncode != 0:
+        write_report(report_path, results, source, build, install, config)
+        print_failure(result, source, build, install)
+        return result.returncode
+
+    try:
         package_exe = find_executable(package_build, "test_find_package", config)
     except FileNotFoundError as exc:
         result = StepResult("Package Run", ["test_find_package"], 1, str(exc))

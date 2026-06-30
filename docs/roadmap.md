@@ -19,8 +19,10 @@
   and block lookup fast-path refinement.
 - v1.1 ExpandedSDF accuracy audit, sign mismatch metrics, near-surface risk
   reporting, and sampled existing-core expansion bridge.
+- v1.1.1 capability exposure, public positioning, capability CLI, and
+  walkthrough example.
 
-## v1.1.0-alpha Scope
+## v1.1.1-alpha Scope
 
 - explicit `QueryModeConfig` for backend, expansion, block selection, resident data, and fallback;
 - reusable `ExpandedSDF`, `SDFExpander`, and `QueryEngine` APIs;
@@ -45,10 +47,15 @@
 - `adasdf_expansion_quality` CLI and query-mode demo quality audit option;
 - sampled existing-core `.sdfbin` to `ExpandedSDF` bridge when direct query is
   available, with graceful skip when the existing core is unavailable.
+- capability matrix and implemented/partial/planned docs;
+- FCL complement strategy and public positioning docs;
+- query backend and contact output matrices;
+- `adasdf_capabilities` CLI;
+- CPU-only capability walkthrough example.
 
-The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, and `v1.0.3-alpha` tags are
-retained for traceability. The recommended public pre-release is
-`v1.1.0-alpha`.
+The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`, and
+`v1.1.0-alpha` tags are retained for traceability. The recommended public
+pre-release is `v1.1.1-alpha`.
 
 ## Future Work
 
