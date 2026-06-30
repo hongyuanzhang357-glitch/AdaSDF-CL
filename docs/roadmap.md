@@ -14,8 +14,9 @@
 - v1.0 optional CUDA batch query backend and CPU/GPU benchmark tooling.
 - v1.0.1 query mode, expansion mode, and GPU-resident expanded SDF query backend.
 - v1.0.2 CUDA benchmark timing semantics and resident query workspace.
+- v1.0.2-alpha.1 CI portability hotfix for Linux benchmark CLI tests.
 
-## v1.0.2-alpha Scope
+## v1.0.2-alpha.1 Scope
 
 - explicit `QueryModeConfig` for backend, expansion, block selection, resident data, and fallback;
 - reusable `ExpandedSDF`, `SDFExpander`, and `QueryEngine` APIs;
@@ -26,6 +27,10 @@
 - CUDA phi-only expanded SDF kernel for signed-distance-only kernel comparison;
 - CPU/CUDA query-mode tests and graceful CUDA-unavailable skip behavior;
 - documentation of the original UI CUDA dense/block-expanded reference and the v1.0.2 timing-comparison boundary.
+- Linux/GitHub Actions benchmark CLI portability fix for explicit benchmark executable invocation.
+
+The original `v1.0.2-alpha` tag is retained for traceability. The recommended
+public pre-release is `v1.0.2-alpha.1`.
 
 ## Future Work
 

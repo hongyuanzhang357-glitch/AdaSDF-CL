@@ -2,21 +2,23 @@
 
 Adaptive Signed Distance Field Collision Library
 
-Status: 1.0.2-alpha / research preview
+Status: 1.0.2-alpha.1 / research preview
 Build system: CMake
 License: MIT
 Tests: CTest
 
 AdaSDF-CL is an alpha collision and contact library built around signed distance fields. It provides an FCL-style API for distance, collision, and contact queries while keeping CUDA, FCL, Python, and full adaptive backend work optional or future-facing.
 
-v1.0.2-alpha keeps the v1.0.1 query-mode and CUDA expanded-SDF backend, and adds benchmark timing semantics, warmup/repeat statistics, CUDA query workspace reuse, and phi-only kernel timing for fair comparison with original UI kernel averages. CUDA is not required; CPU-only builds remain fully usable.
+v1.0.2-alpha.1 keeps the v1.0.2-alpha CUDA benchmark semantics and resident query workspace, and adds a Linux/GitHub Actions benchmark CLI portability hotfix. CUDA is not required; CPU-only builds remain fully usable.
 
-## v1.0.2 Quick Start
+The original `v1.0.2-alpha` tag is retained for traceability. The recommended public pre-release is `v1.0.2-alpha.1`.
+
+## v1.0.2-alpha.1 Quick Start
 
 ```bash
 git clone https://github.com/hongyuanzhang357-glitch/AdaSDF-CL.git
 cd AdaSDF-CL
-git checkout v1.0.2-alpha
+git checkout v1.0.2-alpha.1
 
 cmake -S . -B build -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD_TESTS=ON -DADASDF_CL_BUILD_BENCHMARKS=ON
 cmake --build build --config Release
@@ -119,7 +121,7 @@ The CUDA backend is optional. If CUDA is not available, AdaSDF-CL remains fully 
 CUDA backend unavailable
 ```
 
-v1.0.2-alpha supports CUDA batch queries over pre-expanded global or block dense SDF data for the core-free analytic/demo adaptive box backend. Full low-rank compressed SDF GPU expansion is planned but not yet complete.
+v1.0.2-alpha.1 supports CUDA batch queries over pre-expanded global or block dense SDF data for the core-free analytic/demo adaptive box backend. Full low-rank compressed SDF GPU expansion is planned but not yet complete.
 
 ### Benchmark timing semantics
 
@@ -236,6 +238,7 @@ See `docs/limitations.md`.
 - `docs/query_mode_and_expansion_v1_0_1_report.md`
 - `docs/cuda_benchmark_semantics_v1_0_2_report.md`
 - `docs/github_release_draft_v1_0_2_alpha.md`
+- `docs/github_release_draft_v1_0_2_alpha_1.md`
 
 ## Citation
 

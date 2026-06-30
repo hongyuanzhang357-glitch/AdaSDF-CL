@@ -1,6 +1,9 @@
 # Alpha Status
 
-AdaSDF-CL 1.0.2-alpha is a research-preview release candidate.
+AdaSDF-CL 1.0.2-alpha.1 is a research-preview release candidate.
+
+The original `v1.0.2-alpha` tag is retained for traceability. The recommended
+public pre-release is `v1.0.2-alpha.1`.
 
 ## What Works
 
@@ -32,7 +35,7 @@ The v0.9 demo surrogate is not universal, not fully trained, and not an optimali
 
 The demo adaptive builder uses analytic box SDF queries and demo metadata. It is not the full adaptive compressed STL-to-SDF builder.
 
-The v1.0.2 CUDA path is optional and intentionally narrow. It supports batch queries only after SDF data has been pre-expanded into global or block dense data. `CUDA + None` is rejected because compressed-direct GPU query is not implemented. This is not a full low-rank compressed SDF GPU expansion and is not an industrial GPU collision pipeline.
+The v1.0.2-alpha.1 CUDA path is optional and intentionally narrow. It supports batch queries only after SDF data has been pre-expanded into global or block dense data. `CUDA + None` is rejected because compressed-direct GPU query is not implemented. This is not a full low-rank compressed SDF GPU expansion and is not an industrial GPU collision pipeline.
 
 Benchmark `total_ms` is a full query timing. Benchmark `kernel_ms` is CUDA kernel event timing. Original UI warmed kernel-average numbers should be compared to `--kernel-only --phi-only --reuse-resident` rows.
 
@@ -44,5 +47,5 @@ Benchmark `total_ms` is a full query timing. Benchmark `kernel_ms` is CUDA kerne
 - Expected clean check: PASS.
 - Target external collision test verdict for v0.9.0-alpha: PASS for the demo adaptive workflow.
 - Expected CUDA-unavailable behavior: GPU benchmark/tests SKIPPED, not FAILED.
-- Current v1.0.2 local CPU CTest result: 41/41 PASS.
-- Current v1.0.2 local CUDA CTest result: 41/41 PASS when CUDA is enabled through an ASCII-only source/build path.
+- Current v1.0.2-alpha.1 local CPU CTest result: 41/41 PASS.
+- Current v1.0.2-alpha.1 local CUDA CTest result: 41/41 PASS when CUDA is enabled through an ASCII-only source/build path.

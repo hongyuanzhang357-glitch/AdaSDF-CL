@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.0.2-alpha.1
+
+CI portability hotfix for v1.0.2-alpha.
+
+### Fixed
+
+- Fixed Linux GitHub Actions benchmark CLI tests by invoking benchmark executables with a portable explicit path.
+- Preserved Windows benchmark test behavior.
+- Kept CUDA benchmark semantics, resident query workspace, warmup/repeat, kernel-only, phi-only, and reuse-resident functionality unchanged.
+
+### Notes
+
+- No core CUDA algorithm changes.
+- No public API changes.
+- The original `v1.0.2-alpha` tag is retained for traceability but should not be used as the recommended public pre-release.
+
 ## 1.0.2-alpha
 
 CUDA benchmark semantics and resident query workspace.
