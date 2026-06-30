@@ -10,12 +10,14 @@ only, Planned, Not implemented.
 | Build / Input | STL reader | Implemented | v1.2 | `STLReader` | Diagnostics-oriented reader. |
 | Build / Input | ASCII STL | Implemented | v1.2 | `STLReader` | Common ASCII STL syntax. |
 | Build / Input | Binary STL | Implemented | v1.2 | `STLReader` | Validates binary triangle count against file size. |
+| Build / Input | ASCII STL writer | Implemented | v1.4 | `STLWriter` | Writes cleaned TriangleMesh output; binary writing remains planned. |
 | Build / Input | existing-core STL-to-sdfbin bridge | Existing-core only | v0.4 | `AdaptiveSDFBuilder`, `adasdf_build` | Requires existing research core. |
 | Build / Input | arbitrary STL standalone public builder | Planned | - | - | Existing-core bridge exists, but no core-free general STL builder yet. |
 | Build / Input | mesh diagnostics | Implemented | v1.2 | `MeshDiagnostics`, `adasdf_mesh_check` | Preflight only, no repair. |
 | Build / Input | mesh readiness scoring | Implemented | v1.3 | `MeshReadiness`, `adasdf_mesh_check --readiness` | Preflight suitability score and suggestions. |
 | Build / Input | repair suggestions | Implemented | v1.3 | `MeshReadinessReport` | Text guidance only; input STL is not modified. |
-| Build / Input | mesh repair | Planned | - | - | Not implemented. |
+| Build / Input | safe mesh cleanup | Implemented | v1.4 | `MeshCleanup`, `adasdf_mesh_clean`, `adasdf_mesh_check --clean-out` | Removes obvious duplicate/degenerate elements and writes separate cleaned STL. |
+| Build / Input | complex mesh repair / hole filling | Planned | - | - | Not implemented. |
 | Build / Input | unit / scale report | Partial | v0.9 | `adasdf_info` | Metadata shown when available. |
 | SDF storage / model | demo text `.sdfbin` | Implemented | v0.8 | `DemoSDFBin` | Core-free analytic demo format. |
 | SDF storage / model | demo adaptive `.sdfbin` | Implemented | v0.9 | `DemoAdaptiveSDFBin` | Core-free adaptive demo format. |
@@ -56,6 +58,7 @@ only, Planned, Not implemented.
 | Accuracy / Reliability | boundary / non-manifold edge report | Implemented | v1.2 | `MeshDiagnosticsReport` | Topology-level preflight. |
 | Accuracy / Reliability | mesh issue severity classification | Implemented | v1.3 | `MeshIssueSeverity` | Info, warning, and critical. |
 | Accuracy / Reliability | SDF build readiness score | Implemented | v1.3 | `MeshReadinessReport::score` | 0-100 heuristic, not certification. |
+| Accuracy / Reliability | cleanup before/after report | Implemented | v1.4 | `MeshDiagnosticsWriter::cleanupComparisonMarkdown` | Compares diagnostics and readiness before and after safe cleanup. |
 | Accuracy / Reliability | self-intersection detection | Planned | - | - | Not implemented. |
 | Accuracy / Reliability | per-contact error bound | Planned | - | - | Not implemented. |
 | Accuracy / Reliability | query confidence | Planned | - | - | Not implemented. |

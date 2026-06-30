@@ -14,6 +14,10 @@ void usage() {
          "[--json report.json] [--tolerance 1e-12] [--area-eps 1e-14] "
          "[--no-duplicate-check] [--no-components] [--readiness] "
          "[--require-watertight] [--allow-open] [--strict] [--lenient] "
+         "[--clean-out cleaned.stl] [--clean-report cleanup_report.md] "
+         "[--merge-tolerance 1e-12] [--no-merge-vertices] "
+         "[--no-remove-degenerate] [--no-remove-duplicates] "
+         "[--no-remove-unused] "
          "[--verbose]\n";
 }
 
@@ -99,6 +103,26 @@ void printReadiness(const adasdf::MeshReadinessReport& readiness) {
   }
 }
 
+void printCleanup(const adasdf::MeshCleanupStats& stats) {
+  std::cout << "Cleanup:\n";
+  std::cout << "  input vertices: " << stats.input_vertices << "\n";
+  std::cout << "  input triangles: " << stats.input_triangles << "\n";
+  std::cout << "  output vertices: " << stats.output_vertices << "\n";
+  std::cout << "  output triangles: " << stats.output_triangles << "\n";
+  std::cout << "  merged vertices: " << stats.merged_vertices << "\n";
+  std::cout << "  removed degenerate triangles: "
+            << stats.removed_degenerate_triangles << "\n";
+  std::cout << "  removed duplicate triangles: "
+            << stats.removed_duplicate_triangles << "\n";
+  std::cout << "  removed unused vertices: " << stats.removed_unused_vertices
+            << "\n";
+  std::cout << "  topology may have changed: "
+            << (stats.topology_may_have_changed ? "yes" : "no") << "\n";
+  for (const std::string& warning : stats.warnings) {
+    std::cout << "Cleanup warning: " << warning << "\n";
+  }
+}
+
 void writeText(const std::filesystem::path& path, const std::string& text) {
   if (!path.parent_path().empty()) {
     std::filesystem::create_directories(path.parent_path());
@@ -119,12 +143,15 @@ int main(int argc, char** argv) {
     std::filesystem::path input;
     std::filesystem::path markdown_output;
     std::filesystem::path json_output;
+    std::filesystem::path clean_output;
+    std::filesystem::path clean_report_output;
     bool verbose = false;
     bool readiness_requested = false;
 
     adasdf::STLReadOptions read_options;
     adasdf::MeshDiagnosticsOptions diagnostics_options;
     adasdf::MeshReadinessOptions readiness_options;
+    adasdf::MeshCleanupOptions cleanup_options;
 
     for (int i = 1; i < argc; ++i) {
       const std::string arg = argv[i];
@@ -139,8 +166,28 @@ int main(int argc, char** argv) {
         read_options.vertex_merge_tolerance = std::stod(argv[++i]);
         diagnostics_options.duplicate_triangle_tolerance =
             read_options.vertex_merge_tolerance;
+        cleanup_options.vertex_merge_tolerance =
+            read_options.vertex_merge_tolerance;
       } else if (arg == "--area-eps" && hasValue(i, argc)) {
         diagnostics_options.degenerate_area_epsilon = std::stod(argv[++i]);
+        cleanup_options.degenerate_area_epsilon =
+            diagnostics_options.degenerate_area_epsilon;
+      } else if (arg == "--merge-tolerance" && hasValue(i, argc)) {
+        cleanup_options.vertex_merge_tolerance = std::stod(argv[++i]);
+      } else if (arg == "--clean-out" && hasValue(i, argc)) {
+        clean_output = argv[++i];
+        readiness_requested = true;
+      } else if (arg == "--clean-report" && hasValue(i, argc)) {
+        clean_report_output = argv[++i];
+        readiness_requested = true;
+      } else if (arg == "--no-merge-vertices") {
+        cleanup_options.merge_near_duplicate_vertices = false;
+      } else if (arg == "--no-remove-degenerate") {
+        cleanup_options.remove_degenerate_triangles = false;
+      } else if (arg == "--no-remove-duplicates") {
+        cleanup_options.remove_duplicate_triangles = false;
+      } else if (arg == "--no-remove-unused") {
+        cleanup_options.remove_unused_vertices = false;
       } else if (arg == "--no-duplicate-check") {
         diagnostics_options.check_duplicate_triangles = false;
       } else if (arg == "--no-components") {
@@ -206,6 +253,75 @@ int main(int argc, char** argv) {
     if (readiness_requested) {
       readiness = adasdf::MeshReadiness::evaluate(report, readiness_options);
       printReadiness(readiness);
+    }
+
+    const bool cleanup_requested =
+        !clean_output.empty() || !clean_report_output.empty();
+    if (cleanup_requested) {
+      if (!clean_output.empty()) {
+        const auto input_abs = std::filesystem::absolute(input).lexically_normal();
+        const auto output_abs =
+            std::filesystem::absolute(clean_output).lexically_normal();
+        if (input_abs == output_abs) {
+          std::cerr << "adasdf_mesh_check: refusing to overwrite input STL\n";
+          return 1;
+        }
+      }
+
+      const adasdf::MeshCleanupResult cleanup =
+          adasdf::MeshCleanup::clean(read.mesh, cleanup_options);
+      if (!cleanup.success) {
+        std::cerr << "adasdf_mesh_check: cleanup failed: "
+                  << cleanup.error_message << "\n";
+        return 1;
+      }
+      printCleanup(cleanup.stats);
+
+      if (!clean_output.empty()) {
+        std::string write_error;
+        adasdf::STLWriteOptions write_options;
+        write_options.solid_name = "adasdf_cleaned_mesh";
+        if (!adasdf::STLWriter::write(
+                clean_output.string(),
+                cleanup.cleaned_mesh,
+                write_options,
+                &write_error)) {
+          std::cerr << "adasdf_mesh_check: failed to write cleaned STL: "
+                    << write_error << "\n";
+          return 1;
+        }
+        std::cout << "Output: " << clean_output.string() << "\n";
+      }
+
+      adasdf::MeshDiagnosticsReport after_report =
+          adasdf::MeshDiagnostics::analyze(
+              cleanup.cleaned_mesh,
+              diagnostics_options);
+      after_report.raw_triangle_count = cleanup.cleaned_mesh.triangleCount();
+      const adasdf::MeshReadinessReport after_readiness =
+          adasdf::MeshReadiness::evaluate(after_report, readiness_options);
+      std::cout << "Before readiness: " << adasdf::toString(readiness.level)
+                << ", score " << readiness.score << "\n";
+      std::cout << "After readiness: " << adasdf::toString(after_readiness.level)
+                << ", score " << after_readiness.score << "\n";
+
+      if (!clean_report_output.empty()) {
+        writeText(
+            clean_report_output,
+            adasdf::MeshDiagnosticsWriter::cleanupComparisonMarkdown(
+                report,
+                readiness,
+                cleanup.stats,
+                after_report,
+                after_readiness));
+        std::cout << "Report: " << clean_report_output.string() << "\n";
+      }
+
+      return (after_readiness.level == adasdf::MeshReadinessLevel::Ready ||
+              after_readiness.level ==
+                  adasdf::MeshReadinessLevel::UsableWithWarnings)
+          ? 0
+          : 2;
     }
 
     if (!markdown_output.empty()) {

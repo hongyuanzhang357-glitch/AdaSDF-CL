@@ -22,8 +22,13 @@
   non-manifold, duplicate, degenerate, component, and isolated-vertex checks.
 - Mesh readiness scoring, severity classification, and repair suggestions for
   SDF build preflight.
+- Safe mesh cleanup for near-duplicate vertices, degenerate triangles,
+  duplicate triangles, and unused vertices.
+- ASCII STL writer for cleaned mesh export.
 - Markdown and JSON-like mesh diagnostics reports.
-- `adasdf_mesh_check` CLI and CPU-only mesh diagnostics demo.
+- Before/after cleanup diagnostics and readiness reports.
+- `adasdf_mesh_check` CLI, `adasdf_mesh_clean` CLI, CPU-only mesh diagnostics
+  demo, and CPU-only mesh cleanup demo.
 - External CMake install/export and downstream example.
 
 ## Partial / Experimental
@@ -40,14 +45,14 @@
   planned.
 - Real asset bridge: existing-core fixtures and sampled expansion bridge exist
   when direct query support is available.
-- STL import audit: diagnostics and readiness suggestions are implemented, but
-  no automatic repair or standalone arbitrary-STL SDF build follows from the
-  report yet.
+- STL import audit: diagnostics, readiness suggestions, and safe cleanup are
+  implemented, but no hole filling, self-intersection repair, or standalone
+  arbitrary-STL SDF build follows from the report yet.
 
 ## Planned
 
 - Standalone arbitrary STL adaptive builder.
-- Mesh repair.
+- Complex mesh repair and hole filling.
 - Self-intersection detection.
 - FCL fallback backend.
 - CollisionWorld broadphase.

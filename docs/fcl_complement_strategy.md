@@ -7,7 +7,8 @@ AdaSDF-CL is not currently a drop-in ABI-compatible replacement for FCL.
 AdaSDF-CL is an FCL-style SDF collision backend under development. It
 complements FCL by providing signed-distance queries, penetration depth,
 contact normals, batch query, expanded-SDF quality audit, and CUDA expanded
-query paths.
+query paths. It also includes STL diagnostics, readiness scoring, and safe mesh
+cleanup as preflight utilities for future SDF construction.
 
 ## Why Not Replace FCL Immediately
 
@@ -30,6 +31,7 @@ with partial contact manifold behavior and optional CUDA query paths.
 - Batch query and CUDA expanded-SDF timing.
 - Expanded-SDF quality audit and sign-risk metrics.
 - Adaptive SDF research workflow.
+- STL diagnostics, readiness scoring, and safe cleanup.
 
 ## Task Comparison
 
@@ -62,4 +64,4 @@ adasdf_collide a.sdfbin b.sdfbin --backend sdf
 adasdf_collide a.stl b.stl --backend hybrid
 ```
 
-FCL backend is planned, not implemented in v1.3.0-alpha.
+FCL backend is planned, not implemented in v1.4.0-alpha.

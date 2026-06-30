@@ -301,6 +301,100 @@ std::string MeshDiagnosticsWriter::combinedJson(
   return out.str();
 }
 
+std::string MeshDiagnosticsWriter::cleanupToMarkdown(
+    const MeshCleanupStats& stats) {
+  std::ostringstream out;
+  out << "## Cleanup Operations\n\n";
+  out << "- Input vertices: " << stats.input_vertices << "\n";
+  out << "- Input triangles: " << stats.input_triangles << "\n";
+  out << "- Output vertices: " << stats.output_vertices << "\n";
+  out << "- Output triangles: " << stats.output_triangles << "\n";
+  out << "- Merged vertices: " << stats.merged_vertices << "\n";
+  out << "- Removed degenerate triangles: "
+      << stats.removed_degenerate_triangles << "\n";
+  out << "- Removed duplicate triangles: "
+      << stats.removed_duplicate_triangles << "\n";
+  out << "- Removed unused vertices: " << stats.removed_unused_vertices
+      << "\n";
+  out << "- Topology may have changed: "
+      << yesNo(stats.topology_may_have_changed) << "\n\n";
+  out << "### Cleanup Warnings\n\n";
+  if (stats.warnings.empty()) {
+    out << "- none\n";
+  } else {
+    for (const std::string& warning : stats.warnings) {
+      out << "- " << warning << "\n";
+    }
+  }
+  out << "\nThis safe cleanup pass does not fill holes, repair "
+         "self-intersections, or perform CAD reconstruction.\n";
+  return out.str();
+}
+
+std::string MeshDiagnosticsWriter::cleanupComparisonMarkdown(
+    const MeshDiagnosticsReport& before_diag,
+    const MeshReadinessReport& before_ready,
+    const MeshCleanupStats& cleanup_stats,
+    const MeshDiagnosticsReport& after_diag,
+    const MeshReadinessReport& after_ready) {
+  std::ostringstream out;
+  out << "# Mesh Cleanup Comparison Report\n\n";
+  out << "## Before Diagnostics\n\n";
+  out << "- Vertices: " << before_diag.vertex_count << "\n";
+  out << "- Triangles: " << before_diag.triangle_count << "\n";
+  out << "- Watertight: " << yesNo(before_diag.watertight) << "\n";
+  out << "- Boundary edges: " << before_diag.boundary_edge_count << "\n";
+  out << "- Non-manifold edges: " << before_diag.non_manifold_edge_count
+      << "\n";
+  out << "- Degenerate triangles: "
+      << before_diag.degenerate_triangle_count << "\n";
+  out << "- Duplicate triangles: " << before_diag.duplicate_triangle_count
+      << "\n\n";
+
+  out << "## Before Readiness\n\n";
+  out << "- Level: " << toString(before_ready.level) << "\n";
+  out << "- Score: " << before_ready.score << " / 100\n";
+  out << "- Recommended for SDF build: "
+      << yesNo(before_ready.recommended_for_sdf_build) << "\n\n";
+
+  out << cleanupToMarkdown(cleanup_stats) << "\n";
+
+  out << "## After Diagnostics\n\n";
+  out << "- Vertices: " << after_diag.vertex_count << "\n";
+  out << "- Triangles: " << after_diag.triangle_count << "\n";
+  out << "- Watertight: " << yesNo(after_diag.watertight) << "\n";
+  out << "- Boundary edges: " << after_diag.boundary_edge_count << "\n";
+  out << "- Non-manifold edges: " << after_diag.non_manifold_edge_count
+      << "\n";
+  out << "- Degenerate triangles: " << after_diag.degenerate_triangle_count
+      << "\n";
+  out << "- Duplicate triangles: " << after_diag.duplicate_triangle_count
+      << "\n\n";
+
+  out << "## After Readiness\n\n";
+  out << "- Level: " << toString(after_ready.level) << "\n";
+  out << "- Score: " << after_ready.score << " / 100\n";
+  out << "- Recommended for SDF build: "
+      << yesNo(after_ready.recommended_for_sdf_build) << "\n\n";
+
+  out << "## Remaining Issues\n\n";
+  writeIssueGroup(out, after_ready, MeshIssueSeverity::Critical);
+  out << "\n";
+  writeIssueGroup(out, after_ready, MeshIssueSeverity::Warning);
+
+  out << "\n## Recommendation\n\n";
+  if (after_ready.recommended_for_sdf_build) {
+    out << "Cleanup improved the mesh enough for SDF build preflight. "
+           "Rerun application-specific checks before using it in contact "
+           "pipelines.\n";
+  } else {
+    out << "Cleanup did not fully prepare the mesh for SDF construction. "
+           "Review remaining critical issues and use a dedicated mesh repair "
+           "tool if holes or self-intersections remain.\n";
+  }
+  return out.str();
+}
+
 void MeshDiagnosticsWriter::writeMarkdown(
     const std::string& path_string,
     const MeshDiagnosticsReport& report) {

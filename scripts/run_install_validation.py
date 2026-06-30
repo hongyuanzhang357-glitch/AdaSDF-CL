@@ -346,6 +346,53 @@ def main() -> int:
         return result.returncode
 
     try:
+        mesh_clean_exe = find_executable(install, "adasdf_mesh_clean", config)
+    except FileNotFoundError as exc:
+        result = StepResult("Installed Mesh Clean CLI", ["adasdf_mesh_clean"], 1, str(exc))
+    else:
+        print("[install-validation] Installed Mesh Clean CLI", flush=True)
+        cleanup_fixture = source / "tests" / "data" / "mesh_diagnostics" / "duplicate_and_degenerate_ascii.stl"
+        cleaned_stl = build.parent / "install_validation_cleaned.stl"
+        cleanup_report = build.parent / "install_validation_cleanup_report.md"
+        usage = run_step(
+            "Installed Mesh Clean CLI",
+            [str(mesh_clean_exe)],
+            workspace,
+        )
+        result = usage
+        if result.returncode == 0:
+            result = run_step(
+                "Installed Mesh Clean CLI",
+                [
+                    str(mesh_clean_exe),
+                    str(cleanup_fixture),
+                    str(cleaned_stl),
+                    "--report",
+                    str(cleanup_report),
+                ],
+                workspace,
+            )
+        if result.returncode in (0, 2):
+            if (
+                not cleaned_stl.exists()
+                or not cleanup_report.exists()
+                or "Removed duplicate triangles:" not in result.output
+                or "After readiness:" not in result.output
+                or "Cleanup Operations"
+                not in cleanup_report.read_text(encoding="utf-8", errors="replace")
+            ):
+                result.returncode = 1
+                result.output += "\nValidation failed: installed mesh_clean output/report is missing.\n"
+            elif result.returncode == 2:
+                result.returncode = 0
+                result.output += "\nValidation note: mesh remained below Ready/Usable readiness after safe cleanup.\n"
+    results.append(result)
+    if result.returncode not in (0, 2):
+        write_report(report_path, results, source, build, install, config)
+        print_failure(result, source, build, install)
+        return result.returncode
+
+    try:
         package_exe = find_executable(package_build, "test_find_package", config)
     except FileNotFoundError as exc:
         result = StepResult("Package Run", ["test_find_package"], 1, str(exc))

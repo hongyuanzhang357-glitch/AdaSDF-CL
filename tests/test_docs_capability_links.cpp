@@ -39,6 +39,7 @@ int main() {
       "docs/contact_output_matrix.md",
       "docs/mesh_diagnostics.md",
       "docs/mesh_readiness.md",
+      "docs/mesh_cleanup.md",
       "docs/stl_import_audit.md",
       "docs/public_positioning.md"};
 

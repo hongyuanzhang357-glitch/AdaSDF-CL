@@ -17,7 +17,7 @@ cmake -S '<source>' -B '<build>' -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD
 -- Selecting Windows SDK version 10.0.22621.0 to target Windows 10.0.26200.
 --
 -- AdaSDF-CL configuration:
---   Version: 1.3.0-alpha
+--   Version: 1.4.0-alpha
 --   Build examples: ON
 --   Build tests: ON
 --   Benchmarks: ON
@@ -33,7 +33,7 @@ cmake -S '<source>' -B '<build>' -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD
 --   FCL: not required
 --
 -- Configuring done (0.0s)
--- Generating done (0.6s)
+-- Generating done (0.5s)
 ...
 ```
 
@@ -47,23 +47,23 @@ cmake --build '<build>' --config Release --parallel
 适用于 .NET Framework MSBuild 版本 17.14.40+3e7442088
 
   adasdf_cl_runtime.vcxproj -> <build>\Release\adasdf_cl_runtime.lib
-  test_expansion_quality.vcxproj -> <build>\Release\test_expansion_quality.exe
-  test_query_engine_cuda.vcxproj -> <build>\Release\test_query_engine_cuda.exe
-  test_surrogate_recommender.vcxproj -> <build>\Release\test_surrogate_recommender.exe
-  adasdf_make_demo_box.vcxproj -> <build>\Release\adasdf_make_demo_box.exe
-  adasdf_core_free_demo_collision.vcxproj -> <build>\Release\adasdf_core_free_demo_collision.exe
-  test_collision_object.vcxproj -> <build>\Release\test_collision_object.exe
-  test_sdfmodel_query.vcxproj -> <build>\Release\test_sdfmodel_query.exe
-  test_sdf_io.vcxproj -> <build>\Release\test_sdf_io.exe
-  test_sdf_expander.vcxproj -> <build>\Release\test_sdf_expander.exe
+  test_demo_adaptive_sdf_model.vcxproj -> <build>\Release\test_demo_adaptive_sdf_model.exe
+  test_mesh_diagnostics_writer.vcxproj -> <build>\Release\test_mesh_diagnostics_writer.exe
+  test_pair_distance_query.vcxproj -> <build>\Release\test_pair_distance_query.exe
   test_mesh_readiness.vcxproj -> <build>\Release\test_mesh_readiness.exe
-  test_expansion_resolution_control.vcxproj -> <build>\Release\test_expansion_resolution_control.exe
-  test_sign_mismatch_metrics.vcxproj -> <build>\Release\test_sign_mismatch_metrics.exe
-  adasdf_capability_walkthrough.vcxproj -> <build>\Release\adasdf_capability_walkthrough.exe
-  test_docs_capability_links.vcxproj -> <build>\Release\test_docs_capability_links.exe
-  test_point_cloud_generator.vcxproj -> <build>\Release\test_point_cloud_generator.exe
-  test_distance_query.vcxproj -> <build>\Release\test_distance_query.exe
-  test_query_engine_cpu.vcxproj -> <build>\Release\test_query_engine_cpu.exe
+  test_sdf_io.vcxproj -> <build>\Release\test_sdf_io.exe
+  adasdf_core_free_demo_collision.vcxproj -> <build>\Release\adasdf_core_free_demo_collision.exe
+  test_pair_collision_query.vcxproj -> <build>\Release\test_pair_collision_query.exe
+  test_contact_only_sdfbin.vcxproj -> <build>\Release\test_contact_only_sdfbin.exe
+  adasdf_expansion_quality.vcxproj -> <build>\tools\Release\adasdf_expansion_quality.exe
+  adasdf_load_sdfbin_and_query.vcxproj -> <build>\Release\adasdf_load_sdfbin_and_query.exe
+  test_stl_reader.vcxproj -> <build>\Release\test_stl_reader.exe
+  adasdf_mesh_clean.vcxproj -> <build>\tools\Release\adasdf_mesh_clean.exe
+  test_demo_surrogate_recommender.vcxproj -> <build>\Release\test_demo_surrogate_recommender.exe
+  test_sdfbin_writer_roundtrip.vcxproj -> <build>\Release\test_sdfbin_writer_roundtrip.exe
+  test_sdfmodel_query.vcxproj -> <build>\Release\test_sdfmodel_query.exe
+  test_sdfbin_real_load.vcxproj -> <build>\Release\test_sdfbin_real_load.exe
+  adasdf_build.vcxproj -> <build>\Release\adasdf_build.exe
 ...
 ```
 
@@ -86,14 +86,14 @@ cmake --install '<build>' --config Release --prefix '<install>'
 -- Up-to-date: <install>/bin/adasdf_query_mode_demo.exe
 -- Up-to-date: <install>/bin/adasdf_expansion_quality.exe
 -- Up-to-date: <install>/bin/adasdf_capabilities.exe
--- Installing: <install>/bin/adasdf_mesh_check.exe
+-- Up-to-date: <install>/bin/adasdf_mesh_check.exe
+-- Up-to-date: <install>/bin/adasdf_mesh_clean.exe
 -- Up-to-date: <install>/bin/adasdf_benchmark_batch_query.exe
 -- Up-to-date: <install>/include
 -- Up-to-date: <install>/include/adasdf
 -- Up-to-date: <install>/include/adasdf/adapters
 -- Up-to-date: <install>/include/adasdf/adapters/EigenAdapter.h
 -- Up-to-date: <install>/include/adasdf/adapters/FCLAdapter.h
--- Up-to-date: <install>/include/adasdf/adapters/PythonBindingPlan.h
 ...
 ```
 
@@ -129,7 +129,7 @@ cmake --build '<workspace>/build/adasdf_cl_iv_pkg' --config Release --parallel
 ```
 
 ```text
-AdaSDF-CL version: 1.3.0-alpha
+AdaSDF-CL version: 1.4.0-alpha
 Position: FCL-style SDF collision backend under development.
 Boundary: complementary SDF backend, not a drop-in FCL replacement.
 
@@ -140,15 +140,15 @@ Implemented:
 - CPU direct/global/block query
 - CUDA global/block expanded query when CUDA is enabled
 - ASCII and binary STL reader for mesh diagnostics
+- ASCII STL writer for cleaned mesh export
 - STL mesh diagnostics preflight report
 - SDF build readiness scoring and repair suggestions
+- safe mesh cleanup and before/after cleanup reports
 - expansion quality audit
 - sign mismatch and near-surface mismatch metrics
 - SVG collision view
 - CMake find_package integration
 
-Experimental / partial:
-- demo surrogate recommender
 ...
 ```
 
@@ -182,6 +182,32 @@ Recommended for SDF build: yes
 ...
 ```
 
+### Installed Mesh Clean CLI: PASS
+
+```bash
+'<install>/bin/adasdf_mesh_clean.exe' '<source>/tests/data/mesh_diagnostics/duplicate_and_degenerate_ascii.stl' '<workspace>/build/install_validation_cleaned.stl' --report '<workspace>/build/install_validation_cleanup_report.md'
+```
+
+```text
+AdaSDF-CL safe mesh cleanup
+Input vertices: 3
+Input triangles: 3
+Output vertices: 3
+Output triangles: 1
+Merged vertices: 0
+Removed degenerate triangles: 1
+Removed duplicate triangles: 1
+Removed unused vertices: 0
+Topology may have changed: yes
+Warning: cleanup removed or merged mesh elements; rerun diagnostics and readiness before SDF construction
+Output: <local-path>
+Before readiness: NotRecommended, score 0
+After readiness: Poor, score 65
+Report: <local-path>
+
+Validation note: mesh remained below Ready/Usable readiness after safe cleanup.
+```
+
 ### Package Run: PASS
 
 ```bash
@@ -190,7 +216,7 @@ Recommended for SDF build: yes
 
 ```text
 AdaSDF-CL package consumer
-Version: 1.3.0-alpha
+Version: 1.4.0-alpha
 Point: 1 2 3
 Demo signed distance at origin: -0.5
 Demo adaptive blocks: 7
@@ -232,7 +258,7 @@ cmake --build '<workspace>/build/adasdf_cl_iv_ds' --config Release --parallel
 
 ```text
 AdaSDF-CL downstream example
-Version: 1.3.0-alpha
+Version: 1.4.0-alpha
 CPU backend: available
 No .sdfbin supplied; running core-free demo adaptive path.
 Demo signed distance at origin: -0.5

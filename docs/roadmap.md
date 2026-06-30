@@ -25,24 +25,32 @@
   project-generated STL diagnostic fixtures.
 - v1.3 mesh build readiness scoring, severity classification, and repair
   suggestions.
+- v1.4 safe mesh cleanup, clean ASCII STL export, before/after cleanup reports,
+  and standalone cleanup CLI.
 
-## v1.3.0-alpha Scope
+## v1.4.0-alpha Scope
 
-- explicit `QueryModeConfig` for backend, expansion, block selection, resident data, and fallback;
+- explicit `QueryModeConfig` for backend, expansion, block selection, resident
+  data, and fallback;
 - reusable `ExpandedSDF`, `SDFExpander`, and `QueryEngine` APIs;
 - CPU direct, CPU global-expanded, and CPU block-expanded query paths;
-- CUDA global-expanded and CUDA block-expanded query paths using resident GPU data;
-- deterministic benchmark CLI with backend, expansion, block, memory, setup, timing breakdown, warmup/repeat, kernel-only, phi-only, total-time, and error columns;
-- reusable CUDA query workspace for benchmark repeats over resident expanded SDF data;
+- CUDA global-expanded and CUDA block-expanded query paths using resident GPU
+  data;
+- deterministic benchmark CLI with backend, expansion, block, memory, setup,
+  timing breakdown, warmup/repeat, kernel-only, phi-only, total-time, and error
+  columns;
+- reusable CUDA query workspace for benchmark repeats over resident expanded
+  SDF data;
 - CUDA phi-only expanded SDF kernel for signed-distance-only kernel comparison;
 - CPU/CUDA query-mode tests and graceful CUDA-unavailable skip behavior;
-- documentation of the original UI CUDA dense/block-expanded reference and the v1.0.2 timing-comparison boundary.
-- Linux/GitHub Actions benchmark CLI portability fix for explicit benchmark executable invocation.
+- documentation of the original UI CUDA dense/block-expanded reference and the
+  v1.0.2 timing-comparison boundary;
 - explicit benchmark `output=phi` and `output=phi,normal` modes;
 - CUDA device-only no-download benchmark mode;
 - reusable output-buffer path for resident CUDA benchmark repeats;
-- block neighbor fallback that avoids rescanning the already-tested center block;
-- benchmark workspace and block lookup CSV fields.
+- block neighbor fallback that avoids rescanning the already-tested center
+  block;
+- benchmark workspace and block lookup CSV fields;
 - expanded-grid resolution, padding, near-surface band, and sign-epsilon
   quality controls;
 - deterministic `ExpansionQuality` direct-vs-expanded audit reports;
@@ -50,14 +58,14 @@
   and fallback-rate metrics;
 - `adasdf_expansion_quality` CLI and query-mode demo quality audit option;
 - sampled existing-core `.sdfbin` to `ExpandedSDF` bridge when direct query is
-  available, with graceful skip when the existing core is unavailable.
+  available, with graceful skip when the existing core is unavailable;
 - capability matrix and implemented/partial/planned docs;
 - FCL complement strategy and public positioning docs;
 - query backend and contact output matrices;
 - `adasdf_capabilities` CLI;
-- CPU-only capability walkthrough example.
-- `TriangleMesh`, `STLReader`, `MeshDiagnostics`, and
-  `MeshDiagnosticsWriter`;
+- CPU-only capability walkthrough example;
+- `TriangleMesh`, `STLReader`, `STLWriter`, `MeshDiagnostics`,
+  `MeshReadiness`, `MeshCleanup`, and `MeshDiagnosticsWriter`;
 - ASCII and binary STL reader for diagnostics;
 - topology-level watertight, boundary-edge, non-manifold-edge, duplicate,
   degenerate, component, isolated-vertex, AABB, and scale checks;
@@ -66,18 +74,26 @@
 - severity classification for info, warning, and critical mesh issues;
 - repair and preprocessing suggestions without modifying input STL files;
 - `adasdf_mesh_check --readiness` with strict and lenient modes;
-- CPU-only mesh diagnostics example;
-- project-generated STL diagnostics fixtures.
+- `MeshCleanup` safe cleanup for near-duplicate vertices, degenerate triangles,
+  duplicate triangles, and unused vertices;
+- ASCII `STLWriter` for cleaned mesh export;
+- `adasdf_mesh_clean` standalone cleanup CLI;
+- `adasdf_mesh_check --clean-out` and `--clean-report` before/after workflow;
+- CPU-only mesh diagnostics and mesh cleanup examples;
+- project-generated STL diagnostics and cleanup fixtures.
 
-The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`, and
-`v1.1.0-alpha`, `v1.1.1-alpha`, and `v1.2.0-alpha` tags are retained for
-traceability. The recommended public pre-release is `v1.3.0-alpha`.
+The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`,
+`v1.1.0-alpha`, `v1.1.1-alpha`, `v1.2.0-alpha`, and `v1.3.0-alpha` tags are
+retained for traceability. The recommended public pre-release is
+`v1.4.0-alpha`.
 
 ## Future Work
 
 - public standalone adaptive STL-to-compressed-SDF builder;
-- mesh repair and self-intersection detection;
-- real trained surrogate integration with public artifacts and validation cards;
+- optional hole-filling workflows with explicit user control;
+- self-intersection detection and repair workflows;
+- real trained surrogate integration with public artifacts and validation
+  cards;
 - Python package;
 - full low-rank compressed SDF GPU expansion and compressed-direct CUDA query;
 - CUDA-accelerated pair collision pipeline;

@@ -21,7 +21,7 @@ CMake Warning at CMakeLists.txt:72 (message):
 
 --
 -- AdaSDF-CL configuration:
---   Version: 1.3.0-alpha
+--   Version: 1.4.0-alpha
 --   Build examples: ON
 --   Build tests: ON
 --   Benchmarks: ON
@@ -71,21 +71,21 @@ ctest --test-dir '<build>' -C Release --output-on-failure
 ```text
 Test project <build>
       Start  1: test_sdf_io
- 1/61 Test  #1: test_sdf_io ...........................   Passed    0.12 sec
+ 1/65 Test  #1: test_sdf_io ...........................   Passed    0.01 sec
       Start  2: test_collision_query
- 2/61 Test  #2: test_collision_query ..................   Passed    0.07 sec
+ 2/65 Test  #2: test_collision_query ..................   Passed    0.11 sec
       Start  3: test_distance_query
- 3/61 Test  #3: test_distance_query ...................   Passed    0.01 sec
+ 3/65 Test  #3: test_distance_query ...................   Passed    0.04 sec
       Start  4: test_collision_object
- 4/61 Test  #4: test_collision_object .................   Passed    0.01 sec
+ 4/65 Test  #4: test_collision_object .................   Passed    0.03 sec
       Start  5: test_pair_distance_query
- 5/61 Test  #5: test_pair_distance_query ..............   Passed    0.02 sec
+ 5/65 Test  #5: test_pair_distance_query ..............   Passed    0.01 sec
       Start  6: test_pair_collision_query
- 6/61 Test  #6: test_pair_collision_query .............   Passed    0.01 sec
+ 6/65 Test  #6: test_pair_collision_query .............   Passed    0.01 sec
       Start  7: test_candidate_point_sampler
- 7/61 Test  #7: test_candidate_point_sampler ..........   Passed    0.01 sec
+ 7/65 Test  #7: test_candidate_point_sampler ..........   Passed    0.01 sec
       Start  8: test_contact_generator
- 8/61 Test  #8: test_contact_generator ................   Passed    0.01 sec
+ 8/65 Test  #8: test_contact_generator ................   Passed    0.01 sec
       Start  9: test_contact_reducer
 ...
 ```
@@ -104,6 +104,7 @@ Test project <build>
 [install-validation] Package Build
 [install-validation] Installed Capabilities CLI
 [install-validation] Installed Mesh Check CLI
+[install-validation] Installed Mesh Clean CLI
 [install-validation] Package Run
 [install-validation] Downstream Configure
 [install-validation] Downstream Build
@@ -119,7 +120,7 @@ Report: reports/install_validation_summary.md
 ```
 
 ```text
-AdaSDF-CL version: 1.3.0-alpha
+AdaSDF-CL version: 1.4.0-alpha
 Position: FCL-style SDF collision backend under development.
 Boundary: complementary SDF backend, not a drop-in FCL replacement.
 
@@ -130,13 +131,13 @@ Implemented:
 - CPU direct/global/block query
 - CUDA global/block expanded query when CUDA is enabled
 - ASCII and binary STL reader for mesh diagnostics
+- ASCII STL writer for cleaned mesh export
 - STL mesh diagnostics preflight report
 - SDF build readiness scoring and repair suggestions
+- safe mesh cleanup and before/after cleanup reports
 - expansion quality audit
 - sign mismatch and near-surface mismatch metrics
 - SVG collision view
-- CMake find_package integration
-
 ...
 ```
 
@@ -148,7 +149,7 @@ Implemented:
 
 ```text
 AdaSDF-CL capability walkthrough
-Version: 1.3.0-alpha
+Version: 1.4.0-alpha
 Query backends: CPU direct, CPU expanded, optional CUDA expanded
 Point phi: -0.5
 Point normal: 1 0 0
@@ -192,6 +193,60 @@ Connected components: 1
 Isolated vertices: 0
 Recommendation: Mesh diagnostics passed. This is a preflight result, not a full self-intersection or SDF build guarantee.
 SDF build readiness: Ready
+...
+```
+
+### Mesh Cleanup CLI: PASS
+
+```bash
+'<build>/tools/Release/adasdf_mesh_clean.exe' '<source>/tests/data/mesh_diagnostics/duplicate_and_degenerate_ascii.stl' '<workspace>/build/cleaned_duplicate_and_degenerate.stl' --report '<workspace>/build/mesh_cleanup_report.md'
+```
+
+```text
+AdaSDF-CL safe mesh cleanup
+Input vertices: 3
+Input triangles: 3
+Output vertices: 3
+Output triangles: 1
+Merged vertices: 0
+Removed degenerate triangles: 1
+Removed duplicate triangles: 1
+Removed unused vertices: 0
+Topology may have changed: yes
+Warning: cleanup removed or merged mesh elements; rerun diagnostics and readiness before SDF construction
+Output: <local-path>
+Before readiness: NotRecommended, score 0
+After readiness: Poor, score 65
+Report: <local-path>
+
+Validation note: mesh remained below Ready/Usable readiness after safe cleanup.
+```
+
+### Cleaned Mesh Check CLI: PASS
+
+```bash
+'<build>/tools/Release/adasdf_mesh_check.exe' '<workspace>/build/cleaned_duplicate_and_degenerate.stl' --readiness --out '<workspace>/build/cleaned_mesh_report.md'
+```
+
+```text
+AdaSDF-CL mesh diagnostics
+Input: <local-path>
+Format: ascii
+Vertices: 3
+Triangles: 1
+Raw triangles: 1
+AABB min: 0 0 0
+AABB max: 1 1 0
+Diagonal: 1.41421
+Watertight: no
+Boundary edges: 3
+Non-manifold edges: 0
+Degenerate triangles: 0
+Duplicate triangles: 0
+Connected components: 1
+Isolated vertices: 0
+Recommendation: Review warnings before SDF construction; no automatic repair was performed.
+SDF build readiness: Poor
 ...
 ```
 
@@ -254,7 +309,7 @@ Reload validation: success
 
 ```text
 AdaSDF-CL info
-Library version: 1.3.0-alpha
+Library version: 1.4.0-alpha
 Path: <local-path>
 Model name: demo adaptive analytic box
 Valid: yes
@@ -354,16 +409,16 @@ Contact[1]
 
 ```text
 query_backend,expansion_mode,selected_blocks,num_points,expanded_memory_mb,gpu_resident_memory_mb,setup_ms,expand_ms,upload_sdf_ms,allocation_ms,h2d_points_ms,kernel_ms,sync_ms,d2h_results_ms,postprocess_ms,free_ms,total_ms,query_kernel_ms,query_total_ms,ns_per_query,queries_per_second,fallback_count,max_abs_phi_error,max_normal_error,cuda_available,max_abs_error,mean_abs_error,rms_error,p95_abs_error,sign_mismatch_count,sign_mismatch_rate,ambiguous_sign_count,ambiguous_sign_rate,near_surface_sign_mismatch_count,near_surface_sign_mismatch_rate,fallback_rate,warmup,repeat,kernel_min_ms,kernel_mean_ms,kernel_max_ms,kernel_std_ms,total_min_ms,total_mean_ms,total_max_ms,total_std_ms,output_mode,phi_only,reuse_resident,kernel_only,workspace_reused,allocation_count,workspace_capacity,workspace_device_memory_mb,block_lookup_count,block_scan_count,center_block_hit_rate,neighbor_same_block_rate,download_results,correctness_checked,host_memory,layout,status,error_message
-cpu,none,all,10000,0,0,0,0,0,0.1041,0,NA,NA,0,0,0,0.5602,NA,0.5602,56.02,17850767.58,0,0,0,false,0,0,0,0,0,0,0,0,0,0,0,0,1,NA,NA,NA,NA,0.5602,0.5602,0.5602,0,"phi,normal",false,false,false,false,0,0,0,0,0,0,0,true,true,paged,aos,ok,
-cpu,none,all,100000,0,0,0,0,0,0.9109,0,NA,NA,0,0,0,5.219,NA,5.219,52.19,19160758.77,0,0,0,false,0,0,0,0,0,0,0,0,0,0,0,0,1,NA,NA,NA,NA,5.219,5.219,5.219,0,"phi,normal",false,false,false,false,0,0,0,0,0,0,0,true,true,paged,aos,ok,
-cpu,none,all,1000000,0,0,0,0,0,8.2848,0,NA,NA,0,0,0,53.3692,NA,53.3692,53.3692,18737399.1,0,0,0,false,0,0,0,0,0,0,0,0,0,0,0,0,1,NA,NA,NA,NA,53.3692,53.3692,53.3692,0,"phi,normal",false,false,false,false,0,0,0,0,0,0,0,true,true,paged,aos,ok,
+cpu,none,all,10000,0,0,0,0,0,0.0951,0,NA,NA,0,0,0,0.4786,NA,0.4786,47.86,20894274.97,0,0,0,false,0,0,0,0,0,0,0,0,0,0,0,0,1,NA,NA,NA,NA,0.4786,0.4786,0.4786,0,"phi,normal",false,false,false,false,0,0,0,0,0,0,0,true,true,paged,aos,ok,
+cpu,none,all,100000,0,0,0,0,0,0.7613,0,NA,NA,0,0,0,4.9604,NA,4.9604,49.604,20159664.54,0,0,0,false,0,0,0,0,0,0,0,0,0,0,0,0,1,NA,NA,NA,NA,4.9604,4.9604,4.9604,0,"phi,normal",false,false,false,false,0,0,0,0,0,0,0,true,true,paged,aos,ok,
+cpu,none,all,1000000,0,0,0,0,0,7.6174,0,NA,NA,0,0,0,47.7206,NA,47.7206,47.7206,20955310.7,0,0,0,false,0,0,0,0,0,0,0,0,0,0,0,0,1,NA,NA,NA,NA,47.7206,47.7206,47.7206,0,"phi,normal",false,false,false,false,0,0,0,0,0,0,0,true,true,paged,aos,ok,
 cuda,global,all,10000,,,,,,,,NA,NA,,,,,NA,,,,0,,NA,false,,,,,0,,0,,0,,,0,1,NA,NA,NA,NA,,,,,"phi,normal",false,false,false,false,0,0,,0,0,,,true,true,paged,aos,skipped,CUDA backend unavailable
 cuda,global,all,100000,,,,,,,,NA,NA,,,,,NA,,,,0,,NA,false,,,,,0,,0,,0,,,0,1,NA,NA,NA,NA,,,,,"phi,normal",false,false,false,false,0,0,,0,0,,,true,true,paged,aos,skipped,CUDA backend unavailable
 cuda,global,all,1000000,,,,,,,,NA,NA,,,,,NA,,,,0,,NA,false,,,,,0,,0,,0,,,0,1,NA,NA,NA,NA,,,,,"phi,normal",false,false,false,false,0,0,,0,0,,,true,true,paged,aos,skipped,CUDA backend unavailable
 backend | expansion | output | blocks | points | setup ms | total mean ms | kernel mean ms | ns/query | max phi error | max normal error | status
-cpu | none | phi,normal | all | 10000 | 0 | 0.5602 | NA | 56.02 | 0 | 0 | ok
-cpu | none | phi,normal | all | 100000 | 0 | 5.219 | NA | 52.19 | 0 | 0 | ok
-cpu | none | phi,normal | all | 1000000 | 0 | 53.3692 | NA | 53.3692 | 0 | 0 | ok
+cpu | none | phi,normal | all | 10000 | 0 | 0.4786 | NA | 47.86 | 0 | 0 | ok
+cpu | none | phi,normal | all | 100000 | 0 | 4.9604 | NA | 49.604 | 0 | 0 | ok
+cpu | none | phi,normal | all | 1000000 | 0 | 47.7206 | NA | 47.7206 | 0 | 0 | ok
 cuda | global | phi,normal | all | 10000 | SKIPPED | SKIPPED | SKIPPED | SKIPPED | SKIPPED | SKIPPED | skipped
 cuda | global | phi,normal | all | 100000 | SKIPPED | SKIPPED | SKIPPED | SKIPPED | SKIPPED | SKIPPED | skipped
 cuda | global | phi,normal | all | 1000000 | SKIPPED | SKIPPED | SKIPPED | SKIPPED | SKIPPED | SKIPPED | skipped

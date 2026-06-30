@@ -49,10 +49,14 @@ int main() {
         adasdf::MeshDiagnosticsWriter::readinessToMarkdown(readiness);
     const std::string combined_json =
         adasdf::MeshDiagnosticsWriter::combinedJson(report, readiness);
+    const auto cleanup = adasdf::MeshCleanup::clean(read.mesh);
+    const std::string cleanup_markdown =
+        adasdf::MeshDiagnosticsWriter::cleanupToMarkdown(cleanup.stats);
     if (!contains(markdown, "Watertight") ||
         !contains(json, "\"triangle_count\"") ||
         !contains(readiness_markdown, "SDF Build Readiness") ||
-        !contains(combined_json, "\"readiness\"")) {
+        !contains(combined_json, "\"readiness\"") ||
+        !contains(cleanup_markdown, "Cleanup Operations")) {
       std::cerr << "diagnostics writer output missing required fields\n";
       return 1;
     }

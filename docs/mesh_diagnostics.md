@@ -6,8 +6,12 @@ candidate for adaptive SDF building, FCL fallback experiments, or a future
 CollisionWorld pipeline.
 
 AdaSDF-CL v1.3.0-alpha adds `MeshReadiness` on top of these diagnostics. This
-is not a mesh repair tool, not industrial certification, and not a full
+is not industrial certification, and not a full
 standalone arbitrary-STL adaptive SDF builder.
+
+AdaSDF-CL v1.4.0-alpha adds optional safe cleanup for obvious duplicate and
+degenerate elements. It writes a separate cleaned STL and does not fill holes
+or repair self-intersections.
 
 ## Supported Input
 
@@ -84,6 +88,7 @@ adasdf_mesh_check model.stl --out mesh_report.md
 adasdf_mesh_check model.stl --json mesh_report.json
 adasdf_mesh_check model.stl --tolerance 1e-12 --area-eps 1e-14
 adasdf_mesh_check model.stl --readiness --out mesh_readiness_report.md
+adasdf_mesh_check model.stl --readiness --clean-out cleaned.stl --clean-report cleanup_report.md
 ```
 
 Options:
@@ -99,6 +104,13 @@ Options:
 - `--strict`: require watertight input and strict readiness checks.
 - `--lenient`: allow open meshes as readiness warnings.
 - `--verbose`: print warnings and errors.
+- `--clean-out cleaned.stl`: run safe cleanup and write a separate cleaned STL.
+- `--clean-report report.md`: write a before/after cleanup report.
+- `--merge-tolerance value`: cleanup vertex merge tolerance.
+- `--no-merge-vertices`: disable near-duplicate vertex merge.
+- `--no-remove-degenerate`: disable degenerate triangle removal.
+- `--no-remove-duplicates`: disable duplicate triangle removal.
+- `--no-remove-unused`: disable unused vertex removal.
 
 ## Return Codes
 
@@ -125,10 +137,14 @@ adding a third-party JSON dependency.
 When `--readiness` is enabled, reports also include SDF Build Readiness, Score,
 Critical Issues, Warnings, and Recommended Preprocessing Steps.
 
+When `--clean-report` is enabled, reports also include before diagnostics,
+before readiness, cleanup operations, after diagnostics, after readiness,
+remaining issues, and recommendation text.
+
 ## Current Limits
 
-- No automatic mesh repair.
-- No self-intersection detection.
+- No hole filling.
+- No self-intersection detection or repair.
 - No unit inference.
 - No full arbitrary-STL adaptive SDF builder.
 - No FCL fallback backend.
@@ -136,7 +152,7 @@ Critical Issues, Warnings, and Recommended Preprocessing Steps.
 
 ## Planned Work
 
-- Mesh repair recommendations and optional repair passes.
+- Optional hole-filling workflows with explicit risk controls.
 - Self-intersection detection.
 - Full standalone arbitrary-STL adaptive SDF builder.
 - Real robot STL benchmark suite.

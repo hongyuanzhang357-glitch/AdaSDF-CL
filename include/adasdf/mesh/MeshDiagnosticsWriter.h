@@ -3,6 +3,7 @@
 #include <string>
 
 #include "adasdf/mesh/MeshDiagnostics.h"
+#include "adasdf/mesh/MeshCleanup.h"
 #include "adasdf/mesh/MeshReadiness.h"
 
 namespace adasdf {
@@ -22,6 +23,15 @@ class MeshDiagnosticsWriter {
   static std::string combinedJson(
       const MeshDiagnosticsReport& diagnostics,
       const MeshReadinessReport& readiness);
+
+  static std::string cleanupToMarkdown(const MeshCleanupStats& stats);
+
+  static std::string cleanupComparisonMarkdown(
+      const MeshDiagnosticsReport& before_diag,
+      const MeshReadinessReport& before_ready,
+      const MeshCleanupStats& cleanup_stats,
+      const MeshDiagnosticsReport& after_diag,
+      const MeshReadinessReport& after_ready);
 
   static void writeMarkdown(
       const std::string& path,

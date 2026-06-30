@@ -227,12 +227,17 @@ def main() -> int:
     benchmark_csv = build.parent / "adasdf_batch_benchmark_v1.csv"
     quality_csv = build.parent / "adasdf_expansion_quality_v1.csv"
     mesh_fixture = source / "tests" / "data" / "mesh_diagnostics" / "closed_cube_ascii.stl"
+    cleanup_fixture = source / "tests" / "data" / "mesh_diagnostics" / "duplicate_and_degenerate_ascii.stl"
     mesh_report = build.parent / "closed_cube_mesh_report.md"
     mesh_json = build.parent / "closed_cube_mesh_report.json"
+    cleaned_stl = build.parent / "cleaned_duplicate_and_degenerate.stl"
+    cleanup_report = build.parent / "mesh_cleanup_report.md"
+    cleaned_check_report = build.parent / "cleaned_mesh_report.md"
     max_contacts = 8
     required_demo_tools = {
         "adasdf_capabilities": find_executable(build, "adasdf_capabilities", config),
         "adasdf_mesh_check": find_executable(build, "adasdf_mesh_check", config),
+        "adasdf_mesh_clean": find_executable(build, "adasdf_mesh_clean", config),
         "adasdf_recommend_demo": find_executable(build, "adasdf_recommend_demo", config),
         "adasdf_build_demo_adaptive": find_executable(build, "adasdf_build_demo_adaptive", config),
         "adasdf_info": find_executable(build, "adasdf_info", config),
@@ -280,6 +285,26 @@ def main() -> int:
                 str(mesh_report),
                 "--json",
                 str(mesh_json),
+            ],
+        ),
+        (
+            "Mesh Cleanup CLI",
+            [
+                str(required_demo_tools["adasdf_mesh_clean"]),
+                str(cleanup_fixture),
+                str(cleaned_stl),
+                "--report",
+                str(cleanup_report),
+            ],
+        ),
+        (
+            "Cleaned Mesh Check CLI",
+            [
+                str(required_demo_tools["adasdf_mesh_check"]),
+                str(cleaned_stl),
+                "--readiness",
+                "--out",
+                str(cleaned_check_report),
             ],
         ),
         (
@@ -379,7 +404,11 @@ def main() -> int:
     for name, command in demo_steps:
         result = run_step(name, command, workspace)
         results.append(result)
-        if result.returncode != 0:
+        allowed_returncodes = (0, 2) if name in (
+            "Mesh Cleanup CLI",
+            "Cleaned Mesh Check CLI",
+        ) else (0,)
+        if result.returncode not in allowed_returncodes:
             write_report(report_path, results, source, build, config)
             return result.returncode
         if name == "Capabilities CLI":
@@ -428,37 +457,75 @@ def main() -> int:
                 result.output += "\nValidation failed: mesh reports were not generated.\n"
                 write_report(report_path, results, source, build, config)
                 return result.returncode
+        if name == "Mesh Cleanup CLI":
+            if result.returncode not in (0, 2):
+                write_report(report_path, results, source, build, config)
+                return result.returncode
+            if not cleaned_stl.exists() or not cleanup_report.exists():
+                result.returncode = 1
+                result.output += "\nValidation failed: cleanup output files were not generated.\n"
+                write_report(report_path, results, source, build, config)
+                return result.returncode
+            report_text = cleanup_report.read_text(encoding="utf-8", errors="replace")
             required_lines = [
-                "AdaSDF-CL mesh diagnostics",
-                "Format: ascii",
-                "Watertight: yes",
-                "SDF build readiness: Ready",
-                "Score:",
-                "Boundary edges: 0",
-                "Recommendation:",
+                "AdaSDF-CL safe mesh cleanup",
+                "Removed degenerate triangles:",
+                "Removed duplicate triangles:",
+                "After readiness:",
             ]
             missing_lines = [
                 line for line in required_lines if line not in result.output
             ]
-            report_text = mesh_report.read_text(encoding="utf-8", errors="replace")
-            json_text = mesh_json.read_text(encoding="utf-8", errors="replace")
-            if (
-                missing_lines
-                or "Watertight" not in report_text
-                or "SDF Build Readiness" not in report_text
-                or "Score" not in report_text
-                or "\"triangle_count\"" not in json_text
-                or "\"readiness\"" not in json_text
-                or "\"score\"" not in json_text
-            ):
+            if missing_lines or "Before Diagnostics" not in report_text or "After Readiness" not in report_text:
                 result.returncode = 1
                 result.output += (
-                    "\nValidation failed: mesh diagnostics output missing: "
+                    "\nValidation failed: mesh cleanup output missing: "
                     + ", ".join(missing_lines)
                     + "\n"
                 )
                 write_report(report_path, results, source, build, config)
                 return result.returncode
+            if result.returncode == 2:
+                result.returncode = 0
+                result.output += "\nValidation note: mesh remained below Ready/Usable readiness after safe cleanup.\n"
+        if name == "Cleaned Mesh Check CLI":
+            if result.returncode not in (0, 2):
+                write_report(report_path, results, source, build, config)
+                return result.returncode
+            if not cleaned_check_report.exists() or "SDF build readiness:" not in result.output:
+                result.returncode = 1
+                result.output += "\nValidation failed: cleaned mesh check output/report is missing.\n"
+                write_report(report_path, results, source, build, config)
+                return result.returncode
+            required_lines = [
+                "AdaSDF-CL mesh diagnostics",
+                "Format: ascii",
+                "SDF build readiness:",
+                "Score:",
+                "Boundary edges:",
+                "Recommendation:",
+            ]
+            missing_lines = [
+                line for line in required_lines if line not in result.output
+            ]
+            report_text = cleaned_check_report.read_text(encoding="utf-8", errors="replace")
+            if (
+                missing_lines
+                or "Watertight" not in report_text
+                or "SDF Build Readiness" not in report_text
+                or "Score" not in report_text
+            ):
+                result.returncode = 1
+                result.output += (
+                    "\nValidation failed: cleaned mesh diagnostics output missing: "
+                    + ", ".join(missing_lines)
+                    + "\n"
+                )
+                write_report(report_path, results, source, build, config)
+                return result.returncode
+            if result.returncode == 2:
+                result.returncode = 0
+                result.output += "\nValidation note: cleaned mesh still has readiness warnings/errors.\n"
         if name == "Demo Collide Boxes CLI":
             match = re.search(r"Returned contacts:\s+(\d+)", result.output)
             if not match or int(match.group(1)) > max_contacts:

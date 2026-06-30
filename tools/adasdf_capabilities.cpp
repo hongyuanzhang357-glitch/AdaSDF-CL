@@ -44,8 +44,10 @@ int main(int argc, char** argv) {
         "CPU direct/global/block query",
         "CUDA global/block expanded query when CUDA is enabled",
         "ASCII and binary STL reader for mesh diagnostics",
+        "ASCII STL writer for cleaned mesh export",
         "STL mesh diagnostics preflight report",
         "SDF build readiness scoring and repair suggestions",
+        "safe mesh cleanup and before/after cleanup reports",
         "expansion quality audit",
         "sign mismatch and near-surface mismatch metrics",
         "SVG collision view",
@@ -58,7 +60,7 @@ int main(int argc, char** argv) {
         "block-expanded query for local contact regions"};
     static const char* const planned[] = {
         "standalone arbitrary STL builder",
-        "mesh repair",
+        "complex mesh repair and hole filling",
         "self-intersection detection",
         "FCL fallback backend",
         "CollisionWorld broadphase",
@@ -91,11 +93,14 @@ int main(int argc, char** argv) {
       std::cout << "- ASCII / binary STL reader for diagnostics\n";
       std::cout << "- watertight, boundary, non-manifold, duplicate, degenerate, component, and scale checks\n";
       std::cout << "- readiness score, severity classification, and repair suggestions\n";
-      std::cout << "- preflight only; no automatic mesh repair or full STL-to-SDF builder\n";
+      std::cout << "- safe cleanup removes near-duplicate vertices, degenerate triangles, duplicate triangles, and unused vertices\n";
+      std::cout << "- cleaned ASCII STL export through STLWriter and adasdf_mesh_clean\n";
+      std::cout << "- preflight only; no hole filling, self-intersection repair, or full STL-to-SDF builder\n";
       std::cout << "\nDocumentation:\n";
       std::cout << "- docs/capability_matrix.md\n";
       std::cout << "- docs/mesh_diagnostics.md\n";
       std::cout << "- docs/mesh_readiness.md\n";
+      std::cout << "- docs/mesh_cleanup.md\n";
       std::cout << "- docs/stl_import_audit.md\n";
       std::cout << "- docs/implemented_vs_planned.md\n";
       std::cout << "- docs/fcl_complement_strategy.md\n";

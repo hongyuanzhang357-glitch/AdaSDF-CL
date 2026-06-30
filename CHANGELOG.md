@@ -1,5 +1,33 @@
 # Changelog
 
+## 1.4.0-alpha
+
+Safe mesh cleanup and clean STL export.
+
+### Added
+
+- Safe `MeshCleanup` module.
+- ASCII `STLWriter`.
+- `adasdf_mesh_clean` CLI.
+- `adasdf_mesh_check --clean-out` and `--clean-report`.
+- Before/after cleanup diagnostics and readiness reports.
+- Mesh cleanup demo example.
+- Cleanup roundtrip tests.
+
+### Changed
+
+- Version updated to `1.4.0-alpha`.
+- README, roadmap, capability matrix, tooling docs, install validation, and
+  alpha validation now include the safe cleanup workflow.
+
+### Notes
+
+- This release does not implement hole filling or self-intersection repair.
+- Cleanup is a preflight utility for future SDF construction, not an industrial
+  CAD repair engine.
+- Input STL files are never modified in place; cleaned STL files are explicit
+  outputs.
+
 ## 1.3.0-alpha
 
 Mesh build readiness and repair suggestions.

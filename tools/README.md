@@ -31,10 +31,30 @@ adasdf_mesh_check model.stl --json mesh_report.json --tolerance 1e-12
 adasdf_mesh_check model.stl --readiness --out mesh_report.md
 adasdf_mesh_check model.stl --readiness --strict
 adasdf_mesh_check model.stl --readiness --lenient
+adasdf_mesh_check model.stl --readiness --clean-out cleaned.stl --clean-report cleanup_report.md
 ```
 
-This is a preflight diagnostic and readiness tool. It does not modify or repair
-meshes and does not build a full arbitrary-STL adaptive SDF.
+This is a preflight diagnostic and readiness tool. With `--clean-out`, it can
+run the safe cleanup pass and write a separate cleaned STL. It does not fill
+holes, repair self-intersections, or build a full arbitrary-STL adaptive SDF.
+
+## adasdf_mesh_clean
+
+Status: working in a core-free public build.
+
+Runs safe STL cleanup and writes a separate cleaned ASCII STL plus an optional
+before/after Markdown report.
+
+```bash
+adasdf_mesh_clean input.stl output_cleaned.stl
+adasdf_mesh_clean input.stl output_cleaned.stl --report cleanup_report.md
+adasdf_mesh_clean input.stl output_cleaned.stl --merge-tolerance 1e-12 --area-eps 1e-14
+```
+
+Cleanup can merge near-duplicate vertices, remove degenerate triangles, remove
+duplicate triangles, and remove unused vertices. It refuses to overwrite the
+input path and does not perform hole filling, self-intersection repair, boolean
+reconstruction, or scale changes.
 
 ## adasdf_recommend_demo
 

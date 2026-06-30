@@ -2,7 +2,7 @@
 
 Adaptive Signed Distance Field Collision Library
 
-Status: 1.3.0-alpha / research preview
+Status: 1.4.0-alpha / research preview
 Build system: CMake
 License: MIT
 Tests: CTest
@@ -11,13 +11,13 @@ AdaSDF-CL is an alpha collision and contact library built around signed distance
 
 AdaSDF-CL is an FCL-style SDF collision backend under development. It complements FCL by providing signed-distance queries, penetration depth, contact normals, batch query, expanded-SDF quality audit and CUDA query paths. It is not a drop-in FCL replacement.
 
-v1.3.0-alpha adds mesh build readiness scoring and repair suggestions on top of
-STL mesh diagnostics. CUDA, FCL, Python, and the existing research core remain
-optional; CPU-only builds remain fully usable.
+v1.4.0-alpha adds safe mesh cleanup and clean ASCII STL export on top of STL
+mesh diagnostics and readiness scoring. CUDA, FCL, Python, and the existing
+research core remain optional; CPU-only builds remain fully usable.
 
 The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`, `v1.1.0-alpha`,
-`v1.1.1-alpha`, and `v1.2.0-alpha` tags are retained for traceability. The
-recommended public pre-release is `v1.3.0-alpha`.
+`v1.1.1-alpha`, `v1.2.0-alpha`, and `v1.3.0-alpha` tags are retained for
+traceability. The recommended public pre-release is `v1.4.0-alpha`.
 
 ## What Is AdaSDF-CL?
 
@@ -41,9 +41,11 @@ collision engine and does not yet replace FCL.
 | STL mesh diagnostics preflight | Implemented |
 | SDF build readiness scoring | Implemented |
 | Mesh repair suggestions | Implemented |
+| Safe mesh cleanup | Implemented |
+| ASCII STL writer | Implemented |
 | Existing-core sampled expansion bridge | Existing-core only / partial |
 | Standalone arbitrary STL builder | Planned |
-| Mesh repair | Planned |
+| Complex mesh repair / hole filling | Planned |
 | FCL fallback backend | Planned |
 | CollisionWorld broadphase | Planned |
 | CCD | Planned |
@@ -57,6 +59,7 @@ Detailed capability references:
 - `docs/contact_output_matrix.md`
 - `docs/mesh_diagnostics.md`
 - `docs/mesh_readiness.md`
+- `docs/mesh_cleanup.md`
 - `docs/stl_import_audit.md`
 - `docs/public_positioning.md`
 
@@ -65,7 +68,7 @@ Detailed capability references:
 ```bash
 git clone https://github.com/hongyuanzhang357-glitch/AdaSDF-CL.git
 cd AdaSDF-CL
-git checkout v1.3.0-alpha
+git checkout v1.4.0-alpha
 
 cmake -S . -B build -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD_TESTS=ON -DADASDF_CL_BUILD_BENCHMARKS=ON
 cmake --build build --config Release
@@ -74,6 +77,7 @@ cmake --install build --config Release --prefix install
 
 install/bin/adasdf_capabilities --verbose
 install/bin/adasdf_mesh_check tests/data/mesh_diagnostics/closed_cube_ascii.stl --readiness --out mesh_report.md
+install/bin/adasdf_mesh_clean tests/data/mesh_diagnostics/duplicate_and_degenerate_ascii.stl cleaned.stl --report cleanup_report.md
 install/bin/adasdf_recommend_demo --shape box --target-error 1e-3 --memory-mb 64 --block-memory-mb 16 --top-k 5
 install/bin/adasdf_build_demo_adaptive cube_adaptive.sdfbin --shape box --target-error 1e-3 --memory-mb 64 --block-memory-mb 16 --use-surrogate
 install/bin/adasdf_info cube_adaptive.sdfbin
@@ -108,7 +112,8 @@ Generated `.sdfbin` and `.svg` files should stay in build, install, or temporary
 
 - `adasdf_capabilities` for a quick implemented/partial/planned feature summary.
 - `adasdf_mesh_check` for ASCII/binary STL mesh diagnostics and SDF build readiness before SDF construction.
-- `TriangleMesh`, `STLReader`, `MeshDiagnostics`, `MeshReadiness`, and `MeshDiagnosticsWriter`.
+- `adasdf_mesh_clean` for safe cleanup and clean ASCII STL export.
+- `TriangleMesh`, `STLReader`, `STLWriter`, `MeshDiagnostics`, `MeshReadiness`, `MeshCleanup`, and `MeshDiagnosticsWriter`.
 - Core-free analytic box SDF model.
 - Demo `.sdfbin` format `ADASDF_DEMO_SDFBIN_V1`.
 - Demo adaptive `.sdfbin` format `ADASDF_DEMO_ADAPTIVE_SDFBIN_V1`.
@@ -130,6 +135,7 @@ Generated `.sdfbin` and `.svg` files should stay in build, install, or temporary
 - `adasdf_expansion_quality` CLI for global/block expansion quality reports.
 - `examples/11_capability_walkthrough.cpp` for a CPU-only public capability tour.
 - `examples/12_mesh_diagnostics_demo.cpp` for a CPU-only STL diagnostics walkthrough.
+- `examples/13_mesh_cleanup_demo.cpp` for a CPU-only safe cleanup walkthrough.
 - Deterministic benchmark point generation and `adasdf_benchmark_batch_query` with backend, expansion, block selection, memory, setup, timing breakdown, warmup/repeat statistics, kernel-only mode, workspace reuse fields, block lookup fields, and error columns.
 
 ## Backend Boundary
@@ -195,9 +201,10 @@ The diagnostic report includes triangle count, AABB, watertight status,
 boundary edges, non-manifold edges, degenerate triangles, duplicate triangles,
 connected components, isolated vertices, and scale warnings.
 
-`v1.2.0-alpha` introduces STL mesh diagnostics as a preflight step. It does not
-yet implement a full standalone arbitrary-STL adaptive SDF builder. It also does
-not repair meshes or detect self-intersections.
+`v1.2.0-alpha` introduced STL mesh diagnostics as a preflight step. v1.4 adds
+safe cleanup for obvious duplicate/degenerate elements, but it still does not
+implement a full standalone arbitrary-STL adaptive SDF builder and does not
+repair self-intersections.
 
 ## SDF Build Readiness
 
@@ -214,6 +221,25 @@ automatic mesh repair. The input STL is never modified.
 
 See `docs/mesh_diagnostics.md`, `docs/mesh_readiness.md`, and
 `docs/stl_import_audit.md`.
+
+## Safe Mesh Cleanup
+
+```bash
+adasdf_mesh_clean bad.stl cleaned.stl --report cleanup_report.md
+adasdf_mesh_check bad.stl --readiness --clean-out cleaned.stl --clean-report cleanup_report.md
+adasdf_mesh_check cleaned.stl --readiness --out cleaned_report.md
+```
+
+The cleanup pass can merge near-duplicate vertices, remove degenerate
+triangles, remove duplicate triangles, remove unused vertices, remap triangle
+indices, and write a clean ASCII STL. Cleanup never overwrites the input STL.
+
+Cleanup does not fill holes, repair self-intersections, boolean reconstruct a
+surface, infer units, or change model scale. It is an SDF build preflight
+utility, not an industrial CAD repair engine. Operations that may change
+topology are reported in cleanup stats and before/after Markdown reports.
+
+See `docs/mesh_cleanup.md`.
 
 ## CPU/GPU Batch-Query Benchmark
 
@@ -232,7 +258,7 @@ The CUDA backend is optional. If CUDA is not available, AdaSDF-CL remains fully 
 CUDA backend unavailable
 ```
 
-v1.3.0-alpha supports CUDA batch queries over pre-expanded global or block dense SDF data for the core-free analytic/demo adaptive box backend. Full low-rank compressed SDF GPU expansion is planned but not yet complete.
+v1.4.0-alpha supports CUDA batch queries over pre-expanded global or block dense SDF data for the core-free analytic/demo adaptive box backend. Full low-rank compressed SDF GPU expansion is planned but not yet complete.
 
 ## Expanded SDF Quality Audit
 
@@ -311,7 +337,7 @@ FCL-style SDF collision backend under development
 It complements FCL-style workflows with SDF-native signed-distance queries,
 penetration depth, contact normals, batch query, expanded-SDF quality audit, and
 optional CUDA expanded query. A true FCL fallback backend and hybrid mesh/SDF
-pipeline are planned, not implemented in v1.3.0-alpha.
+pipeline are planned, not implemented in v1.4.0-alpha.
 
 See `docs/fcl_complement_strategy.md` and `docs/public_positioning.md`.
 
@@ -320,11 +346,13 @@ See `docs/fcl_complement_strategy.md` and `docs/public_positioning.md`.
 - Implemented now: core-free demo workflow, FCL-style pair collision API,
   contact output, contact reduction, CPU/CUDA expanded query modes, benchmark
   timing semantics, ExpandedSDF quality audit, sign metrics, SVG view, and
-  external CMake integration, plus STL mesh diagnostics preflight reporting.
+  external CMake integration, plus STL mesh diagnostics, readiness scoring,
+  safe cleanup, and ASCII STL export.
 - Partial / experimental: demo surrogate, adaptive builder bridge,
   existing-core bridge, CUDA expanded query backend, block-expanded query, and
   contact manifold behavior.
-- Planned: standalone arbitrary STL builder, mesh repair, self-intersection detection, FCL
+- Planned: standalone arbitrary STL builder, complex mesh repair, hole filling,
+  self-intersection detection, FCL
   fallback backend, CollisionWorld broadphase, CCD, Python, ROS/MoveIt, robot
   benchmarks, and full low-rank GPU-native SDF query.
 
@@ -382,8 +410,10 @@ adasdf::collide(a, b, request, result);
 - The v0.9 surrogate is a demo / smoke / initial recommender only.
 - It is not universal, not fully trained, and not an optimality guarantee.
 - It is not a reliable parameter selector for arbitrary STL inputs.
-- STL mesh diagnostics and readiness scoring are preflight reports, not mesh
-  repair and not a full arbitrary-STL SDF builder.
+- STL mesh diagnostics, readiness scoring, and safe cleanup are preflight
+  utilities, not industrial mesh repair and not a full arbitrary-STL SDF builder.
+- Safe cleanup does not fill holes, repair self-intersections, boolean
+  reconstruct, infer units, or change model scale.
 - The demo adaptive builder supports analytic boxes, not arbitrary meshes.
 - Full adaptive STL-to-compressed-SDF construction remains future work for the public standalone backend.
 - Pair collision is an approximate SDF-sampling narrow-phase.
@@ -410,7 +440,10 @@ See `docs/limitations.md`.
 - `docs/public_positioning.md`
 - `docs/mesh_diagnostics.md`
 - `docs/mesh_readiness.md`
+- `docs/mesh_cleanup.md`
 - `docs/stl_import_audit.md`
+- `docs/github_release_draft_v1_4_0_alpha.md`
+- `docs/mesh_cleanup_v1_4_report.md`
 - `docs/github_release_draft_v1_3_0_alpha.md`
 - `docs/github_release_draft_v1_2_0_alpha.md`
 - `docs/capability_audit_v1_1_1.md`

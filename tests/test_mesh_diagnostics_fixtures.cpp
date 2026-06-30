@@ -34,6 +34,7 @@ int main() {
         "open_cube_missing_face_ascii.stl",
         "degenerate_triangle_ascii.stl",
         "duplicate_triangle_ascii.stl",
+        "duplicate_and_degenerate_ascii.stl",
         "non_manifold_edge_ascii.stl",
         "two_components_ascii.stl"};
     for (const std::string& name : fixtures) {

@@ -5,6 +5,11 @@ diagnostics. Readiness is a preflight heuristic. It is not an industrial
 certification, automatic mesh repair, self-intersection proof, or a guarantee
 that an adaptive SDF build will satisfy a downstream application.
 
+AdaSDF-CL v1.4.0-alpha adds optional safe cleanup after readiness checks. The
+cleanup path can remove duplicate/degenerate elements and write a separate STL,
+but it does not fill holes, repair self-intersections, or replace a CAD repair
+tool.
+
 ## Purpose
 
 Raw diagnostics answer what is present in the STL. Readiness translates those
@@ -22,12 +27,16 @@ adasdf_mesh_check model.stl --readiness --out mesh_report.md
 adasdf_mesh_check model.stl --readiness --json mesh_report.json
 adasdf_mesh_check model.stl --readiness --strict
 adasdf_mesh_check model.stl --readiness --lenient
+adasdf_mesh_check model.stl --readiness --clean-out cleaned.stl --clean-report cleanup_report.md
 ```
 
 `--strict` requires watertight input and treats non-manifold and degenerate
 geometry as critical. `--lenient` allows open meshes as warnings and lowers some
 preprocessing issues from critical to warning. Neither mode modifies the input
 STL.
+
+`--clean-out` writes a cleaned STL to a separate path and reruns diagnostics and
+readiness on the cleaned mesh. The command refuses to overwrite the input STL.
 
 ## Score Rules
 
@@ -74,18 +83,20 @@ Info items include:
 - Remove duplicate triangles.
 - Confirm STL units and scale.
 - Split unrelated connected components if they should not share one SDF asset.
+- Use `adasdf_mesh_clean` or `adasdf_mesh_check --clean-out` for safe cleanup
+  of duplicate/degenerate elements.
 - Rerun `adasdf_mesh_check --readiness` after cleanup.
 
 ## Current Limits
 
-AdaSDF-CL v1.3.0-alpha does not automatically repair meshes. It also does not
-perform full self-intersection detection and does not implement a standalone
-arbitrary-STL adaptive SDF builder. The readiness report is a decision aid
-before those future build paths.
+AdaSDF-CL v1.4.0-alpha provides safe cleanup, but it does not perform hole
+filling, self-intersection repair, boolean reconstruction, unit inference, or a
+standalone arbitrary-STL adaptive SDF build. The readiness report is a decision
+aid before those future build paths.
 
 ## Planned Work
 
-- Mesh repair workflows.
+- Optional hole-filling workflows with explicit risk controls.
 - Self-intersection detection.
 - Standalone arbitrary STL adaptive SDF builder.
 - Deeper build-time error prediction once the full public STL-to-SDF builder is

@@ -98,8 +98,10 @@ set(ADASDF_CL_RUNTIME_SOURCES
   src/geometry/Transform.cpp
   src/mesh/TriangleMesh.cpp
   src/mesh/STLReader.cpp
+  src/mesh/STLWriter.cpp
   src/mesh/MeshDiagnostics.cpp
   src/mesh/MeshReadiness.cpp
+  src/mesh/MeshCleanup.cpp
   src/mesh/MeshDiagnosticsWriter.cpp
   src/io/ContactOnlySDFBin.cpp
   src/io/DemoAdaptiveSDFBin.cpp
@@ -262,7 +264,8 @@ set(ADASDF_CL_EXAMPLE_SOURCES
   examples/09_surrogate_adaptive_demo.cpp
   examples/10_two_box_collision_with_view.cpp
   examples/11_capability_walkthrough.cpp
-  examples/12_mesh_diagnostics_demo.cpp)
+  examples/12_mesh_diagnostics_demo.cpp
+  examples/13_mesh_cleanup_demo.cpp)
 
 if(ADASDF_CL_BUILD_EXAMPLES)
   add_executable(adasdf_load_sdfbin_and_query
@@ -304,6 +307,10 @@ if(ADASDF_CL_BUILD_EXAMPLES)
   add_executable(adasdf_mesh_diagnostics_demo
     examples/12_mesh_diagnostics_demo.cpp)
   target_link_libraries(adasdf_mesh_diagnostics_demo PRIVATE adasdf::cl_runtime)
+
+  add_executable(adasdf_mesh_cleanup_demo
+    examples/13_mesh_cleanup_demo.cpp)
+  target_link_libraries(adasdf_mesh_cleanup_demo PRIVATE adasdf::cl_runtime)
 
   add_custom_target(adasdf_cl_api_preview_examples SOURCES
     examples/01_build_adaptive_sdf.cpp
@@ -352,6 +359,11 @@ set_target_properties(adasdf_capabilities PROPERTIES
 add_executable(adasdf_mesh_check tools/adasdf_mesh_check.cpp)
 target_link_libraries(adasdf_mesh_check PRIVATE adasdf_cl_runtime)
 set_target_properties(adasdf_mesh_check PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
+
+add_executable(adasdf_mesh_clean tools/adasdf_mesh_clean.cpp)
+target_link_libraries(adasdf_mesh_clean PRIVATE adasdf_cl_runtime)
+set_target_properties(adasdf_mesh_clean PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
 
 if(ADASDF_CL_BUILD_BENCHMARKS)
@@ -423,6 +435,10 @@ set(ADASDF_CL_TEST_SOURCES
   tests/test_mesh_readiness.cpp
   tests/test_mesh_check_cli.cpp
   tests/test_mesh_check_readiness_cli.cpp
+  tests/test_mesh_cleanup.cpp
+  tests/test_stl_writer.cpp
+  tests/test_mesh_clean_cli.cpp
+  tests/test_mesh_cleanup_roundtrip.cpp
   tests/test_mesh_diagnostics_fixtures.cpp)
 
 file(GLOB_RECURSE ADASDF_CL_DISCOVERED_FIXTURES
@@ -479,6 +495,13 @@ if(ADASDF_CL_BUILD_TESTS)
       target_compile_definitions(${test_name} PRIVATE
         ADASDF_CL_MESH_CHECK="$<TARGET_FILE_NAME:adasdf_mesh_check>")
     endif()
+    if(test_name STREQUAL "test_mesh_clean_cli" OR
+        test_name STREQUAL "test_mesh_cleanup_roundtrip")
+      add_dependencies(${test_name} adasdf_mesh_clean adasdf_mesh_check)
+      target_compile_definitions(${test_name} PRIVATE
+        ADASDF_CL_MESH_CLEAN="$<TARGET_FILE_NAME:adasdf_mesh_clean>"
+        ADASDF_CL_MESH_CHECK="$<TARGET_FILE_NAME:adasdf_mesh_check>")
+    endif()
     if(test_name STREQUAL "test_capability_walkthrough_example" AND
         TARGET adasdf_capability_walkthrough)
       add_dependencies(${test_name} adasdf_capability_walkthrough)
@@ -517,6 +540,11 @@ if(ADASDF_CL_BUILD_TESTS)
         test_name STREQUAL "test_mesh_check_readiness_cli")
       set_tests_properties(${test_name} PROPERTIES
         WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_mesh_check>")
+    endif()
+    if(test_name STREQUAL "test_mesh_clean_cli" OR
+        test_name STREQUAL "test_mesh_cleanup_roundtrip")
+      set_tests_properties(${test_name} PROPERTIES
+        WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_mesh_clean>")
     endif()
     if(test_name STREQUAL "test_capability_walkthrough_example" AND
         TARGET adasdf_capability_walkthrough)
@@ -557,7 +585,8 @@ set(ADASDF_CL_INSTALL_TOOL_TARGETS
   adasdf_query_mode_demo
   adasdf_expansion_quality
   adasdf_capabilities
-  adasdf_mesh_check)
+  adasdf_mesh_check
+  adasdf_mesh_clean)
 if(ADASDF_CL_BUILD_BENCHMARKS)
   list(APPEND ADASDF_CL_INSTALL_TOOL_TARGETS adasdf_benchmark_batch_query)
 endif()
