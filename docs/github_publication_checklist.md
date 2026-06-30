@@ -1,10 +1,9 @@
-# GitHub Publication Checklist for AdaSDF-CL v1.0.2-alpha.1
+# GitHub Publication Checklist for AdaSDF-CL v1.0.3-alpha
 
-The original v0.7, v0.8, v0.9, v1.0.0, v1.0.1, and v1.0.2-alpha tags are
-retained for traceability.
+The original v0.7, v0.8, v0.9, v1.0.0, v1.0.1, v1.0.2-alpha, and
+v1.0.2-alpha.1 tags are retained for traceability.
 
-The original v1.0.2-alpha tag is retained for traceability. The recommended
-public pre-release is v1.0.2-alpha.1.
+The recommended public pre-release is v1.0.3-alpha.
 
 ## Repository Safety
 
@@ -13,7 +12,7 @@ public pre-release is v1.0.2-alpha.1.
 - [x] No build/install/dist folders are committed.
 - [x] No large artifacts are committed.
 - [x] No raw STL datasets are committed.
-- [ ] Working tree clean after final v1.0.2-alpha.1 commit.
+- [ ] Working tree clean after final v1.0.3-alpha commit.
 
 ## Build and Test
 
@@ -27,7 +26,7 @@ public pre-release is v1.0.2-alpha.1.
 ## Publication
 
 - [ ] Branch pushed.
-- [ ] `v1.0.2-alpha.1` tag pushed.
+- [ ] `v1.0.3-alpha` tag pushed.
 - [ ] Older tags retained unchanged.
 - [ ] GitHub Actions passed on GitHub.
-- [ ] GitHub pre-release created from `v1.0.2-alpha.1`.
+- [ ] GitHub pre-release created from `v1.0.3-alpha`.

@@ -46,6 +46,20 @@ BatchQueryOutput queryBatchCPU(
     const std::vector<Vector3>& points,
     BatchQueryStats* stats,
     BatchQueryTiming* timing) {
+  return queryBatchCPU(
+      model,
+      points,
+      QueryOutputMode::PhiAndNormal,
+      stats,
+      timing);
+}
+
+BatchQueryOutput queryBatchCPU(
+    const SDFModel& model,
+    const std::vector<Vector3>& points,
+    QueryOutputMode output_mode,
+    BatchQueryStats* stats,
+    BatchQueryTiming* timing) {
   if (!model.isValid() || !model.queryBackendAvailable()) {
     throw std::runtime_error(
         "queryBatchCPU requires a valid SDFModel with query backend support.");
@@ -53,10 +67,13 @@ BatchQueryOutput queryBatchCPU(
 
   BatchQueryTiming local_timing;
   const auto allocation0 = std::chrono::steady_clock::now();
+  const bool need_normals = includesNormals(output_mode);
   BatchQueryOutput output;
   output.signed_distances.resize(points.size());
-  output.gradients.resize(points.size());
-  output.normals.resize(points.size());
+  if (need_normals) {
+    output.gradients.resize(points.size());
+    output.normals.resize(points.size());
+  }
   const auto allocation1 = std::chrono::steady_clock::now();
   local_timing.allocation_ms =
       std::chrono::duration<double, std::milli>(allocation1 - allocation0).count();
@@ -64,8 +81,10 @@ BatchQueryOutput queryBatchCPU(
   const auto t0 = std::chrono::steady_clock::now();
   for (std::size_t i = 0; i < points.size(); ++i) {
     output.signed_distances[i] = model.sampleDistance(points[i]);
-    output.gradients[i] = model.sampleGradient(points[i]);
-    output.normals[i] = normalizedOrFallback(output.gradients[i]);
+    if (need_normals) {
+      output.gradients[i] = model.sampleGradient(points[i]);
+      output.normals[i] = normalizedOrFallback(output.gradients[i]);
+    }
   }
   const auto t1 = std::chrono::steady_clock::now();
   const double total_ms =
@@ -83,6 +102,20 @@ BatchQueryOutput queryBatchCPU(
   }
   fillStats(stats, points.size(), local_timing.total_ms, std::move(backend), local_timing);
   return output;
+}
+
+const char* toString(QueryOutputMode output_mode) {
+  switch (output_mode) {
+    case QueryOutputMode::PhiOnly:
+      return "phi";
+    case QueryOutputMode::PhiAndNormal:
+      return "phi,normal";
+  }
+  return "unknown";
+}
+
+bool includesNormals(QueryOutputMode output_mode) {
+  return output_mode == QueryOutputMode::PhiAndNormal;
 }
 
 }  // namespace adasdf

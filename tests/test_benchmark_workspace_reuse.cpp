@@ -3,7 +3,6 @@
 #include <iostream>
 #include <sstream>
 #include <string>
-#include <vector>
 
 #ifndef ADASDF_CL_BENCHMARK_BATCH_QUERY
 #define ADASDF_CL_BENCHMARK_BATCH_QUERY ""
@@ -48,55 +47,25 @@ int main() {
   }
 
   const std::string out = std::string(ADASDF_CL_TEST_TEMP_DIR) +
-                          "/benchmark_timing_fields.csv";
+                          "/benchmark_workspace_reuse.csv";
   const std::string command =
       executableCommand(tool) +
-      " --points 64 --query-backend cpu --expansion none "
+      " --points 1000 --query-backend cuda --expansion global "
+      "--output phi,normal --reuse-resident --warmup 1 --repeat 2 "
       "--out \"" + out + "\"";
-  const int code = std::system(command.c_str());
-  if (code != 0) {
-    std::cerr << "benchmark command failed\n";
+  if (std::system(command.c_str()) != 0) {
+    std::cerr << "workspace reuse benchmark command failed\n";
     return 1;
   }
 
   const std::string csv = readFile(out);
-  const std::vector<std::string> required = {
-      "setup_ms",
-      "expand_ms",
-      "upload_sdf_ms",
-      "allocation_ms",
-      "h2d_points_ms",
-      "kernel_ms",
-      "sync_ms",
-      "d2h_results_ms",
-      "postprocess_ms",
-      "free_ms",
-      "total_ms",
-      "kernel_min_ms",
-      "kernel_mean_ms",
-      "total_mean_ms",
-      "output_mode",
-      "phi_only",
-      "reuse_resident",
-      "workspace_reused",
-      "allocation_count",
-      "workspace_device_memory_mb",
-      "block_lookup_count",
-      "block_scan_count",
-      "center_block_hit_rate",
-      "download_results",
-      "correctness_checked"};
-  for (const std::string& field : required) {
-    if (!contains(csv, field)) {
-      std::cerr << "missing benchmark CSV field: " << field << "\n";
-      return 1;
-    }
-  }
-  if (!contains(csv, "cpu,none,all,64")) {
-    std::cerr << "CPU benchmark row was not generated\n";
+  if (!contains(csv, "workspace_reused") ||
+      !contains(csv, "allocation_count") ||
+      !contains(csv, "workspace_device_memory_mb")) {
+    std::cerr << "workspace reuse CSV fields are missing\n";
     return 1;
   }
 
-  std::cout << "benchmark timing fields are present\n";
+  std::cout << "benchmark workspace reuse fields are present\n";
   return 0;
 }

@@ -1,5 +1,33 @@
 # Changelog
 
+## 1.0.3-alpha
+
+CUDA full-query benchmark and expanded-SDF query-path optimization.
+
+### Added
+
+- `QueryOutputMode` with explicit `PhiOnly` and `PhiAndNormal` query output modes.
+- Benchmark `--output phi` and `--output phi,normal` options; legacy `--phi-only` remains an alias for `--output phi`.
+- Benchmark `--device-only` / `--no-download` mode for CUDA-side timing without D2H result download or correctness checks.
+- CSV fields for `output_mode`, workspace reuse, allocation count, workspace device memory, block lookup counters, download status, correctness status, host memory, and layout.
+- Tests for benchmark output modes, device-only benchmark behavior, workspace reuse fields, CUDA output modes, and CUDA block lookup fast path.
+- v1.0.3 performance optimization report and release draft.
+
+### Changed
+
+- Version updated to `1.0.3-alpha`.
+- CPU direct batch query can skip gradient/normal work for `PhiOnly` output.
+- CUDA resident expanded SDF queries can write into reusable output storage and can skip D2H result downloads for device-only benchmark runs.
+- CUDA block finite-difference neighbor lookup avoids rescanning the already-tested center block during fallback.
+- Benchmark all-skipped CUDA rows now exit successfully unless a row actually fails, preserving CPU-only CI behavior.
+
+### Notes
+
+- CUDA remains optional and disabled by default.
+- This release does not implement full low-rank compressed SDF native GPU query.
+- `--device-only` is a performance-analysis mode, not a correctness mode.
+- Selected block benchmarks are meaningful for local contact-region point distributions; they are not a global uniform-query accelerator.
+
 ## 1.0.2-alpha.1
 
 CI portability hotfix for v1.0.2-alpha.

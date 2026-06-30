@@ -49,7 +49,20 @@ struct BenchmarkRow {
   SeriesStats total_stats;
   bool kernel_only = false;
   bool phi_only = false;
+  std::string output_mode = "phi,normal";
   bool reuse_resident = false;
+  bool download_results = true;
+  bool correctness_checked = true;
+  std::string host_memory = "paged";
+  std::string layout = "aos";
+  bool workspace_reused = false;
+  std::size_t allocation_count = 0;
+  std::size_t workspace_capacity = 0;
+  double workspace_device_memory_mb = 0.0;
+  std::size_t block_lookup_count = 0;
+  std::size_t block_scan_count = 0;
+  double center_block_hit_rate = 0.0;
+  double neighbor_same_block_rate = 0.0;
 
   bool cuda_available = false;
   std::string status = "ok";
@@ -122,6 +135,16 @@ adasdf::BlockSelection parseBlocks(const std::string& text) {
     ids.push_back(std::stoi(item));
   }
   return adasdf::BlockSelection::selected(std::move(ids));
+}
+
+adasdf::QueryOutputMode parseOutputMode(const std::string& text) {
+  if (text == "phi") {
+    return adasdf::QueryOutputMode::PhiOnly;
+  }
+  if (text == "phi,normal" || text == "phi+normal" || text == "full") {
+    return adasdf::QueryOutputMode::PhiAndNormal;
+  }
+  throw std::runtime_error("output must be phi or phi,normal");
 }
 
 double vectorError(const adasdf::Vector3& a, const adasdf::Vector3& b) {
@@ -208,6 +231,17 @@ adasdf::BatchQueryTiming meanTiming(
   out.allocation_ms /= n;
   out.free_ms /= n;
   out.total_ms /= n;
+  const adasdf::BatchQueryTiming& last = timings.back();
+  out.workspace_reused = last.workspace_reused;
+  out.allocation_count = last.allocation_count;
+  out.workspace_capacity = last.workspace_capacity;
+  out.workspace_device_memory_mb = last.workspace_device_memory_mb;
+  out.block_lookup_count = last.block_lookup_count;
+  out.block_scan_count = last.block_scan_count;
+  out.center_block_hit_rate = last.center_block_hit_rate;
+  out.neighbor_same_block_rate = last.neighbor_same_block_rate;
+  out.download_results = last.download_results;
+  out.correctness_checked = last.correctness_checked;
   return out;
 }
 
@@ -255,7 +289,12 @@ void writeCsv(std::ostream& out, const std::vector<BenchmarkRow>& rows) {
          "fallback_count,max_abs_phi_error,max_normal_error,cuda_available,"
          "warmup,repeat,kernel_min_ms,kernel_mean_ms,kernel_max_ms,"
          "kernel_std_ms,total_min_ms,total_mean_ms,total_max_ms,total_std_ms,"
-         "phi_only,reuse_resident,kernel_only,status,error_message\n";
+         "output_mode,phi_only,reuse_resident,kernel_only,"
+         "workspace_reused,allocation_count,workspace_capacity,"
+         "workspace_device_memory_mb,block_lookup_count,block_scan_count,"
+         "center_block_hit_rate,neighbor_same_block_rate,"
+         "download_results,correctness_checked,host_memory,layout,"
+         "status,error_message\n";
   for (const BenchmarkRow& row : rows) {
     const bool cuda_kernel_na = row.query_backend != "cuda" || row.skipped;
     out << csvField(row.query_backend) << "," << csvField(row.expansion_mode) << ","
@@ -290,9 +329,22 @@ void writeCsv(std::ostream& out, const std::vector<BenchmarkRow>& rows) {
         << numberOrBlank(row.total_stats.mean, row.skipped) << ","
         << numberOrBlank(row.total_stats.max, row.skipped) << ","
         << numberOrBlank(row.total_stats.stddev, row.skipped) << ","
+        << csvField(row.output_mode) << ","
         << (row.phi_only ? "true" : "false") << ","
         << (row.reuse_resident ? "true" : "false") << ","
         << (row.kernel_only ? "true" : "false") << ","
+        << (row.workspace_reused ? "true" : "false") << ","
+        << row.allocation_count << ","
+        << row.workspace_capacity << ","
+        << numberOrBlank(row.workspace_device_memory_mb, row.skipped) << ","
+        << row.block_lookup_count << ","
+        << row.block_scan_count << ","
+        << numberOrBlank(row.center_block_hit_rate, row.skipped) << ","
+        << numberOrBlank(row.neighbor_same_block_rate, row.skipped) << ","
+        << (row.download_results ? "true" : "false") << ","
+        << (row.correctness_checked ? "true" : "false") << ","
+        << csvField(row.host_memory) << ","
+        << csvField(row.layout) << ","
         << csvField(row.status) << "," << csvField(row.error_message) << "\n";
   }
 }
@@ -349,11 +401,12 @@ std::vector<adasdf::Vector3> makePoints(
 
 void printSummary(const std::vector<BenchmarkRow>& rows) {
   std::cout
-      << "backend | expansion | blocks | points | setup ms | total mean ms | "
+      << "backend | expansion | output | blocks | points | setup ms | total mean ms | "
          "kernel mean ms | ns/query | max phi error | max normal error | status\n";
   for (const BenchmarkRow& row : rows) {
     std::cout << row.query_backend << " | " << row.expansion_mode << " | "
-              << row.selected_blocks << " | " << row.num_points << " | ";
+              << row.output_mode << " | " << row.selected_blocks << " | "
+              << row.num_points << " | ";
     if (row.skipped) {
       std::cout << "SKIPPED | SKIPPED | SKIPPED | SKIPPED | SKIPPED | "
                 << "SKIPPED | " << row.status << "\n";
@@ -403,6 +456,26 @@ void finishRowFromRuns(
   row.timing.postprocess_ms = mean.postprocess_ms;
   row.timing.free_ms = mean.free_ms;
   row.timing.total_ms = mean.total_ms;
+  row.timing.workspace_reused = mean.workspace_reused;
+  row.timing.allocation_count = mean.allocation_count;
+  row.timing.workspace_capacity = mean.workspace_capacity;
+  row.timing.workspace_device_memory_mb = mean.workspace_device_memory_mb;
+  row.timing.block_lookup_count = mean.block_lookup_count;
+  row.timing.block_scan_count = mean.block_scan_count;
+  row.timing.center_block_hit_rate = mean.center_block_hit_rate;
+  row.timing.neighbor_same_block_rate = mean.neighbor_same_block_rate;
+  row.timing.download_results = mean.download_results;
+  row.timing.correctness_checked = mean.correctness_checked;
+  row.workspace_reused = mean.workspace_reused;
+  row.allocation_count = mean.allocation_count;
+  row.workspace_capacity = mean.workspace_capacity;
+  row.workspace_device_memory_mb = mean.workspace_device_memory_mb;
+  row.block_lookup_count = mean.block_lookup_count;
+  row.block_scan_count = mean.block_scan_count;
+  row.center_block_hit_rate = mean.center_block_hit_rate;
+  row.neighbor_same_block_rate = mean.neighbor_same_block_rate;
+  row.download_results = mean.download_results;
+  row.correctness_checked = mean.correctness_checked;
   row.query_kernel_ms = mean.kernel_ms;
   row.query_total_ms = mean.total_ms;
 }
@@ -421,7 +494,8 @@ int main(int argc, char** argv) {
     bool keep_resident = true;
     bool reuse_resident = false;
     bool kernel_only = false;
-    bool phi_only = false;
+    std::string output_arg = "phi,normal";
+    bool device_only = false;
     int warmup = 0;
     int repeat = 1;
     std::filesystem::path output_path;
@@ -450,8 +524,12 @@ int main(int argc, char** argv) {
         kernel_only = true;
       } else if (arg == "--reuse-resident") {
         reuse_resident = true;
+      } else if (arg == "--output" && i + 1 < argc) {
+        output_arg = argv[++i];
       } else if (arg == "--phi-only") {
-        phi_only = true;
+        output_arg = "phi";
+      } else if (arg == "--device-only" || arg == "--no-download") {
+        device_only = true;
       } else if (arg == "--keep-resident") {
         keep_resident = true;
       } else if (arg == "--out" && i + 1 < argc) {
@@ -462,7 +540,8 @@ int main(int argc, char** argv) {
                "--query-backend cpu|cuda --expansion none|global|block "
                "[--blocks all|0,1,2] [--global-resolution 64] "
                "[--block-resolution 32] [--warmup N] [--repeat N] "
-               "[--kernel-only] [--reuse-resident] [--phi-only] "
+               "[--kernel-only] [--reuse-resident] "
+               "[--output phi|phi,normal] [--phi-only] [--device-only] "
                "[--keep-resident] [--out benchmark.csv]\n";
         return 0;
       } else {
@@ -480,6 +559,9 @@ int main(int argc, char** argv) {
     const std::vector<std::size_t> point_counts = parsePointCounts(points_arg);
     const std::vector<std::string> backend_names = splitList(backend_arg);
     const adasdf::BlockSelection block_selection = parseBlocks(blocks_arg);
+    const adasdf::QueryOutputMode output_mode = parseOutputMode(output_arg);
+    const bool phi_only = output_mode == adasdf::QueryOutputMode::PhiOnly;
+    const bool download_results = !device_only;
     const bool cuda_available = adasdf::CudaQueryBackend::isAvailable();
 
     adasdf::DemoAdaptiveBuildRequest build_request;
@@ -512,12 +594,23 @@ int main(int argc, char** argv) {
         row.repeat = repeat;
         row.kernel_only = kernel_only;
         row.phi_only = phi_only;
+        row.output_mode = adasdf::toString(output_mode);
         row.reuse_resident = reuse_resident;
-        row.max_normal_error_na = phi_only;
+        row.download_results = download_results;
+        row.correctness_checked = download_results;
+        row.max_normal_error_na = phi_only || !download_results;
 
         if (kernel_only && backend != adasdf::QueryBackend::CUDA) {
           row.status = "skipped";
           row.error_message = "kernel-only timing is only available for CUDA";
+          row.skipped = true;
+          rows.push_back(row);
+          continue;
+        }
+
+        if (device_only && backend != adasdf::QueryBackend::CUDA) {
+          row.status = "skipped";
+          row.error_message = "device-only benchmark mode is only available for CUDA";
           row.skipped = true;
           rows.push_back(row);
           continue;
@@ -541,8 +634,13 @@ int main(int argc, char** argv) {
 
           const std::vector<adasdf::Vector3> points =
               makePoints(*model, block_selection, count);
-          const adasdf::BatchQueryOutput reference =
-              adasdf::queryBatchCPU(*model, points);
+          adasdf::BatchQueryOutput reference;
+          if (download_results) {
+            reference = adasdf::queryBatchCPU(
+                *model,
+                points,
+                adasdf::QueryOutputMode::PhiAndNormal);
+          }
 
           std::vector<adasdf::BatchQueryTiming> timings;
           std::vector<double> kernel_values;
@@ -582,7 +680,7 @@ int main(int argc, char** argv) {
             adasdf::CudaQueryWorkspace workspace;
             adasdf::CudaQueryWorkspace* workspace_ptr = nullptr;
             if (reuse_resident) {
-              if (!workspace.ensureCapacity(count, !phi_only)) {
+              if (!workspace.ensureCapacity(count, adasdf::includesNormals(output_mode))) {
                 throw std::runtime_error("CUDA query workspace allocation failed");
               }
               workspace_ptr = &workspace;
@@ -595,12 +693,24 @@ int main(int argc, char** argv) {
 
             for (int i = 0; i < warmup; ++i) {
               adasdf::BatchQueryTiming ignored;
-              output = resident.queryBatch(points, phi_only, workspace_ptr, &ignored);
+              resident.queryBatchInto(
+                  points,
+                  output_mode,
+                  workspace_ptr,
+                  download_results ? &output : nullptr,
+                  &ignored,
+                  download_results);
             }
 
             for (int i = 0; i < repeat; ++i) {
               adasdf::BatchQueryTiming timing;
-              output = resident.queryBatch(points, phi_only, workspace_ptr, &timing);
+              resident.queryBatchInto(
+                  points,
+                  output_mode,
+                  workspace_ptr,
+                  download_results ? &output : nullptr,
+                  &timing,
+                  download_results);
               timings.push_back(timing);
               kernel_values.push_back(timing.kernel_ms);
               total_values.push_back(timing.total_ms);
@@ -615,11 +725,16 @@ int main(int argc, char** argv) {
 
             if (expansion == adasdf::QueryExpansionMode::None) {
               for (int i = 0; i < warmup; ++i) {
-                output = adasdf::queryBatchCPU(*model, points);
+                output = adasdf::queryBatchCPU(*model, points, output_mode);
               }
               for (int i = 0; i < repeat; ++i) {
                 adasdf::BatchQueryTiming timing;
-                output = adasdf::queryBatchCPU(*model, points, nullptr, &timing);
+                output = adasdf::queryBatchCPU(
+                    *model,
+                    points,
+                    output_mode,
+                    nullptr,
+                    &timing);
                 timings.push_back(timing);
                 total_values.push_back(timing.total_ms);
               }
@@ -674,12 +789,17 @@ int main(int argc, char** argv) {
               reported_ms > 0.0
                   ? static_cast<double>(count) * 1000.0 / reported_ms
                   : 0.0;
-          computeErrors(
-              reference,
-              output,
-              !phi_only,
-              row.max_abs_phi_error,
-              row.max_normal_error);
+          if (download_results) {
+            computeErrors(
+                reference,
+                output,
+                adasdf::includesNormals(output_mode),
+                row.max_abs_phi_error,
+                row.max_normal_error);
+          } else {
+            row.correctness_checked = false;
+            row.timing.correctness_checked = false;
+          }
           rows.push_back(row);
         } catch (const std::exception& error) {
           row.status = "failed";
@@ -703,11 +823,11 @@ int main(int argc, char** argv) {
       writeCsv(file, rows);
     }
 
-    const bool any_ok = std::any_of(
+    const bool any_failed = std::any_of(
         rows.begin(),
         rows.end(),
-        [](const BenchmarkRow& row) { return row.status == "ok"; });
-    return any_ok ? 0 : 1;
+        [](const BenchmarkRow& row) { return row.status == "failed"; });
+    return any_failed ? 1 : 0;
   } catch (const std::exception& error) {
     std::cerr << "adasdf_benchmark_batch_query failed: " << error.what()
               << "\n";

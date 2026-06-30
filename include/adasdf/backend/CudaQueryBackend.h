@@ -30,6 +30,8 @@ class CudaQueryWorkspace {
 
   std::size_t capacity() const;
   std::size_t deviceMemoryBytes() const;
+  std::size_t allocationCount() const;
+  bool lastEnsureReused() const;
 
  private:
   friend class CudaResidentExpandedSDF;
@@ -37,6 +39,8 @@ class CudaQueryWorkspace {
   void* workspace_handle_ = nullptr;
   std::size_t capacity_ = 0;
   std::size_t device_memory_bytes_ = 0;
+  std::size_t allocation_count_ = 0;
+  bool last_ensure_reused_ = false;
   bool need_normals_ = false;
 };
 
@@ -73,6 +77,18 @@ class CudaResidentExpandedSDF {
       bool phi_only,
       CudaQueryWorkspace* workspace,
       BatchQueryTiming* timing);
+  BatchQueryOutput queryBatch(
+      const std::vector<Vector3>& points,
+      QueryOutputMode output_mode,
+      CudaQueryWorkspace* workspace,
+      BatchQueryTiming* timing);
+  bool queryBatchInto(
+      const std::vector<Vector3>& points,
+      QueryOutputMode output_mode,
+      CudaQueryWorkspace* workspace,
+      BatchQueryOutput* output,
+      BatchQueryTiming* timing,
+      bool download_results = true);
   void release();
 
   double lastKernelMs() const {

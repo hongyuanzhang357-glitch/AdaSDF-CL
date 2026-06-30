@@ -1,6 +1,6 @@
 # Optional CUDA Query Backend
 
-AdaSDF-CL v1.0.2-alpha keeps CUDA optional and provides a GPU-resident query
+AdaSDF-CL v1.0.3-alpha keeps CUDA optional and provides a GPU-resident query
 path for pre-expanded SDF data. It also adds reusable CUDA query workspaces and
 a phi-only kernel for benchmark comparisons.
 
@@ -17,6 +17,7 @@ Supported first:
 - batch signed distance;
 - batch finite-difference normal output;
 - batch phi-only output for signed-distance-only kernel timing;
+- device-only no-download benchmark timing;
 - CPU/GPU numerical comparison in tests and benchmarks.
 
 Not supported yet:
@@ -105,7 +106,11 @@ workspace.ensureCapacity(points.size(), true);
 
 adasdf::BatchQueryTiming timing;
 adasdf::BatchQueryOutput output =
-    resident.queryBatch(points, false, &workspace, &timing);
+    resident.queryBatch(
+        points,
+        adasdf::QueryOutputMode::PhiAndNormal,
+        &workspace,
+        &timing);
 ```
 
 For signed-distance-only benchmark comparison:
@@ -113,11 +118,30 @@ For signed-distance-only benchmark comparison:
 ```cpp
 workspace.ensureCapacity(points.size(), false);
 adasdf::BatchQueryOutput phi_only =
-    resident.queryBatch(points, true, &workspace, &timing);
+    resident.queryBatch(
+        points,
+        adasdf::QueryOutputMode::PhiOnly,
+        &workspace,
+        &timing);
 ```
 
 The phi-only output fills `signed_distances` and leaves `gradients` and
 `normals` empty.
+
+For no-download benchmark timing:
+
+```cpp
+resident.queryBatchInto(
+    points,
+    adasdf::QueryOutputMode::PhiOnly,
+    &workspace,
+    nullptr,
+    &timing,
+    false);
+```
+
+This device-only mode synchronizes the CUDA kernel but does not download
+results to CPU memory. It is not a correctness-checking mode.
 
 For block expansion:
 
@@ -166,6 +190,8 @@ The backend reports:
 - CPU postprocess time;
 - total query time;
 - fallback count.
+- workspace reuse status, allocation count, capacity, and device memory;
+- lightweight block lookup counters for benchmark interpretation.
 
 `total_ms` and `kernel_ms` are intentionally different. `kernel_ms` is CUDA
 event time around the kernel. `total_ms` includes allocation, point upload,
@@ -174,14 +200,20 @@ when no reusable workspace is provided.
 
 ## Precision
 
-The v1.0.2-alpha CUDA expanded SDF kernel uses double precision to align with
+The v1.0.3-alpha CUDA expanded SDF kernel uses double precision to align with
 the CPU `Scalar` type. Expanded-grid distance values are approximate because
 they are sampled from a finite-resolution dense grid. Normals are computed with
 finite differences and are suitable for query-mode validation, not for certified
 contact-normal quality claims.
 
-`--phi-only` benchmark rows skip finite-difference normals and are the closest
+`--output phi` benchmark rows skip finite-difference normals and are the closest
 AdaSDF-CL comparison point for original UI signed-distance kernel averages.
+`--output phi,normal` rows include the finite-difference normal work used by the
+current full query primitive.
+
+Selected block mode is best suited to local contact-region points. It should
+not be read as a global uniform-query accelerator, and full low-rank compressed
+SDF GPU-native query remains planned work.
 
 ## Testing
 

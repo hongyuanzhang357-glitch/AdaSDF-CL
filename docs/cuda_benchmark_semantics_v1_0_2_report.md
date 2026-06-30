@@ -2,6 +2,19 @@
 
 Date: 2026-06-29
 
+## v1.0.3-alpha Follow-Up
+
+v1.0.3-alpha keeps the v1.0.2 timing boundary and adds explicit benchmark
+output modes:
+
+- `--output phi` for signed-distance-only timing;
+- `--output phi,normal` for signed distance plus finite-difference normals;
+- `--device-only` / `--no-download` for CUDA-side timing without result
+  download or correctness checks.
+
+The legacy `--phi-only` flag remains an alias for `--output phi`. Do not compare
+phi-only kernel time with full query total time.
+
 ## 1. Goal
 
 v1.0.2-alpha makes the v1.0.1 CUDA benchmark understandable, reproducible, and

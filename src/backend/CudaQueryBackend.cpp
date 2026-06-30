@@ -20,11 +20,13 @@ BatchQueryOutput queryAnalyticBoxOnCuda(
 void* uploadExpandedSDFToCuda(
     const ExpandedSDF& expanded,
     std::size_t* device_memory_bytes);
-BatchQueryOutput queryExpandedSDFOnCuda(
+bool queryExpandedSDFOnCuda(
     void* device_handle,
     const std::vector<Vector3>& points,
-    bool phi_only,
+    QueryOutputMode output_mode,
+    bool download_results,
     void* workspace_handle,
+    BatchQueryOutput* output,
     BatchQueryTiming* timing);
 void* createQueryWorkspaceOnCuda();
 bool ensureQueryWorkspaceOnCuda(
@@ -44,6 +46,8 @@ BatchQueryOutput downloadQueryWorkspaceResultsOnCuda(
 void releaseQueryWorkspaceOnCuda(void* workspace_handle);
 std::size_t queryWorkspaceCapacityOnCuda(void* workspace_handle);
 std::size_t queryWorkspaceDeviceMemoryBytesOnCuda(void* workspace_handle);
+std::size_t queryWorkspaceAllocationCountOnCuda(void* workspace_handle);
+bool queryWorkspaceLastEnsureReusedOnCuda(void* workspace_handle);
 void releaseExpandedSDFOnCuda(void* device_handle);
 }  // namespace cuda_detail
 #endif
@@ -65,10 +69,14 @@ CudaQueryWorkspace& CudaQueryWorkspace::operator=(
   workspace_handle_ = other.workspace_handle_;
   capacity_ = other.capacity_;
   device_memory_bytes_ = other.device_memory_bytes_;
+  allocation_count_ = other.allocation_count_;
+  last_ensure_reused_ = other.last_ensure_reused_;
   need_normals_ = other.need_normals_;
   other.workspace_handle_ = nullptr;
   other.capacity_ = 0;
   other.device_memory_bytes_ = 0;
+  other.allocation_count_ = 0;
+  other.last_ensure_reused_ = false;
   other.need_normals_ = false;
   return *this;
 }
@@ -101,6 +109,10 @@ bool CudaQueryWorkspace::ensureCapacity(
   capacity_ = cuda_detail::queryWorkspaceCapacityOnCuda(workspace_handle_);
   device_memory_bytes_ =
       cuda_detail::queryWorkspaceDeviceMemoryBytesOnCuda(workspace_handle_);
+  allocation_count_ =
+      cuda_detail::queryWorkspaceAllocationCountOnCuda(workspace_handle_);
+  last_ensure_reused_ =
+      cuda_detail::queryWorkspaceLastEnsureReusedOnCuda(workspace_handle_);
   need_normals_ = need_normals;
   return true;
 #else
@@ -155,6 +167,8 @@ void CudaQueryWorkspace::release() {
   workspace_handle_ = nullptr;
   capacity_ = 0;
   device_memory_bytes_ = 0;
+  allocation_count_ = 0;
+  last_ensure_reused_ = false;
   need_normals_ = false;
 }
 
@@ -164,6 +178,14 @@ std::size_t CudaQueryWorkspace::capacity() const {
 
 std::size_t CudaQueryWorkspace::deviceMemoryBytes() const {
   return device_memory_bytes_;
+}
+
+std::size_t CudaQueryWorkspace::allocationCount() const {
+  return allocation_count_;
+}
+
+bool CudaQueryWorkspace::lastEnsureReused() const {
+  return last_ensure_reused_;
 }
 
 bool CudaQueryBackend::isAvailable() {
@@ -275,7 +297,7 @@ std::size_t CudaResidentExpandedSDF::deviceMemoryBytes() const {
 
 BatchQueryOutput CudaResidentExpandedSDF::queryBatch(
     const std::vector<Vector3>& points) {
-  return queryBatch(points, false, nullptr, nullptr);
+  return queryBatch(points, QueryOutputMode::PhiAndNormal, nullptr, nullptr);
 }
 
 BatchQueryOutput CudaResidentExpandedSDF::queryBatch(
@@ -283,21 +305,50 @@ BatchQueryOutput CudaResidentExpandedSDF::queryBatch(
     bool phi_only,
     CudaQueryWorkspace* workspace,
     BatchQueryTiming* timing) {
+  return queryBatch(
+      points,
+      phi_only ? QueryOutputMode::PhiOnly : QueryOutputMode::PhiAndNormal,
+      workspace,
+      timing);
+}
+
+BatchQueryOutput CudaResidentExpandedSDF::queryBatch(
+    const std::vector<Vector3>& points,
+    QueryOutputMode output_mode,
+    CudaQueryWorkspace* workspace,
+    BatchQueryTiming* timing) {
+  BatchQueryOutput output;
+  queryBatchInto(points, output_mode, workspace, &output, timing, true);
+  return output;
+}
+
+bool CudaResidentExpandedSDF::queryBatchInto(
+    const std::vector<Vector3>& points,
+    QueryOutputMode output_mode,
+    CudaQueryWorkspace* workspace,
+    BatchQueryOutput* output,
+    BatchQueryTiming* timing,
+    bool download_results) {
   if (!isValid()) {
     throw std::runtime_error("CudaResidentExpandedSDF query before successful upload.");
   }
 #if ADASDF_CL_HAS_CUDA_BACKEND
   const auto t0 = std::chrono::steady_clock::now();
   BatchQueryTiming local_timing;
-  if (workspace != nullptr && !workspace->ensureCapacity(points.size(), !phi_only)) {
+  const bool need_normals = includesNormals(output_mode);
+  if (download_results && output == nullptr) {
+    throw std::runtime_error("CudaResidentExpandedSDF download requires output storage.");
+  }
+  if (workspace != nullptr && !workspace->ensureCapacity(points.size(), need_normals)) {
     throw std::runtime_error("CudaQueryWorkspace allocation failed.");
   }
-  BatchQueryOutput output =
-      cuda_detail::queryExpandedSDFOnCuda(
+  cuda_detail::queryExpandedSDFOnCuda(
           device_handle_,
           points,
-          phi_only,
+          output_mode,
+          download_results,
           workspace != nullptr ? workspace->workspace_handle_ : nullptr,
+          output,
           &local_timing);
   last_query_ms_ = local_timing.total_ms;
   if (last_query_ms_ <= 0.0) {
@@ -312,18 +363,24 @@ BatchQueryOutput CudaResidentExpandedSDF::queryBatch(
         cuda_detail::queryWorkspaceCapacityOnCuda(workspace->workspace_handle_);
     workspace->device_memory_bytes_ =
         cuda_detail::queryWorkspaceDeviceMemoryBytesOnCuda(workspace->workspace_handle_);
-    workspace->need_normals_ = !phi_only;
+    workspace->allocation_count_ =
+        cuda_detail::queryWorkspaceAllocationCountOnCuda(workspace->workspace_handle_);
+    workspace->last_ensure_reused_ =
+        cuda_detail::queryWorkspaceLastEnsureReusedOnCuda(workspace->workspace_handle_);
+    workspace->need_normals_ = need_normals;
   }
   last_timing_ = local_timing;
   if (timing != nullptr) {
     *timing = local_timing;
   }
-  return output;
+  return true;
 #else
   (void)points;
-  (void)phi_only;
+  (void)output_mode;
   (void)workspace;
+  (void)output;
   (void)timing;
+  (void)download_results;
   throw std::runtime_error(
       "CUDA query backend was not compiled. Configure with "
       "ADASDF_CL_ENABLE_CUDA=ON on a machine with a CUDA toolkit.");

@@ -47,33 +47,25 @@ int main() {
   }
 
   const std::string out = std::string(ADASDF_CL_TEST_TEMP_DIR) +
-                          "/benchmark_cli_modes.csv";
+                          "/benchmark_device_only.csv";
   const std::string command =
       executableCommand(tool) +
-      " --points 64 --query-backend cpu --expansion none "
-      "--repeat 2 --phi-only --out \"" + out + "\"";
-  const int code = std::system(command.c_str());
-  if (code != 0) {
-    std::cerr << "benchmark repeat/phi-only command failed\n";
+      " --points 1000 --query-backend cuda --expansion global "
+      "--output phi --device-only --kernel-only --reuse-resident "
+      "--warmup 1 --repeat 2 --out \"" + out + "\"";
+  if (std::system(command.c_str()) != 0) {
+    std::cerr << "device-only benchmark command failed\n";
     return 1;
   }
 
   const std::string csv = readFile(out);
-  if (!contains(csv, "repeat") || !contains(csv, "total_min_ms") ||
-      !contains(csv, "total_max_ms") || !contains(csv, "total_std_ms")) {
-    std::cerr << "repeat statistics fields are missing\n";
-    return 1;
-  }
-  if (!contains(csv, ",2,") || !contains(csv, "output_mode") ||
-      !contains(csv, "phi,true")) {
-    std::cerr << "repeat or phi-only flags were not recorded\n";
-    return 1;
-  }
-  if (!contains(csv, ",NA,")) {
-    std::cerr << "phi-only CPU row did not mark a non-applicable field as NA\n";
+  if (!contains(csv, "download_results") ||
+      !contains(csv, "correctness_checked") ||
+      !contains(csv, "false,false")) {
+    std::cerr << "device-only CSV did not mark no-download semantics\n";
     return 1;
   }
 
-  std::cout << "benchmark CLI modes generated expected CSV fields\n";
+  std::cout << "device-only benchmark mode is available or gracefully skipped\n";
   return 0;
 }

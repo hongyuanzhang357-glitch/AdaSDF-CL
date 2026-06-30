@@ -8,6 +8,11 @@
 
 namespace adasdf {
 
+enum class QueryOutputMode {
+  PhiOnly,
+  PhiAndNormal
+};
+
 struct BatchQueryInput {
   std::vector<Vector3> points;
 };
@@ -33,6 +38,19 @@ struct BatchQueryTiming {
   double free_ms = 0.0;
 
   double total_ms = 0.0;
+
+  bool workspace_reused = false;
+  std::size_t allocation_count = 0;
+  std::size_t workspace_capacity = 0;
+  double workspace_device_memory_mb = 0.0;
+
+  std::size_t block_lookup_count = 0;
+  std::size_t block_scan_count = 0;
+  double center_block_hit_rate = 0.0;
+  double neighbor_same_block_rate = 0.0;
+
+  bool download_results = true;
+  bool correctness_checked = true;
 };
 
 struct BatchQueryStats {
@@ -49,5 +67,15 @@ BatchQueryOutput queryBatchCPU(
     const std::vector<Vector3>& points,
     BatchQueryStats* stats = nullptr,
     BatchQueryTiming* timing = nullptr);
+
+BatchQueryOutput queryBatchCPU(
+    const SDFModel& model,
+    const std::vector<Vector3>& points,
+    QueryOutputMode output_mode,
+    BatchQueryStats* stats = nullptr,
+    BatchQueryTiming* timing = nullptr);
+
+const char* toString(QueryOutputMode output_mode);
+bool includesNormals(QueryOutputMode output_mode);
 
 }  // namespace adasdf

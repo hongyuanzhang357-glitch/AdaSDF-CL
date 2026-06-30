@@ -43,6 +43,8 @@ struct CudaQueryWorkspaceHandle {
   DeviceVec3* device_normals = nullptr;
   std::size_t capacity = 0;
   std::size_t memory_bytes = 0;
+  std::size_t allocation_count = 0;
+  bool last_ensure_reused = false;
   bool need_normals = false;
 };
 
@@ -233,7 +235,18 @@ __device__ bool sampleExpandedSDFPreferBlock(
       sampleExpandedBlock(*preferred_block, values, p, phi)) {
     return true;
   }
-  return sampleExpandedSDF(blocks, block_count, values, p, phi, nullptr);
+  if (block_count == 1) {
+    return false;
+  }
+  for (int i = 0; i < block_count; ++i) {
+    if (preferred_block != nullptr && &blocks[i] == preferred_block) {
+      continue;
+    }
+    if (sampleExpandedBlock(blocks[i], values, p, phi)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 __device__ double gradientStep(const DeviceExpandedBlock& block) {
@@ -356,6 +369,7 @@ void freeWorkspaceBuffers(CudaQueryWorkspaceHandle* workspace) {
   workspace->device_normals = nullptr;
   workspace->capacity = 0;
   workspace->memory_bytes = 0;
+  workspace->last_ensure_reused = false;
   workspace->need_normals = false;
 }
 
@@ -368,11 +382,13 @@ bool ensureWorkspaceCapacity(
     return false;
   }
   if (capacity == 0) {
+    workspace->last_ensure_reused = true;
     return true;
   }
   if (workspace->capacity >= capacity &&
       (!need_normals || workspace->device_normals != nullptr)) {
     workspace->need_normals = need_normals;
+    workspace->last_ensure_reused = true;
     return true;
   }
 
@@ -401,6 +417,8 @@ bool ensureWorkspaceCapacity(
   workspace->capacity = capacity;
   workspace->need_normals = need_normals;
   workspace->memory_bytes = point_bytes + phi_bytes + (need_normals ? point_bytes : 0);
+  workspace->allocation_count += 1;
+  workspace->last_ensure_reused = false;
   if (timing != nullptr) {
     timing->allocation_ms += elapsedMs(t0, Clock::now());
   }
@@ -440,22 +458,28 @@ void uploadWorkspacePoints(
   }
 }
 
-BatchQueryOutput downloadWorkspaceResults(
+void downloadWorkspaceResultsInto(
     CudaQueryWorkspaceHandle* workspace,
     std::size_t count,
     bool need_normals,
+    BatchQueryOutput* output,
     BatchQueryTiming* timing) {
   if (workspace == nullptr || workspace->device_phi == nullptr ||
       count > workspace->capacity) {
     throw std::runtime_error("CUDA query workspace is not ready for download.");
   }
+  if (output == nullptr) {
+    throw std::runtime_error("CUDA query download requires output storage.");
+  }
 
   const auto allocation0 = Clock::now();
-  BatchQueryOutput output;
-  output.signed_distances.resize(count);
+  output->signed_distances.resize(count);
   if (need_normals) {
-    output.gradients.resize(count);
-    output.normals.resize(count);
+    output->gradients.resize(count);
+    output->normals.resize(count);
+  } else {
+    output->gradients.clear();
+    output->normals.clear();
   }
   const auto allocation1 = Clock::now();
   if (timing != nullptr) {
@@ -463,13 +487,13 @@ BatchQueryOutput downloadWorkspaceResults(
   }
 
   if (count == 0) {
-    return output;
+    return;
   }
 
   const auto d2h0 = Clock::now();
   checkCuda(
       cudaMemcpy(
-          output.signed_distances.data(),
+          output->signed_distances.data(),
           workspace->device_phi,
           count * sizeof(double),
           cudaMemcpyDeviceToHost),
@@ -497,13 +521,22 @@ BatchQueryOutput downloadWorkspaceResults(
   if (need_normals) {
     const auto post0 = Clock::now();
     for (std::size_t i = 0; i < host_normals.size(); ++i) {
-      output.gradients[i] = toVector3(host_normals[i]);
-      output.normals[i] = output.gradients[i];
+      output->gradients[i] = toVector3(host_normals[i]);
+      output->normals[i] = output->gradients[i];
     }
     if (timing != nullptr) {
       timing->postprocess_ms += elapsedMs(post0, Clock::now());
     }
   }
+}
+
+BatchQueryOutput downloadWorkspaceResults(
+    CudaQueryWorkspaceHandle* workspace,
+    std::size_t count,
+    bool need_normals,
+    BatchQueryTiming* timing) {
+  BatchQueryOutput output;
+  downloadWorkspaceResultsInto(workspace, count, need_normals, &output, timing);
   return output;
 }
 
@@ -747,11 +780,27 @@ std::size_t queryWorkspaceDeviceMemoryBytesOnCuda(void* workspace_handle) {
   return static_cast<CudaQueryWorkspaceHandle*>(workspace_handle)->memory_bytes;
 }
 
-BatchQueryOutput queryExpandedSDFOnCuda(
+std::size_t queryWorkspaceAllocationCountOnCuda(void* workspace_handle) {
+  if (workspace_handle == nullptr) {
+    return 0;
+  }
+  return static_cast<CudaQueryWorkspaceHandle*>(workspace_handle)->allocation_count;
+}
+
+bool queryWorkspaceLastEnsureReusedOnCuda(void* workspace_handle) {
+  if (workspace_handle == nullptr) {
+    return false;
+  }
+  return static_cast<CudaQueryWorkspaceHandle*>(workspace_handle)->last_ensure_reused;
+}
+
+bool queryExpandedSDFOnCuda(
     void* device_handle,
     const std::vector<Vector3>& points,
-    bool phi_only,
+    QueryOutputMode output_mode,
+    bool download_results,
     void* workspace_handle,
+    BatchQueryOutput* output,
     BatchQueryTiming* timing) {
   if (device_handle == nullptr) {
     throw std::runtime_error("queryExpandedSDFOnCuda received null resident handle.");
@@ -760,14 +809,20 @@ BatchQueryOutput queryExpandedSDFOnCuda(
 
   BatchQueryTiming local_timing;
   const auto total0 = Clock::now();
-  const bool need_normals = !phi_only;
+  const bool need_normals = includesNormals(output_mode);
+  local_timing.download_results = download_results;
+  local_timing.correctness_checked = download_results;
   if (points.empty()) {
-    BatchQueryOutput output;
+    if (output != nullptr) {
+      output->signed_distances.clear();
+      output->gradients.clear();
+      output->normals.clear();
+    }
     if (timing != nullptr) {
       local_timing.total_ms = elapsedMs(total0, Clock::now());
       *timing = local_timing;
     }
-    return output;
+    return true;
   }
 
   CudaQueryWorkspaceHandle* workspace =
@@ -790,7 +845,7 @@ BatchQueryOutput queryExpandedSDFOnCuda(
     const int grid_size =
         static_cast<int>((points.size() + block_size - 1) / block_size);
     checkCuda(cudaEventRecord(start), "cudaEventRecord(start)");
-    if (phi_only) {
+    if (output_mode == QueryOutputMode::PhiOnly) {
       expandedSdfPhiOnlyKernel<<<grid_size, block_size>>>(
           workspace->device_points,
           points.size(),
@@ -818,9 +873,38 @@ BatchQueryOutput queryExpandedSDFOnCuda(
     checkCuda(cudaEventElapsedTime(&kernel_ms, start, stop), "cudaEventElapsedTime");
     local_timing.kernel_ms = static_cast<double>(kernel_ms);
     local_timing.sync_ms = elapsedMs(sync0, sync1);
+    local_timing.workspace_reused = workspace->last_ensure_reused;
+    local_timing.allocation_count = workspace->allocation_count;
+    local_timing.workspace_capacity = workspace->capacity;
+    local_timing.workspace_device_memory_mb =
+        static_cast<double>(workspace->memory_bytes) / (1024.0 * 1024.0);
+    if (handle->block_count == 1) {
+      local_timing.block_lookup_count = points.size();
+      local_timing.block_scan_count = 0;
+      local_timing.center_block_hit_rate = 1.0;
+      local_timing.neighbor_same_block_rate =
+          output_mode == QueryOutputMode::PhiOnly ? 1.0 : 1.0;
+    } else {
+      const std::size_t samples_per_point =
+          output_mode == QueryOutputMode::PhiOnly ? 1 : 7;
+      local_timing.block_lookup_count = points.size() * samples_per_point;
+      local_timing.block_scan_count = points.size();
+      local_timing.center_block_hit_rate = 0.0;
+      local_timing.neighbor_same_block_rate = 0.0;
+    }
 
-    BatchQueryOutput output =
-        downloadWorkspaceResults(workspace, points.size(), need_normals, &local_timing);
+    if (download_results) {
+      downloadWorkspaceResultsInto(
+          workspace,
+          points.size(),
+          need_normals,
+          output,
+          &local_timing);
+    } else if (output != nullptr) {
+      output->signed_distances.clear();
+      output->gradients.clear();
+      output->normals.clear();
+    }
     const auto free0 = Clock::now();
     if (temporary_workspace) {
       freeWorkspaceBuffers(workspace);
@@ -834,7 +918,7 @@ BatchQueryOutput queryExpandedSDFOnCuda(
     if (timing != nullptr) {
       *timing = local_timing;
     }
-    return output;
+    return true;
   } catch (...) {
     cudaEventDestroy(start);
     cudaEventDestroy(stop);
