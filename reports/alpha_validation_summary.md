@@ -22,15 +22,15 @@ cmake -S '<source>' -B '<build>' -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD
 -- Detecting CXX compile features
 -- Detecting CXX compile features - done
 -- Looking for a CUDA compiler
--- Looking for a CUDA compiler - C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/nvcc.exe
--- The CUDA compiler identification is NVIDIA 12.6.85 with host compiler MSVC 19.42.34444.0
--- Detecting CUDA compiler ABI info
--- Detecting CUDA compiler ABI info - done
--- Check for working CUDA compiler: C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.6/bin/nvcc.exe - skipped
--- Detecting CUDA compile features
--- Detecting CUDA compile features - done
+-- Looking for a CUDA compiler - NOTFOUND
+CMake Warning at CMakeLists.txt:72 (message):
+  ADASDF_CL_ENABLE_CUDA=ON but no CUDA compiler was found.  Building without
+  CUDA batch query kernels.
+
+
 --
 -- AdaSDF-CL configuration:
+--   Version: 1.0.2-alpha
 ...
 ```
 
@@ -45,11 +45,6 @@ cmake --build '<build>' --config Release
 
   1>Checking Build System
   Building Custom Rule <source>/CMakeLists.txt
-  Compiling CUDA source file ..\sdf流程原理\OctreeBlockLowRankSDF\OctreeBlockLowRankSDF\adasdf_cl\src\backend\CudaQueryKernels.cu...
-
-  <build>>"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6\bin\nvcc.exe"  --use-local-env -ccbin "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.42.34433\bin\HostX64\x64" -x cu   -I"<source>\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6\include" -I"C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6\include"     --keep-dir adasdf_c.4599A1BA\x64\Release  -maxrregcount=0   --machine 64 --compile -cudart static -forward-unknown-to-host-compiler -std=c++17 --generate-code=arch=compute_52,code=[compute_52,sm_52] -Xcompiler="/EHsc -Ob2"   -D_WINDOWS -DNDEBUG -DADASDF_CL_HAS_EXISTING_CORE=0 -DADASDF_CL_ENABLE_ADAPTIVE_BUILDER=1 -DADASDF_CL_ENABLE_SURROGATE_RECOMMENDER=1 -DADASDF_CL_ENABLE_DEMO_BACKEND=1 -DADASDF_CL_ENABLE_DEMO_SURROGATE=1 -DADASDF_CL_ENABLE_COLLISION_VIEWER=1 -DADASDF_CL_HAS_CUDA_BACKEND=1 -DADASDF_CL_VERSION_MAJOR=1 -DADASDF_CL_VERSION_MINOR=0 -DADASDF_CL_VERSION_PATCH=1 -D"ADASDF_CL_VERSION_SUFFIX=\"alpha\"" -DADASDF_CL_ENABLE_CUDA=1 -D"CMAKE_INTDIR=\"Release\"" -D_MBCS -DWIN32 -D_WINDOWS -DNDEBUG -DADASDF_CL_HAS_EXISTING_CORE=0 -DADASDF_CL_ENABLE_ADAPTIVE_BUILDER=1 -DADASDF_CL_ENABLE_SURROGATE_RECOMMENDER=1 -DADASDF_CL_ENABLE_DEMO_BACKEND=1 -DADASDF_CL_ENABLE_DEMO_SURROGATE=1 -DADASDF_CL_ENABLE_COLLISION_VIEWER=1 -DADASDF_CL_HAS_CUDA_BACKEND=1 -DADASDF_CL_VERSION_MAJOR=1 -DADASDF_CL_VERSION_MINOR=0 -DADASDF_CL_VERSION_PATCH=1 -D"ADASDF_CL_VERSION_SUFFIX=\"alpha\"" -DADASDF_CL_ENABLE_CUDA=1 -D"CMAKE_INTDIR=\"Release\"" -Xcompiler "/EHsc /W1 /nologo /O2 /FS   /MD " -Xcompiler "/Fd<build>\Release\adasdf_cl_runtime.pdb" -o adasdf_cl_runtime.dir\Release\CudaQueryKernels.obj "<source>\src\backend\CudaQueryKernels.cu"
-  CudaQueryKernels.cu
-  tmpxft_0000edfc_00000000-7_CudaQueryKernels.cudafe1.cpp
   FCLAdapter.cpp
   Backend.cpp
   CudaQueryBackend.cpp
@@ -59,6 +54,11 @@ cmake --build '<build>' --config Release
   AdaptiveSDFBuilder.cpp
   DemoAdaptiveSDFBuilder.cpp
   DemoSurrogateRecommender.cpp
+  ExistingBuilderBridge.cpp
+  SDFBuilder.cpp
+  SurrogateRecommender.cpp
+  AnalyticSDFModel.cpp
+  DemoAdaptiveSDFModel.cpp
 ...
 ```
 
@@ -71,21 +71,21 @@ ctest --test-dir '<build>' -C Release --output-on-failure
 ```text
 Test project <build>
       Start  1: test_sdf_io
- 1/37 Test  #1: test_sdf_io .......................   Passed    0.04 sec
+ 1/41 Test  #1: test_sdf_io .......................   Passed    0.01 sec
       Start  2: test_collision_query
- 2/37 Test  #2: test_collision_query ..............   Passed    0.02 sec
+ 2/41 Test  #2: test_collision_query ..............   Passed    0.01 sec
       Start  3: test_distance_query
- 3/37 Test  #3: test_distance_query ...............   Passed    0.02 sec
+ 3/41 Test  #3: test_distance_query ...............   Passed    0.02 sec
       Start  4: test_collision_object
- 4/37 Test  #4: test_collision_object .............   Passed    0.05 sec
+ 4/41 Test  #4: test_collision_object .............   Passed    0.01 sec
       Start  5: test_pair_distance_query
- 5/37 Test  #5: test_pair_distance_query ..........   Passed    0.02 sec
+ 5/41 Test  #5: test_pair_distance_query ..........   Passed    0.02 sec
       Start  6: test_pair_collision_query
- 6/37 Test  #6: test_pair_collision_query .........   Passed    0.02 sec
+ 6/41 Test  #6: test_pair_collision_query .........   Passed    0.01 sec
       Start  7: test_candidate_point_sampler
- 7/37 Test  #7: test_candidate_point_sampler ......   Passed    0.01 sec
+ 7/41 Test  #7: test_candidate_point_sampler ......   Passed    0.01 sec
       Start  8: test_contact_generator
- 8/37 Test  #8: test_contact_generator ............   Passed    0.02 sec
+ 8/41 Test  #8: test_contact_generator ............   Passed    0.01 sec
       Start  9: test_contact_reducer
 ...
 ```
@@ -93,7 +93,7 @@ Test project <build>
 ### Install Validation: PASS
 
 ```bash
-'<local-path>' '<source>/scripts/run_install_validation.py' --source '<source>' --build '<local-path>' --install '<local-path>' --config Release
+'<local-path>' '<source>/scripts/run_install_validation.py' --source '<source>' --build '<workspace>/build/adasdf_cl_iv' --install '<workspace>/build/adasdf_cl_install' --config Release
 ```
 
 ```text
@@ -141,7 +141,7 @@ Candidate[0]
 ### Build Demo Adaptive SDFBin: PASS
 
 ```bash
-'<build>/Release/adasdf_build_demo_adaptive.exe' '<local-path>' --shape box --target-error 1e-3 --memory-mb 64 --block-memory-mb 16 --use-surrogate
+'<build>/Release/adasdf_build_demo_adaptive.exe' '<workspace>/build/cube_adaptive_v1.sdfbin' --shape box --target-error 1e-3 --memory-mb 64 --block-memory-mb 16 --use-surrogate
 ```
 
 ```text
@@ -164,12 +164,12 @@ Reload validation: success
 ### Demo Adaptive Info CLI: PASS
 
 ```bash
-'<build>/Release/adasdf_info.exe' '<local-path>'
+'<build>/Release/adasdf_info.exe' '<workspace>/build/cube_adaptive_v1.sdfbin'
 ```
 
 ```text
 AdaSDF-CL info
-Library version: 1.0.1-alpha
+Library version: 1.0.2-alpha
 Path: <local-path>
 Model name: demo adaptive analytic box
 Valid: yes
@@ -192,7 +192,7 @@ Block[0] resolution: 32
 ### Demo Adaptive Query CLI: PASS
 
 ```bash
-'<build>/Release/adasdf_query.exe' '<local-path>' --point 0 0 0
+'<build>/Release/adasdf_query.exe' '<workspace>/build/cube_adaptive_v1.sdfbin' --point 0 0 0
 ```
 
 ```text
@@ -208,7 +208,7 @@ Query backend: core-free demo adaptive analytic SDF backend
 ### Demo Collide Boxes CLI: PASS
 
 ```bash
-'<build>/Release/adasdf_collide_boxes_demo.exe' --target-error 1e-3 --memory-mb 64 --offset 0.25 0 0 --max-contacts 8 --view '<local-path>'
+'<build>/Release/adasdf_collide_boxes_demo.exe' --target-error 1e-3 --memory-mb 64 --offset 0.25 0 0 --max-contacts 8 --view '<workspace>/build/collision_v1.svg'
 ```
 
 ```text
@@ -233,33 +233,33 @@ Contact[1]
 ...
 ```
 
-### Batch Query Benchmark: PASS
+### Batch Query Benchmark: PASS (CUDA SKIPPED)
 
 ```bash
-'<build>/benchmarks/Release/adasdf_benchmark_batch_query.exe' --points 10000,100000,1000000 --query-backend cpu,cuda --out '<local-path>'
+'<build>/benchmarks/Release/adasdf_benchmark_batch_query.exe' --points 10000,100000,1000000 --query-backend cpu,cuda --out '<workspace>/build/adasdf_batch_benchmark_v1.csv'
 ```
 
 ```text
-query_backend,expansion_mode,selected_blocks,num_points,expanded_memory_mb,gpu_resident_memory_mb,setup_ms,query_kernel_ms,query_total_ms,ns_per_query,queries_per_second,fallback_count,max_abs_phi_error,max_normal_error,cuda_available,status,error_message
-cpu,none,all,10000,0,0,0.0001,NA,0.6188,61.88,16160310.28,0,0,0,true,ok,
-cpu,none,all,100000,0,0,0.0008,NA,5.8669,58.669,17044776.63,0,0,0,true,ok,
-cpu,none,all,1000000,0,0,0.0008,NA,59.4015,59.4015,16834591.72,0,0,0,true,ok,
-cuda,global,all,10000,2.000148773,2.000076294,64.5041,1.24950397,1.8211,182.11,5491186.645,0,0.004385174555,0.8738651282,true,ok,
-cuda,global,all,100000,2.000148773,2.000076294,6.2309,1.201408029,5.0511,50.511,19797667.83,0,0.005406495077,0.8738651282,true,ok,
-cuda,global,all,1000000,2.000148773,2.000076294,5.8795,10.08463955,39.7572,39.7572,25152676.75,0,0.006410162008,0.8996876832,true,ok,
-backend | expansion | blocks | points | setup ms | query total ms | kernel ms | ns/query | qps | fallback | max phi error | max normal error | status
-cpu | none | all | 10000 | 0.0001 | 0.6188 | NA | 61.88 | 1.61603e+07 | 0 | 0 | 0 | ok
-cpu | none | all | 100000 | 0.0008 | 5.8669 | NA | 58.669 | 1.70448e+07 | 0 | 0 | 0 | ok
-cpu | none | all | 1000000 | 0.0008 | 59.4015 | NA | 59.4015 | 1.68346e+07 | 0 | 0 | 0 | ok
-cuda | global | all | 10000 | 64.5041 | 1.8211 | 1.2495 | 182.11 | 5.49119e+06 | 0 | 0.00438517 | 0.873865 | ok
-cuda | global | all | 100000 | 6.2309 | 5.0511 | 1.20141 | 50.511 | 1.97977e+07 | 0 | 0.0054065 | 0.873865 | ok
-cuda | global | all | 1000000 | 5.8795 | 39.7572 | 10.0846 | 39.7572 | 2.51527e+07 | 0 | 0.00641016 | 0.899688 | ok
+query_backend,expansion_mode,selected_blocks,num_points,expanded_memory_mb,gpu_resident_memory_mb,setup_ms,expand_ms,upload_sdf_ms,allocation_ms,h2d_points_ms,kernel_ms,sync_ms,d2h_results_ms,postprocess_ms,free_ms,total_ms,query_kernel_ms,query_total_ms,ns_per_query,queries_per_second,fallback_count,max_abs_phi_error,max_normal_error,cuda_available,warmup,repeat,kernel_min_ms,kernel_mean_ms,kernel_max_ms,kernel_std_ms,total_min_ms,total_mean_ms,total_max_ms,total_std_ms,phi_only,reuse_resident,kernel_only,status,error_message
+cpu,none,all,10000,0,0,0,0,0,0.0889,0,NA,NA,0,0,0,0.469,NA,0.469,46.9,21321961.62,0,0,0,false,0,1,NA,NA,NA,NA,0.469,0.469,0.469,0,false,false,false,ok,
+cpu,none,all,100000,0,0,0,0,0,0.77,0,NA,NA,0,0,0,4.7405,NA,4.7405,47.405,21094821.22,0,0,0,false,0,1,NA,NA,NA,NA,4.7405,4.7405,4.7405,0,false,false,false,ok,
+cpu,none,all,1000000,0,0,0,0,0,7.4975,0,NA,NA,0,0,0,47.0205,NA,47.0205,47.0205,21267319.57,0,0,0,false,0,1,NA,NA,NA,NA,47.0205,47.0205,47.0205,0,false,false,false,ok,
+cuda,global,all,10000,,,,,,,,NA,NA,,,,,NA,,,,0,,NA,false,0,1,NA,NA,NA,NA,,,,,false,false,false,skipped,CUDA backend unavailable
+cuda,global,all,100000,,,,,,,,NA,NA,,,,,NA,,,,0,,NA,false,0,1,NA,NA,NA,NA,,,,,false,false,false,skipped,CUDA backend unavailable
+cuda,global,all,1000000,,,,,,,,NA,NA,,,,,NA,,,,0,,NA,false,0,1,NA,NA,NA,NA,,,,,false,false,false,skipped,CUDA backend unavailable
+backend | expansion | blocks | points | setup ms | total mean ms | kernel mean ms | ns/query | max phi error | max normal error | status
+cpu | none | all | 10000 | 0 | 0.469 | NA | 46.9 | 0 | 0 | ok
+cpu | none | all | 100000 | 0 | 4.7405 | NA | 47.405 | 0 | 0 | ok
+cpu | none | all | 1000000 | 0 | 47.0205 | NA | 47.0205 | 0 | 0 | ok
+cuda | global | all | 10000 | SKIPPED | SKIPPED | SKIPPED | SKIPPED | SKIPPED | SKIPPED | skipped
+cuda | global | all | 100000 | SKIPPED | SKIPPED | SKIPPED | SKIPPED | SKIPPED | SKIPPED | skipped
+cuda | global | all | 1000000 | SKIPPED | SKIPPED | SKIPPED | SKIPPED | SKIPPED | SKIPPED | skipped
 ```
 
 ### Collision SVG Check: PASS
 
 ```bash
-check-collision-svg '<local-path>'
+check-collision-svg '<workspace>/build/collision_v1.svg'
 ```
 
 ```text

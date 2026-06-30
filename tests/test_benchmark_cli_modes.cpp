@@ -25,6 +25,18 @@ std::string readFile(const std::string& path) {
   return out.str();
 }
 
+std::string executableCommand(const std::string& tool) {
+#ifdef _WIN32
+  return tool;
+#else
+  if (tool.find('/') == std::string::npos &&
+      tool.find('\\') == std::string::npos) {
+    return "./" + tool;
+  }
+  return "\"" + tool + "\"";
+#endif
+}
+
 }  // namespace
 
 int main() {
@@ -37,7 +49,8 @@ int main() {
   const std::string out = std::string(ADASDF_CL_TEST_TEMP_DIR) +
                           "/benchmark_cli_modes.csv";
   const std::string command =
-      tool + " --points 64 --query-backend cpu --expansion none "
+      executableCommand(tool) +
+      " --points 64 --query-backend cpu --expansion none "
       "--repeat 2 --phi-only --out \"" + out + "\"";
   const int code = std::system(command.c_str());
   if (code != 0) {
