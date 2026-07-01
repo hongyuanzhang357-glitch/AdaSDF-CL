@@ -233,15 +233,26 @@ def main() -> int:
     cleaned_stl = build.parent / "cleaned_duplicate_and_degenerate.stl"
     cleanup_report = build.parent / "mesh_cleanup_report.md"
     cleaned_check_report = build.parent / "cleaned_mesh_report.md"
+    dense_sdfbin = build.parent / "closed_cube_dense_v1_5.sdfbin"
+    dense_report = build.parent / "closed_cube_dense_report.md"
+    dense_json = build.parent / "closed_cube_dense_report.json"
+    adaptive_preview_sdfbin = build.parent / "closed_cube_adaptive_preview.sdfbin"
+    adaptive_preview_plan = build.parent / "closed_cube_adaptive_preview_plan.md"
     max_contacts = 8
+    for generated in (adaptive_preview_sdfbin,):
+        if generated.exists():
+            generated.unlink()
     required_demo_tools = {
         "adasdf_capabilities": find_executable(build, "adasdf_capabilities", config),
         "adasdf_mesh_check": find_executable(build, "adasdf_mesh_check", config),
         "adasdf_mesh_clean": find_executable(build, "adasdf_mesh_clean", config),
+        "adasdf_build_dense_sdf": find_executable(build, "adasdf_build_dense_sdf", config),
+        "adasdf_build_adaptive_sdf_preview": find_executable(build, "adasdf_build_adaptive_sdf_preview", config),
         "adasdf_recommend_demo": find_executable(build, "adasdf_recommend_demo", config),
         "adasdf_build_demo_adaptive": find_executable(build, "adasdf_build_demo_adaptive", config),
         "adasdf_info": find_executable(build, "adasdf_info", config),
         "adasdf_query": find_executable(build, "adasdf_query", config),
+        "adasdf_collide": find_executable(build, "adasdf_collide", config),
         "adasdf_expansion_quality": find_executable(build, "adasdf_expansion_quality", config),
         "adasdf_collide_boxes_demo": find_executable(build, "adasdf_collide_boxes_demo", config),
         "adasdf_benchmark_batch_query": find_executable(build, "adasdf_benchmark_batch_query", config),
@@ -305,6 +316,62 @@ def main() -> int:
                 "--readiness",
                 "--out",
                 str(cleaned_check_report),
+            ],
+        ),
+        (
+            "DenseSDF Build CLI",
+            [
+                str(required_demo_tools["adasdf_build_dense_sdf"]),
+                str(mesh_fixture),
+                str(dense_sdfbin),
+                "--resolution",
+                "24",
+                "--padding",
+                "0.05",
+                "--report",
+                str(dense_report),
+                "--json",
+                str(dense_json),
+            ],
+        ),
+        (
+            "DenseSDF Info CLI",
+            [str(required_demo_tools["adasdf_info"]), str(dense_sdfbin)],
+        ),
+        (
+            "DenseSDF Query CLI",
+            [
+                str(required_demo_tools["adasdf_query"]),
+                str(dense_sdfbin),
+                "--point",
+                "0.5",
+                "0.5",
+                "0.5",
+            ],
+        ),
+        (
+            "DenseSDF Collide CLI",
+            [
+                str(required_demo_tools["adasdf_collide"]),
+                str(dense_sdfbin),
+                str(dense_sdfbin),
+                "--max-contacts",
+                "4",
+            ],
+        ),
+        (
+            "Adaptive Builder Preview CLI",
+            [
+                str(required_demo_tools["adasdf_build_adaptive_sdf_preview"]),
+                str(mesh_fixture),
+                str(adaptive_preview_sdfbin),
+                "--target-error",
+                "1e-3",
+                "--memory-mb",
+                "512",
+                "--dry-run",
+                "--plan",
+                str(adaptive_preview_plan),
             ],
         ),
         (
@@ -526,6 +593,53 @@ def main() -> int:
             if result.returncode == 2:
                 result.returncode = 0
                 result.output += "\nValidation note: cleaned mesh still has readiness warnings/errors.\n"
+        if name == "DenseSDF Build CLI":
+            if (
+                not dense_sdfbin.exists()
+                or not dense_report.exists()
+                or not dense_json.exists()
+                or "Reload validation: success" not in result.output
+                or "Dense Grid" not in dense_report.read_text(encoding="utf-8", errors="replace")
+            ):
+                result.returncode = 1
+                result.output += "\nValidation failed: DenseSDF build output/report is missing.\n"
+                write_report(report_path, results, source, build, config)
+                return result.returncode
+        if name == "DenseSDF Info CLI":
+            if "ADASDF_DENSE_SDFBIN_V1" not in result.output or "DenseSDF resolution:" not in result.output:
+                result.returncode = 1
+                result.output += "\nValidation failed: DenseSDF info output is missing format/resolution.\n"
+                write_report(report_path, results, source, build, config)
+                return result.returncode
+        if name == "DenseSDF Query CLI":
+            if "Signed distance:" not in result.output or "Query backend:" not in result.output:
+                result.returncode = 1
+                result.output += "\nValidation failed: DenseSDF query output is incomplete.\n"
+                write_report(report_path, results, source, build, config)
+                return result.returncode
+        if name == "DenseSDF Collide CLI":
+            match = re.search(r"Returned contacts:\s+(\d+)", result.output)
+            if not match or int(match.group(1)) > 4:
+                result.returncode = 1
+                result.output += "\nValidation failed: DenseSDF collide contact count is missing or too high.\n"
+                write_report(report_path, results, source, build, config)
+                return result.returncode
+        if name == "Adaptive Builder Preview CLI":
+            plan_text = (
+                adaptive_preview_plan.read_text(encoding="utf-8", errors="replace")
+                if adaptive_preview_plan.exists()
+                else ""
+            )
+            if (
+                adaptive_preview_sdfbin.exists()
+                or not adaptive_preview_plan.exists()
+                or "not implemented in v1.5.0-alpha" not in result.output
+                or "interface preview only" not in plan_text
+            ):
+                result.returncode = 1
+                result.output += "\nValidation failed: adaptive preview dry-run output is incomplete.\n"
+                write_report(report_path, results, source, build, config)
+                return result.returncode
         if name == "Demo Collide Boxes CLI":
             match = re.search(r"Returned contacts:\s+(\d+)", result.output)
             if not match or int(match.group(1)) > max_contacts:

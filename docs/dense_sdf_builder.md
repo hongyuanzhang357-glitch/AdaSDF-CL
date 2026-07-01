@@ -1,0 +1,77 @@
+# DenseSDF Builder
+
+AdaSDF-CL v1.5.0-alpha introduces a public standalone uniform DenseSDF
+builder. This is the first core-free STL-to-SDF construction path in the public
+repository.
+
+The builder produces a uniform dense grid, not an adaptive octree, block
+layout, low-rank compressed representation, or GPU-native compressed SDF.
+
+## Workflow
+
+```bash
+adasdf_mesh_check model.stl --readiness --out mesh_report.md
+adasdf_mesh_clean model.stl model_clean.stl --report cleanup_report.md
+adasdf_build_dense_sdf model_clean.stl model_dense.sdfbin --resolution 64 --padding 0.05
+adasdf_info model_dense.sdfbin
+adasdf_query model_dense.sdfbin --point 0 0 0
+adasdf_collide model_dense.sdfbin model_dense.sdfbin --max-contacts 4
+```
+
+## Implemented Components
+
+- `DenseSDFModel`: uniform grid model with direct signed-distance query,
+  finite-difference gradient/normal query, AABB, metadata, and memory footprint.
+- `TriangleDistance`: robust point-to-triangle distance with degenerate
+  triangle fallback.
+- `MeshSign`: deterministic ray-casting sign estimate for watertight meshes.
+- `DenseSDFBuilder`: brute-force STL/TriangleMesh sampling into a uniform grid.
+- `DenseSDFBuildReportWriter`: Markdown and JSON-like build reports.
+- `DenseSDFBin`: text `.sdfbin` format with magic `ADASDF_DENSE_SDFBIN_V1`.
+- `adasdf_build_dense_sdf`: public CLI for building dense `.sdfbin` assets.
+
+## Signed And Unsigned Modes
+
+Signed builds require a watertight mesh by default. Open meshes fail clearly in
+signed mode. Users can request an unsigned distance field with `--unsigned`.
+
+The v1.5 sign estimator is alpha-level ray casting. It is deterministic and
+tested on project fixtures, but it is not industrial geometry certification and
+does not prove that an arbitrary STL is free from self-intersections.
+
+## DenseSDFBin Format
+
+The v1.5 dense text format starts with:
+
+```text
+ADASDF_DENSE_SDFBIN_V1
+unit m
+origin x y z
+spacing dx dy dz
+resolution nx ny nz
+signed 1
+values
+phi0
+phi1
+...
+```
+
+The writer uses round-trip-safe double precision for origin, spacing, and
+values.
+
+## Current Limits
+
+- Brute-force triangle loop, no BVH.
+- Uniform dense grid only.
+- No adaptive octree or block construction.
+- No low-rank compression.
+- No surrogate-guided build recommendation.
+- No hole filling or self-intersection repair.
+- No generated `.sdfbin` assets are committed to the repository.
+
+## Recommended Use
+
+Use DenseSDF as a public, auditable baseline builder for small and moderate
+test meshes, tutorials, CI validation, and comparisons against future adaptive
+builders. For large production meshes, expect memory and build time to scale
+with `resolution^3 * triangle_count`.

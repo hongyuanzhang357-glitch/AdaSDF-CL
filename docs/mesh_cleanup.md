@@ -4,6 +4,10 @@ AdaSDF-CL v1.4.0-alpha adds a conservative mesh cleanup pass for STL
 preflight. The goal is to remove obvious mechanical problems before future SDF
 construction, not to perform industrial CAD repair.
 
+In v1.5.0-alpha, cleaned meshes can feed the standalone uniform DenseSDF
+builder. Cleanup still does not guarantee watertightness or adaptive
+compressed SDF build success.
+
 ## Supported Cleanup
 
 - Merge near-duplicate vertices with a configurable tolerance.
@@ -21,7 +25,7 @@ All operations are optional and can be disabled from the cleanup APIs or CLIs.
 - Self-intersection repair.
 - Boolean reconstruction.
 - Unit conversion.
-- Full arbitrary-STL adaptive SDF building.
+- Full adaptive octree/block/low-rank SDF building.
 - FCL fallback.
 - Industrial mesh certification.
 

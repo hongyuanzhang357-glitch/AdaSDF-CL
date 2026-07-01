@@ -48,6 +48,9 @@ int main(int argc, char** argv) {
         "STL mesh diagnostics preflight report",
         "SDF build readiness scoring and repair suggestions",
         "safe mesh cleanup and before/after cleanup reports",
+        "standalone uniform DenseSDF builder",
+        "ADASDF_DENSE_SDFBIN_V1 read/write",
+        "STL-to-DenseSDF public workflow",
         "expansion quality audit",
         "sign mismatch and near-surface mismatch metrics",
         "SVG collision view",
@@ -55,11 +58,16 @@ int main(int argc, char** argv) {
     static const char* const partial[] = {
         "demo surrogate recommender",
         "contact reduction and research-preview contact output",
+        "adaptive builder interface preview",
+        "adasdf_build_adaptive_sdf_preview dry-run",
         "existing-core sampled expansion bridge",
         "CUDA expanded query backend",
         "block-expanded query for local contact regions"};
     static const char* const planned[] = {
-        "standalone arbitrary STL builder",
+        "standalone adaptive compressed STL builder",
+        "adaptive octree/block builder",
+        "low-rank compression builder",
+        "surrogate-guided recommendation",
         "complex mesh repair and hole filling",
         "self-intersection detection",
         "FCL fallback backend",
@@ -95,12 +103,17 @@ int main(int argc, char** argv) {
       std::cout << "- readiness score, severity classification, and repair suggestions\n";
       std::cout << "- safe cleanup removes near-duplicate vertices, degenerate triangles, duplicate triangles, and unused vertices\n";
       std::cout << "- cleaned ASCII STL export through STLWriter and adasdf_mesh_clean\n";
-      std::cout << "- preflight only; no hole filling, self-intersection repair, or full STL-to-SDF builder\n";
+      std::cout << "- public uniform DenseSDF build through adasdf_build_dense_sdf\n";
+      std::cout << "- adaptive compressed builder preview only; no octree/block/low-rank build in v1.5\n";
+      std::cout << "- no hole filling, self-intersection repair, or adaptive compressed STL-to-SDF builder\n";
       std::cout << "\nDocumentation:\n";
       std::cout << "- docs/capability_matrix.md\n";
       std::cout << "- docs/mesh_diagnostics.md\n";
       std::cout << "- docs/mesh_readiness.md\n";
       std::cout << "- docs/mesh_cleanup.md\n";
+      std::cout << "- docs/dense_sdf_builder.md\n";
+      std::cout << "- docs/stl_to_sdf_public_workflow.md\n";
+      std::cout << "- docs/adaptive_builder_preview.md\n";
       std::cout << "- docs/stl_import_audit.md\n";
       std::cout << "- docs/implemented_vs_planned.md\n";
       std::cout << "- docs/fcl_complement_strategy.md\n";

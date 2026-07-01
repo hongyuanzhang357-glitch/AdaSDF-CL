@@ -622,6 +622,7 @@ int main(int argc, char** argv) {
     bool device_only = false;
     int warmup = 0;
     int repeat = 1;
+    std::filesystem::path model_path;
     std::filesystem::path output_path;
 
     for (int i = 1; i < argc; ++i) {
@@ -660,6 +661,8 @@ int main(int argc, char** argv) {
         device_only = true;
       } else if (arg == "--keep-resident") {
         keep_resident = true;
+      } else if (arg == "--model" && i + 1 < argc) {
+        model_path = argv[++i];
       } else if (arg == "--out" && i + 1 < argc) {
         output_path = argv[++i];
       } else if (arg == "--help" || arg == "-h") {
@@ -670,6 +673,7 @@ int main(int argc, char** argv) {
                "[--block-resolution 32] [--warmup N] [--repeat N] "
                "[--kernel-only] [--reuse-resident] "
                "[--output phi|phi,normal] [--phi-only] [--device-only] "
+               "[--model model.sdfbin] "
                "[--near-surface-band 1e-3] [--sign-epsilon 1e-9] "
                "[--keep-resident] [--out benchmark.csv]\n";
         return 0;
@@ -693,13 +697,26 @@ int main(int argc, char** argv) {
     const bool download_results = !device_only;
     const bool cuda_available = adasdf::CudaQueryBackend::isAvailable();
 
-    adasdf::DemoAdaptiveBuildRequest build_request;
-    build_request.use_surrogate = false;
-    const auto build = adasdf::DemoAdaptiveSDFBuilder::build(build_request);
-    if (!build.model) {
-      throw std::runtime_error("failed to create demo adaptive benchmark model");
+    std::shared_ptr<adasdf::SDFModel> model;
+    if (!model_path.empty()) {
+      if (!std::filesystem::exists(model_path)) {
+        throw std::runtime_error("benchmark --model path does not exist: " +
+                                 model_path.string());
+      }
+      model = adasdf::SDFBinReader::read(model_path);
+      if (!model || !model->isValid() || !model->queryBackendAvailable()) {
+        throw std::runtime_error(
+            "benchmark --model must load a valid queryable SDFModel");
+      }
+    } else {
+      adasdf::DemoAdaptiveBuildRequest build_request;
+      build_request.use_surrogate = false;
+      const auto build = adasdf::DemoAdaptiveSDFBuilder::build(build_request);
+      if (!build.model) {
+        throw std::runtime_error("failed to create demo adaptive benchmark model");
+      }
+      model = build.model;
     }
-    std::shared_ptr<adasdf::SDFModel> model = build.model;
 
     std::vector<BenchmarkRow> rows;
     for (const std::string& backend_name : backend_names) {

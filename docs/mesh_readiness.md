@@ -10,6 +10,10 @@ cleanup path can remove duplicate/degenerate elements and write a separate STL,
 but it does not fill holes, repair self-intersections, or replace a CAD repair
 tool.
 
+AdaSDF-CL v1.5.0-alpha can build a uniform DenseSDF after readiness checks.
+Readiness still does not certify industrial mesh quality and does not imply the
+future adaptive compressed builder is implemented.
+
 ## Purpose
 
 Raw diagnostics answer what is present in the STL. Readiness translates those
@@ -89,15 +93,16 @@ Info items include:
 
 ## Current Limits
 
-AdaSDF-CL v1.4.0-alpha provides safe cleanup, but it does not perform hole
-filling, self-intersection repair, boolean reconstruction, unit inference, or a
-standalone arbitrary-STL adaptive SDF build. The readiness report is a decision
-aid before those future build paths.
+AdaSDF-CL v1.5.0-alpha provides safe cleanup and a uniform DenseSDF builder,
+but it does not perform hole filling, self-intersection repair, boolean
+reconstruction, unit inference, or a standalone adaptive compressed SDF build.
+The readiness report is a decision aid before dense builds and future adaptive
+build paths.
 
 ## Planned Work
 
 - Optional hole-filling workflows with explicit risk controls.
 - Self-intersection detection.
-- Standalone arbitrary STL adaptive SDF builder.
+- Standalone adaptive octree/block/low-rank SDF builder.
 - Deeper build-time error prediction once the full public STL-to-SDF builder is
   implemented.

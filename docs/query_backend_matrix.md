@@ -14,6 +14,10 @@ simulate GPU layouts without requiring CUDA. CUDA only runs expanded layouts.
 Global expansion is best for global batch queries. Block expansion is best for
 local contact regions.
 
+DenseSDF models built with `adasdf_build_dense_sdf` support the same direct CPU
+query path and can be expanded by `SDFExpander` for CPU/CUDA expanded-query
+experiments.
+
 `--output phi` is closest to the original UI kernel-only comparison.
 `--output phi,normal` is closer to contact workflow needs. `--device-only` is
 only for performance upper-bound timing and is not a correctness mode.

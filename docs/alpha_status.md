@@ -1,11 +1,11 @@
 # Alpha Status
 
-AdaSDF-CL 1.4.0-alpha is a research-preview release candidate.
+AdaSDF-CL 1.5.0-alpha is a research-preview release candidate.
 
 The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`,
-`v1.1.0-alpha`, `v1.1.1-alpha`, `v1.2.0-alpha`, and `v1.3.0-alpha` tags are
-retained for traceability. The recommended public pre-release is
-`v1.4.0-alpha`.
+`v1.1.0-alpha`, `v1.1.1-alpha`, `v1.2.0-alpha`, `v1.3.0-alpha`, and
+`v1.4.0-alpha` tags are retained for traceability. The recommended public
+pre-release is `v1.5.0-alpha`.
 
 ## What Works
 
@@ -40,6 +40,11 @@ retained for traceability. The recommended public pre-release is
 - `adasdf_mesh_check` CLI with diagnostics, readiness scoring, safe cleanup
   hooks, Markdown, and JSON-like reports.
 - `adasdf_mesh_clean` CLI for safe cleanup and clean ASCII STL output.
+- `DenseSDFModel`, `DenseSDFBuilder`, `DenseSDFBin`, and
+  `adasdf_build_dense_sdf` for a public core-free STL-to-uniform-SDF path.
+- DenseSDF query, collision, expansion quality, and benchmark model loading.
+- `AdaptiveSDFBuilderPreview` and `adasdf_build_adaptive_sdf_preview` dry-run
+  planning for future adaptive compressed construction.
 - Project-generated STL diagnostics and cleanup fixtures.
 - Capability, query backend, contact output, FCL complement, mesh cleanup, and
   public positioning documentation.
@@ -85,6 +90,12 @@ unused vertices, and export a cleaned ASCII STL. It does not fill holes, repair
 self-intersections, boolean reconstruct a surface, infer units, change model
 scale, or replace an industrial CAD repair tool.
 
+v1.5.0-alpha is a standalone uniform DenseSDF builder release. The DenseSDF
+builder is implemented and core-free. It uses a brute-force triangle loop and
+uniform grid sampling. It is not the full adaptive octree/block/low-rank
+compressed builder. The adaptive builder in v1.5 is an interface preview and
+dry-run plan only.
+
 Benchmark `total_ms` is a full query timing. Benchmark `kernel_ms` is CUDA
 kernel event timing. Original UI warmed kernel-average numbers should be
 compared to `--kernel-only --output phi --reuse-resident` rows.
@@ -96,13 +107,12 @@ analysis.
 
 ## Validation Snapshot
 
-- Expected tests: 65.
+- Expected tests: 73.
 - Expected install validation: PASS with `ADASDF_CL_USE_EXISTING_CORE=OFF`.
 - Expected alpha validation: PASS.
 - Expected clean check: PASS.
 - Target external collision test verdict for v0.9.0-alpha: PASS for the demo
   adaptive workflow.
 - Expected CUDA-unavailable behavior: GPU benchmark/tests SKIPPED, not FAILED.
-- Current v1.4.0-alpha local CPU CTest result: 65/65 PASS.
-- Current v1.4.0-alpha local CUDA CTest result through an ASCII-only
-  source/build path: 65/65 PASS.
+- Current v1.5.0-alpha local CPU CTest result: 73/73 PASS.
+- Current v1.5.0-alpha CUDA validation should be run when CUDA is available.

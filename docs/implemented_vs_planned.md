@@ -25,6 +25,9 @@
 - Safe mesh cleanup for near-duplicate vertices, degenerate triangles,
   duplicate triangles, and unused vertices.
 - ASCII STL writer for cleaned mesh export.
+- Standalone uniform DenseSDF builder for core-free STL-to-SDF construction.
+- DenseSDF `.sdfbin` read/write with `ADASDF_DENSE_SDFBIN_V1`.
+- `adasdf_build_dense_sdf` CLI and public STL-to-DenseSDF workflow.
 - Markdown and JSON-like mesh diagnostics reports.
 - Before/after cleanup diagnostics and readiness reports.
 - `adasdf_mesh_check` CLI, `adasdf_mesh_clean` CLI, CPU-only mesh diagnostics
@@ -46,12 +49,17 @@
 - Real asset bridge: existing-core fixtures and sampled expansion bridge exist
   when direct query support is available.
 - STL import audit: diagnostics, readiness suggestions, and safe cleanup are
-  implemented, but no hole filling, self-intersection repair, or standalone
-  arbitrary-STL SDF build follows from the report yet.
+  implemented, but no hole filling or self-intersection repair follows from
+  the report yet.
+- Adaptive compressed builder: v1.5 exposes options, stages, and dry-run plan
+  reporting only. Full adaptive octree/block/low-rank construction is not
+  implemented.
 
 ## Planned
 
-- Standalone arbitrary STL adaptive builder.
+- Standalone adaptive octree/block STL builder.
+- Low-rank compression builder.
+- Surrogate-guided adaptive build recommendation.
 - Complex mesh repair and hole filling.
 - Self-intersection detection.
 - FCL fallback backend.

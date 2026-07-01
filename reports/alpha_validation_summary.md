@@ -21,7 +21,7 @@ CMake Warning at CMakeLists.txt:72 (message):
 
 --
 -- AdaSDF-CL configuration:
---   Version: 1.4.0-alpha
+--   Version: 1.5.0-alpha
 --   Build examples: ON
 --   Build tests: ON
 --   Benchmarks: ON
@@ -43,22 +43,22 @@ cmake --build '<build>' --config Release
 ```text
 适用于 .NET Framework MSBuild 版本 17.14.40+3e7442088
 
-  1>Checking Build System
-  Building Custom Rule <source>/CMakeLists.txt
   adasdf_cl_runtime.vcxproj -> <build>\Release\adasdf_cl_runtime.lib
-  Building Custom Rule <source>/CMakeLists.txt
+  adasdf_adaptive_builder_preview_demo.vcxproj -> <build>\Release\adasdf_adaptive_builder_preview_demo.exe
   adasdf_benchmark_batch_query.vcxproj -> <build>\benchmarks\Release\adasdf_benchmark_batch_query.exe
-  Building Custom Rule <source>/CMakeLists.txt
   adasdf_build.vcxproj -> <build>\Release\adasdf_build.exe
-  Building Custom Rule <source>/CMakeLists.txt
+  adasdf_build_adaptive_sdf_preview.vcxproj -> <build>\tools\Release\adasdf_build_adaptive_sdf_preview.exe
   adasdf_build_demo_adaptive.vcxproj -> <build>\Release\adasdf_build_demo_adaptive.exe
-  Building Custom Rule <source>/CMakeLists.txt
+  adasdf_build_dense_sdf.vcxproj -> <build>\tools\Release\adasdf_build_dense_sdf.exe
   adasdf_build_then_query.vcxproj -> <build>\Release\adasdf_build_then_query.exe
-  Building Custom Rule <source>/CMakeLists.txt
   adasdf_capabilities.vcxproj -> <build>\tools\Release\adasdf_capabilities.exe
-  Building Custom Rule <source>/CMakeLists.txt
   adasdf_capability_walkthrough.vcxproj -> <build>\Release\adasdf_capability_walkthrough.exe
-  Building Custom Rule <source>/CMakeLists.txt
+  adasdf_collide.vcxproj -> <build>\tools\Release\adasdf_collide.exe
+  adasdf_collide_boxes_demo.vcxproj -> <build>\Release\adasdf_collide_boxes_demo.exe
+  adasdf_collision_between_two_objects.vcxproj -> <build>\Release\adasdf_collision_between_two_objects.exe
+  adasdf_contact_reduction_demo.vcxproj -> <build>\Release\adasdf_contact_reduction_demo.exe
+  adasdf_core_free_demo_collision.vcxproj -> <build>\Release\adasdf_core_free_demo_collision.exe
+  adasdf_expansion_quality.vcxproj -> <build>\tools\Release\adasdf_expansion_quality.exe
 ...
 ```
 
@@ -71,21 +71,21 @@ ctest --test-dir '<build>' -C Release --output-on-failure
 ```text
 Test project <build>
       Start  1: test_sdf_io
- 1/65 Test  #1: test_sdf_io ...........................   Passed    0.01 sec
+ 1/73 Test  #1: test_sdf_io ...........................   Passed    0.01 sec
       Start  2: test_collision_query
- 2/65 Test  #2: test_collision_query ..................   Passed    0.11 sec
+ 2/73 Test  #2: test_collision_query ..................   Passed    0.01 sec
       Start  3: test_distance_query
- 3/65 Test  #3: test_distance_query ...................   Passed    0.04 sec
+ 3/73 Test  #3: test_distance_query ...................   Passed    0.01 sec
       Start  4: test_collision_object
- 4/65 Test  #4: test_collision_object .................   Passed    0.03 sec
+ 4/73 Test  #4: test_collision_object .................   Passed    0.01 sec
       Start  5: test_pair_distance_query
- 5/65 Test  #5: test_pair_distance_query ..............   Passed    0.01 sec
+ 5/73 Test  #5: test_pair_distance_query ..............   Passed    0.01 sec
       Start  6: test_pair_collision_query
- 6/65 Test  #6: test_pair_collision_query .............   Passed    0.01 sec
+ 6/73 Test  #6: test_pair_collision_query .............   Passed    0.01 sec
       Start  7: test_candidate_point_sampler
- 7/65 Test  #7: test_candidate_point_sampler ..........   Passed    0.01 sec
+ 7/73 Test  #7: test_candidate_point_sampler ..........   Passed    0.01 sec
       Start  8: test_contact_generator
- 8/65 Test  #8: test_contact_generator ................   Passed    0.01 sec
+ 8/73 Test  #8: test_contact_generator ................   Passed    0.01 sec
       Start  9: test_contact_reducer
 ...
 ```
@@ -105,12 +105,17 @@ Test project <build>
 [install-validation] Installed Capabilities CLI
 [install-validation] Installed Mesh Check CLI
 [install-validation] Installed Mesh Clean CLI
+[install-validation] Installed DenseSDF Build CLI
+[install-validation] Installed DenseSDF Info CLI
+[install-validation] Installed DenseSDF Query CLI
+[install-validation] Installed DenseSDF Collide CLI
+[install-validation] Installed Adaptive Builder Preview CLI
 [install-validation] Package Run
 [install-validation] Downstream Configure
 [install-validation] Downstream Build
 [install-validation] Downstream Run
 Install validation: PASS
-Report: reports/install_validation_summary.md
+...
 ```
 
 ### Capabilities CLI: PASS
@@ -120,7 +125,7 @@ Report: reports/install_validation_summary.md
 ```
 
 ```text
-AdaSDF-CL version: 1.4.0-alpha
+AdaSDF-CL version: 1.5.0-alpha
 Position: FCL-style SDF collision backend under development.
 Boundary: complementary SDF backend, not a drop-in FCL replacement.
 
@@ -135,9 +140,9 @@ Implemented:
 - STL mesh diagnostics preflight report
 - SDF build readiness scoring and repair suggestions
 - safe mesh cleanup and before/after cleanup reports
-- expansion quality audit
-- sign mismatch and near-surface mismatch metrics
-- SVG collision view
+- standalone uniform DenseSDF builder
+- ADASDF_DENSE_SDFBIN_V1 read/write
+- STL-to-DenseSDF public workflow
 ...
 ```
 
@@ -149,7 +154,7 @@ Implemented:
 
 ```text
 AdaSDF-CL capability walkthrough
-Version: 1.4.0-alpha
+Version: 1.5.0-alpha
 Query backends: CPU direct, CPU expanded, optional CUDA expanded
 Point phi: -0.5
 Point normal: 1 0 0
@@ -250,6 +255,116 @@ SDF build readiness: Poor
 ...
 ```
 
+### DenseSDF Build CLI: PASS
+
+```bash
+'<build>/tools/Release/adasdf_build_dense_sdf.exe' '<source>/tests/data/mesh_diagnostics/closed_cube_ascii.stl' '<workspace>/build/closed_cube_dense_v1_5.sdfbin' --resolution 24 --padding 0.05 --report '<workspace>/build/closed_cube_dense_report.md' --json '<workspace>/build/closed_cube_dense_report.json'
+```
+
+```text
+AdaSDF-CL dense SDF builder
+Input: <local-path>
+Output: <local-path>
+Resolution: 24 x 24 x 24
+Signed: yes
+Watertight: yes
+Triangles: 12
+Build time ms: 21.4732
+Memory bytes: 111128
+Reload validation: success
+Report: <local-path>
+JSON report: <local-path>
+```
+
+### DenseSDF Info CLI: PASS
+
+```bash
+'<build>/tools/Release/adasdf_info.exe' '<workspace>/build/closed_cube_dense_v1_5.sdfbin'
+```
+
+```text
+AdaSDF-CL info
+Library version: 1.5.0-alpha
+Path: <local-path>
+Model name: uniform dense SDF
+Valid: yes
+Format: ADASDF_DENSE_SDFBIN_V1
+DenseSDF resolution: 24 x 24 x 24
+DenseSDF origin: -0.05 -0.05 -0.05
+DenseSDF spacing: 0.0478261 0.0478261 0.0478261
+DenseSDF signed: yes
+Unit: m
+Format version: 1
+Query backend: core-free uniform DenseSDF backend
+Query backend available: yes
+AABB min: -0.05 -0.05 -0.05
+AABB max: 1.05 1.05 1.05
+Fine cell count: 23
+Fine node count: 24
+...
+```
+
+### DenseSDF Query CLI: PASS
+
+```bash
+'<build>/tools/Release/adasdf_query.exe' '<workspace>/build/closed_cube_dense_v1_5.sdfbin' --point 0.5 0.5 0.5
+```
+
+```text
+AdaSDF-CL point query
+Path: <local-path>
+Point: 0.5 0.5 0.5
+Signed distance: -0.476087
+Gradient: 0 0 0
+Normal: 0 0 0
+Query backend: core-free uniform DenseSDF backend
+```
+
+### DenseSDF Collide CLI: PASS
+
+```bash
+'<build>/tools/Release/adasdf_collide.exe' '<workspace>/build/closed_cube_dense_v1_5.sdfbin' '<workspace>/build/closed_cube_dense_v1_5.sdfbin' --max-contacts 4
+```
+
+```text
+AdaSDF-CL collision query
+Model A: <local-path>
+Model B: <local-path>
+Offset B: 0 0 0
+AABB A: min=(-0.05 -0.05 -0.05) max=(1.05 1.05 1.05)
+AABB B: min=(-0.05 -0.05 -0.05) max=(1.05 1.05 1.05)
+Colliding: true
+Minimum distance: -0.476087
+Backend: CPU narrow-phase: symmetric SDF-sampling research preview
+Requested query backend: cpu
+Requested expansion: none
+Requested blocks: all
+Method: symmetric candidate-point SDF query + deterministic contact reduction
+Candidate points: 462
+Raw contacts: 2
+Reduced contacts: 1
+Requested max contacts: 4
+Returned contacts: 1
+...
+```
+
+### Adaptive Builder Preview CLI: PASS
+
+```bash
+'<build>/tools/Release/adasdf_build_adaptive_sdf_preview.exe' '<source>/tests/data/mesh_diagnostics/closed_cube_ascii.stl' '<workspace>/build/closed_cube_adaptive_preview.sdfbin' --target-error 1e-3 --memory-mb 512 --dry-run --plan '<workspace>/build/closed_cube_adaptive_preview_plan.md'
+```
+
+```text
+AdaSDF-CL adaptive builder interface preview
+Input: <local-path>
+Requested output: <local-path>
+Dry run: yes
+Valid plan: yes
+Implemented in this version: no
+Full adaptive compressed SDF build is not implemented in v1.5.0-alpha.
+Plan: <local-path>
+```
+
 ### Demo Surrogate Recommendation: PASS
 
 ```bash
@@ -304,12 +419,12 @@ Reload validation: success
 ### Demo Adaptive Info CLI: PASS
 
 ```bash
-'<build>/Release/adasdf_info.exe' '<workspace>/build/cube_adaptive_v1.sdfbin'
+'<build>/tools/Release/adasdf_info.exe' '<workspace>/build/cube_adaptive_v1.sdfbin'
 ```
 
 ```text
 AdaSDF-CL info
-Library version: 1.4.0-alpha
+Library version: 1.5.0-alpha
 Path: <local-path>
 Model name: demo adaptive analytic box
 Valid: yes
@@ -332,7 +447,7 @@ Block[0] resolution: 32
 ### Demo Adaptive Query CLI: PASS
 
 ```bash
-'<build>/Release/adasdf_query.exe' '<workspace>/build/cube_adaptive_v1.sdfbin' --point 0 0 0
+'<build>/tools/Release/adasdf_query.exe' '<workspace>/build/cube_adaptive_v1.sdfbin' --point 0 0 0
 ```
 
 ```text
@@ -409,16 +524,16 @@ Contact[1]
 
 ```text
 query_backend,expansion_mode,selected_blocks,num_points,expanded_memory_mb,gpu_resident_memory_mb,setup_ms,expand_ms,upload_sdf_ms,allocation_ms,h2d_points_ms,kernel_ms,sync_ms,d2h_results_ms,postprocess_ms,free_ms,total_ms,query_kernel_ms,query_total_ms,ns_per_query,queries_per_second,fallback_count,max_abs_phi_error,max_normal_error,cuda_available,max_abs_error,mean_abs_error,rms_error,p95_abs_error,sign_mismatch_count,sign_mismatch_rate,ambiguous_sign_count,ambiguous_sign_rate,near_surface_sign_mismatch_count,near_surface_sign_mismatch_rate,fallback_rate,warmup,repeat,kernel_min_ms,kernel_mean_ms,kernel_max_ms,kernel_std_ms,total_min_ms,total_mean_ms,total_max_ms,total_std_ms,output_mode,phi_only,reuse_resident,kernel_only,workspace_reused,allocation_count,workspace_capacity,workspace_device_memory_mb,block_lookup_count,block_scan_count,center_block_hit_rate,neighbor_same_block_rate,download_results,correctness_checked,host_memory,layout,status,error_message
-cpu,none,all,10000,0,0,0,0,0,0.0951,0,NA,NA,0,0,0,0.4786,NA,0.4786,47.86,20894274.97,0,0,0,false,0,0,0,0,0,0,0,0,0,0,0,0,1,NA,NA,NA,NA,0.4786,0.4786,0.4786,0,"phi,normal",false,false,false,false,0,0,0,0,0,0,0,true,true,paged,aos,ok,
-cpu,none,all,100000,0,0,0,0,0,0.7613,0,NA,NA,0,0,0,4.9604,NA,4.9604,49.604,20159664.54,0,0,0,false,0,0,0,0,0,0,0,0,0,0,0,0,1,NA,NA,NA,NA,4.9604,4.9604,4.9604,0,"phi,normal",false,false,false,false,0,0,0,0,0,0,0,true,true,paged,aos,ok,
-cpu,none,all,1000000,0,0,0,0,0,7.6174,0,NA,NA,0,0,0,47.7206,NA,47.7206,47.7206,20955310.7,0,0,0,false,0,0,0,0,0,0,0,0,0,0,0,0,1,NA,NA,NA,NA,47.7206,47.7206,47.7206,0,"phi,normal",false,false,false,false,0,0,0,0,0,0,0,true,true,paged,aos,ok,
+cpu,none,all,10000,0,0,0,0,0,0.1042,0,NA,NA,0,0,0,0.5053,NA,0.5053,50.53,19790223.63,0,0,0,false,0,0,0,0,0,0,0,0,0,0,0,0,1,NA,NA,NA,NA,0.5053,0.5053,0.5053,0,"phi,normal",false,false,false,false,0,0,0,0,0,0,0,true,true,paged,aos,ok,
+cpu,none,all,100000,0,0,0,0,0,0.8129,0,NA,NA,0,0,0,4.8631,NA,4.8631,48.631,20563015.36,0,0,0,false,0,0,0,0,0,0,0,0,0,0,0,0,1,NA,NA,NA,NA,4.8631,4.8631,4.8631,0,"phi,normal",false,false,false,false,0,0,0,0,0,0,0,true,true,paged,aos,ok,
+cpu,none,all,1000000,0,0,0,0,0,9.1635,0,NA,NA,0,0,0,57.291,NA,57.291,57.291,17454748.56,0,0,0,false,0,0,0,0,0,0,0,0,0,0,0,0,1,NA,NA,NA,NA,57.291,57.291,57.291,0,"phi,normal",false,false,false,false,0,0,0,0,0,0,0,true,true,paged,aos,ok,
 cuda,global,all,10000,,,,,,,,NA,NA,,,,,NA,,,,0,,NA,false,,,,,0,,0,,0,,,0,1,NA,NA,NA,NA,,,,,"phi,normal",false,false,false,false,0,0,,0,0,,,true,true,paged,aos,skipped,CUDA backend unavailable
 cuda,global,all,100000,,,,,,,,NA,NA,,,,,NA,,,,0,,NA,false,,,,,0,,0,,0,,,0,1,NA,NA,NA,NA,,,,,"phi,normal",false,false,false,false,0,0,,0,0,,,true,true,paged,aos,skipped,CUDA backend unavailable
 cuda,global,all,1000000,,,,,,,,NA,NA,,,,,NA,,,,0,,NA,false,,,,,0,,0,,0,,,0,1,NA,NA,NA,NA,,,,,"phi,normal",false,false,false,false,0,0,,0,0,,,true,true,paged,aos,skipped,CUDA backend unavailable
 backend | expansion | output | blocks | points | setup ms | total mean ms | kernel mean ms | ns/query | max phi error | max normal error | status
-cpu | none | phi,normal | all | 10000 | 0 | 0.4786 | NA | 47.86 | 0 | 0 | ok
-cpu | none | phi,normal | all | 100000 | 0 | 4.9604 | NA | 49.604 | 0 | 0 | ok
-cpu | none | phi,normal | all | 1000000 | 0 | 47.7206 | NA | 47.7206 | 0 | 0 | ok
+cpu | none | phi,normal | all | 10000 | 0 | 0.5053 | NA | 50.53 | 0 | 0 | ok
+cpu | none | phi,normal | all | 100000 | 0 | 4.8631 | NA | 48.631 | 0 | 0 | ok
+cpu | none | phi,normal | all | 1000000 | 0 | 57.291 | NA | 57.291 | 0 | 0 | ok
 cuda | global | phi,normal | all | 10000 | SKIPPED | SKIPPED | SKIPPED | SKIPPED | SKIPPED | SKIPPED | skipped
 cuda | global | phi,normal | all | 100000 | SKIPPED | SKIPPED | SKIPPED | SKIPPED | SKIPPED | SKIPPED | skipped
 cuda | global | phi,normal | all | 1000000 | SKIPPED | SKIPPED | SKIPPED | SKIPPED | SKIPPED | SKIPPED | skipped

@@ -80,6 +80,36 @@ adasdf_benchmark_batch_query --points 10000,100000,1000000 --backend cpu,cuda --
 
 When CUDA is unavailable, the tool prints `CUDA backend unavailable; skipping GPU benchmark.` and keeps CPU benchmark rows.
 
+## adasdf_build_dense_sdf
+
+Status: working in a core-free public build.
+
+Builds a uniform DenseSDF `.sdfbin` from STL input.
+
+```bash
+adasdf_build_dense_sdf model.stl model_dense.sdfbin --resolution 64 --padding 0.05
+adasdf_build_dense_sdf open_mesh.stl open_mesh_dense.sdfbin --resolution 64 --unsigned
+adasdf_build_dense_sdf model.stl model_dense.sdfbin --auto-clean --report dense_report.md --json dense_report.json
+```
+
+Signed mode requires watertight input by default. The output format is
+`ADASDF_DENSE_SDFBIN_V1`. The builder is a brute-force uniform-grid baseline,
+not the full adaptive octree/block/low-rank builder.
+
+## adasdf_build_adaptive_sdf_preview
+
+Status: dry-run interface preview.
+
+Prints the planned adaptive builder options and stages for future
+octree/block/low-rank construction.
+
+```bash
+adasdf_build_adaptive_sdf_preview model.stl model_adaptive.sdfbin --target-error 1e-3 --memory-mb 512 --dry-run --plan adaptive_plan.md
+```
+
+This command does not generate adaptive compressed `.sdfbin` files in
+v1.5.0-alpha.
+
 ## adasdf_build_demo_adaptive
 
 Status: working in a core-free public build.
@@ -120,7 +150,9 @@ adasdf_build input.stl output.sdfbin --near-surface-error 1e-4 --max-memory-mb 2
 
 ## adasdf_info
 
-Prints model metadata, format, shape information, AABB, memory footprint, adaptive demo metadata, format version, and query backend availability.
+Prints model metadata, format, shape information, AABB, memory footprint,
+DenseSDF metadata, adaptive demo metadata, format version, and query backend
+availability.
 
 ```bash
 adasdf_info cube_adaptive.sdfbin

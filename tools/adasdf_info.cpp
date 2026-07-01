@@ -62,6 +62,15 @@ int main(int argc, char** argv) {
     if (!metadata.format_name.empty()) {
       std::cout << "Format: " << metadata.format_name << "\n";
     }
+    if (const auto dense = std::dynamic_pointer_cast<DenseSDFModel>(model)) {
+      const DenseSDFGrid& grid = dense->grid();
+      std::cout << "DenseSDF resolution: " << grid.nx << " x " << grid.ny
+                << " x " << grid.nz << "\n";
+      printVec("DenseSDF origin: ", grid.origin);
+      printVec("DenseSDF spacing: ", grid.spacing);
+      std::cout << "DenseSDF signed: " << yesNo(grid.signed_distance) << "\n";
+      std::cout << "Unit: " << grid.unit << "\n";
+    }
     if (const auto analytic = std::dynamic_pointer_cast<AnalyticSDFModel>(model)) {
       std::cout << "Shape: " << analytic->shapeName() << "\n";
       printVec("Center: ", analytic->center());

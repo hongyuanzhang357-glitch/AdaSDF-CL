@@ -12,7 +12,9 @@ only, Planned, Not implemented.
 | Build / Input | Binary STL | Implemented | v1.2 | `STLReader` | Validates binary triangle count against file size. |
 | Build / Input | ASCII STL writer | Implemented | v1.4 | `STLWriter` | Writes cleaned TriangleMesh output; binary writing remains planned. |
 | Build / Input | existing-core STL-to-sdfbin bridge | Existing-core only | v0.4 | `AdaptiveSDFBuilder`, `adasdf_build` | Requires existing research core. |
-| Build / Input | arbitrary STL standalone public builder | Planned | - | - | Existing-core bridge exists, but no core-free general STL builder yet. |
+| Build / Input | standalone uniform STL-to-DenseSDF builder | Implemented | v1.5 | `DenseSDFBuilder`, `adasdf_build_dense_sdf` | Core-free baseline builder; brute-force uniform grid. |
+| Build / Input | adaptive compressed builder interface preview | Experimental | v1.5 | `AdaptiveSDFBuilderPreview`, `adasdf_build_adaptive_sdf_preview` | Dry-run plan only; does not write adaptive compressed `.sdfbin`. |
+| Build / Input | standalone adaptive compressed STL builder | Planned | - | - | Full octree/block/low-rank construction remains planned. |
 | Build / Input | mesh diagnostics | Implemented | v1.2 | `MeshDiagnostics`, `adasdf_mesh_check` | Preflight only, no repair. |
 | Build / Input | mesh readiness scoring | Implemented | v1.3 | `MeshReadiness`, `adasdf_mesh_check --readiness` | Preflight suitability score and suggestions. |
 | Build / Input | repair suggestions | Implemented | v1.3 | `MeshReadinessReport` | Text guidance only; input STL is not modified. |
@@ -21,6 +23,8 @@ only, Planned, Not implemented.
 | Build / Input | unit / scale report | Partial | v0.9 | `adasdf_info` | Metadata shown when available. |
 | SDF storage / model | demo text `.sdfbin` | Implemented | v0.8 | `DemoSDFBin` | Core-free analytic demo format. |
 | SDF storage / model | demo adaptive `.sdfbin` | Implemented | v0.9 | `DemoAdaptiveSDFBin` | Core-free adaptive demo format. |
+| SDF storage / model | dense `.sdfbin` | Implemented | v1.5 | `DenseSDFBin` | Text format `ADASDF_DENSE_SDFBIN_V1`. |
+| SDF storage / model | uniform dense SDF model | Implemented | v1.5 | `DenseSDFModel` | Trilinear sampling and finite-difference gradients. |
 | SDF storage / model | existing-core `.sdfbin` read | Existing-core only | v0.2 | `SDFBinReader` | Query requires existing core. |
 | SDF storage / model | contact-only `.sdfbin` | Implemented | v0.6 | `ContactOnlySDFBin` | Lightweight contact export format. |
 | SDF storage / model | low-rank compressed SDF native public reader | Partial | v0.2 | `CompressedSDF`, `SDFModel` | Full direct public native reader remains limited. |

@@ -2,7 +2,7 @@
 
 Adaptive Signed Distance Field Collision Library
 
-Status: 1.4.0-alpha / research preview
+Status: 1.5.0-alpha / research preview
 Build system: CMake
 License: MIT
 Tests: CTest
@@ -11,13 +11,14 @@ AdaSDF-CL is an alpha collision and contact library built around signed distance
 
 AdaSDF-CL is an FCL-style SDF collision backend under development. It complements FCL by providing signed-distance queries, penetration depth, contact normals, batch query, expanded-SDF quality audit and CUDA query paths. It is not a drop-in FCL replacement.
 
-v1.4.0-alpha adds safe mesh cleanup and clean ASCII STL export on top of STL
-mesh diagnostics and readiness scoring. CUDA, FCL, Python, and the existing
-research core remain optional; CPU-only builds remain fully usable.
+v1.5.0-alpha introduces a public standalone uniform DenseSDF builder and an
+experimental adaptive builder interface preview. CUDA, FCL, Python, and the
+existing research core remain optional; CPU-only builds remain fully usable.
 
 The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`, `v1.1.0-alpha`,
-`v1.1.1-alpha`, `v1.2.0-alpha`, and `v1.3.0-alpha` tags are retained for
-traceability. The recommended public pre-release is `v1.4.0-alpha`.
+`v1.1.1-alpha`, `v1.2.0-alpha`, `v1.3.0-alpha`, and `v1.4.0-alpha` tags are
+retained for traceability. The recommended public pre-release is
+`v1.5.0-alpha`.
 
 ## What Is AdaSDF-CL?
 
@@ -43,8 +44,11 @@ collision engine and does not yet replace FCL.
 | Mesh repair suggestions | Implemented |
 | Safe mesh cleanup | Implemented |
 | ASCII STL writer | Implemented |
+| Standalone uniform DenseSDF builder | Implemented |
+| DenseSDF `.sdfbin` read/write | Implemented |
+| Adaptive compressed builder interface preview | Experimental / preview |
 | Existing-core sampled expansion bridge | Existing-core only / partial |
-| Standalone arbitrary STL builder | Planned |
+| Standalone adaptive compressed STL builder | Planned |
 | Complex mesh repair / hole filling | Planned |
 | FCL fallback backend | Planned |
 | CollisionWorld broadphase | Planned |
@@ -60,6 +64,9 @@ Detailed capability references:
 - `docs/mesh_diagnostics.md`
 - `docs/mesh_readiness.md`
 - `docs/mesh_cleanup.md`
+- `docs/dense_sdf_builder.md`
+- `docs/stl_to_sdf_public_workflow.md`
+- `docs/adaptive_builder_preview.md`
 - `docs/stl_import_audit.md`
 - `docs/public_positioning.md`
 
@@ -68,7 +75,7 @@ Detailed capability references:
 ```bash
 git clone https://github.com/hongyuanzhang357-glitch/AdaSDF-CL.git
 cd AdaSDF-CL
-git checkout v1.4.0-alpha
+git checkout v1.5.0-alpha
 
 cmake -S . -B build -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD_TESTS=ON -DADASDF_CL_BUILD_BENCHMARKS=ON
 cmake --build build --config Release
@@ -78,6 +85,11 @@ cmake --install build --config Release --prefix install
 install/bin/adasdf_capabilities --verbose
 install/bin/adasdf_mesh_check tests/data/mesh_diagnostics/closed_cube_ascii.stl --readiness --out mesh_report.md
 install/bin/adasdf_mesh_clean tests/data/mesh_diagnostics/duplicate_and_degenerate_ascii.stl cleaned.stl --report cleanup_report.md
+install/bin/adasdf_build_dense_sdf tests/data/mesh_diagnostics/closed_cube_ascii.stl cube_dense.sdfbin --resolution 32 --padding 0.05 --report dense_report.md
+install/bin/adasdf_info cube_dense.sdfbin
+install/bin/adasdf_query cube_dense.sdfbin --point 0.5 0.5 0.5
+install/bin/adasdf_collide cube_dense.sdfbin cube_dense.sdfbin --max-contacts 4
+install/bin/adasdf_build_adaptive_sdf_preview tests/data/mesh_diagnostics/closed_cube_ascii.stl cube_adaptive_preview.sdfbin --target-error 1e-3 --memory-mb 512 --dry-run --plan adaptive_plan.md
 install/bin/adasdf_recommend_demo --shape box --target-error 1e-3 --memory-mb 64 --block-memory-mb 16 --top-k 5
 install/bin/adasdf_build_demo_adaptive cube_adaptive.sdfbin --shape box --target-error 1e-3 --memory-mb 64 --block-memory-mb 16 --use-surrogate
 install/bin/adasdf_info cube_adaptive.sdfbin
@@ -108,12 +120,47 @@ On Windows, installed tools usually have `.exe` suffixes, for example `install/b
 
 Generated `.sdfbin` and `.svg` files should stay in build, install, or temporary directories and should not be committed to the source tree.
 
+## Public STL-To-SDF Workflow
+
+v1.5.0-alpha introduces a standalone uniform dense SDF builder. It is the first
+public core-free STL-to-SDF path. It is not the full adaptive
+octree/block-low-rank builder.
+
+```bash
+adasdf_mesh_check model.stl --readiness --out mesh_report.md
+adasdf_mesh_clean model.stl model_clean.stl --report cleanup_report.md
+adasdf_build_dense_sdf model_clean.stl model_dense.sdfbin --resolution 64 --padding 0.05
+adasdf_info model_dense.sdfbin
+adasdf_query model_dense.sdfbin --point 0 0 0
+adasdf_collide model_dense.sdfbin model_dense.sdfbin --max-contacts 4
+```
+
+Open meshes can be built as unsigned distance fields:
+
+```bash
+adasdf_build_dense_sdf open_mesh.stl open_mesh_dense.sdfbin --resolution 64 --unsigned
+```
+
+## Adaptive Builder Interface Preview
+
+```bash
+adasdf_build_adaptive_sdf_preview model.stl model_adaptive.sdfbin --target-error 1e-3 --memory-mb 512 --dry-run --plan adaptive_plan.md
+```
+
+The adaptive builder preview exposes planned options and stages for future
+octree/block/low-rank construction. It does not generate adaptive compressed
+SDF files in v1.5.0-alpha.
+
 ## What Works Now
 
 - `adasdf_capabilities` for a quick implemented/partial/planned feature summary.
 - `adasdf_mesh_check` for ASCII/binary STL mesh diagnostics and SDF build readiness before SDF construction.
 - `adasdf_mesh_clean` for safe cleanup and clean ASCII STL export.
 - `TriangleMesh`, `STLReader`, `STLWriter`, `MeshDiagnostics`, `MeshReadiness`, `MeshCleanup`, and `MeshDiagnosticsWriter`.
+- Uniform `DenseSDFModel`, `DenseSDFBuilder`, `ADASDF_DENSE_SDFBIN_V1`, and
+  `adasdf_build_dense_sdf` for a public core-free STL-to-uniform-SDF path.
+- `adasdf_build_adaptive_sdf_preview` for a dry-run preview of future adaptive
+  octree/block/low-rank builder options and stages.
 - Core-free analytic box SDF model.
 - Demo `.sdfbin` format `ADASDF_DEMO_SDFBIN_V1`.
 - Demo adaptive `.sdfbin` format `ADASDF_DEMO_ADAPTIVE_SDFBIN_V1`.
@@ -158,7 +205,10 @@ target error + memory constraints
 -> SVG collision view
 ```
 
-The demo adaptive builder uses analytic box SDF queries and demo adaptive metadata to exercise the full public workflow. It is not the full adaptive compressed STL-to-SDF builder.
+The demo adaptive builder uses analytic box SDF queries and demo adaptive
+metadata to exercise the public workflow. The v1.5 DenseSDF builder is the
+implemented public STL-to-uniform-SDF path. Neither path is the full adaptive
+compressed octree/block/low-rank STL-to-SDF builder.
 
 ### Existing-Core Enhanced Build
 
@@ -202,9 +252,10 @@ boundary edges, non-manifold edges, degenerate triangles, duplicate triangles,
 connected components, isolated vertices, and scale warnings.
 
 `v1.2.0-alpha` introduced STL mesh diagnostics as a preflight step. v1.4 adds
-safe cleanup for obvious duplicate/degenerate elements, but it still does not
-implement a full standalone arbitrary-STL adaptive SDF builder and does not
-repair self-intersections.
+safe cleanup for obvious duplicate/degenerate elements. v1.5 adds a standalone
+uniform DenseSDF builder, but it still does not implement the full adaptive
+octree/block/low-rank compressed builder and does not repair
+self-intersections.
 
 ## SDF Build Readiness
 
@@ -258,7 +309,7 @@ The CUDA backend is optional. If CUDA is not available, AdaSDF-CL remains fully 
 CUDA backend unavailable
 ```
 
-v1.4.0-alpha supports CUDA batch queries over pre-expanded global or block dense SDF data for the core-free analytic/demo adaptive box backend. Full low-rank compressed SDF GPU expansion is planned but not yet complete.
+v1.5.0-alpha supports CUDA batch queries over pre-expanded global or block dense SDF data for queryable public models. Full low-rank compressed SDF GPU expansion is planned but not yet complete.
 
 ## Expanded SDF Quality Audit
 
@@ -337,7 +388,7 @@ FCL-style SDF collision backend under development
 It complements FCL-style workflows with SDF-native signed-distance queries,
 penetration depth, contact normals, batch query, expanded-SDF quality audit, and
 optional CUDA expanded query. A true FCL fallback backend and hybrid mesh/SDF
-pipeline are planned, not implemented in v1.4.0-alpha.
+pipeline are planned, not implemented in v1.5.0-alpha.
 
 See `docs/fcl_complement_strategy.md` and `docs/public_positioning.md`.
 
@@ -347,11 +398,11 @@ See `docs/fcl_complement_strategy.md` and `docs/public_positioning.md`.
   contact output, contact reduction, CPU/CUDA expanded query modes, benchmark
   timing semantics, ExpandedSDF quality audit, sign metrics, SVG view, and
   external CMake integration, plus STL mesh diagnostics, readiness scoring,
-  safe cleanup, and ASCII STL export.
-- Partial / experimental: demo surrogate, adaptive builder bridge,
+  safe cleanup, ASCII STL export, and standalone uniform DenseSDF building.
+- Partial / experimental: demo surrogate, adaptive compressed builder preview,
   existing-core bridge, CUDA expanded query backend, block-expanded query, and
   contact manifold behavior.
-- Planned: standalone arbitrary STL builder, complex mesh repair, hole filling,
+- Planned: adaptive octree/block/low-rank builder, complex mesh repair, hole filling,
   self-intersection detection, FCL
   fallback backend, CollisionWorld broadphase, CCD, Python, ROS/MoveIt, robot
   benchmarks, and full low-rank GPU-native SDF query.

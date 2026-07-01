@@ -13,6 +13,10 @@ AdaSDF-CL v1.4.0-alpha adds optional safe cleanup for obvious duplicate and
 degenerate elements. It writes a separate cleaned STL and does not fill holes
 or repair self-intersections.
 
+AdaSDF-CL v1.5.0-alpha adds a standalone uniform DenseSDF builder after these
+preflight steps. It does not turn diagnostics into full adaptive
+octree/block/low-rank construction.
+
 ## Supported Input
 
 - ASCII STL.
@@ -146,7 +150,8 @@ remaining issues, and recommendation text.
 - No hole filling.
 - No self-intersection detection or repair.
 - No unit inference.
-- No full arbitrary-STL adaptive SDF builder.
+- Uniform DenseSDF builder is available in v1.5; full adaptive
+  octree/block/low-rank builder remains planned.
 - No FCL fallback backend.
 - No ROS / MoveIt integration.
 
@@ -154,5 +159,5 @@ remaining issues, and recommendation text.
 
 - Optional hole-filling workflows with explicit risk controls.
 - Self-intersection detection.
-- Full standalone arbitrary-STL adaptive SDF builder.
+- Full standalone adaptive octree/block/low-rank SDF builder.
 - Real robot STL benchmark suite.

@@ -392,6 +392,145 @@ def main() -> int:
         print_failure(result, source, build, install)
         return result.returncode
 
+    mesh_fixture = source / "tests" / "data" / "mesh_diagnostics" / "closed_cube_ascii.stl"
+    dense_sdfbin = build.parent / "install_validation_dense.sdfbin"
+    dense_report = build.parent / "install_validation_dense_report.md"
+    dense_json = build.parent / "install_validation_dense_report.json"
+    adaptive_preview_sdfbin = build.parent / "install_validation_adaptive_preview.sdfbin"
+    adaptive_preview_plan = build.parent / "install_validation_adaptive_preview_plan.md"
+    if adaptive_preview_sdfbin.exists():
+        adaptive_preview_sdfbin.unlink()
+
+    dense_tool_names = [
+        "adasdf_build_dense_sdf",
+        "adasdf_info",
+        "adasdf_query",
+        "adasdf_collide",
+        "adasdf_build_adaptive_sdf_preview",
+    ]
+    dense_tools: dict[str, Path] = {}
+    for tool_name in dense_tool_names:
+        try:
+            dense_tools[tool_name] = find_executable(install, tool_name, config)
+        except FileNotFoundError as exc:
+            result = StepResult(
+                f"Installed {tool_name}",
+                [tool_name],
+                1,
+                str(exc),
+            )
+            results.append(result)
+            write_report(report_path, results, source, build, install, config)
+            print_failure(result, source, build, install)
+            return result.returncode
+
+    installed_dense_steps: list[tuple[str, list[str]]] = [
+        (
+            "Installed DenseSDF Build CLI",
+            [
+                str(dense_tools["adasdf_build_dense_sdf"]),
+                str(mesh_fixture),
+                str(dense_sdfbin),
+                "--resolution",
+                "24",
+                "--padding",
+                "0.05",
+                "--report",
+                str(dense_report),
+                "--json",
+                str(dense_json),
+            ],
+        ),
+        (
+            "Installed DenseSDF Info CLI",
+            [str(dense_tools["adasdf_info"]), str(dense_sdfbin)],
+        ),
+        (
+            "Installed DenseSDF Query CLI",
+            [
+                str(dense_tools["adasdf_query"]),
+                str(dense_sdfbin),
+                "--point",
+                "0.5",
+                "0.5",
+                "0.5",
+            ],
+        ),
+        (
+            "Installed DenseSDF Collide CLI",
+            [
+                str(dense_tools["adasdf_collide"]),
+                str(dense_sdfbin),
+                str(dense_sdfbin),
+                "--max-contacts",
+                "4",
+            ],
+        ),
+        (
+            "Installed Adaptive Builder Preview CLI",
+            [
+                str(dense_tools["adasdf_build_adaptive_sdf_preview"]),
+                str(mesh_fixture),
+                str(adaptive_preview_sdfbin),
+                "--target-error",
+                "1e-3",
+                "--memory-mb",
+                "512",
+                "--dry-run",
+                "--plan",
+                str(adaptive_preview_plan),
+            ],
+        ),
+    ]
+    for name, command in installed_dense_steps:
+        print(f"[install-validation] {name}", flush=True)
+        result = run_step(name, command, workspace)
+        results.append(result)
+        if result.returncode != 0:
+            write_report(report_path, results, source, build, install, config)
+            print_failure(result, source, build, install)
+            return result.returncode
+        if name == "Installed DenseSDF Build CLI":
+            if (
+                not dense_sdfbin.exists()
+                or not dense_report.exists()
+                or not dense_json.exists()
+                or "Reload validation: success" not in result.output
+            ):
+                result.returncode = 1
+                result.output += "\nValidation failed: installed DenseSDF build outputs are missing.\n"
+        elif name == "Installed DenseSDF Info CLI":
+            if "ADASDF_DENSE_SDFBIN_V1" not in result.output or "DenseSDF resolution:" not in result.output:
+                result.returncode = 1
+                result.output += "\nValidation failed: installed DenseSDF info output is incomplete.\n"
+        elif name == "Installed DenseSDF Query CLI":
+            if "Signed distance:" not in result.output:
+                result.returncode = 1
+                result.output += "\nValidation failed: installed DenseSDF query output is incomplete.\n"
+        elif name == "Installed DenseSDF Collide CLI":
+            match = re.search(r"Returned contacts:\s+(\d+)", result.output)
+            if not match or int(match.group(1)) > 4:
+                result.returncode = 1
+                result.output += "\nValidation failed: installed DenseSDF collide output is incomplete.\n"
+        elif name == "Installed Adaptive Builder Preview CLI":
+            plan_text = (
+                adaptive_preview_plan.read_text(encoding="utf-8", errors="replace")
+                if adaptive_preview_plan.exists()
+                else ""
+            )
+            if (
+                adaptive_preview_sdfbin.exists()
+                or not adaptive_preview_plan.exists()
+                or "not implemented in v1.5.0-alpha" not in result.output
+                or "interface preview only" not in plan_text
+            ):
+                result.returncode = 1
+                result.output += "\nValidation failed: installed adaptive preview output is incomplete.\n"
+        if result.returncode != 0:
+            write_report(report_path, results, source, build, install, config)
+            print_failure(result, source, build, install)
+            return result.returncode
+
     try:
         package_exe = find_executable(package_build, "test_find_package", config)
     except FileNotFoundError as exc:

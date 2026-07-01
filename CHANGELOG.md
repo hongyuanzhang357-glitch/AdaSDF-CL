@@ -1,5 +1,37 @@
 # Changelog
 
+## 1.5.0-alpha
+
+Standalone DenseSDF builder and adaptive builder interface preview.
+
+### Added
+
+- Uniform `DenseSDFModel`.
+- Brute-force STL-to-DenseSDF builder.
+- Point-triangle distance utilities.
+- Ray-casting sign estimator for watertight meshes.
+- `ADASDF_DENSE_SDFBIN_V1` read/write support.
+- `adasdf_build_dense_sdf` CLI.
+- Public STL-to-SDF workflow documentation.
+- Adaptive builder interface preview.
+- `adasdf_build_adaptive_sdf_preview` dry-run CLI.
+- DenseSDF roundtrip, query, collision, CLI, and adaptive-preview tests.
+
+### Changed
+
+- Version updated to `1.5.0-alpha`.
+- `adasdf_info`, `adasdf_query`, `adasdf_collide`, expansion quality, and
+  benchmark model loading can use DenseSDF `.sdfbin` files.
+- Build-tree CLI outputs are normalized for core command-line tools.
+
+### Notes
+
+- DenseSDF builder is implemented and core-free.
+- Adaptive octree/block/low-rank builder is interface preview only in
+  `v1.5.0-alpha`.
+- Full adaptive construction remains planned for v1.6/v1.7.
+- Surrogate-guided parameter recommendation remains planned for v1.8.
+
 ## 1.4.0-alpha
 
 Safe mesh cleanup and clean STL export.

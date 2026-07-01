@@ -14,12 +14,15 @@ replacement.
 - STL mesh diagnostics preflight for import readiness.
 - SDF build readiness scoring and repair suggestions.
 - Safe mesh cleanup and clean ASCII STL export.
+- Standalone uniform DenseSDF builder.
+- Adaptive builder interface preview.
 
 ## Avoid Wording
 
 - Industrial-grade replacement for FCL.
 - Certified collision engine.
-- Universal STL-to-SDF solution.
+- Universal adaptive STL-to-SDF solution.
+- Complete adaptive octree/block/low-rank builder.
 - Automatic mesh repair tool.
 - Automatic hole filling or self-intersection repair tool.
 - Industrial mesh certification tool.
@@ -31,7 +34,8 @@ replacement.
 AdaSDF-CL complements FCL-style workflows by adding SDF-native signed-distance
 queries, penetration-depth estimates, contact normals, batch query tooling,
 expanded-SDF quality audits, optional CUDA expanded-query paths, STL mesh
-diagnostics, SDF build readiness scoring, and safe mesh cleanup. v1.4 adds
-separate cleaned STL export for obvious duplicate/degenerate elements; it does
-not fill holes, repair self-intersections, or claim full arbitrary-STL adaptive
-SDF construction.
+diagnostics, SDF build readiness scoring, safe mesh cleanup, and a public
+uniform DenseSDF builder. v1.5 adds the first core-free STL-to-uniform-SDF
+path and an adaptive builder interface preview. It does not fill holes, repair
+self-intersections, or claim full adaptive octree/block/low-rank SDF
+construction.

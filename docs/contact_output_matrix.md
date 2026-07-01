@@ -3,6 +3,11 @@
 Stable contact manifold generation is partial / research-preview. Contact
 reduction exists. Full robot-grade manifold clustering and CCD remain planned.
 
+DenseSDF models built by `adasdf_build_dense_sdf` use the same SDF-derived
+contact fields as other queryable public models. Contact quality remains tied
+to grid resolution, sign quality, sampling, and the research-preview contact
+reduction path.
+
 | Contact field | Status | Source | Notes |
 | --- | --- | --- | --- |
 | contact point | Implemented | `Contact::point` | SDF candidate point pipeline. |

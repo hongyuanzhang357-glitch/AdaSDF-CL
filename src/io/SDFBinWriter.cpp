@@ -5,7 +5,9 @@
 
 #include "adasdf/generation/ExistingBuilderBridge.h"
 #include "adasdf/geometry/AnalyticSDFModel.h"
+#include "adasdf/geometry/DenseSDFModel.h"
 #include "adasdf/geometry/DemoAdaptiveSDFModel.h"
+#include "adasdf/io/DenseSDFBin.h"
 #include "adasdf/io/DemoAdaptiveSDFBin.h"
 #include "adasdf/io/DemoSDFBin.h"
 #include "adasdf/io/SDFBinReader.h"
@@ -19,6 +21,16 @@ void SDFBinWriter::write(const std::string& path, const SDFModel& model) {
   const std::filesystem::path output(path);
   if (output.has_parent_path()) {
     std::filesystem::create_directories(output.parent_path());
+  }
+
+  if (const auto* dense = dynamic_cast<const DenseSDFModel*>(&model)) {
+    DenseSDFBin::write(output, *dense);
+    auto reloaded = SDFBinReader::read(output);
+    if (!reloaded || !reloaded->isValid() || !reloaded->queryBackendAvailable()) {
+      throw std::runtime_error(
+          "SDFBinWriter::write quick validation failed for dense .sdfbin.");
+    }
+    return;
   }
 
   if (const auto* adaptive = dynamic_cast<const DemoAdaptiveSDFModel*>(&model)) {

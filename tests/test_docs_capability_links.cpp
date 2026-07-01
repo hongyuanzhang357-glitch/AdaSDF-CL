@@ -40,6 +40,9 @@ int main() {
       "docs/mesh_diagnostics.md",
       "docs/mesh_readiness.md",
       "docs/mesh_cleanup.md",
+      "docs/dense_sdf_builder.md",
+      "docs/stl_to_sdf_public_workflow.md",
+      "docs/adaptive_builder_preview.md",
       "docs/stl_import_audit.md",
       "docs/public_positioning.md"};
 
