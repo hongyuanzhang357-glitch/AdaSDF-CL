@@ -16,14 +16,17 @@ replacement.
 - Safe mesh cleanup and clean ASCII STL export.
 - Standalone uniform DenseSDF builder.
 - Standalone adaptive octree/block SDF builder with dense per-block values.
-- Adaptive builder preview for future low-rank stages.
+- Matrix-SVD compressed adaptive block SDF builder.
+- Compression quality audit and dense fallback blocks.
+- Adaptive builder preview for future Tucker/surrogate/GPU compressed stages.
 
 ## Avoid Wording
 
 - Industrial-grade replacement for FCL.
 - Certified collision engine.
 - Universal adaptive STL-to-SDF solution.
-- Complete adaptive octree/block/low-rank compressed builder.
+- Tucker/HOSVD compression.
+- GPU-native compressed query.
 - Automatic mesh repair tool.
 - Automatic hole filling or self-intersection repair tool.
 - Industrial mesh certification tool.
@@ -36,7 +39,8 @@ AdaSDF-CL complements FCL-style workflows by adding SDF-native signed-distance
 queries, penetration-depth estimates, contact normals, batch query tooling,
 expanded-SDF quality audits, optional CUDA expanded-query paths, STL mesh
 diagnostics, SDF build readiness scoring, safe mesh cleanup, and a public
-uniform DenseSDF builder, and a public adaptive octree/block SDF builder.
-v1.6 adds the first core-free STL-to-adaptive-block-SDF path. Blocks store dense
-phi values; low-rank compression is planned for v1.7. It does not fill holes,
-repair self-intersections, or claim complete adaptive low-rank SDF construction.
+uniform DenseSDF builder, a public adaptive octree/block SDF builder, and a
+public matrix-SVD compressed adaptive block SDF builder. v1.7 adds the first
+core-free STL-to-compressed-SDF path. It does not fill holes, repair
+self-intersections, implement Tucker/HOSVD compression, or claim GPU-native
+compressed query.

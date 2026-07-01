@@ -19,4 +19,13 @@ adasdf_build_adaptive_sdf open_mesh.stl open_mesh_adaptive.sdfbin --unsigned --m
 ```
 
 The builder writes `ADASDF_ADAPTIVE_BLOCK_SDFBIN_V1`. Blocks store dense phi
-values. Low-rank compression remains planned for v1.7.0-alpha.
+values.
+
+For compressed adaptive block output in v1.7.0-alpha, use either:
+
+```bash
+adasdf_compress_adaptive_sdf model_adaptive.sdfbin model_compressed.sdfbin --target-error 1e-3 --max-rank 8
+adasdf_build_compressed_sdf model_clean.stl model_compressed.sdfbin --target-error 1e-3 --max-level 5 --block-resolution 8 --max-rank 8
+```
+
+See `stl_to_compressed_sdf_workflow.md`.

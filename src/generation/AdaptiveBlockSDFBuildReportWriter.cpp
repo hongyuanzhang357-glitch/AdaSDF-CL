@@ -95,13 +95,17 @@ std::string AdaptiveBlockSDFBuildReportWriter::toMarkdown(
   }
 
   out << "## Limitations\n\n";
-  out << "- v1.6 uses brute-force triangle distance, not BVH acceleration.\n";
-  out << "- Blocks store dense SDF values; no low-rank compression is applied.\n";
-  out << "- SVD/Tucker compression is not implemented in v1.6.0-alpha.\n";
+  out << "- The adaptive dense builder uses brute-force triangle distance, "
+         "not BVH acceleration.\n";
+  out << "- This report describes dense adaptive block output.\n";
+  out << "- Matrix-SVD compression is available through "
+         "ADASDF_COMPRESSED_BLOCK_SDFBIN_V1.\n";
+  out << "- Tucker/HOSVD compression is not implemented in v1.7.0-alpha.\n";
   out << "- GPU-native compressed adaptive query is planned work.\n\n";
 
   out << "## Next Steps\n\n";
-  out << "- Low-rank block compression is planned for v1.7.0-alpha.\n";
+  out << "- Use adasdf_build_compressed_sdf or "
+         "adasdf_compress_adaptive_sdf for low-rank compressed output.\n";
   out << "- Surrogate-guided parameter recommendation is planned for v1.8.0-alpha.\n";
   return out.str();
 }
@@ -129,7 +133,7 @@ std::string AdaptiveBlockSDFBuildReportWriter::toJson(
   out << "  \"memory_bytes\": " << report.memory_bytes << ",\n";
   out << "  \"sampling_time_ms\": " << report.sampling_time_ms << ",\n";
   out << "  \"build_time_ms\": " << report.build_time_ms << ",\n";
-  out << "  \"low_rank_compression\": \"planned for v1.7.0-alpha\",\n";
+  out << "  \"low_rank_compression\": \"available via ADASDF_COMPRESSED_BLOCK_SDFBIN_V1\",\n";
   out << "  \"warnings\": [";
   for (std::size_t i = 0; i < report.warnings.size(); ++i) {
     if (i > 0) {

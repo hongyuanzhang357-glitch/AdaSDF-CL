@@ -33,6 +33,14 @@
 - Adaptive block SDF builder for core-free STL-to-adaptive-block-SDF construction.
 - Adaptive block `.sdfbin` read/write with `ADASDF_ADAPTIVE_BLOCK_SDFBIN_V1`.
 - `adasdf_build_adaptive_sdf` CLI and public STL-to-adaptive-block-SDF workflow.
+- Small matrix-SVD utility for core-free block compression.
+- `CompressedSDFBlock`, `CompressedAdaptiveBlockSDF`, and
+  `CompressedAdaptiveBlockSDFModel`.
+- Block low-rank compression with fixed-rank and error-bounded rank selection.
+- Dense fallback blocks when compression cannot satisfy error targets.
+- Compressed block `.sdfbin` read/write with `ADASDF_COMPRESSED_BLOCK_SDFBIN_V1`.
+- `adasdf_compress_adaptive_sdf` and `adasdf_build_compressed_sdf` CLIs.
+- Compression quality audit for dense adaptive vs compressed models.
 - Markdown and JSON-like mesh diagnostics reports.
 - Before/after cleanup diagnostics and readiness reports.
 - `adasdf_mesh_check` CLI, `adasdf_mesh_clean` CLI, CPU-only mesh diagnostics
@@ -43,8 +51,9 @@
 
 - Surrogate recommender: deterministic demo recommender, not universal or fully
   trained.
-- Adaptive builder: core-free adaptive octree/block dense builder is public;
-  low-rank compression is not implemented yet.
+- Adaptive builder: core-free adaptive octree/block dense builder is public.
+- Compression builder: matrix-SVD block compression is implemented, while
+  memory-bounded rank allocation remains a simple alpha-level heuristic.
 - Existing-core bridge: available only when the existing research core and
   dependencies are present.
 - CUDA expanded query: optional and experimental; no compressed-direct query.
@@ -56,13 +65,12 @@
 - STL import audit: diagnostics, readiness suggestions, and safe cleanup are
   implemented, but no hole filling or self-intersection repair follows from
   the report yet.
-- Adaptive compressed builder: v1.6 implements octree/block dense construction.
-  Full low-rank compression is not implemented.
+- Adaptive compressed builder: v1.7 implements matrix-SVD block compression.
+  Tucker/HOSVD and GPU-native compressed query remain planned.
 
 ## Planned
 
-- Low-rank compression builder for adaptive blocks.
-- SVD/Tucker compression.
+- Tucker/HOSVD compression.
 - Surrogate-guided adaptive build recommendation.
 - Complex mesh repair and hole filling.
 - Self-intersection detection.

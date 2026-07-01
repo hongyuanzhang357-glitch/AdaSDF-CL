@@ -20,8 +20,13 @@ experiments.
 
 AdaptiveBlockSDF models built with `adasdf_build_adaptive_sdf` also support
 direct CPU query, global expansion, block expansion, collision, expansion
-quality, and benchmark `--model`. v1.6 block data remains dense; low-rank
-compressed GPU-native query is planned work.
+quality, and benchmark `--model`.
+
+CompressedAdaptiveBlockSDF models built with `adasdf_build_compressed_sdf` or
+`adasdf_compress_adaptive_sdf` support direct CPU query by reconstructing
+matrix-SVD grid values on demand. They also support expansion quality and
+benchmark `--model` through sampled expanded SDF paths. GPU-native compressed
+query is planned work.
 
 `--output phi` is closest to the original UI kernel-only comparison.
 `--output phi,normal` is closer to contact workflow needs. `--device-only` is

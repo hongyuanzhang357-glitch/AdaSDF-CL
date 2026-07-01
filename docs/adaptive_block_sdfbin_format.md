@@ -29,6 +29,10 @@ The payload stores dense double-precision phi values per adaptive block. It
 does not store low-rank factors, SVD matrices, Tucker cores, or surrogate
 metadata.
 
+v1.7.0-alpha adds a separate compressed block format,
+`ADASDF_COMPRESSED_BLOCK_SDFBIN_V1`, for matrix-SVD factors and dense fallback
+blocks. See `compressed_block_sdfbin_format.md`.
+
 `SDFBinReader::read()` detects this magic before the older demo/dense/existing
 format paths. `SDFBinWriter::write()` can write `AdaptiveBlockSDFModel`
 instances and validates them by reloading.

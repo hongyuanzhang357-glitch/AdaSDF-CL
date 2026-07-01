@@ -96,7 +96,8 @@ int main() {
     if (!std::filesystem::exists(plan) ||
         std::filesystem::exists(output) ||
         !contains(readFile(dry_run_txt), "Use adasdf_build_adaptive_sdf") ||
-        !contains(readFile(plan), "LowRankCompression planned for v1.7.0-alpha")) {
+        !contains(readFile(plan),
+                  "LowRankCompression implemented in v1.7.0-alpha")) {
       std::cerr << "adaptive preview dry-run output is incomplete\n";
       return 1;
     }

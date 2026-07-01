@@ -4,6 +4,7 @@
 #include <stdexcept>
 
 #include "adasdf/io/AdaptiveBlockSDFBin.h"
+#include "adasdf/io/CompressedBlockSDFBin.h"
 #include "adasdf/io/DenseSDFBin.h"
 #include "adasdf/io/DemoAdaptiveSDFBin.h"
 #include "adasdf/io/DemoSDFBin.h"
@@ -20,6 +21,9 @@ std::shared_ptr<SDFModel> SDFBinReader::read(const std::filesystem::path& path) 
   }
   if (AdaptiveBlockSDFBin::canRead(path)) {
     return AdaptiveBlockSDFBin::read(path);
+  }
+  if (CompressedBlockSDFBin::canRead(path)) {
+    return CompressedBlockSDFBin::read(path);
   }
   if (DenseSDFBin::canRead(path)) {
     return DenseSDFBin::read(path);

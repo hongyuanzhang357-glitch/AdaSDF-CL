@@ -6,9 +6,11 @@
 #include "adasdf/generation/ExistingBuilderBridge.h"
 #include "adasdf/geometry/AdaptiveBlockSDFModel.h"
 #include "adasdf/geometry/AnalyticSDFModel.h"
+#include "adasdf/geometry/CompressedAdaptiveBlockSDFModel.h"
 #include "adasdf/geometry/DenseSDFModel.h"
 #include "adasdf/geometry/DemoAdaptiveSDFModel.h"
 #include "adasdf/io/AdaptiveBlockSDFBin.h"
+#include "adasdf/io/CompressedBlockSDFBin.h"
 #include "adasdf/io/DenseSDFBin.h"
 #include "adasdf/io/DemoAdaptiveSDFBin.h"
 #include "adasdf/io/DemoSDFBin.h"
@@ -42,6 +44,17 @@ void SDFBinWriter::write(const std::string& path, const SDFModel& model) {
     if (!reloaded || !reloaded->isValid() || !reloaded->queryBackendAvailable()) {
       throw std::runtime_error(
           "SDFBinWriter::write quick validation failed for adaptive block .sdfbin.");
+    }
+    return;
+  }
+
+  if (const auto* compressed =
+          dynamic_cast<const CompressedAdaptiveBlockSDFModel*>(&model)) {
+    CompressedBlockSDFBin::write(output, *compressed);
+    auto reloaded = SDFBinReader::read(output);
+    if (!reloaded || !reloaded->isValid() || !reloaded->queryBackendAvailable()) {
+      throw std::runtime_error(
+          "SDFBinWriter::write quick validation failed for compressed block .sdfbin.");
     }
     return;
   }

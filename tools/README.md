@@ -6,7 +6,8 @@ Status: working in a core-free public build.
 
 Prints the public capability summary, current boundaries, and documentation
 links for the v1.1.1 capability exposure release.
-In v1.6 it also reports the adaptive octree/block dense builder.
+In v1.7 it also reports the adaptive octree/block dense builder and
+matrix-SVD compressed adaptive block workflow.
 
 ```bash
 adasdf_capabilities
@@ -37,7 +38,7 @@ adasdf_mesh_check model.stl --readiness --clean-out cleaned.stl --clean-report c
 
 This is a preflight diagnostic and readiness tool. With `--clean-out`, it can
 run the safe cleanup pass and write a separate cleaned STL. It does not fill
-holes, repair self-intersections, or build low-rank compressed SDF data.
+holes or repair self-intersections.
 
 ## adasdf_mesh_clean
 
@@ -102,16 +103,47 @@ not the adaptive block or low-rank builder.
 Status: working in a core-free public build.
 
 Builds an adaptive octree/block SDF `.sdfbin` from STL input. Blocks store
-dense phi values in v1.6. Low-rank compression is planned for v1.7.
+dense phi values unless `--enable-low-rank` is requested.
 
 ```bash
 adasdf_build_adaptive_sdf model.stl model_adaptive.sdfbin --target-error 1e-3 --max-level 5 --block-resolution 8 --report adaptive_report.md
 adasdf_build_adaptive_sdf open_mesh.stl open_mesh_adaptive.sdfbin --unsigned --max-level 4
 adasdf_build_adaptive_sdf model.stl model_adaptive.sdfbin --dry-run --report adaptive_plan.md
+adasdf_build_adaptive_sdf model.stl model_compressed.sdfbin --enable-low-rank --target-compression-error 1e-3 --max-rank 8
 ```
 
-The output format is `ADASDF_ADAPTIVE_BLOCK_SDFBIN_V1`. `--enable-low-rank`
-fails clearly because low-rank compression is not implemented in v1.6.
+The default output format is `ADASDF_ADAPTIVE_BLOCK_SDFBIN_V1`.
+`--enable-low-rank` emits `ADASDF_COMPRESSED_BLOCK_SDFBIN_V1`. The dedicated
+one-step compressed workflow is `adasdf_build_compressed_sdf`.
+
+## adasdf_compress_adaptive_sdf
+
+Status: working in a core-free public build.
+
+Compresses an adaptive block `.sdfbin` into a matrix-SVD compressed adaptive
+block `.sdfbin` with optional reports.
+
+```bash
+adasdf_compress_adaptive_sdf model_adaptive.sdfbin model_compressed.sdfbin --target-error 1e-3 --max-rank 8
+adasdf_compress_adaptive_sdf model_adaptive.sdfbin model_compressed.sdfbin --fixed-rank 4 --report compression_report.md --json compression_report.json --quality-report quality_report.md
+```
+
+The output format is `ADASDF_COMPRESSED_BLOCK_SDFBIN_V1`. Blocks may remain
+dense fallback blocks when compression cannot satisfy the requested error
+target.
+
+## adasdf_build_compressed_sdf
+
+Status: working in a core-free public build.
+
+Builds an STL directly into compressed adaptive block SDF output:
+
+```bash
+adasdf_build_compressed_sdf model.stl model_compressed.sdfbin --target-error 1e-3 --max-level 5 --block-resolution 8 --max-rank 8 --report build_report.md --compression-report compression_report.md --quality-report quality_report.md
+```
+
+This command does not implement Tucker/HOSVD, surrogate-guided parameter
+recommendation, or GPU-native compressed query.
 
 ## adasdf_build_adaptive_sdf_preview
 
@@ -119,7 +151,8 @@ Status: dry-run planning tool.
 
 Prints adaptive builder options and stage status. Octree/block dense
 construction is implemented in v1.6 through `adasdf_build_adaptive_sdf`;
-low-rank compression remains planned.
+matrix-SVD low-rank compression is implemented in v1.7 through
+`adasdf_build_compressed_sdf`.
 
 ```bash
 adasdf_build_adaptive_sdf_preview model.stl model_adaptive.sdfbin --target-error 1e-3 --memory-mb 512 --dry-run --plan adaptive_plan.md

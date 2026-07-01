@@ -56,6 +56,12 @@ int main(int argc, char** argv) {
         "adaptive block SDF builder",
         "ADASDF_ADAPTIVE_BLOCK_SDFBIN_V1 read/write",
         "adasdf_build_adaptive_sdf",
+        "block low-rank compression",
+        "matrix-SVD block compression",
+        "compressed adaptive block SDF model",
+        "ADASDF_COMPRESSED_BLOCK_SDFBIN_V1 read/write",
+        "adasdf_compress_adaptive_sdf",
+        "adasdf_build_compressed_sdf",
         "expansion quality audit",
         "sign mismatch and near-surface mismatch metrics",
         "SVG collision view",
@@ -66,14 +72,17 @@ int main(int argc, char** argv) {
         "adaptive builder preview / planning tool",
         "adaptive refinement heuristic",
         "block-wise dense storage",
+        "error-bounded rank selection",
+        "memory-bounded rank selection",
+        "compressed direct query",
+        "dense fallback blocks",
         "brute-force adaptive block sampling",
         "adasdf_build_adaptive_sdf_preview dry-run",
         "existing-core sampled expansion bridge",
         "CUDA expanded query backend",
         "block-expanded query for local contact regions"};
     static const char* const planned[] = {
-        "low-rank compression builder",
-        "SVD/Tucker compression",
+        "Tucker/HOSVD compression",
         "surrogate-guided recommendation",
         "complex mesh repair and hole filling",
         "self-intersection detection",
@@ -113,8 +122,9 @@ int main(int argc, char** argv) {
       std::cout << "- cleaned ASCII STL export through STLWriter and adasdf_mesh_clean\n";
       std::cout << "- public uniform DenseSDF build through adasdf_build_dense_sdf\n";
       std::cout << "- public adaptive block build through adasdf_build_adaptive_sdf\n";
-      std::cout << "- adaptive block data remains dense in v1.6; no low-rank compression yet\n";
-      std::cout << "- no hole filling, self-intersection repair, or low-rank STL-to-SDF builder\n";
+      std::cout << "- public compressed adaptive block build through adasdf_build_compressed_sdf\n";
+      std::cout << "- matrix-SVD block compression with dense fallback in v1.7\n";
+      std::cout << "- no hole filling, self-intersection repair, Tucker/HOSVD, surrogate-guided compression, or GPU-native compressed query\n";
       std::cout << "\nDocumentation:\n";
       std::cout << "- docs/capability_matrix.md\n";
       std::cout << "- docs/mesh_diagnostics.md\n";
@@ -124,6 +134,9 @@ int main(int argc, char** argv) {
       std::cout << "- docs/stl_to_sdf_public_workflow.md\n";
       std::cout << "- docs/adaptive_builder_preview.md\n";
       std::cout << "- docs/stl_import_audit.md\n";
+      std::cout << "- docs/low_rank_block_compression.md\n";
+      std::cout << "- docs/compressed_block_sdfbin_format.md\n";
+      std::cout << "- docs/stl_to_compressed_sdf_workflow.md\n";
       std::cout << "- docs/implemented_vs_planned.md\n";
       std::cout << "- docs/fcl_complement_strategy.md\n";
       std::cout << "- docs/query_backend_matrix.md\n";

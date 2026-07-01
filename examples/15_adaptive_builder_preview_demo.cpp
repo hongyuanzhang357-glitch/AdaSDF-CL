@@ -18,7 +18,8 @@ int main() {
         << "Use adasdf_build_adaptive_sdf for block-wise dense adaptive SDF "
            "construction.\n";
     std::cout
-        << "Low-rank compression is planned for v1.7.0-alpha.\n";
+        << "Use adasdf_build_compressed_sdf for matrix-SVD compressed "
+           "adaptive block output.\n";
     return plan.valid && plan.implemented_in_this_version ? 0 : 1;
   } catch (const std::exception& exc) {
     std::cerr << "adasdf_adaptive_builder_preview_demo failed: "

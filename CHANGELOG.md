@@ -1,5 +1,38 @@
 # Changelog
 
+## 1.7.0-alpha
+
+Low-rank block compression for adaptive block SDFs.
+
+### Added
+
+- Small matrix-SVD utility for block compression.
+- `CompressedSDFBlock` and `CompressedAdaptiveBlockSDF` data structures.
+- `BlockLowRankCompressor` with fixed-rank and error-bounded rank selection.
+- `CompressedAdaptiveBlockSDFModel`.
+- `ADASDF_COMPRESSED_BLOCK_SDFBIN_V1` read/write support.
+- Compression quality audit.
+- `adasdf_compress_adaptive_sdf` CLI.
+- `adasdf_build_compressed_sdf` CLI.
+- Compressed SDF query, collision, benchmark and roundtrip tests.
+- Dense vs adaptive vs compressed comparison examples.
+
+### Changed
+
+- Version updated to `1.7.0-alpha`.
+- Adaptive builder preview now marks matrix-SVD low-rank block compression as
+  implemented.
+- `adasdf_build_adaptive_sdf --enable-low-rank` can emit compressed block SDFs.
+- Capability matrix updated for the compressed SDF workflow.
+
+### Notes
+
+- Matrix-SVD block compression is implemented.
+- Tucker/HOSVD compression is not implemented in v1.7.0-alpha.
+- Surrogate-guided recommendation remains planned for v1.8.0-alpha.
+- GPU-native compressed query remains planned; CUDA workflows use expanded SDF
+  paths.
+
 ## 1.6.0-alpha
 
 Adaptive octree/block SDF builder.

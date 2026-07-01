@@ -16,7 +16,6 @@ Implemented in v1.6.0-alpha:
 
 Not implemented in v1.6.0-alpha:
 
-- Low-rank block compression.
 - SVD / Tucker / TT compression.
 - Surrogate-guided parameter recommendation.
 - GPU-native compressed adaptive query.
@@ -55,4 +54,6 @@ Each adaptive leaf is stored as a dense `N x N x N` phi grid. This makes the
 format inspectable and queryable without external core dependencies. It is not
 a compressed representation.
 
-Low-rank compression is planned for v1.7.0-alpha.
+v1.7.0-alpha adds a separate compressed adaptive block representation using
+matrix-SVD factors and dense fallback. See `low_rank_block_compression.md` and
+`stl_to_compressed_sdf_workflow.md`.

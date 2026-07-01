@@ -2,7 +2,9 @@
 
 AdaSDF-CL v1.5.0-alpha adds a clone-only, core-free path from STL to a queryable
 uniform dense SDF. v1.6.0-alpha adds a clone-only, core-free path from STL to
-an adaptive octree/block SDF with dense values per block.
+an adaptive octree/block SDF with dense values per block. v1.7.0-alpha adds a
+clone-only, core-free path from STL to a matrix-SVD compressed adaptive block
+SDF.
 
 ```text
 STL
@@ -42,12 +44,25 @@ adasdf_expansion_quality model_adaptive.sdfbin --expansion global --global-resol
 adasdf_benchmark_batch_query --model model_adaptive.sdfbin --points 10000 --query-backend cpu --expansion none --out bench.csv
 ```
 
+## Compressed Adaptive Block CLI Example
+
+```bash
+adasdf_mesh_check model.stl --readiness --out mesh_report.md
+adasdf_mesh_clean model.stl model_clean.stl --report cleanup_report.md
+adasdf_build_compressed_sdf model_clean.stl model_compressed.sdfbin --target-error 1e-3 --max-level 5 --block-resolution 8 --max-rank 8 --report build_report.md --compression-report compression_report.md --quality-report quality_report.md
+adasdf_info model_compressed.sdfbin
+adasdf_query model_compressed.sdfbin --point 0 0 0
+adasdf_collide model_compressed.sdfbin model_compressed.sdfbin --max-contacts 4
+adasdf_expansion_quality model_compressed.sdfbin --expansion global --global-resolution 32 --samples 1000 --out quality.csv
+adasdf_benchmark_batch_query --model model_compressed.sdfbin --points 10000 --query-backend cpu --expansion none --out bench.csv
+```
+
 ## Boundaries
 
-The implemented public builders are a uniform DenseSDF builder and an adaptive
-octree/block dense builder. v1.6 does not implement low-rank compression,
-SVD/Tucker compression, surrogate recommendation, or GPU-native compressed
-adaptive query.
+The implemented public builders are a uniform DenseSDF builder, an adaptive
+octree/block dense builder, and a matrix-SVD compressed adaptive block builder.
+v1.7 does not implement Tucker/HOSVD compression, surrogate recommendation, or
+GPU-native compressed adaptive query.
 
 Open STL meshes can be used in unsigned mode:
 

@@ -12,6 +12,11 @@ AdaptiveBlockSDF models built by `adasdf_build_adaptive_sdf` use the same
 contact fields. In v1.6, adaptive blocks store dense phi values and are queried
 through the public SDFModel path.
 
+CompressedAdaptiveBlockSDF models built by `adasdf_build_compressed_sdf` or
+`adasdf_compress_adaptive_sdf` also use the same contact fields. In v1.7,
+matrix-SVD blocks reconstruct grid values on demand for direct CPU query, while
+dense fallback blocks keep their original phi values.
+
 | Contact field | Status | Source | Notes |
 | --- | --- | --- | --- |
 | contact point | Implemented | `Contact::point` | SDF candidate point pipeline. |

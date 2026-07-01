@@ -16,8 +16,9 @@ only, Planned, Not implemented.
 | Build / Input | adaptive octree builder | Implemented | v1.6 | `AdaptiveOctreeBuilder` | Deterministic near-surface refinement baseline. |
 | Build / Input | adaptive block partitioner | Implemented | v1.6 | `AdaptiveBlockPartitioner` | One dense block per octree leaf. |
 | Build / Input | standalone adaptive block STL builder | Implemented | v1.6 | `AdaptiveBlockSDFBuilder`, `adasdf_build_adaptive_sdf` | Core-free adaptive octree/block builder; block data remains dense. |
-| Build / Input | adaptive compressed builder interface preview | Experimental | v1.5 | `AdaptiveSDFBuilderPreview`, `adasdf_build_adaptive_sdf_preview` | Planning tool; low-rank stages remain planned. |
-| Build / Input | low-rank adaptive compressed STL builder | Planned | - | - | SVD/Tucker/low-rank construction remains planned for v1.7. |
+| Build / Input | adaptive compressed builder interface preview | Experimental | v1.5 | `AdaptiveSDFBuilderPreview`, `adasdf_build_adaptive_sdf_preview` | Planning tool; matrix-SVD stage is implemented, Tucker and surrogate stages remain planned. |
+| Build / Input | low-rank adaptive compressed STL builder | Implemented | v1.7 | `adasdf_build_compressed_sdf`, `adasdf_compress_adaptive_sdf` | Matrix-SVD block compression with dense fallback and quality audit. |
+| Build / Input | Tucker/HOSVD adaptive compression | Planned | - | - | Not implemented in v1.7. |
 | Build / Input | mesh diagnostics | Implemented | v1.2 | `MeshDiagnostics`, `adasdf_mesh_check` | Preflight only, no repair. |
 | Build / Input | mesh readiness scoring | Implemented | v1.3 | `MeshReadiness`, `adasdf_mesh_check --readiness` | Preflight suitability score and suggestions. |
 | Build / Input | repair suggestions | Implemented | v1.3 | `MeshReadinessReport` | Text guidance only; input STL is not modified. |
@@ -30,12 +31,15 @@ only, Planned, Not implemented.
 | SDF storage / model | uniform dense SDF model | Implemented | v1.5 | `DenseSDFModel` | Trilinear sampling and finite-difference gradients. |
 | SDF storage / model | adaptive block `.sdfbin` | Implemented | v1.6 | `AdaptiveBlockSDFBin` | Text format `ADASDF_ADAPTIVE_BLOCK_SDFBIN_V1`; dense phi per block. |
 | SDF storage / model | adaptive block SDF model | Implemented | v1.6 | `AdaptiveBlockSDFModel` | Direct query, gradient, collision, expansion, and benchmark support. |
+| SDF storage / model | compressed adaptive block `.sdfbin` | Implemented | v1.7 | `CompressedBlockSDFBin` | Text format `ADASDF_COMPRESSED_BLOCK_SDFBIN_V1`; mixed MatrixSVD and DenseFallback blocks. |
+| SDF storage / model | compressed adaptive block SDF model | Implemented | v1.7 | `CompressedAdaptiveBlockSDFModel` | Direct CPU query reconstructs needed grid values on demand. |
 | SDF storage / model | existing-core `.sdfbin` read | Existing-core only | v0.2 | `SDFBinReader` | Query requires existing core. |
 | SDF storage / model | contact-only `.sdfbin` | Implemented | v0.6 | `ContactOnlySDFBin` | Lightweight contact export format. |
-| SDF storage / model | low-rank compressed SDF native public reader | Partial | v0.2 | `CompressedSDF`, `SDFModel` | Full direct public native reader remains limited. |
+| SDF storage / model | existing-core low-rank compressed SDF native public reader | Partial | v0.2 | `CompressedSDF`, `SDFModel` | Existing-core bridge remains separate from the v1.7 core-free compressed block format. |
 | Query | point signed distance | Implemented | v0.2 | `adasdf_query`, `SDFModel::sampleDistance` | Direct model query. |
 | Query | gradient / normal | Implemented | v0.2 | `SDFModel::sampleGradient`, `sampleNormal` | Analytic or finite-difference backed. |
 | Query | CPU direct | Implemented | v1.0.1 | `QueryModeConfig::cpuDirect` | Default stable route. |
+| Query | compressed adaptive CPU direct | Implemented | v1.7 | `CompressedAdaptiveBlockSDFModel` | Matrix-SVD values are reconstructed on demand; dense fallback blocks query directly. |
 | Query | CPU global expanded | Implemented | v1.0.1 | `SDFExpander`, `QueryEngine` | Dense global layout. |
 | Query | CPU block expanded | Implemented | v1.0.1 | `BlockSelection`, `QueryEngine` | All or selected blocks. |
 | Query | CUDA global expanded | Experimental | v1.0.1 | `CudaResidentExpandedSDF` | Optional CUDA. |
@@ -63,6 +67,7 @@ only, Planned, Not implemented.
 | Accuracy / Reliability | ambiguous sign | Implemented | v1.1.0 | `ambiguous_sign_rate` | Separate from mismatch. |
 | Accuracy / Reliability | near-surface sign mismatch | Implemented | v1.1.0 | `near_surface_sign_mismatch_rate` | Contact-risk indicator. |
 | Accuracy / Reliability | fallback statistics | Implemented | v1.1.0 | `fallback_count`, `fallback_rate` | Quality and benchmark. |
+| Accuracy / Reliability | compression quality audit | Implemented | v1.7 | `CompressionQuality`, compression CLIs | Dense-adaptive vs compressed comparison with error and sign metrics. |
 | Accuracy / Reliability | mesh AABB / scale report | Implemented | v1.2 | `MeshDiagnosticsReport` | Prompts users to confirm units. |
 | Accuracy / Reliability | boundary / non-manifold edge report | Implemented | v1.2 | `MeshDiagnosticsReport` | Topology-level preflight. |
 | Accuracy / Reliability | mesh issue severity classification | Implemented | v1.3 | `MeshIssueSeverity` | Info, warning, and critical. |

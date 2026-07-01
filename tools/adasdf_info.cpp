@@ -98,7 +98,56 @@ int main(int argc, char** argv) {
       std::cout << "AdaptiveBlockSDF signed: "
                 << yesNo(blocks.signed_distance) << "\n";
       std::cout << "AdaptiveBlockSDF storage: block-wise dense phi values\n";
-      std::cout << "Low-rank compression: not implemented in v1.6.0-alpha\n";
+      std::cout << "Low-rank compression: available in v1.7.0-alpha via "
+                   "compressed block workflow\n";
+    }
+    if (const auto compressed =
+            std::dynamic_pointer_cast<CompressedAdaptiveBlockSDFModel>(model)) {
+      const CompressedAdaptiveBlockSDF& blocks = compressed->compressedBlockSet();
+      std::size_t matrix_svd_count = 0;
+      std::size_t dense_fallback_count = 0;
+      std::size_t near_surface_count = 0;
+      int max_level_used = 0;
+      int min_rank = 0;
+      int max_rank = 0;
+      double max_error = 0.0;
+      for (const CompressedSDFBlock& block : blocks.blocks) {
+        if (block.method == BlockCompressionMethod::MatrixSVD) {
+          ++matrix_svd_count;
+          min_rank = min_rank == 0 ? block.svd.rank : std::min(min_rank, block.svd.rank);
+          max_rank = std::max(max_rank, block.svd.rank);
+        } else if (block.method == BlockCompressionMethod::DenseFallback) {
+          ++dense_fallback_count;
+        }
+        if (block.near_surface) {
+          ++near_surface_count;
+        }
+        max_level_used = std::max(max_level_used, block.level);
+        max_error = std::max(max_error, block.max_abs_error);
+      }
+      std::cout << "CompressedBlockSDF block_count: "
+                << blocks.blocks.size() << "\n";
+      std::cout << "CompressedBlockSDF matrix_svd_block_count: "
+                << matrix_svd_count << "\n";
+      std::cout << "CompressedBlockSDF dense_fallback_block_count: "
+                << dense_fallback_count << "\n";
+      std::cout << "CompressedBlockSDF near_surface_block_count: "
+                << near_surface_count << "\n";
+      std::cout << "CompressedBlockSDF max_level_used: "
+                << max_level_used << "\n";
+      std::cout << "CompressedBlockSDF signed: "
+                << yesNo(blocks.signed_distance) << "\n";
+      std::cout << "CompressedBlockSDF original_memory_bytes: "
+                << blocks.originalMemoryBytes() << "\n";
+      std::cout << "CompressedBlockSDF compressed_memory_bytes: "
+                << blocks.compressedMemoryBytes() << "\n";
+      std::cout << "CompressedBlockSDF compression_ratio: "
+                << blocks.compressionRatio() << "\n";
+      std::cout << "CompressedBlockSDF rank_min: " << min_rank << "\n";
+      std::cout << "CompressedBlockSDF rank_max: " << max_rank << "\n";
+      std::cout << "CompressedBlockSDF max_abs_error: " << max_error << "\n";
+      std::cout << "Tucker/HOSVD compression: not implemented in v1.7.0-alpha\n";
+      std::cout << "GPU-native compressed query: planned\n";
     }
     if (const auto analytic = std::dynamic_pointer_cast<AnalyticSDFModel>(model)) {
       std::cout << "Shape: " << analytic->shapeName() << "\n";

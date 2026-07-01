@@ -95,6 +95,8 @@ int main() {
     const auto collide_txt = temp / "adaptive_builder_cli_collide.txt";
     const auto dryrun_txt = temp / "adaptive_builder_cli_dryrun.txt";
     const auto low_rank_txt = temp / "adaptive_builder_cli_low_rank.txt";
+    const auto low_rank_sdfbin = temp / "adaptive_builder_cli_low_rank.sdfbin";
+    const auto low_rank_info_txt = temp / "adaptive_builder_cli_low_rank_info.txt";
 
     const std::string build_cmd = executableCommand(build_tool);
     const std::string info_cmd = executableCommand(info_tool);
@@ -158,11 +160,17 @@ int main() {
     }
 
     const std::string low_rank =
-        build_cmd + " " + quote(closed_stl) + " " + quote(temp / "low_rank.sdfbin") +
-        " --enable-low-rank > " + quote(low_rank_txt) + " 2>&1";
-    if (std::system(low_rank.c_str()) == 0 ||
-        !contains(readFile(low_rank_txt), "planned for v1.7.0-alpha")) {
-      std::cerr << "unsupported low-rank request did not fail clearly\n";
+        build_cmd + " " + quote(closed_stl) + " " + quote(low_rank_sdfbin) +
+        " --max-level 2 --block-resolution 5 --enable-low-rank --max-rank 5 > " +
+        quote(low_rank_txt) + " 2>&1";
+    if (std::system(low_rank.c_str()) != 0 ||
+        !std::filesystem::exists(low_rank_sdfbin) ||
+        !contains(readFile(low_rank_txt), "ADASDF_COMPRESSED_BLOCK_SDFBIN_V1") ||
+        std::system((info_cmd + " " + quote(low_rank_sdfbin) + " > " +
+                     quote(low_rank_info_txt)).c_str()) != 0 ||
+        !contains(readFile(low_rank_info_txt),
+                  "Format: ADASDF_COMPRESSED_BLOCK_SDFBIN_V1")) {
+      std::cerr << "low-rank adaptive build did not produce compressed output\n";
       return 1;
     }
 

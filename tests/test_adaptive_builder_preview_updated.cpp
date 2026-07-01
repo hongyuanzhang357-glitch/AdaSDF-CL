@@ -62,9 +62,10 @@ int main() {
     if (!plan.implemented_in_this_version ||
         !contains(markdown, "OctreeRefinement implemented in v1.6.0-alpha") ||
         !contains(markdown, "BlockPartition implemented in v1.6.0-alpha") ||
-        !contains(markdown, "LowRankCompression planned for v1.7.0-alpha") ||
-        !contains(markdown, "block-wise dense adaptive SDF")) {
-      std::cerr << "preview v1.6 wording missing\n";
+        !contains(markdown, "LowRankCompression implemented in v1.7.0-alpha") ||
+        !contains(markdown, "matrix-SVD") ||
+        !contains(markdown, "TuckerCompression planned")) {
+      std::cerr << "preview v1.7 wording missing\n";
       return 1;
     }
 
@@ -87,8 +88,8 @@ int main() {
           " > " + quote(out_txt);
       if (std::system(cmd.c_str()) != 0 ||
           std::filesystem::exists(out_sdfbin) ||
-          !contains(readFile(out_txt), "Use adasdf_build_adaptive_sdf")) {
-        std::cerr << "preview CLI generated output or missed v1.6 guidance\n";
+          !contains(readFile(out_txt), "Use adasdf_build_compressed_sdf")) {
+        std::cerr << "preview CLI generated output or missed v1.7 guidance\n";
         return 1;
       }
     }

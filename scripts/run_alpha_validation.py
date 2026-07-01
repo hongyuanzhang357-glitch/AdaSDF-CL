@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import shlex
 import subprocess
@@ -58,6 +59,14 @@ def run_step(name: str, command: list[str], cwd: Path) -> StepResult:
         stderr=subprocess.STDOUT,
     )
     return StepResult(name, command, completed.returncode, completed.stdout)
+
+
+def cmake_build_command(build: Path, config: str) -> list[str]:
+    command = ["cmake", "--build", str(build), "--config", config]
+    generator = os.environ.get("CMAKE_GENERATOR", "").lower()
+    if sys.platform.startswith("win") and (not generator or "visual studio" in generator):
+        command.extend(["--", "/nodeReuse:false"])
+    return command
 
 
 def find_executable(build: Path, name: str, config: str) -> Path | None:
@@ -176,7 +185,7 @@ def main() -> int:
     ]
     steps = [
         ("Configure", configure),
-        ("Build", ["cmake", "--build", str(build), "--config", config]),
+        ("Build", cmake_build_command(build, config)),
         ("CTest", ["ctest", "--test-dir", str(build), "-C", config, "--output-on-failure"]),
     ]
 
@@ -236,11 +245,21 @@ def main() -> int:
     dense_sdfbin = build.parent / "closed_cube_dense_v1_5.sdfbin"
     dense_report = build.parent / "closed_cube_dense_report.md"
     dense_json = build.parent / "closed_cube_dense_report.json"
-    adaptive_sdfbin = build.parent / "closed_cube_adaptive_block_v1_6.sdfbin"
+    adaptive_sdfbin = build.parent / "closed_cube_adaptive_block_v1_7.sdfbin"
     adaptive_report = build.parent / "closed_cube_adaptive_block_report.md"
     adaptive_json = build.parent / "closed_cube_adaptive_block_report.json"
     adaptive_quality_csv = build.parent / "closed_cube_adaptive_block_quality.csv"
     adaptive_benchmark_csv = build.parent / "closed_cube_adaptive_block_benchmark.csv"
+    compressed_sdfbin = build.parent / "closed_cube_compressed_block_v1_7.sdfbin"
+    compressed_report = build.parent / "closed_cube_compression_report.md"
+    compressed_json = build.parent / "closed_cube_compression_report.json"
+    compressed_quality_report = build.parent / "closed_cube_compression_quality.md"
+    compressed_quality_csv = build.parent / "closed_cube_compressed_quality.csv"
+    compressed_benchmark_csv = build.parent / "closed_cube_compressed_benchmark.csv"
+    compressed_direct_sdfbin = build.parent / "closed_cube_compressed_direct_v1_7.sdfbin"
+    compressed_direct_report = build.parent / "closed_cube_compressed_direct_report.md"
+    compressed_direct_compression_report = build.parent / "closed_cube_compressed_direct_compression_report.md"
+    compressed_direct_quality_report = build.parent / "closed_cube_compressed_direct_quality.md"
     adaptive_dryrun_sdfbin = build.parent / "closed_cube_adaptive_dryrun.sdfbin"
     adaptive_dryrun_report = build.parent / "closed_cube_adaptive_dryrun_plan.md"
     adaptive_preview_sdfbin = build.parent / "closed_cube_adaptive_preview.sdfbin"
@@ -255,6 +274,8 @@ def main() -> int:
         "adasdf_mesh_clean": find_executable(build, "adasdf_mesh_clean", config),
         "adasdf_build_dense_sdf": find_executable(build, "adasdf_build_dense_sdf", config),
         "adasdf_build_adaptive_sdf": find_executable(build, "adasdf_build_adaptive_sdf", config),
+        "adasdf_compress_adaptive_sdf": find_executable(build, "adasdf_compress_adaptive_sdf", config),
+        "adasdf_build_compressed_sdf": find_executable(build, "adasdf_build_compressed_sdf", config),
         "adasdf_build_adaptive_sdf_preview": find_executable(build, "adasdf_build_adaptive_sdf_preview", config),
         "adasdf_recommend_demo": find_executable(build, "adasdf_recommend_demo", config),
         "adasdf_build_demo_adaptive": find_executable(build, "adasdf_build_demo_adaptive", config),
@@ -437,6 +458,102 @@ def main() -> int:
                 "none",
                 "--out",
                 str(adaptive_benchmark_csv),
+            ],
+        ),
+        (
+            "CompressedSDF Compress CLI",
+            [
+                str(required_demo_tools["adasdf_compress_adaptive_sdf"]),
+                str(adaptive_sdfbin),
+                str(compressed_sdfbin),
+                "--target-error",
+                "1e-3",
+                "--max-rank",
+                "5",
+                "--report",
+                str(compressed_report),
+                "--json",
+                str(compressed_json),
+                "--quality-report",
+                str(compressed_quality_report),
+            ],
+        ),
+        (
+            "CompressedSDF Info CLI",
+            [str(required_demo_tools["adasdf_info"]), str(compressed_sdfbin)],
+        ),
+        (
+            "CompressedSDF Query CLI",
+            [
+                str(required_demo_tools["adasdf_query"]),
+                str(compressed_sdfbin),
+                "--point",
+                "0.5",
+                "0.5",
+                "0.5",
+            ],
+        ),
+        (
+            "CompressedSDF Collide CLI",
+            [
+                str(required_demo_tools["adasdf_collide"]),
+                str(compressed_sdfbin),
+                str(compressed_sdfbin),
+                "--max-contacts",
+                "4",
+            ],
+        ),
+        (
+            "CompressedSDF Expansion Quality CLI",
+            [
+                str(required_demo_tools["adasdf_expansion_quality"]),
+                str(compressed_sdfbin),
+                "--expansion",
+                "global",
+                "--global-resolution",
+                "16",
+                "--samples",
+                "200",
+                "--out",
+                str(compressed_quality_csv),
+            ],
+        ),
+        (
+            "CompressedSDF Benchmark Model CLI",
+            [
+                str(required_demo_tools["adasdf_benchmark_batch_query"]),
+                "--model",
+                str(compressed_sdfbin),
+                "--points",
+                "1000",
+                "--query-backend",
+                "cpu",
+                "--expansion",
+                "none",
+                "--out",
+                str(compressed_benchmark_csv),
+            ],
+        ),
+        (
+            "CompressedSDF One-Step Build CLI",
+            [
+                str(required_demo_tools["adasdf_build_compressed_sdf"]),
+                str(mesh_fixture),
+                str(compressed_direct_sdfbin),
+                "--target-error",
+                "1e-3",
+                "--max-level",
+                "2",
+                "--block-resolution",
+                "5",
+                "--max-rank",
+                "5",
+                "--report",
+                str(compressed_direct_report),
+                "--compression-report",
+                str(compressed_direct_compression_report),
+                "--quality-report",
+                str(compressed_direct_quality_report),
             ],
         ),
         (
@@ -770,6 +887,75 @@ def main() -> int:
                 result.output += "\nValidation failed: AdaptiveBlockSDF benchmark --model output is incomplete.\n"
                 write_report(report_path, results, source, build, config)
                 return result.returncode
+        if name == "CompressedSDF Compress CLI":
+            if (
+                not compressed_sdfbin.exists()
+                or not compressed_report.exists()
+                or not compressed_json.exists()
+                or not compressed_quality_report.exists()
+                or "ADASDF_COMPRESSED_BLOCK_SDFBIN_V1" not in result.output
+                or "Reload validation: success" not in result.output
+                or "Tucker/HOSVD compression: planned / not implemented" not in result.output
+            ):
+                result.returncode = 1
+                result.output += "\nValidation failed: compressed SDF compression output is incomplete.\n"
+                write_report(report_path, results, source, build, config)
+                return result.returncode
+        if name == "CompressedSDF Info CLI":
+            if "ADASDF_COMPRESSED_BLOCK_SDFBIN_V1" not in result.output or "CompressedBlockSDF block_count:" not in result.output:
+                result.returncode = 1
+                result.output += "\nValidation failed: compressed SDF info output is incomplete.\n"
+                write_report(report_path, results, source, build, config)
+                return result.returncode
+        if name == "CompressedSDF Query CLI":
+            if "Signed distance:" not in result.output or "compressed adaptive block SDF backend" not in result.output:
+                result.returncode = 1
+                result.output += "\nValidation failed: compressed SDF query output is incomplete.\n"
+                write_report(report_path, results, source, build, config)
+                return result.returncode
+        if name == "CompressedSDF Collide CLI":
+            match = re.search(r"Returned contacts:\s+(\d+)", result.output)
+            if not match or int(match.group(1)) > 4:
+                result.returncode = 1
+                result.output += "\nValidation failed: compressed SDF collide output is incomplete.\n"
+                write_report(report_path, results, source, build, config)
+                return result.returncode
+        if name == "CompressedSDF Expansion Quality CLI":
+            if (
+                not compressed_quality_csv.exists()
+                or "Status: ok" not in result.output
+                or "max_abs_error" not in compressed_quality_csv.read_text(encoding="utf-8", errors="replace")
+            ):
+                result.returncode = 1
+                result.output += "\nValidation failed: compressed SDF expansion quality output is incomplete.\n"
+                write_report(report_path, results, source, build, config)
+                return result.returncode
+        if name == "CompressedSDF Benchmark Model CLI":
+            csv_text = compressed_benchmark_csv.read_text(encoding="utf-8", errors="replace") if compressed_benchmark_csv.exists() else ""
+            if (
+                not compressed_benchmark_csv.exists()
+                or not csv_text.splitlines()
+                or "query_backend" not in csv_text.splitlines()[0]
+                or "cpu,none,all,1000" not in csv_text
+            ):
+                result.returncode = 1
+                result.output += "\nValidation failed: compressed SDF benchmark --model output is incomplete.\n"
+                write_report(report_path, results, source, build, config)
+                return result.returncode
+        if name == "CompressedSDF One-Step Build CLI":
+            if (
+                not compressed_direct_sdfbin.exists()
+                or not compressed_direct_report.exists()
+                or not compressed_direct_compression_report.exists()
+                or not compressed_direct_quality_report.exists()
+                or "ADASDF_COMPRESSED_BLOCK_SDFBIN_V1" not in result.output
+                or "Reload validation: success" not in result.output
+                or "Surrogate recommendation: planned for v1.8.0-alpha" not in result.output
+            ):
+                result.returncode = 1
+                result.output += "\nValidation failed: one-step compressed SDF build output is incomplete.\n"
+                write_report(report_path, results, source, build, config)
+                return result.returncode
         if name == "AdaptiveBlockSDF Dry Run CLI":
             if (
                 adaptive_dryrun_sdfbin.exists()
@@ -790,7 +976,7 @@ def main() -> int:
                 adaptive_preview_sdfbin.exists()
                 or not adaptive_preview_plan.exists()
                 or "Use adasdf_build_adaptive_sdf" not in result.output
-                or "LowRankCompression planned for v1.7.0-alpha" not in plan_text
+                or "LowRankCompression implemented in v1.7.0-alpha" not in plan_text
             ):
                 result.returncode = 1
                 result.output += "\nValidation failed: adaptive preview dry-run output is incomplete.\n"

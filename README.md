@@ -2,7 +2,7 @@
 
 Adaptive Signed Distance Field Collision Library
 
-Status: 1.6.0-alpha / research preview
+Status: 1.7.0-alpha / research preview
 Build system: CMake
 License: MIT
 Tests: CTest
@@ -11,16 +11,17 @@ AdaSDF-CL is an alpha collision and contact library built around signed distance
 
 AdaSDF-CL is an FCL-style SDF collision backend under development. It complements FCL by providing signed-distance queries, penetration depth, contact normals, batch query, expanded-SDF quality audit and CUDA query paths. It is not a drop-in FCL replacement.
 
-v1.6.0-alpha introduces the first public standalone adaptive octree/block SDF
-builder. It stores dense SDF values per adaptive block and does not yet apply
-low-rank compression. CUDA, FCL, Python, and the existing research core remain
-optional; CPU-only builds remain fully usable.
+v1.7.0-alpha introduces matrix-SVD low-rank compression for adaptive block
+SDFs. Each adaptive dense block can be stored as low-rank factors with
+per-block error auditing and dense fallback when compression cannot meet the
+target. CUDA, FCL, Python, and the existing research core remain optional;
+CPU-only builds remain fully usable.
 
 The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`, `v1.1.0-alpha`,
-`v1.1.1-alpha`, `v1.2.0-alpha`, `v1.3.0-alpha`, `v1.4.0-alpha`, and
-`v1.5.0-alpha` tags are
+`v1.1.1-alpha`, `v1.2.0-alpha`, `v1.3.0-alpha`, `v1.4.0-alpha`,
+`v1.5.0-alpha`, and `v1.6.0-alpha` tags are
 retained for traceability. The recommended public pre-release is
-`v1.6.0-alpha`.
+`v1.7.0-alpha`.
 
 ## What Is AdaSDF-CL?
 
@@ -50,9 +51,13 @@ collision engine and does not yet replace FCL.
 | DenseSDF `.sdfbin` read/write | Implemented |
 | Adaptive octree/block SDF builder | Implemented |
 | Adaptive block `.sdfbin` read/write | Implemented |
-| Adaptive compressed builder interface preview | Planning tool |
+| Matrix-SVD block compression | Implemented |
+| Compressed adaptive block SDF model | Implemented |
+| Compressed block `.sdfbin` read/write | Implemented |
+| Adaptive compressed builder interface preview | Planning tool / implemented matrix-SVD status |
 | Existing-core sampled expansion bridge | Existing-core only / partial |
-| Low-rank compressed adaptive SDF | Planned |
+| Tucker/HOSVD compression | Planned |
+| GPU-native compressed query | Planned |
 | Complex mesh repair / hole filling | Planned |
 | FCL fallback backend | Planned |
 | CollisionWorld broadphase | Planned |
@@ -72,6 +77,11 @@ Detailed capability references:
 - `docs/stl_to_sdf_public_workflow.md`
 - `docs/adaptive_octree_block_builder.md`
 - `docs/adaptive_block_sdfbin_format.md`
+- `docs/low_rank_block_compression.md`
+- `docs/compressed_block_sdfbin_format.md`
+- `docs/stl_to_compressed_sdf_workflow.md`
+- `docs/compression_quality_metrics.md`
+- `docs/adaptive_dense_vs_compressed_sdf.md`
 - `docs/stl_to_adaptive_sdf_workflow.md`
 - `docs/adaptive_vs_dense_sdf.md`
 - `docs/adaptive_builder_preview.md`
@@ -83,7 +93,7 @@ Detailed capability references:
 ```bash
 git clone https://github.com/hongyuanzhang357-glitch/AdaSDF-CL.git
 cd AdaSDF-CL
-git checkout v1.6.0-alpha
+git checkout v1.7.0-alpha
 
 cmake -S . -B build -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD_TESTS=ON -DADASDF_CL_BUILD_BENCHMARKS=ON
 cmake --build build --config Release
@@ -101,6 +111,11 @@ install/bin/adasdf_build_adaptive_sdf tests/data/mesh_diagnostics/closed_cube_as
 install/bin/adasdf_info cube_adaptive_block.sdfbin
 install/bin/adasdf_query cube_adaptive_block.sdfbin --point 0.5 0.5 0.5
 install/bin/adasdf_collide cube_adaptive_block.sdfbin cube_adaptive_block.sdfbin --max-contacts 4
+install/bin/adasdf_compress_adaptive_sdf cube_adaptive_block.sdfbin cube_compressed.sdfbin --target-error 1e-3 --max-rank 8 --report compression_report.md --quality-report compression_quality.md
+install/bin/adasdf_build_compressed_sdf tests/data/mesh_diagnostics/closed_cube_ascii.stl cube_compressed_direct.sdfbin --target-error 1e-3 --max-level 4 --block-resolution 8 --max-rank 8 --report compressed_build_report.md --compression-report compression_report.md --quality-report compression_quality.md
+install/bin/adasdf_info cube_compressed.sdfbin
+install/bin/adasdf_query cube_compressed.sdfbin --point 0.5 0.5 0.5
+install/bin/adasdf_collide cube_compressed.sdfbin cube_compressed.sdfbin --max-contacts 4
 install/bin/adasdf_build_adaptive_sdf_preview tests/data/mesh_diagnostics/closed_cube_ascii.stl cube_adaptive_preview.sdfbin --target-error 1e-3 --memory-mb 512 --dry-run --plan adaptive_plan.md
 install/bin/adasdf_recommend_demo --shape box --target-error 1e-3 --memory-mb 64 --block-memory-mb 16 --top-k 5
 install/bin/adasdf_build_demo_adaptive cube_adaptive.sdfbin --shape box --target-error 1e-3 --memory-mb 64 --block-memory-mb 16 --use-surrogate
@@ -135,9 +150,9 @@ Generated `.sdfbin` and `.svg` files should stay in build, install, or temporary
 ## Public STL-To-SDF Workflow
 
 v1.5.0-alpha introduced a standalone uniform dense SDF builder. v1.6.0-alpha
-adds a public adaptive octree/block SDF builder. The adaptive builder stores
-dense SDF values per block; low-rank compression remains planned for
-v1.7.0-alpha.
+adds a public adaptive octree/block SDF builder. v1.7.0-alpha adds
+matrix-SVD low-rank compression for adaptive blocks with error auditing and
+dense fallback.
 
 ```bash
 adasdf_mesh_check model.stl --readiness --out mesh_report.md
@@ -170,10 +185,29 @@ AdaptiveBlockSDF builder:
 - Octree-refined domain.
 - Block-wise dense SDF.
 - Implemented since v1.6.
-- No compression yet.
 
-Low-rank compressed SDF is planned for v1.7. Surrogate-guided recommendation is
-planned for v1.8.
+CompressedAdaptiveBlockSDF builder:
+
+- Matrix-SVD compressed adaptive blocks.
+- Implemented since v1.7.
+- May contain dense fallback blocks when compression cannot satisfy error targets.
+
+Surrogate-guided recommendation is planned for v1.8.
+
+## Public STL-to-compressed-SDF workflow
+
+```bash
+adasdf_mesh_check model.stl --readiness --out mesh_report.md
+adasdf_mesh_clean model.stl model_clean.stl --report cleanup_report.md
+adasdf_build_compressed_sdf model_clean.stl model_compressed.sdfbin --target-error 1e-3 --max-level 5 --block-resolution 8 --max-rank 8 --report build_report.md --compression-report compression_report.md --quality-report quality_report.md
+adasdf_info model_compressed.sdfbin
+adasdf_query model_compressed.sdfbin --point 0 0 0
+adasdf_collide model_compressed.sdfbin model_compressed.sdfbin --max-contacts 4
+```
+
+Compressed models can be queried directly on CPU and can be expanded for
+CPU/CUDA benchmark workflows. Tucker/HOSVD compression, surrogate-guided
+parameter recommendation, and GPU-native compressed query remain planned work.
 
 Open meshes can be built as unsigned distance fields:
 
@@ -189,7 +223,9 @@ adasdf_build_adaptive_sdf_preview model.stl model_adaptive.sdfbin --target-error
 
 The adaptive builder preview remains a planning tool. Real block-wise dense
 adaptive construction is available through `adasdf_build_adaptive_sdf` in
-v1.6.0-alpha. Low-rank compression is planned for v1.7.0-alpha.
+v1.6.0-alpha. Matrix-SVD low-rank block compression is available in
+v1.7.0-alpha through `adasdf_build_compressed_sdf` and
+`adasdf_compress_adaptive_sdf`.
 
 ## What Works Now
 
@@ -203,6 +239,10 @@ v1.6.0-alpha. Low-rank compression is planned for v1.7.0-alpha.
   `AdaptiveBlockSDFModel`, `ADASDF_ADAPTIVE_BLOCK_SDFBIN_V1`, and
   `adasdf_build_adaptive_sdf` for a public core-free STL-to-adaptive-block-SDF
   path.
+- `SmallMatrixSVD`, `CompressedSDFBlock`, `BlockLowRankCompressor`,
+  `CompressedAdaptiveBlockSDFModel`, `ADASDF_COMPRESSED_BLOCK_SDFBIN_V1`,
+  `adasdf_compress_adaptive_sdf`, and `adasdf_build_compressed_sdf` for a
+  public core-free low-rank adaptive block compression path.
 - `adasdf_build_adaptive_sdf_preview` for a dry-run preview of adaptive build
   plans and future low-rank stages.
 - Core-free analytic box SDF model.
@@ -252,8 +292,9 @@ target error + memory constraints
 The demo adaptive builder uses analytic box SDF queries and demo adaptive
 metadata to exercise the public workflow. The v1.5 DenseSDF builder is the
 implemented public STL-to-uniform-SDF path. The v1.6 AdaptiveBlockSDF builder
-is the implemented public STL-to-adaptive-block dense path. Low-rank compressed
-octree/block construction remains planned.
+is the implemented public STL-to-adaptive-block dense path. The v1.7
+CompressedAdaptiveBlockSDF path is the first public low-rank adaptive block
+compression workflow.
 
 ### Existing-Core Enhanced Build
 
@@ -299,8 +340,8 @@ connected components, isolated vertices, and scale warnings.
 `v1.2.0-alpha` introduced STL mesh diagnostics as a preflight step. v1.4 adds
 safe cleanup for obvious duplicate/degenerate elements. v1.5 adds a standalone
 uniform DenseSDF builder. v1.6 adds a standalone adaptive octree/block dense
-SDF builder, but it still does not implement low-rank compression and does not
-repair self-intersections.
+SDF builder. v1.7 adds matrix-SVD compressed adaptive block SDF output. These
+builders still do not repair self-intersections.
 
 ## SDF Build Readiness
 
@@ -354,7 +395,10 @@ The CUDA backend is optional. If CUDA is not available, AdaSDF-CL remains fully 
 CUDA backend unavailable
 ```
 
-v1.6.0-alpha supports CUDA batch queries over pre-expanded global or block dense SDF data for queryable public models, including AdaptiveBlockSDF after sampled expansion. Full low-rank compressed SDF GPU expansion is planned but not yet complete.
+v1.7.0-alpha supports CUDA batch queries over pre-expanded global or block
+dense SDF data for queryable public models, including compressed adaptive SDFs
+after sampled expansion. GPU-native compressed SDF query is planned but not yet
+implemented.
 
 ## Expanded SDF Quality Audit
 
@@ -433,7 +477,7 @@ FCL-style SDF collision backend under development
 It complements FCL-style workflows with SDF-native signed-distance queries,
 penetration depth, contact normals, batch query, expanded-SDF quality audit, and
 optional CUDA expanded query. A true FCL fallback backend and hybrid mesh/SDF
-pipeline are planned, not implemented in v1.6.0-alpha.
+pipeline are planned, not implemented in v1.7.0-alpha.
 
 See `docs/fcl_complement_strategy.md` and `docs/public_positioning.md`.
 
@@ -443,13 +487,14 @@ See `docs/fcl_complement_strategy.md` and `docs/public_positioning.md`.
   contact output, contact reduction, CPU/CUDA expanded query modes, benchmark
   timing semantics, ExpandedSDF quality audit, sign metrics, SVG view, and
   external CMake integration, plus STL mesh diagnostics, readiness scoring,
-  safe cleanup, ASCII STL export, standalone uniform DenseSDF building, and
-  standalone adaptive octree/block dense SDF building.
+  safe cleanup, ASCII STL export, standalone uniform DenseSDF building,
+  standalone adaptive octree/block dense SDF building, and matrix-SVD low-rank
+  adaptive block compression.
 - Partial / experimental: demo surrogate, adaptive compressed builder preview,
   existing-core bridge, CUDA expanded query backend, block-expanded query, and
   contact manifold behavior.
-- Planned: low-rank block compression, complex mesh repair, hole filling,
-  self-intersection detection, FCL
+- Planned: Tucker/HOSVD compression, surrogate-guided recommendation, complex
+  mesh repair, hole filling, self-intersection detection, FCL
   fallback backend, CollisionWorld broadphase, CCD, Python, ROS/MoveIt, robot
   benchmarks, and full low-rank GPU-native SDF query.
 
@@ -512,12 +557,13 @@ adasdf::collide(a, b, request, result);
 - Safe cleanup does not fill holes, repair self-intersections, boolean
   reconstruct, infer units, or change model scale.
 - The demo adaptive builder supports analytic boxes, not arbitrary meshes.
-- Full adaptive STL-to-compressed-SDF construction remains future work for the public standalone backend.
+- Tucker/HOSVD compression remains planned.
+- Surrogate-guided compression/build recommendation remains planned for v1.8.
 - Pair collision is an approximate SDF-sampling narrow-phase.
 - CUDA support is limited to optional batch signed-distance/normal queries over pre-expanded global/block dense data for analytic/demo adaptive boxes.
 - `CUDA + None` is intentionally rejected because CUDA compressed-direct query is not implemented.
 - Selected-block CUDA benchmarks are intended for local contact-region point distributions; global uniform point clouds can make selected blocks slower or less representative.
-- CUDA pair-collision acceleration, full low-rank compressed SDF GPU expansion, Python bindings, and FCL ABI compatibility are not implemented.
+- CUDA pair-collision acceleration, GPU-native compressed SDF query, Python bindings, and FCL ABI compatibility are not implemented.
 
 See `docs/limitations.md`.
 
@@ -540,6 +586,13 @@ See `docs/limitations.md`.
 - `docs/mesh_cleanup.md`
 - `docs/adaptive_octree_block_builder.md`
 - `docs/adaptive_block_sdfbin_format.md`
+- `docs/low_rank_block_compression.md`
+- `docs/compressed_block_sdfbin_format.md`
+- `docs/stl_to_compressed_sdf_workflow.md`
+- `docs/compression_quality_metrics.md`
+- `docs/adaptive_dense_vs_compressed_sdf.md`
+- `docs/github_release_draft_v1_7_0_alpha.md`
+- `docs/low_rank_compression_v1_7_report.md`
 - `docs/stl_to_adaptive_sdf_workflow.md`
 - `docs/adaptive_vs_dense_sdf.md`
 - `docs/stl_import_audit.md`

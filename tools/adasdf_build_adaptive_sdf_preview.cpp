@@ -109,7 +109,13 @@ int main(int argc, char** argv) {
         << "Use adasdf_build_adaptive_sdf for block-wise dense adaptive SDF "
            "construction.\n";
     std::cout
-        << "Low-rank compression remains planned for v1.7.0-alpha.\n";
+        << "Low-rank block compression is implemented in v1.7.0-alpha using "
+           "matrix-SVD per adaptive block.\n";
+    std::cout
+        << "Use adasdf_build_compressed_sdf for one-step compressed output.\n";
+    std::cout
+        << "Tucker/HOSVD compression and surrogate recommendation remain "
+           "planned.\n";
     if (!plan_path.empty()) {
       std::cout << "Plan: " << plan_path.string() << "\n";
     }

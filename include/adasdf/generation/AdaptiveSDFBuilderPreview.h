@@ -12,6 +12,9 @@ enum class AdaptiveBuilderStage {
   BlockPartition,
   DenseSampling,
   LowRankCompression,
+  TuckerCompression,
+  SurrogateRecommendation,
+  GPUCompressedQuery,
   ErrorAudit,
   SDFBinWrite
 };

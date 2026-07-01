@@ -1,11 +1,11 @@
 # Alpha Status
 
-AdaSDF-CL 1.6.0-alpha is a research-preview release candidate.
+AdaSDF-CL 1.7.0-alpha is a research-preview release candidate.
 
 The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`,
 `v1.1.0-alpha`, `v1.1.1-alpha`, `v1.2.0-alpha`, `v1.3.0-alpha`,
-`v1.4.0-alpha`, and `v1.5.0-alpha` tags are retained for traceability. The
-recommended public pre-release is `v1.6.0-alpha`.
+`v1.4.0-alpha`, `v1.5.0-alpha`, and `v1.6.0-alpha` tags are retained for
+traceability. The recommended public pre-release is `v1.7.0-alpha`.
 
 ## What Works
 
@@ -49,6 +49,15 @@ recommended public pre-release is `v1.6.0-alpha`.
 - `adasdf_build_adaptive_sdf` CLI, adaptive block build reports, and
   `ADASDF_ADAPTIVE_BLOCK_SDFBIN_V1`.
 - AdaptiveBlockSDF query, collision, expansion quality, and benchmark model
+  loading.
+- `SmallMatrixSVD`, `CompressedSDFBlock`, `BlockLowRankCompressor`,
+  `CompressedAdaptiveBlockSDFModel`, and `CompressedBlockSDFBin` for the public
+  core-free matrix-SVD compressed adaptive block SDF path.
+- `adasdf_compress_adaptive_sdf` and `adasdf_build_compressed_sdf`.
+- `ADASDF_COMPRESSED_BLOCK_SDFBIN_V1`.
+- Compression quality reports with max/mean/RMS/p95 error and sign mismatch
+  metrics.
+- Compressed SDF query, collision, expansion quality, and benchmark model
   loading.
 - `AdaptiveSDFBuilderPreview` and `adasdf_build_adaptive_sdf_preview` dry-run
   planning for low-rank compressed construction.
@@ -105,7 +114,13 @@ uniform grid sampling.
 
 v1.6.0-alpha is an adaptive octree/block dense SDF builder release. The builder
 is implemented and core-free. It uses brute-force triangle sampling and stores
-dense phi values per adaptive block. It is not a low-rank compressed builder.
+dense phi values per adaptive block.
+
+v1.7.0-alpha is a matrix-SVD low-rank block compression release. It can compress
+adaptive dense blocks, keep dense fallback blocks when targets are not met, and
+query compressed models directly on CPU. Tucker/HOSVD compression,
+surrogate-guided recommendation, and GPU-native compressed query remain
+planned.
 
 Benchmark `total_ms` is a full query timing. Benchmark `kernel_ms` is CUDA
 kernel event timing. Original UI warmed kernel-average numbers should be
@@ -118,16 +133,16 @@ analysis.
 
 ## Validation Snapshot
 
-- Expected tests: 82.
+- Expected tests: 93.
 - Expected install validation: PASS with `ADASDF_CL_USE_EXISTING_CORE=OFF`.
 - Expected alpha validation: PASS.
 - Expected clean check: PASS.
 - Target external collision test verdict for v0.9.0-alpha: PASS for the demo
   adaptive workflow.
 - Expected CUDA-unavailable behavior: GPU benchmark/tests SKIPPED, not FAILED.
-- Current v1.6.0-alpha local CPU CTest result: 82/82 PASS.
-- Current v1.6.0-alpha local CUDA CTest result: 82/82 PASS via ASCII `subst`
+- Current v1.7.0-alpha local CPU CTest result: 93/93 PASS.
+- Current v1.7.0-alpha local CUDA CTest result: 93/93 PASS via ASCII `subst`
   path with CUDA 12.6.
-- Current v1.6.0-alpha install validation: PASS.
-- Current v1.6.0-alpha alpha validation: PASS.
-- Current v1.6.0-alpha clean check: PASS.
+- Current v1.7.0-alpha install validation: PASS.
+- Current v1.7.0-alpha alpha validation: PASS with install validation.
+- Current v1.7.0-alpha clean check: PASS.

@@ -20,9 +20,12 @@ int main() {
         !has_stage(adasdf::AdaptiveBuilderStage::OctreeRefinement) ||
         !has_stage(adasdf::AdaptiveBuilderStage::BlockPartition) ||
         !has_stage(adasdf::AdaptiveBuilderStage::LowRankCompression) ||
+        !has_stage(adasdf::AdaptiveBuilderStage::TuckerCompression) ||
         markdown.find("OctreeRefinement implemented in v1.6.0-alpha") ==
             std::string::npos ||
-        markdown.find("LowRankCompression planned for v1.7.0-alpha") ==
+        markdown.find("LowRankCompression implemented in v1.7.0-alpha") ==
+            std::string::npos ||
+        markdown.find("Tucker/HOSVD compression is not implemented") ==
             std::string::npos) {
       std::cerr << "adaptive preview plan failed\n";
       return 1;

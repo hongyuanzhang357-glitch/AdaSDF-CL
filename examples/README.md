@@ -19,6 +19,8 @@ cmake --build build --config Release
 - `15_adaptive_builder_preview_demo.cpp`: adaptive builder planning preview; in v1.6 the real block-wise dense builder is `adasdf_build_adaptive_sdf`.
 - `16_stl_to_adaptive_block_sdf_demo.cpp`: v1.6 CPU-only generated STL-to-adaptive-block-DenseSDF workflow with reload, query, and collision.
 - `17_adaptive_vs_dense_sdf_demo.cpp`: v1.6 comparison between uniform DenseSDF and adaptive block-wise dense SDF on fixed sample points.
+- `18_adaptive_block_compression_demo.cpp`: v1.7 adaptive block SDF compression demo with reload, query, collision, ratio, and error metrics.
+- `19_dense_adaptive_compressed_comparison_demo.cpp`: v1.7 dense vs adaptive vs compressed comparison demo.
 - `downstream_cmake_project`: package-only external CMake smoke example with a no-input demo adaptive path.
 
 ## Existing-Core Examples
@@ -30,8 +32,8 @@ cmake --build build --config Release
 - `07_contact_reduction_demo.cpp`
 
 These work when a compatible `.sdfbin` and query backend are available. Full
-low-rank compressed STL-to-sdfbin construction still requires future standalone
-compression work.
+Tucker/HOSVD compression, surrogate-guided recommendation, and GPU-native
+compressed query remain planned work.
 
 ## Preview-Only Examples
 

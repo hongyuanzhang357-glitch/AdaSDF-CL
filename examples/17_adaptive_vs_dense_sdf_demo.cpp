@@ -83,8 +83,8 @@ int main() {
     std::cout << "Adaptive blocks: " << adaptive_report.block_count << "\n";
     std::cout << "Max abs phi difference: " << max_abs_diff << "\n";
     std::cout
-        << "Note: v1.6 adaptive blocks store dense phi values; low-rank "
-           "compression is planned for v1.7.0-alpha.\n";
+        << "Note: v1.6 adaptive blocks store dense phi values; v1.7 adds "
+           "matrix-SVD compressed adaptive block output.\n";
     return 0;
   } catch (const std::exception& exc) {
     std::cerr << "adasdf_adaptive_vs_dense_sdf_demo failed: " << exc.what()

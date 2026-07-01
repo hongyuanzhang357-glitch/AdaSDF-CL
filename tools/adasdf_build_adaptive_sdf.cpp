@@ -14,7 +14,9 @@ void usage() {
          "[--min-level N] [--max-level N] [--block-resolution N] "
          "[--padding 0.05] [--signed|--unsigned] [--require-watertight] "
          "[--allow-open-unsigned] [--auto-clean] [--report build_report.md] "
-         "[--json build_report.json] [--dry-run] [--verbose]\n";
+         "[--json build_report.json] [--dry-run] [--enable-low-rank] "
+         "[--target-compression-error 1e-3] [--max-rank N] "
+         "[--fixed-rank N] [--keep-near-surface-dense] [--verbose]\n";
 }
 
 bool hasValue(int index, int argc) {
@@ -49,8 +51,7 @@ adasdf::AdaptiveBlockSDFBuildReport dryRunReport(
   report.warnings.push_back(
       "dry-run only: no STL sampling and no .sdfbin output were written.");
   report.warnings.push_back(
-      "Low-rank compression is planned for v1.7.0-alpha and is not "
-      "implemented in v1.6.0-alpha.");
+      "Low-rank matrix-SVD block compression is available in v1.7.0-alpha.");
   return report;
 }
 
@@ -70,6 +71,7 @@ int main(int argc, char** argv) {
     bool dry_run = false;
     bool enable_low_rank = false;
     adasdf::AdaptiveBlockSDFBuildOptions options;
+    adasdf::BlockLowRankCompressionOptions compression_options;
 
     for (int i = 1; i < argc; ++i) {
       const std::string arg = argv[i];
@@ -109,6 +111,17 @@ int main(int argc, char** argv) {
         options.verbose = true;
       } else if (arg == "--enable-low-rank") {
         enable_low_rank = true;
+      } else if (arg == "--target-compression-error" && hasValue(i, argc)) {
+        const double value = std::stod(argv[++i]);
+        compression_options.target_max_abs_error = value;
+        compression_options.target_p95_error = value;
+      } else if (arg == "--max-rank" && hasValue(i, argc)) {
+        compression_options.max_rank = std::stoi(argv[++i]);
+      } else if (arg == "--fixed-rank" && hasValue(i, argc)) {
+        compression_options.fixed_rank = std::stoi(argv[++i]);
+        compression_options.rank_selection = adasdf::RankSelectionMode::FixedRank;
+      } else if (arg == "--keep-near-surface-dense") {
+        compression_options.always_keep_near_surface_blocks_dense = true;
       } else if (!arg.empty() && arg[0] == '-') {
         std::cerr << "Unknown or incomplete option: " << arg << "\n";
         usage();
@@ -128,12 +141,6 @@ int main(int argc, char** argv) {
       usage();
       return 1;
     }
-    if (enable_low_rank) {
-      std::cerr
-          << "Low-rank compression is planned for v1.7.0-alpha and is not "
-             "implemented in v1.6.0-alpha.\n";
-      return 5;
-    }
     if (!std::filesystem::exists(input)) {
       std::cerr << "adasdf_build_adaptive_sdf: input STL does not exist: "
                 << input.string() << "\n";
@@ -151,11 +158,15 @@ int main(int argc, char** argv) {
       std::cout << "Octree levels: " << options.min_octree_level << "-"
                 << options.max_octree_level << "\n";
       std::cout << "Block resolution: " << options.block_resolution << "\n";
-      std::cout << "Format: ADASDF_ADAPTIVE_BLOCK_SDFBIN_V1\n";
+      std::cout << "Format: "
+                << (enable_low_rank ? "ADASDF_COMPRESSED_BLOCK_SDFBIN_V1"
+                                    : "ADASDF_ADAPTIVE_BLOCK_SDFBIN_V1")
+                << "\n";
       std::cout << "Output written: no\n";
-      std::cout
-          << "Low-rank compression: planned for v1.7.0-alpha, not "
-             "implemented in v1.6.0-alpha\n";
+      std::cout << "Low-rank compression: "
+                << (enable_low_rank ? "matrix-SVD enabled"
+                                    : "not enabled")
+                << "\n";
       if (!report_path.empty()) {
         std::cout << "Report: " << report_path.string() << "\n";
       }
@@ -184,11 +195,36 @@ int main(int argc, char** argv) {
       return 3;
     }
 
+    adasdf::BlockLowRankCompressionReport compression_report;
+    std::shared_ptr<adasdf::SDFModel> output_model = model;
+    if (enable_low_rank) {
+      auto adaptive =
+          std::dynamic_pointer_cast<adasdf::AdaptiveBlockSDFModel>(model);
+      if (!adaptive) {
+        std::cerr << "adasdf_build_adaptive_sdf: low-rank compression requires "
+                     "an AdaptiveBlockSDFModel.\n";
+        return 3;
+      }
+      adasdf::CompressedAdaptiveBlockSDF compressed =
+          adasdf::BlockLowRankCompressor::compress(
+              adaptive->blockSet(),
+              compression_options,
+              &compression_report);
+      if (!compression_report.success) {
+        std::cerr << "adasdf_build_adaptive_sdf: low-rank compression failed: "
+                  << compression_report.error_message << "\n";
+        return 3;
+      }
+      output_model =
+          std::make_shared<adasdf::CompressedAdaptiveBlockSDFModel>(
+              std::move(compressed));
+    }
+
     try {
-      adasdf::SDFBinWriter::write(output.string(), *model);
+      adasdf::SDFBinWriter::write(output.string(), *output_model);
       auto reloaded = adasdf::SDFBinReader::read(output);
       if (!reloaded || !reloaded->isValid() || !reloaded->queryBackendAvailable()) {
-        throw std::runtime_error("reloaded AdaptiveBlockSDF model is invalid");
+        throw std::runtime_error("reloaded SDF model is invalid");
       }
     } catch (const std::exception& exc) {
       std::cerr
@@ -215,10 +251,23 @@ int main(int argc, char** argv) {
     std::cout << "Memory bytes: " << report.memory_bytes << "\n";
     std::cout << "Sampling time ms: " << report.sampling_time_ms << "\n";
     std::cout << "Build time ms: " << report.build_time_ms << "\n";
-    std::cout << "Format: ADASDF_ADAPTIVE_BLOCK_SDFBIN_V1\n";
+    std::cout << "Format: "
+              << (enable_low_rank ? "ADASDF_COMPRESSED_BLOCK_SDFBIN_V1"
+                                  : "ADASDF_ADAPTIVE_BLOCK_SDFBIN_V1")
+              << "\n";
     std::cout << "Reload validation: success\n";
-    std::cout
-        << "Low-rank compression: not enabled / planned for v1.7.0-alpha\n";
+    if (enable_low_rank) {
+      std::cout << "Low-rank compression: matrix-SVD enabled\n";
+      std::cout << "Matrix-SVD blocks: "
+                << compression_report.compressed_block_count << "\n";
+      std::cout << "Dense fallback blocks: "
+                << compression_report.dense_fallback_block_count << "\n";
+      std::cout << "Compression ratio: "
+                << compression_report.compression_ratio << "\n";
+      std::cout << "Tucker/HOSVD compression: planned / not implemented\n";
+    } else {
+      std::cout << "Low-rank compression: not enabled\n";
+    }
     if (!report_path.empty()) {
       std::cout << "Report: " << report_path.string() << "\n";
     }
