@@ -1,7 +1,8 @@
 # Public STL-To-SDF Workflow
 
 AdaSDF-CL v1.5.0-alpha adds a clone-only, core-free path from STL to a queryable
-uniform dense SDF.
+uniform dense SDF. v1.6.0-alpha adds a clone-only, core-free path from STL to
+an adaptive octree/block SDF with dense values per block.
 
 ```text
 STL
@@ -28,11 +29,25 @@ adasdf_expansion_quality model_dense.sdfbin --expansion global --global-resoluti
 adasdf_benchmark_batch_query --model model_dense.sdfbin --points 10000 --query-backend cpu --expansion none --out bench.csv
 ```
 
+## Adaptive Block CLI Example
+
+```bash
+adasdf_mesh_check model.stl --readiness --out mesh_report.md
+adasdf_mesh_clean model.stl model_clean.stl --report cleanup_report.md
+adasdf_build_adaptive_sdf model_clean.stl model_adaptive.sdfbin --target-error 1e-3 --max-level 5 --block-resolution 8 --report adaptive_report.md
+adasdf_info model_adaptive.sdfbin
+adasdf_query model_adaptive.sdfbin --point 0 0 0
+adasdf_collide model_adaptive.sdfbin model_adaptive.sdfbin --max-contacts 4
+adasdf_expansion_quality model_adaptive.sdfbin --expansion global --global-resolution 32 --samples 1000 --out quality.csv
+adasdf_benchmark_batch_query --model model_adaptive.sdfbin --points 10000 --query-backend cpu --expansion none --out bench.csv
+```
+
 ## Boundaries
 
-The implemented public builder is a uniform DenseSDF builder. It is not the
-full adaptive octree/block/low-rank compressed builder. The future adaptive
-builder remains planned work.
+The implemented public builders are a uniform DenseSDF builder and an adaptive
+octree/block dense builder. v1.6 does not implement low-rank compression,
+SVD/Tucker compression, surrogate recommendation, or GPU-native compressed
+adaptive query.
 
 Open STL meshes can be used in unsigned mode:
 

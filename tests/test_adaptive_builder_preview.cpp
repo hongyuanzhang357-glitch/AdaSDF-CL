@@ -16,11 +16,14 @@ int main() {
     };
     const std::string markdown =
         adasdf::AdaptiveSDFBuilderPreview::planToMarkdown(plan);
-    if (!plan.valid || plan.implemented_in_this_version ||
+    if (!plan.valid || !plan.implemented_in_this_version ||
         !has_stage(adasdf::AdaptiveBuilderStage::OctreeRefinement) ||
         !has_stage(adasdf::AdaptiveBuilderStage::BlockPartition) ||
         !has_stage(adasdf::AdaptiveBuilderStage::LowRankCompression) ||
-        markdown.find("interface preview only") == std::string::npos) {
+        markdown.find("OctreeRefinement implemented in v1.6.0-alpha") ==
+            std::string::npos ||
+        markdown.find("LowRankCompression planned for v1.7.0-alpha") ==
+            std::string::npos) {
       std::cerr << "adaptive preview plan failed\n";
       return 1;
     }

@@ -8,6 +8,10 @@ contact fields as other queryable public models. Contact quality remains tied
 to grid resolution, sign quality, sampling, and the research-preview contact
 reduction path.
 
+AdaptiveBlockSDF models built by `adasdf_build_adaptive_sdf` use the same
+contact fields. In v1.6, adaptive blocks store dense phi values and are queried
+through the public SDFModel path.
+
 | Contact field | Status | Source | Notes |
 | --- | --- | --- | --- |
 | contact point | Implemented | `Contact::point` | SDF candidate point pipeline. |

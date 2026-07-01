@@ -1,5 +1,36 @@
 # Changelog
 
+## 1.6.0-alpha
+
+Adaptive octree/block SDF builder.
+
+### Added
+
+- Adaptive octree data structure and builder.
+- Adaptive block partitioner.
+- Adaptive block SDF model.
+- Adaptive block SDF builder.
+- `ADASDF_ADAPTIVE_BLOCK_SDFBIN_V1` read/write support.
+- `adasdf_build_adaptive_sdf` CLI.
+- Adaptive block build reports.
+- Adaptive vs dense SDF comparison example.
+- Adaptive block SDF query, collision and roundtrip tests.
+
+### Changed
+
+- Version updated to `1.6.0-alpha`.
+- Adaptive builder preview now marks octree/block construction as implemented
+  and low-rank compression as planned.
+- `adasdf_info`, `SDFBinReader`, `SDFBinWriter`, benchmark model loading, and
+  expansion quality can use adaptive block `.sdfbin` files.
+
+### Notes
+
+- Block data is stored as dense per-block phi values.
+- Low-rank compression is not implemented in v1.6.0-alpha.
+- SVD/Tucker compression is planned for v1.7.0-alpha.
+- Surrogate-guided recommendation is planned for v1.8.0-alpha.
+
 ## 1.5.0-alpha
 
 Standalone DenseSDF builder and adaptive builder interface preview.

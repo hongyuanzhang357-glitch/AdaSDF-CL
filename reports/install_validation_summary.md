@@ -17,7 +17,7 @@ cmake -S '<source>' -B '<build>' -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD
 -- Selecting Windows SDK version 10.0.22621.0 to target Windows 10.0.26200.
 --
 -- AdaSDF-CL configuration:
---   Version: 1.5.0-alpha
+--   Version: 1.6.0-alpha
 --   Build examples: ON
 --   Build tests: ON
 --   Benchmarks: ON
@@ -32,8 +32,8 @@ cmake -S '<source>' -B '<build>' -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD
 --   CUDA toolkit: not found
 --   FCL: not required
 --
--- Configuring done (0.0s)
--- Generating done (0.6s)
+-- Configuring done (0.1s)
+-- Generating done (1.0s)
 ...
 ```
 
@@ -47,23 +47,23 @@ cmake --build '<build>' --config Release --parallel
 适用于 .NET Framework MSBuild 版本 17.14.40+3e7442088
 
   adasdf_cl_runtime.vcxproj -> <build>\Release\adasdf_cl_runtime.lib
-  test_stl_reader.vcxproj -> <build>\Release\test_stl_reader.exe
-  test_query_mode_config.vcxproj -> <build>\Release\test_query_mode_config.exe
-  adasdf_recommend_demo.vcxproj -> <build>\Release\adasdf_recommend_demo.exe
-  test_surrogate_recommender.vcxproj -> <build>\Release\test_surrogate_recommender.exe
-  test_sign_mismatch_metrics.vcxproj -> <build>\Release\test_sign_mismatch_metrics.exe
+  adasdf_build_adaptive_sdf_preview.vcxproj -> <build>\tools\Release\adasdf_build_adaptive_sdf_preview.exe
   test_sdfbin_writer_roundtrip.vcxproj -> <build>\Release\test_sdfbin_writer_roundtrip.exe
-  test_distance_query.vcxproj -> <build>\Release\test_distance_query.exe
-  test_sdfbin_real_load.vcxproj -> <build>\Release\test_sdfbin_real_load.exe
-  adasdf_stl_to_dense_sdf_demo.vcxproj -> <build>\Release\adasdf_stl_to_dense_sdf_demo.exe
-  test_sdf_io.vcxproj -> <build>\Release\test_sdf_io.exe
-  adasdf_contact_reduction_demo.vcxproj -> <build>\Release\adasdf_contact_reduction_demo.exe
-  test_query_engine_cuda.vcxproj -> <build>\Release\test_query_engine_cuda.exe
-  adasdf_query_mode_demo.vcxproj -> <build>\tools\Release\adasdf_query_mode_demo.exe
-  adasdf_build.vcxproj -> <build>\Release\adasdf_build.exe
+  test_adaptive_builder_preview.vcxproj -> <build>\Release\test_adaptive_builder_preview.exe
+  adasdf_two_box_collision_with_view.vcxproj -> <build>\Release\adasdf_two_box_collision_with_view.exe
+  test_analytic_sdf_model.vcxproj -> <build>\Release\test_analytic_sdf_model.exe
+  test_cuda_phi_only_kernel.vcxproj -> <build>\Release\test_cuda_phi_only_kernel.exe
+  test_cuda_query_workspace.vcxproj -> <build>\Release\test_cuda_query_workspace.exe
+  adasdf_surrogate_adaptive_demo.vcxproj -> <build>\Release\adasdf_surrogate_adaptive_demo.exe
+  test_candidate_point_sampler.vcxproj -> <build>\Release\test_candidate_point_sampler.exe
+  test_query_mode_config.vcxproj -> <build>\Release\test_query_mode_config.exe
+  test_build_options.vcxproj -> <build>\Release\test_build_options.exe
+  test_stl_writer.vcxproj -> <build>\Release\test_stl_writer.exe
+  test_batch_query_cpu.vcxproj -> <build>\Release\test_batch_query_cpu.exe
+  test_demo_adaptive_builder.vcxproj -> <build>\Release\test_demo_adaptive_builder.exe
+  test_expansion_quality.vcxproj -> <build>\Release\test_expansion_quality.exe
   test_pair_distance_query.vcxproj -> <build>\Release\test_pair_distance_query.exe
-  adasdf_core_free_demo_collision.vcxproj -> <build>\Release\adasdf_core_free_demo_collision.exe
-  adasdf_mesh_cleanup_demo.vcxproj -> <build>\Release\adasdf_mesh_cleanup_demo.exe
+  test_dense_sdf_builder.vcxproj -> <build>\Release\test_dense_sdf_builder.exe
 ...
 ```
 
@@ -89,11 +89,11 @@ cmake --install '<build>' --config Release --prefix '<install>'
 -- Up-to-date: <install>/bin/adasdf_mesh_check.exe
 -- Up-to-date: <install>/bin/adasdf_mesh_clean.exe
 -- Up-to-date: <install>/bin/adasdf_build_dense_sdf.exe
+-- Up-to-date: <install>/bin/adasdf_build_adaptive_sdf.exe
 -- Up-to-date: <install>/bin/adasdf_build_adaptive_sdf_preview.exe
 -- Up-to-date: <install>/bin/adasdf_benchmark_batch_query.exe
 -- Up-to-date: <install>/include
 -- Up-to-date: <install>/include/adasdf
--- Up-to-date: <install>/include/adasdf/adapters
 ...
 ```
 
@@ -129,7 +129,7 @@ cmake --build '<workspace>/build/adasdf_cl_iv_pkg' --config Release --parallel
 ```
 
 ```text
-AdaSDF-CL version: 1.5.0-alpha
+AdaSDF-CL version: 1.6.0-alpha
 Position: FCL-style SDF collision backend under development.
 Boundary: complementary SDF backend, not a drop-in FCL replacement.
 
@@ -147,8 +147,8 @@ Implemented:
 - standalone uniform DenseSDF builder
 - ADASDF_DENSE_SDFBIN_V1 read/write
 - STL-to-DenseSDF public workflow
-- expansion quality audit
-- sign mismatch and near-surface mismatch metrics
+- adaptive octree builder
+- adaptive block partitioner
 ...
 ```
 
@@ -222,7 +222,7 @@ Resolution: 24 x 24 x 24
 Signed: yes
 Watertight: yes
 Triangles: 12
-Build time ms: 21.2539
+Build time ms: 28.3023
 Memory bytes: 111128
 Reload validation: success
 Report: <local-path>
@@ -237,7 +237,7 @@ JSON report: <local-path>
 
 ```text
 AdaSDF-CL info
-Library version: 1.5.0-alpha
+Library version: 1.6.0-alpha
 Path: <local-path>
 Model name: uniform dense SDF
 Valid: yes
@@ -305,6 +305,131 @@ Contact[0].point: 0.5 0.5 0.5
 ...
 ```
 
+### Installed AdaptiveBlockSDF Build CLI: PASS
+
+```bash
+'<install>/bin/adasdf_build_adaptive_sdf.exe' '<source>/tests/data/mesh_diagnostics/closed_cube_ascii.stl' '<workspace>/build/install_validation_adaptive_block.sdfbin' --max-level 2 --block-resolution 5 --report '<workspace>/build/install_validation_adaptive_block_report.md' --json '<workspace>/build/install_validation_adaptive_block_report.json'
+```
+
+```text
+AdaSDF-CL adaptive block SDF builder
+Input: <local-path>
+Output: <local-path>
+Signed: yes
+Watertight: yes
+Octree levels: 1-2
+Max level used: 2
+Block resolution: 5
+Target near-surface error: 0.001
+Octree nodes: 73
+Leaf blocks: 64
+Near-surface blocks: 64
+Memory bytes: 75248
+Sampling time ms: 15.5323
+Build time ms: 17.0304
+Format: ADASDF_ADAPTIVE_BLOCK_SDFBIN_V1
+Reload validation: success
+Low-rank compression: not enabled / planned for v1.7.0-alpha
+Report: <local-path>
+JSON report: <local-path>
+```
+
+### Installed AdaptiveBlockSDF Info CLI: PASS
+
+```bash
+'<install>/bin/adasdf_info.exe' '<workspace>/build/install_validation_adaptive_block.sdfbin'
+```
+
+```text
+AdaSDF-CL info
+Library version: 1.6.0-alpha
+Path: <local-path>
+Model name: adaptive block dense SDF
+Valid: yes
+Format: ADASDF_ADAPTIVE_BLOCK_SDFBIN_V1
+AdaptiveBlockSDF block_count: 64
+AdaptiveBlockSDF near_surface_block_count: 64
+AdaptiveBlockSDF max_level_used: 2
+AdaptiveBlockSDF block_resolution: 5
+AdaptiveBlockSDF signed: yes
+AdaptiveBlockSDF storage: block-wise dense phi values
+Low-rank compression: not implemented in v1.6.0-alpha
+Format version: 1
+Query backend: core-free adaptive block dense SDF backend
+Query backend available: yes
+AABB min: -0.05 -0.05 -0.05
+AABB max: 1.05 1.05 1.05
+Fine cell count: 4
+Fine node count: 5
+...
+```
+
+### Installed AdaptiveBlockSDF Query CLI: PASS
+
+```bash
+'<install>/bin/adasdf_query.exe' '<workspace>/build/install_validation_adaptive_block.sdfbin' --point 0.5 0.5 0.5
+```
+
+```text
+AdaSDF-CL point query
+Path: <local-path>
+Point: 0.5 0.5 0.5
+Signed distance: -0.5
+Gradient: 8.07435e-16 8.07435e-16 8.07435e-16
+Normal: 0 0 0
+Query backend: core-free adaptive block dense SDF backend
+```
+
+### Installed AdaptiveBlockSDF Collide CLI: PASS
+
+```bash
+'<install>/bin/adasdf_collide.exe' '<workspace>/build/install_validation_adaptive_block.sdfbin' '<workspace>/build/install_validation_adaptive_block.sdfbin' --max-contacts 4
+```
+
+```text
+AdaSDF-CL collision query
+Model A: <local-path>
+Model B: <local-path>
+Offset B: 0 0 0
+AABB A: min=(-0.05 -0.05 -0.05) max=(1.05 1.05 1.05)
+AABB B: min=(-0.05 -0.05 -0.05) max=(1.05 1.05 1.05)
+Colliding: true
+Minimum distance: -0.5
+Backend: CPU narrow-phase: symmetric SDF-sampling research preview
+Requested query backend: cpu
+Requested expansion: none
+Requested blocks: all
+Method: symmetric candidate-point SDF query + deterministic contact reduction
+Candidate points: 462
+Raw contacts: 2
+Reduced contacts: 1
+Requested max contacts: 4
+Returned contacts: 1
+Contact count: 1
+Contact[0].point: 0.5 0.5 0.5
+...
+```
+
+### Installed AdaptiveBlockSDF Dry Run CLI: PASS
+
+```bash
+'<install>/bin/adasdf_build_adaptive_sdf.exe' '<source>/tests/data/mesh_diagnostics/closed_cube_ascii.stl' '<workspace>/build/install_validation_adaptive_dryrun.sdfbin' --max-level 2 --block-resolution 5 --dry-run --report '<workspace>/build/install_validation_adaptive_dryrun_plan.md'
+```
+
+```text
+AdaSDF-CL adaptive block SDF builder
+Input: <local-path>
+Requested output: <local-path>
+Dry run: yes
+Signed: yes
+Octree levels: 1-2
+Block resolution: 5
+Format: ADASDF_ADAPTIVE_BLOCK_SDFBIN_V1
+Output written: no
+Low-rank compression: planned for v1.7.0-alpha, not implemented in v1.6.0-alpha
+Report: <local-path>
+```
+
 ### Installed Adaptive Builder Preview CLI: PASS
 
 ```bash
@@ -317,8 +442,10 @@ Input: <local-path>
 Requested output: <local-path>
 Dry run: yes
 Valid plan: yes
-Implemented in this version: no
-Full adaptive compressed SDF build is not implemented in v1.5.0-alpha.
+Implemented in this version: yes
+Adaptive octree/block SDF construction is implemented in v1.6.0-alpha as block-wise dense output.
+Use adasdf_build_adaptive_sdf for block-wise dense adaptive SDF construction.
+Low-rank compression remains planned for v1.7.0-alpha.
 Plan: <local-path>
 ```
 
@@ -330,7 +457,7 @@ Plan: <local-path>
 
 ```text
 AdaSDF-CL package consumer
-Version: 1.5.0-alpha
+Version: 1.6.0-alpha
 Point: 1 2 3
 Demo signed distance at origin: -0.5
 Demo adaptive blocks: 7
@@ -372,7 +499,7 @@ cmake --build '<workspace>/build/adasdf_cl_iv_ds' --config Release --parallel
 
 ```text
 AdaSDF-CL downstream example
-Version: 1.5.0-alpha
+Version: 1.6.0-alpha
 CPU backend: available
 No .sdfbin supplied; running core-free demo adaptive path.
 Demo signed distance at origin: -0.5

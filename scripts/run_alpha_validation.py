@@ -236,10 +236,17 @@ def main() -> int:
     dense_sdfbin = build.parent / "closed_cube_dense_v1_5.sdfbin"
     dense_report = build.parent / "closed_cube_dense_report.md"
     dense_json = build.parent / "closed_cube_dense_report.json"
+    adaptive_sdfbin = build.parent / "closed_cube_adaptive_block_v1_6.sdfbin"
+    adaptive_report = build.parent / "closed_cube_adaptive_block_report.md"
+    adaptive_json = build.parent / "closed_cube_adaptive_block_report.json"
+    adaptive_quality_csv = build.parent / "closed_cube_adaptive_block_quality.csv"
+    adaptive_benchmark_csv = build.parent / "closed_cube_adaptive_block_benchmark.csv"
+    adaptive_dryrun_sdfbin = build.parent / "closed_cube_adaptive_dryrun.sdfbin"
+    adaptive_dryrun_report = build.parent / "closed_cube_adaptive_dryrun_plan.md"
     adaptive_preview_sdfbin = build.parent / "closed_cube_adaptive_preview.sdfbin"
     adaptive_preview_plan = build.parent / "closed_cube_adaptive_preview_plan.md"
     max_contacts = 8
-    for generated in (adaptive_preview_sdfbin,):
+    for generated in (adaptive_preview_sdfbin, adaptive_dryrun_sdfbin):
         if generated.exists():
             generated.unlink()
     required_demo_tools = {
@@ -247,6 +254,7 @@ def main() -> int:
         "adasdf_mesh_check": find_executable(build, "adasdf_mesh_check", config),
         "adasdf_mesh_clean": find_executable(build, "adasdf_mesh_clean", config),
         "adasdf_build_dense_sdf": find_executable(build, "adasdf_build_dense_sdf", config),
+        "adasdf_build_adaptive_sdf": find_executable(build, "adasdf_build_adaptive_sdf", config),
         "adasdf_build_adaptive_sdf_preview": find_executable(build, "adasdf_build_adaptive_sdf_preview", config),
         "adasdf_recommend_demo": find_executable(build, "adasdf_recommend_demo", config),
         "adasdf_build_demo_adaptive": find_executable(build, "adasdf_build_demo_adaptive", config),
@@ -357,6 +365,93 @@ def main() -> int:
                 str(dense_sdfbin),
                 "--max-contacts",
                 "4",
+            ],
+        ),
+        (
+            "AdaptiveBlockSDF Build CLI",
+            [
+                str(required_demo_tools["adasdf_build_adaptive_sdf"]),
+                str(mesh_fixture),
+                str(adaptive_sdfbin),
+                "--max-level",
+                "2",
+                "--block-resolution",
+                "5",
+                "--report",
+                str(adaptive_report),
+                "--json",
+                str(adaptive_json),
+            ],
+        ),
+        (
+            "AdaptiveBlockSDF Info CLI",
+            [str(required_demo_tools["adasdf_info"]), str(adaptive_sdfbin)],
+        ),
+        (
+            "AdaptiveBlockSDF Query CLI",
+            [
+                str(required_demo_tools["adasdf_query"]),
+                str(adaptive_sdfbin),
+                "--point",
+                "0.5",
+                "0.5",
+                "0.5",
+            ],
+        ),
+        (
+            "AdaptiveBlockSDF Collide CLI",
+            [
+                str(required_demo_tools["adasdf_collide"]),
+                str(adaptive_sdfbin),
+                str(adaptive_sdfbin),
+                "--max-contacts",
+                "4",
+            ],
+        ),
+        (
+            "AdaptiveBlockSDF Expansion Quality CLI",
+            [
+                str(required_demo_tools["adasdf_expansion_quality"]),
+                str(adaptive_sdfbin),
+                "--expansion",
+                "global",
+                "--global-resolution",
+                "16",
+                "--samples",
+                "200",
+                "--out",
+                str(adaptive_quality_csv),
+            ],
+        ),
+        (
+            "AdaptiveBlockSDF Benchmark Model CLI",
+            [
+                str(required_demo_tools["adasdf_benchmark_batch_query"]),
+                "--model",
+                str(adaptive_sdfbin),
+                "--points",
+                "1000",
+                "--query-backend",
+                "cpu",
+                "--expansion",
+                "none",
+                "--out",
+                str(adaptive_benchmark_csv),
+            ],
+        ),
+        (
+            "AdaptiveBlockSDF Dry Run CLI",
+            [
+                str(required_demo_tools["adasdf_build_adaptive_sdf"]),
+                str(mesh_fixture),
+                str(adaptive_dryrun_sdfbin),
+                "--max-level",
+                "2",
+                "--block-resolution",
+                "5",
+                "--dry-run",
+                "--report",
+                str(adaptive_dryrun_report),
             ],
         ),
         (
@@ -624,6 +719,67 @@ def main() -> int:
                 result.output += "\nValidation failed: DenseSDF collide contact count is missing or too high.\n"
                 write_report(report_path, results, source, build, config)
                 return result.returncode
+        if name == "AdaptiveBlockSDF Build CLI":
+            if (
+                not adaptive_sdfbin.exists()
+                or not adaptive_report.exists()
+                or not adaptive_json.exists()
+                or "Reload validation: success" not in result.output
+                or "Block Stats" not in adaptive_report.read_text(encoding="utf-8", errors="replace")
+            ):
+                result.returncode = 1
+                result.output += "\nValidation failed: AdaptiveBlockSDF build output/report is missing.\n"
+                write_report(report_path, results, source, build, config)
+                return result.returncode
+        if name == "AdaptiveBlockSDF Info CLI":
+            if "ADASDF_ADAPTIVE_BLOCK_SDFBIN_V1" not in result.output or "AdaptiveBlockSDF block_count:" not in result.output:
+                result.returncode = 1
+                result.output += "\nValidation failed: AdaptiveBlockSDF info output is missing format/block count.\n"
+                write_report(report_path, results, source, build, config)
+                return result.returncode
+        if name == "AdaptiveBlockSDF Query CLI":
+            if "Signed distance:" not in result.output or "Query backend:" not in result.output:
+                result.returncode = 1
+                result.output += "\nValidation failed: AdaptiveBlockSDF query output is incomplete.\n"
+                write_report(report_path, results, source, build, config)
+                return result.returncode
+        if name == "AdaptiveBlockSDF Collide CLI":
+            match = re.search(r"Returned contacts:\s+(\d+)", result.output)
+            if not match or int(match.group(1)) > 4:
+                result.returncode = 1
+                result.output += "\nValidation failed: AdaptiveBlockSDF collide contact count is missing or too high.\n"
+                write_report(report_path, results, source, build, config)
+                return result.returncode
+        if name == "AdaptiveBlockSDF Expansion Quality CLI":
+            if (
+                not adaptive_quality_csv.exists()
+                or "Status: ok" not in result.output
+                or "max_abs_error" not in adaptive_quality_csv.read_text(encoding="utf-8", errors="replace")
+            ):
+                result.returncode = 1
+                result.output += "\nValidation failed: AdaptiveBlockSDF expansion quality output is incomplete.\n"
+                write_report(report_path, results, source, build, config)
+                return result.returncode
+        if name == "AdaptiveBlockSDF Benchmark Model CLI":
+            if (
+                not adaptive_benchmark_csv.exists()
+                or "query_backend" not in adaptive_benchmark_csv.read_text(encoding="utf-8", errors="replace")
+                or "cpu,none,all,1000" not in adaptive_benchmark_csv.read_text(encoding="utf-8", errors="replace")
+            ):
+                result.returncode = 1
+                result.output += "\nValidation failed: AdaptiveBlockSDF benchmark --model output is incomplete.\n"
+                write_report(report_path, results, source, build, config)
+                return result.returncode
+        if name == "AdaptiveBlockSDF Dry Run CLI":
+            if (
+                adaptive_dryrun_sdfbin.exists()
+                or not adaptive_dryrun_report.exists()
+                or "Dry run: yes" not in result.output
+            ):
+                result.returncode = 1
+                result.output += "\nValidation failed: AdaptiveBlockSDF dry-run output is incomplete.\n"
+                write_report(report_path, results, source, build, config)
+                return result.returncode
         if name == "Adaptive Builder Preview CLI":
             plan_text = (
                 adaptive_preview_plan.read_text(encoding="utf-8", errors="replace")
@@ -633,8 +789,8 @@ def main() -> int:
             if (
                 adaptive_preview_sdfbin.exists()
                 or not adaptive_preview_plan.exists()
-                or "not implemented in v1.5.0-alpha" not in result.output
-                or "interface preview only" not in plan_text
+                or "Use adasdf_build_adaptive_sdf" not in result.output
+                or "LowRankCompression planned for v1.7.0-alpha" not in plan_text
             ):
                 result.returncode = 1
                 result.output += "\nValidation failed: adaptive preview dry-run output is incomplete.\n"

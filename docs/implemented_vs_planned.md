@@ -28,6 +28,11 @@
 - Standalone uniform DenseSDF builder for core-free STL-to-SDF construction.
 - DenseSDF `.sdfbin` read/write with `ADASDF_DENSE_SDFBIN_V1`.
 - `adasdf_build_dense_sdf` CLI and public STL-to-DenseSDF workflow.
+- Adaptive octree builder for deterministic near-surface refinement.
+- Adaptive block partitioner with one dense block per leaf.
+- Adaptive block SDF builder for core-free STL-to-adaptive-block-SDF construction.
+- Adaptive block `.sdfbin` read/write with `ADASDF_ADAPTIVE_BLOCK_SDFBIN_V1`.
+- `adasdf_build_adaptive_sdf` CLI and public STL-to-adaptive-block-SDF workflow.
 - Markdown and JSON-like mesh diagnostics reports.
 - Before/after cleanup diagnostics and readiness reports.
 - `adasdf_mesh_check` CLI, `adasdf_mesh_clean` CLI, CPU-only mesh diagnostics
@@ -38,8 +43,8 @@
 
 - Surrogate recommender: deterministic demo recommender, not universal or fully
   trained.
-- Adaptive builder: core-free demo adaptive builder is public; full arbitrary
-  STL builder needs existing core or future public work.
+- Adaptive builder: core-free adaptive octree/block dense builder is public;
+  low-rank compression is not implemented yet.
 - Existing-core bridge: available only when the existing research core and
   dependencies are present.
 - CUDA expanded query: optional and experimental; no compressed-direct query.
@@ -51,14 +56,13 @@
 - STL import audit: diagnostics, readiness suggestions, and safe cleanup are
   implemented, but no hole filling or self-intersection repair follows from
   the report yet.
-- Adaptive compressed builder: v1.5 exposes options, stages, and dry-run plan
-  reporting only. Full adaptive octree/block/low-rank construction is not
-  implemented.
+- Adaptive compressed builder: v1.6 implements octree/block dense construction.
+  Full low-rank compression is not implemented.
 
 ## Planned
 
-- Standalone adaptive octree/block STL builder.
-- Low-rank compression builder.
+- Low-rank compression builder for adaptive blocks.
+- SVD/Tucker compression.
 - Surrogate-guided adaptive build recommendation.
 - Complex mesh repair and hole filling.
 - Self-intersection detection.

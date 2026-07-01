@@ -95,8 +95,8 @@ int main() {
     }
     if (!std::filesystem::exists(plan) ||
         std::filesystem::exists(output) ||
-        !contains(readFile(dry_run_txt), "not implemented in v1.5.0-alpha") ||
-        !contains(readFile(plan), "interface preview only")) {
+        !contains(readFile(dry_run_txt), "Use adasdf_build_adaptive_sdf") ||
+        !contains(readFile(plan), "LowRankCompression planned for v1.7.0-alpha")) {
       std::cerr << "adaptive preview dry-run output is incomplete\n";
       return 1;
     }
@@ -111,8 +111,7 @@ int main() {
     }
     if (std::filesystem::exists(output) ||
         !contains(readFile(non_dry_run_txt),
-                  "Full adaptive compressed SDF build is not implemented "
-                  "in v1.5.0-alpha")) {
+                  "Use adasdf_build_adaptive_sdf")) {
       std::cerr << "adaptive preview non-dry-run failure reason missing\n";
       return 1;
     }

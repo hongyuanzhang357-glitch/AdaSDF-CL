@@ -103,8 +103,13 @@ int main(int argc, char** argv) {
     std::cout << "Implemented in this version: "
               << (plan.implemented_in_this_version ? "yes" : "no") << "\n";
     std::cout
-        << "Full adaptive compressed SDF build is not implemented in "
-           "v1.5.0-alpha.\n";
+        << "Adaptive octree/block SDF construction is implemented in "
+           "v1.6.0-alpha as block-wise dense output.\n";
+    std::cout
+        << "Use adasdf_build_adaptive_sdf for block-wise dense adaptive SDF "
+           "construction.\n";
+    std::cout
+        << "Low-rank compression remains planned for v1.7.0-alpha.\n";
     if (!plan_path.empty()) {
       std::cout << "Plan: " << plan_path.string() << "\n";
     }

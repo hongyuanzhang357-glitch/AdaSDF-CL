@@ -6,6 +6,7 @@ Status: working in a core-free public build.
 
 Prints the public capability summary, current boundaries, and documentation
 links for the v1.1.1 capability exposure release.
+In v1.6 it also reports the adaptive octree/block dense builder.
 
 ```bash
 adasdf_capabilities
@@ -36,7 +37,7 @@ adasdf_mesh_check model.stl --readiness --clean-out cleaned.stl --clean-report c
 
 This is a preflight diagnostic and readiness tool. With `--clean-out`, it can
 run the safe cleanup pass and write a separate cleaned STL. It does not fill
-holes, repair self-intersections, or build a full arbitrary-STL adaptive SDF.
+holes, repair self-intersections, or build low-rank compressed SDF data.
 
 ## adasdf_mesh_clean
 
@@ -94,21 +95,37 @@ adasdf_build_dense_sdf model.stl model_dense.sdfbin --auto-clean --report dense_
 
 Signed mode requires watertight input by default. The output format is
 `ADASDF_DENSE_SDFBIN_V1`. The builder is a brute-force uniform-grid baseline,
-not the full adaptive octree/block/low-rank builder.
+not the adaptive block or low-rank builder.
+
+## adasdf_build_adaptive_sdf
+
+Status: working in a core-free public build.
+
+Builds an adaptive octree/block SDF `.sdfbin` from STL input. Blocks store
+dense phi values in v1.6. Low-rank compression is planned for v1.7.
+
+```bash
+adasdf_build_adaptive_sdf model.stl model_adaptive.sdfbin --target-error 1e-3 --max-level 5 --block-resolution 8 --report adaptive_report.md
+adasdf_build_adaptive_sdf open_mesh.stl open_mesh_adaptive.sdfbin --unsigned --max-level 4
+adasdf_build_adaptive_sdf model.stl model_adaptive.sdfbin --dry-run --report adaptive_plan.md
+```
+
+The output format is `ADASDF_ADAPTIVE_BLOCK_SDFBIN_V1`. `--enable-low-rank`
+fails clearly because low-rank compression is not implemented in v1.6.
 
 ## adasdf_build_adaptive_sdf_preview
 
-Status: dry-run interface preview.
+Status: dry-run planning tool.
 
-Prints the planned adaptive builder options and stages for future
-octree/block/low-rank construction.
+Prints adaptive builder options and stage status. Octree/block dense
+construction is implemented in v1.6 through `adasdf_build_adaptive_sdf`;
+low-rank compression remains planned.
 
 ```bash
 adasdf_build_adaptive_sdf_preview model.stl model_adaptive.sdfbin --target-error 1e-3 --memory-mb 512 --dry-run --plan adaptive_plan.md
 ```
 
-This command does not generate adaptive compressed `.sdfbin` files in
-v1.5.0-alpha.
+This command does not generate `.sdfbin` files.
 
 ## adasdf_build_demo_adaptive
 
@@ -151,8 +168,8 @@ adasdf_build input.stl output.sdfbin --near-surface-error 1e-4 --max-memory-mb 2
 ## adasdf_info
 
 Prints model metadata, format, shape information, AABB, memory footprint,
-DenseSDF metadata, adaptive demo metadata, format version, and query backend
-availability.
+DenseSDF metadata, AdaptiveBlockSDF metadata, adaptive demo metadata, format
+version, and query backend availability.
 
 ```bash
 adasdf_info cube_adaptive.sdfbin

@@ -29,6 +29,27 @@
   and standalone cleanup CLI.
 - v1.5 standalone uniform DenseSDF builder, DenseSDF `.sdfbin` read/write,
   public STL-to-SDF workflow, and adaptive builder interface preview.
+- v1.6 adaptive octree/block SDF builder, adaptive block dense `.sdfbin`
+  read/write, public STL-to-adaptive-block-SDF workflow, and adaptive-vs-dense
+  comparison.
+
+## v1.6.0-alpha Scope
+
+- standalone `AdaptiveOctree` and deterministic near-surface refinement;
+- `AdaptiveBlockPartitioner` with one dense block per leaf;
+- `AdaptiveBlockSDFBuilder` for STL / `TriangleMesh` input;
+- signed watertight builds and unsigned open-mesh builds;
+- `AdaptiveBlockSDFModel` with direct query and finite-difference gradient;
+- `ADASDF_ADAPTIVE_BLOCK_SDFBIN_V1` read/write support;
+- `adasdf_build_adaptive_sdf` CLI with Markdown/JSON reports, dry-run, and
+  reload validation;
+- adaptive block support in `adasdf_info`, `adasdf_query`, `adasdf_collide`,
+  expansion quality, and batch benchmark `--model`;
+- adaptive vs dense comparison example and tests;
+- adaptive builder preview updated to mark octree/block construction as
+  implemented and low-rank compression as planned;
+- explicit boundary that block data remains dense and low-rank compression is
+  planned for v1.7.0-alpha.
 
 ## v1.5.0-alpha Scope
 
@@ -98,13 +119,13 @@
 
 The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`,
 `v1.1.0-alpha`, `v1.1.1-alpha`, `v1.2.0-alpha`, `v1.3.0-alpha`, and
-`v1.4.0-alpha` tags are retained for traceability. The recommended public
-pre-release is `v1.5.0-alpha`.
+`v1.4.0-alpha` and `v1.5.0-alpha` tags are retained for traceability. The
+recommended public pre-release is `v1.6.0-alpha`.
 
 ## Future Work
 
-- adaptive octree/block STL-to-SDF builder;
 - low-rank compression builder;
+- SVD/Tucker compression;
 - surrogate-guided builder recommendation;
 - optional hole-filling workflows with explicit user control;
 - self-intersection detection and repair workflows;

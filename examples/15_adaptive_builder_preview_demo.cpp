@@ -14,8 +14,12 @@ int main() {
         adasdf::AdaptiveSDFBuilderPreview::makePlan(options);
     std::cout << "AdaSDF-CL adaptive builder preview demo\n";
     std::cout << adasdf::AdaptiveSDFBuilderPreview::planToMarkdown(plan);
-    std::cout << "Not implemented in v1.5.0-alpha\n";
-    return plan.valid && !plan.implemented_in_this_version ? 0 : 1;
+    std::cout
+        << "Use adasdf_build_adaptive_sdf for block-wise dense adaptive SDF "
+           "construction.\n";
+    std::cout
+        << "Low-rank compression is planned for v1.7.0-alpha.\n";
+    return plan.valid && plan.implemented_in_this_version ? 0 : 1;
   } catch (const std::exception& exc) {
     std::cerr << "adasdf_adaptive_builder_preview_demo failed: "
               << exc.what() << "\n";

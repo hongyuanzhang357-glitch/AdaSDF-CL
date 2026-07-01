@@ -7,6 +7,10 @@ repository.
 The builder produces a uniform dense grid, not an adaptive octree, block
 layout, low-rank compressed representation, or GPU-native compressed SDF.
 
+v1.6.0-alpha adds a separate AdaptiveBlockSDF builder. DenseSDF remains the
+uniform baseline; AdaptiveBlockSDF is the octree/block dense path. Low-rank
+compression remains planned for v1.7.0-alpha.
+
 ## Workflow
 
 ```bash
@@ -63,7 +67,8 @@ values.
 
 - Brute-force triangle loop, no BVH.
 - Uniform dense grid only.
-- No adaptive octree or block construction.
+- No adaptive octree or block construction in this builder; use
+  `adasdf_build_adaptive_sdf` for the v1.6 adaptive block dense builder.
 - No low-rank compression.
 - No surrogate-guided build recommendation.
 - No hole filling or self-intersection repair.

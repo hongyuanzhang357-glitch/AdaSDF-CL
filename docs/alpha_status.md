@@ -1,11 +1,11 @@
 # Alpha Status
 
-AdaSDF-CL 1.5.0-alpha is a research-preview release candidate.
+AdaSDF-CL 1.6.0-alpha is a research-preview release candidate.
 
 The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`,
-`v1.1.0-alpha`, `v1.1.1-alpha`, `v1.2.0-alpha`, `v1.3.0-alpha`, and
-`v1.4.0-alpha` tags are retained for traceability. The recommended public
-pre-release is `v1.5.0-alpha`.
+`v1.1.0-alpha`, `v1.1.1-alpha`, `v1.2.0-alpha`, `v1.3.0-alpha`,
+`v1.4.0-alpha`, and `v1.5.0-alpha` tags are retained for traceability. The
+recommended public pre-release is `v1.6.0-alpha`.
 
 ## What Works
 
@@ -43,8 +43,15 @@ pre-release is `v1.5.0-alpha`.
 - `DenseSDFModel`, `DenseSDFBuilder`, `DenseSDFBin`, and
   `adasdf_build_dense_sdf` for a public core-free STL-to-uniform-SDF path.
 - DenseSDF query, collision, expansion quality, and benchmark model loading.
+- `AdaptiveOctree`, `AdaptiveOctreeBuilder`, `AdaptiveBlockPartitioner`,
+  `AdaptiveBlockSDFBuilder`, `AdaptiveBlockSDFModel`, and
+  `AdaptiveBlockSDFBin` for a public core-free STL-to-adaptive-block-SDF path.
+- `adasdf_build_adaptive_sdf` CLI, adaptive block build reports, and
+  `ADASDF_ADAPTIVE_BLOCK_SDFBIN_V1`.
+- AdaptiveBlockSDF query, collision, expansion quality, and benchmark model
+  loading.
 - `AdaptiveSDFBuilderPreview` and `adasdf_build_adaptive_sdf_preview` dry-run
-  planning for future adaptive compressed construction.
+  planning for low-rank compressed construction.
 - Project-generated STL diagnostics and cleanup fixtures.
 - Capability, query backend, contact output, FCL complement, mesh cleanup, and
   public positioning documentation.
@@ -60,7 +67,9 @@ The v0.9 demo surrogate is not universal, not fully trained, and not an
 optimality guarantee. It is a deterministic public workflow exerciser.
 
 The demo adaptive builder uses analytic box SDF queries and demo metadata. It
-is not the full adaptive compressed STL-to-SDF builder.
+is not the full adaptive compressed STL-to-SDF builder. v1.6 adds a real
+adaptive octree/block dense STL builder, but low-rank compression remains
+planned.
 
 The v1.1.x CUDA path is optional and intentionally narrow. It supports batch
 queries only after SDF data has been pre-expanded into global or block dense
@@ -92,9 +101,11 @@ scale, or replace an industrial CAD repair tool.
 
 v1.5.0-alpha is a standalone uniform DenseSDF builder release. The DenseSDF
 builder is implemented and core-free. It uses a brute-force triangle loop and
-uniform grid sampling. It is not the full adaptive octree/block/low-rank
-compressed builder. The adaptive builder in v1.5 is an interface preview and
-dry-run plan only.
+uniform grid sampling.
+
+v1.6.0-alpha is an adaptive octree/block dense SDF builder release. The builder
+is implemented and core-free. It uses brute-force triangle sampling and stores
+dense phi values per adaptive block. It is not a low-rank compressed builder.
 
 Benchmark `total_ms` is a full query timing. Benchmark `kernel_ms` is CUDA
 kernel event timing. Original UI warmed kernel-average numbers should be
@@ -107,12 +118,16 @@ analysis.
 
 ## Validation Snapshot
 
-- Expected tests: 73.
+- Expected tests: 82.
 - Expected install validation: PASS with `ADASDF_CL_USE_EXISTING_CORE=OFF`.
 - Expected alpha validation: PASS.
 - Expected clean check: PASS.
 - Target external collision test verdict for v0.9.0-alpha: PASS for the demo
   adaptive workflow.
 - Expected CUDA-unavailable behavior: GPU benchmark/tests SKIPPED, not FAILED.
-- Current v1.5.0-alpha local CPU CTest result: 73/73 PASS.
-- Current v1.5.0-alpha CUDA validation should be run when CUDA is available.
+- Current v1.6.0-alpha local CPU CTest result: 82/82 PASS.
+- Current v1.6.0-alpha local CUDA CTest result: 82/82 PASS via ASCII `subst`
+  path with CUDA 12.6.
+- Current v1.6.0-alpha install validation: PASS.
+- Current v1.6.0-alpha alpha validation: PASS.
+- Current v1.6.0-alpha clean check: PASS.

@@ -40,6 +40,8 @@ struct AdaptiveSDFBuildPlan {
   bool implemented_in_this_version = false;
 
   std::vector<AdaptiveBuilderStage> stages;
+  std::vector<std::string> implemented_stages;
+  std::vector<std::string> planned_stages;
   std::vector<std::string> planned_outputs;
   std::vector<std::string> limitations;
   std::string summary;

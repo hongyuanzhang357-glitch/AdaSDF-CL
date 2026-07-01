@@ -18,6 +18,11 @@ DenseSDF models built with `adasdf_build_dense_sdf` support the same direct CPU
 query path and can be expanded by `SDFExpander` for CPU/CUDA expanded-query
 experiments.
 
+AdaptiveBlockSDF models built with `adasdf_build_adaptive_sdf` also support
+direct CPU query, global expansion, block expansion, collision, expansion
+quality, and benchmark `--model`. v1.6 block data remains dense; low-rank
+compressed GPU-native query is planned work.
+
 `--output phi` is closest to the original UI kernel-only comparison.
 `--output phi,normal` is closer to contact workflow needs. `--device-only` is
 only for performance upper-bound timing and is not a correctness mode.

@@ -36,10 +36,11 @@ AdaptiveSDFBuildPlan AdaptiveSDFBuilderPreview::makePlan(
                options.max_octree_level >= options.min_octree_level &&
                options.block_resolution >= 2 &&
                options.max_rank >= 1;
-  plan.implemented_in_this_version = false;
+  plan.implemented_in_this_version = true;
   plan.summary =
-      "Adaptive compressed builder is interface preview only in "
-      "v1.5.0-alpha.";
+      "Adaptive octree/block SDF construction is implemented in "
+      "v1.6.0-alpha as block-wise dense SDF output. Low-rank compression "
+      "remains planned work.";
 
   plan.stages = {
       AdaptiveBuilderStage::MeshDiagnostics,
@@ -54,15 +55,19 @@ AdaptiveSDFBuildPlan AdaptiveSDFBuilderPreview::makePlan(
       "adaptive octree metadata",
       "block partition metadata",
       "dense sampled block payloads",
-      "low-rank compressed block payloads",
-      "adaptive compressed .sdfbin"};
+      "ADASDF_ADAPTIVE_BLOCK_SDFBIN_V1 block-wise dense .sdfbin"};
+  plan.implemented_stages = {
+      "OctreeRefinement implemented in v1.6.0-alpha",
+      "BlockPartition implemented in v1.6.0-alpha",
+      "DenseSampling implemented in v1.6.0-alpha"};
+  plan.planned_stages = {
+      "LowRankCompression planned for v1.7.0-alpha",
+      "SurrogateRecommendation planned for v1.8.0-alpha"};
   plan.limitations = {
-      "Full adaptive compressed SDF build is not implemented in v1.5.0-alpha.",
-      "No octree refinement algorithm is executed.",
-      "No block builder is executed.",
+      "The real v1.6 builder writes block-wise dense adaptive SDF data.",
       "No SVD, Tucker, or low-rank compression is executed.",
       "No surrogate-guided parameter recommendation is executed.",
-      "No output .sdfbin is written by the preview."};
+      "No output .sdfbin is written by the preview CLI."};
   if (!options.enable_low_rank_compression) {
     plan.limitations.push_back(
         "Low-rank compression is disabled in the requested preview options.");
@@ -86,6 +91,14 @@ std::string AdaptiveSDFBuilderPreview::planToMarkdown(
   for (const AdaptiveBuilderStage stage : plan.stages) {
     out << "- " << toString(stage) << "\n";
   }
+  out << "\n## Implemented Stage Status\n\n";
+  for (const std::string& stage : plan.implemented_stages) {
+    out << "- " << stage << "\n";
+  }
+  out << "\n## Planned Stage Status\n\n";
+  for (const std::string& stage : plan.planned_stages) {
+    out << "- " << stage << "\n";
+  }
   out << "\n## Planned Outputs\n\n";
   for (const std::string& output : plan.planned_outputs) {
     out << "- " << output << "\n";
@@ -94,8 +107,10 @@ std::string AdaptiveSDFBuilderPreview::planToMarkdown(
   for (const std::string& limitation : plan.limitations) {
     out << "- " << limitation << "\n";
   }
-  out << "\nThis preview intentionally does not write an adaptive compressed "
-         "SDF file in v1.5.0-alpha.\n";
+  out << "\nAdaptive octree/block SDF construction is implemented in v1.6.0-alpha. "
+         "Use adasdf_build_adaptive_sdf for block-wise dense adaptive SDF "
+         "construction. This preview intentionally does not write a .sdfbin; "
+         "low-rank compression is planned for v1.7.0-alpha.\n";
   return out.str();
 }
 

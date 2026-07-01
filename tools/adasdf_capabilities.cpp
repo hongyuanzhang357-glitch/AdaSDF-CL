@@ -51,6 +51,11 @@ int main(int argc, char** argv) {
         "standalone uniform DenseSDF builder",
         "ADASDF_DENSE_SDFBIN_V1 read/write",
         "STL-to-DenseSDF public workflow",
+        "adaptive octree builder",
+        "adaptive block partitioner",
+        "adaptive block SDF builder",
+        "ADASDF_ADAPTIVE_BLOCK_SDFBIN_V1 read/write",
+        "adasdf_build_adaptive_sdf",
         "expansion quality audit",
         "sign mismatch and near-surface mismatch metrics",
         "SVG collision view",
@@ -58,15 +63,17 @@ int main(int argc, char** argv) {
     static const char* const partial[] = {
         "demo surrogate recommender",
         "contact reduction and research-preview contact output",
-        "adaptive builder interface preview",
+        "adaptive builder preview / planning tool",
+        "adaptive refinement heuristic",
+        "block-wise dense storage",
+        "brute-force adaptive block sampling",
         "adasdf_build_adaptive_sdf_preview dry-run",
         "existing-core sampled expansion bridge",
         "CUDA expanded query backend",
         "block-expanded query for local contact regions"};
     static const char* const planned[] = {
-        "standalone adaptive compressed STL builder",
-        "adaptive octree/block builder",
         "low-rank compression builder",
+        "SVD/Tucker compression",
         "surrogate-guided recommendation",
         "complex mesh repair and hole filling",
         "self-intersection detection",
@@ -75,7 +82,8 @@ int main(int argc, char** argv) {
         "CCD",
         "Python bindings",
         "ROS / MoveIt integration",
-        "full low-rank GPU-native SDF query"};
+        "full low-rank GPU-native SDF query",
+        "GPU-native compressed query"};
 
     std::cout << "AdaSDF-CL version: " << adasdf::versionString() << "\n";
     std::cout
@@ -104,8 +112,9 @@ int main(int argc, char** argv) {
       std::cout << "- safe cleanup removes near-duplicate vertices, degenerate triangles, duplicate triangles, and unused vertices\n";
       std::cout << "- cleaned ASCII STL export through STLWriter and adasdf_mesh_clean\n";
       std::cout << "- public uniform DenseSDF build through adasdf_build_dense_sdf\n";
-      std::cout << "- adaptive compressed builder preview only; no octree/block/low-rank build in v1.5\n";
-      std::cout << "- no hole filling, self-intersection repair, or adaptive compressed STL-to-SDF builder\n";
+      std::cout << "- public adaptive block build through adasdf_build_adaptive_sdf\n";
+      std::cout << "- adaptive block data remains dense in v1.6; no low-rank compression yet\n";
+      std::cout << "- no hole filling, self-intersection repair, or low-rank STL-to-SDF builder\n";
       std::cout << "\nDocumentation:\n";
       std::cout << "- docs/capability_matrix.md\n";
       std::cout << "- docs/mesh_diagnostics.md\n";

@@ -1,5 +1,6 @@
 #include <adasdf/adasdf.h>
 
+#include <algorithm>
 #include <exception>
 #include <filesystem>
 #include <iomanip>
@@ -70,6 +71,34 @@ int main(int argc, char** argv) {
       printVec("DenseSDF spacing: ", grid.spacing);
       std::cout << "DenseSDF signed: " << yesNo(grid.signed_distance) << "\n";
       std::cout << "Unit: " << grid.unit << "\n";
+    }
+    if (const auto adaptive_block =
+            std::dynamic_pointer_cast<AdaptiveBlockSDFModel>(model)) {
+      const AdaptiveSDFBlockSet& blocks = adaptive_block->blockSet();
+      std::size_t near_surface_count = 0;
+      int max_level_used = 0;
+      int block_resolution = 0;
+      for (const AdaptiveSDFBlock& block : blocks.blocks) {
+        if (block.near_surface) {
+          ++near_surface_count;
+        }
+        max_level_used = std::max(max_level_used, block.level);
+        if (block_resolution == 0) {
+          block_resolution = block.nx;
+        }
+      }
+      std::cout << "AdaptiveBlockSDF block_count: "
+                << blocks.blocks.size() << "\n";
+      std::cout << "AdaptiveBlockSDF near_surface_block_count: "
+                << near_surface_count << "\n";
+      std::cout << "AdaptiveBlockSDF max_level_used: "
+                << max_level_used << "\n";
+      std::cout << "AdaptiveBlockSDF block_resolution: "
+                << block_resolution << "\n";
+      std::cout << "AdaptiveBlockSDF signed: "
+                << yesNo(blocks.signed_distance) << "\n";
+      std::cout << "AdaptiveBlockSDF storage: block-wise dense phi values\n";
+      std::cout << "Low-rank compression: not implemented in v1.6.0-alpha\n";
     }
     if (const auto analytic = std::dynamic_pointer_cast<AnalyticSDFModel>(model)) {
       std::cout << "Shape: " << analytic->shapeName() << "\n";

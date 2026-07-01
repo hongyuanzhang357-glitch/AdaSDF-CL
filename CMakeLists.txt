@@ -87,6 +87,12 @@ set(ADASDF_CL_RUNTIME_SOURCES
   src/compression/CompressedSDF.cpp
   src/generation/AdaptiveSDFBuilder.cpp
   src/generation/AdaptiveSDFBuilderPreview.cpp
+  src/generation/AdaptiveOctree.cpp
+  src/generation/AdaptiveOctreeBuilder.cpp
+  src/generation/AdaptiveBlock.cpp
+  src/generation/AdaptiveBlockPartitioner.cpp
+  src/generation/AdaptiveBlockSDFBuilder.cpp
+  src/generation/AdaptiveBlockSDFBuildReportWriter.cpp
   src/generation/DemoAdaptiveSDFBuilder.cpp
   src/generation/DemoSurrogateRecommender.cpp
   src/generation/DenseSDFBuilder.cpp
@@ -95,6 +101,7 @@ set(ADASDF_CL_RUNTIME_SOURCES
   src/generation/SDFBuilder.cpp
   src/generation/SurrogateRecommender.cpp
   src/geometry/AnalyticSDFModel.cpp
+  src/geometry/AdaptiveBlockSDFModel.cpp
   src/geometry/DenseSDFModel.cpp
   src/geometry/DemoAdaptiveSDFModel.cpp
   src/geometry/MeshModel.cpp
@@ -110,6 +117,7 @@ set(ADASDF_CL_RUNTIME_SOURCES
   src/mesh/MeshCleanup.cpp
   src/mesh/MeshDiagnosticsWriter.cpp
   src/io/ContactOnlySDFBin.cpp
+  src/io/AdaptiveBlockSDFBin.cpp
   src/io/DenseSDFBin.cpp
   src/io/DemoAdaptiveSDFBin.cpp
   src/io/DemoSDFBin.cpp
@@ -274,7 +282,9 @@ set(ADASDF_CL_EXAMPLE_SOURCES
   examples/12_mesh_diagnostics_demo.cpp
   examples/13_mesh_cleanup_demo.cpp
   examples/14_stl_to_dense_sdf_demo.cpp
-  examples/15_adaptive_builder_preview_demo.cpp)
+  examples/15_adaptive_builder_preview_demo.cpp
+  examples/16_stl_to_adaptive_block_sdf_demo.cpp
+  examples/17_adaptive_vs_dense_sdf_demo.cpp)
 
 if(ADASDF_CL_BUILD_EXAMPLES)
   add_executable(adasdf_load_sdfbin_and_query
@@ -328,6 +338,14 @@ if(ADASDF_CL_BUILD_EXAMPLES)
   add_executable(adasdf_adaptive_builder_preview_demo
     examples/15_adaptive_builder_preview_demo.cpp)
   target_link_libraries(adasdf_adaptive_builder_preview_demo PRIVATE adasdf::cl_runtime)
+
+  add_executable(adasdf_stl_to_adaptive_block_sdf_demo
+    examples/16_stl_to_adaptive_block_sdf_demo.cpp)
+  target_link_libraries(adasdf_stl_to_adaptive_block_sdf_demo PRIVATE adasdf::cl_runtime)
+
+  add_executable(adasdf_adaptive_vs_dense_sdf_demo
+    examples/17_adaptive_vs_dense_sdf_demo.cpp)
+  target_link_libraries(adasdf_adaptive_vs_dense_sdf_demo PRIVATE adasdf::cl_runtime)
 
   add_custom_target(adasdf_cl_api_preview_examples SOURCES
     examples/01_build_adaptive_sdf.cpp
@@ -392,6 +410,11 @@ set_target_properties(adasdf_mesh_clean PROPERTIES
 add_executable(adasdf_build_dense_sdf tools/adasdf_build_dense_sdf.cpp)
 target_link_libraries(adasdf_build_dense_sdf PRIVATE adasdf_cl_runtime)
 set_target_properties(adasdf_build_dense_sdf PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
+
+add_executable(adasdf_build_adaptive_sdf tools/adasdf_build_adaptive_sdf.cpp)
+target_link_libraries(adasdf_build_adaptive_sdf PRIVATE adasdf_cl_runtime)
+set_target_properties(adasdf_build_adaptive_sdf PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
 
 add_executable(adasdf_build_adaptive_sdf_preview
@@ -481,6 +504,15 @@ set(ADASDF_CL_TEST_SOURCES
   tests/test_dense_sdf_collision.cpp
   tests/test_adaptive_builder_preview.cpp
   tests/test_build_adaptive_sdf_preview_cli.cpp
+  tests/test_adaptive_octree_builder.cpp
+  tests/test_adaptive_block_partitioner.cpp
+  tests/test_adaptive_block_sdf_builder.cpp
+  tests/test_adaptive_block_sdf_model.cpp
+  tests/test_adaptive_block_sdfbin_roundtrip.cpp
+  tests/test_build_adaptive_sdf_cli.cpp
+  tests/test_adaptive_sdf_collision.cpp
+  tests/test_adaptive_vs_dense_consistency.cpp
+  tests/test_adaptive_builder_preview_updated.cpp
   tests/test_mesh_diagnostics_fixtures.cpp)
 
 file(GLOB_RECURSE ADASDF_CL_DISCOVERED_FIXTURES
@@ -558,7 +590,22 @@ if(ADASDF_CL_BUILD_TESTS)
         ADASDF_CL_QUERY="$<TARGET_FILE_NAME:adasdf_query>"
         ADASDF_CL_COLLIDE="$<TARGET_FILE_NAME:adasdf_collide>")
     endif()
-    if(test_name STREQUAL "test_build_adaptive_sdf_preview_cli")
+    if(test_name STREQUAL "test_build_adaptive_sdf_cli" OR
+        test_name STREQUAL "test_adaptive_block_sdfbin_roundtrip" OR
+        test_name STREQUAL "test_adaptive_sdf_collision")
+      add_dependencies(${test_name}
+        adasdf_build_adaptive_sdf
+        adasdf_info
+        adasdf_query
+        adasdf_collide)
+      target_compile_definitions(${test_name} PRIVATE
+        ADASDF_CL_BUILD_ADAPTIVE_SDF="$<TARGET_FILE_NAME:adasdf_build_adaptive_sdf>"
+        ADASDF_CL_INFO="$<TARGET_FILE_NAME:adasdf_info>"
+        ADASDF_CL_QUERY="$<TARGET_FILE_NAME:adasdf_query>"
+        ADASDF_CL_COLLIDE="$<TARGET_FILE_NAME:adasdf_collide>")
+    endif()
+    if(test_name STREQUAL "test_build_adaptive_sdf_preview_cli" OR
+        test_name STREQUAL "test_adaptive_builder_preview_updated")
       add_dependencies(${test_name} adasdf_build_adaptive_sdf_preview)
       target_compile_definitions(${test_name} PRIVATE
         ADASDF_CL_ADAPTIVE_PREVIEW="$<TARGET_FILE_NAME:adasdf_build_adaptive_sdf_preview>")
@@ -613,7 +660,14 @@ if(ADASDF_CL_BUILD_TESTS)
       set_tests_properties(${test_name} PROPERTIES
         WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_build_dense_sdf>")
     endif()
-    if(test_name STREQUAL "test_build_adaptive_sdf_preview_cli")
+    if(test_name STREQUAL "test_build_adaptive_sdf_cli" OR
+        test_name STREQUAL "test_adaptive_block_sdfbin_roundtrip" OR
+        test_name STREQUAL "test_adaptive_sdf_collision")
+      set_tests_properties(${test_name} PROPERTIES
+        WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_build_adaptive_sdf>")
+    endif()
+    if(test_name STREQUAL "test_build_adaptive_sdf_preview_cli" OR
+        test_name STREQUAL "test_adaptive_builder_preview_updated")
       set_tests_properties(${test_name} PROPERTIES
         WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_build_adaptive_sdf_preview>")
     endif()
@@ -659,6 +713,7 @@ set(ADASDF_CL_INSTALL_TOOL_TARGETS
   adasdf_mesh_check
   adasdf_mesh_clean
   adasdf_build_dense_sdf
+  adasdf_build_adaptive_sdf
   adasdf_build_adaptive_sdf_preview)
 if(ADASDF_CL_BUILD_BENCHMARKS)
   list(APPEND ADASDF_CL_INSTALL_TOOL_TARGETS adasdf_benchmark_batch_query)

@@ -16,7 +16,9 @@ cmake --build build --config Release
 - `12_mesh_diagnostics_demo.cpp`: v1.2 CPU-only STL mesh diagnostics demo that reads an STL, prints a summary, and can write a Markdown report.
 - `13_mesh_cleanup_demo.cpp`: v1.4 CPU-only safe cleanup walkthrough.
 - `14_stl_to_dense_sdf_demo.cpp`: v1.5 CPU-only STL-to-uniform-DenseSDF workflow with reload, query, and collision.
-- `15_adaptive_builder_preview_demo.cpp`: v1.5 adaptive builder interface preview that prints a plan and does not generate an adaptive `.sdfbin`.
+- `15_adaptive_builder_preview_demo.cpp`: adaptive builder planning preview; in v1.6 the real block-wise dense builder is `adasdf_build_adaptive_sdf`.
+- `16_stl_to_adaptive_block_sdf_demo.cpp`: v1.6 CPU-only generated STL-to-adaptive-block-DenseSDF workflow with reload, query, and collision.
+- `17_adaptive_vs_dense_sdf_demo.cpp`: v1.6 comparison between uniform DenseSDF and adaptive block-wise dense SDF on fixed sample points.
 - `downstream_cmake_project`: package-only external CMake smoke example with a no-input demo adaptive path.
 
 ## Existing-Core Examples
@@ -28,8 +30,8 @@ cmake --build build --config Release
 - `07_contact_reduction_demo.cpp`
 
 These work when a compatible `.sdfbin` and query backend are available. Full
-adaptive compressed STL-to-sdfbin construction still requires the existing core
-or future standalone adaptive builder work.
+low-rank compressed STL-to-sdfbin construction still requires future standalone
+compression work.
 
 ## Preview-Only Examples
 
