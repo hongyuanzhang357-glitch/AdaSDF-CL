@@ -62,6 +62,10 @@ int main(int argc, char** argv) {
         "ADASDF_COMPRESSED_BLOCK_SDFBIN_V1 read/write",
         "adasdf_compress_adaptive_sdf",
         "adasdf_build_compressed_sdf",
+        "surrogate-guided build recommendation",
+        "deterministic build surrogate estimator",
+        "mesh-feature-based parameter recommendation",
+        "adasdf_recommend_build",
         "expansion quality audit",
         "sign mismatch and near-surface mismatch metrics",
         "SVG collision view",
@@ -74,6 +78,9 @@ int main(int argc, char** argv) {
         "block-wise dense storage",
         "error-bounded rank selection",
         "memory-bounded rank selection",
+        "memory/error build estimator",
+        "recommendation confidence scoring",
+        "optional surrogate profile",
         "compressed direct query",
         "dense fallback blocks",
         "brute-force adaptive block sampling",
@@ -83,7 +90,8 @@ int main(int argc, char** argv) {
         "block-expanded query for local contact regions"};
     static const char* const planned[] = {
         "Tucker/HOSVD compression",
-        "surrogate-guided recommendation",
+        "trained surrogate model integration",
+        "online recommendation calibration",
         "complex mesh repair and hole filling",
         "self-intersection detection",
         "FCL fallback backend",
@@ -124,7 +132,9 @@ int main(int argc, char** argv) {
       std::cout << "- public adaptive block build through adasdf_build_adaptive_sdf\n";
       std::cout << "- public compressed adaptive block build through adasdf_build_compressed_sdf\n";
       std::cout << "- matrix-SVD block compression with dense fallback in v1.7\n";
-      std::cout << "- no hole filling, self-intersection repair, Tucker/HOSVD, surrogate-guided compression, or GPU-native compressed query\n";
+      std::cout << "- surrogate-guided build recommendation through adasdf_recommend_build in v1.8\n";
+      std::cout << "- v1.8 recommendation is deterministic and experimental; it is not a universal trained model, not fully trained, and not an optimality guarantee\n";
+      std::cout << "- no hole filling, self-intersection repair, Tucker/HOSVD, trained model integration, online calibration, or GPU-native compressed query\n";
       std::cout << "\nDocumentation:\n";
       std::cout << "- docs/capability_matrix.md\n";
       std::cout << "- docs/mesh_diagnostics.md\n";
@@ -137,6 +147,8 @@ int main(int argc, char** argv) {
       std::cout << "- docs/low_rank_block_compression.md\n";
       std::cout << "- docs/compressed_block_sdfbin_format.md\n";
       std::cout << "- docs/stl_to_compressed_sdf_workflow.md\n";
+      std::cout << "- docs/surrogate_guided_recommendation.md\n";
+      std::cout << "- docs/recommended_build_workflow.md\n";
       std::cout << "- docs/implemented_vs_planned.md\n";
       std::cout << "- docs/fcl_complement_strategy.md\n";
       std::cout << "- docs/query_backend_matrix.md\n";

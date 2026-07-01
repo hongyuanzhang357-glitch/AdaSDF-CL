@@ -5,6 +5,7 @@ v1.6.0-alpha adds a public core-free STL-to-adaptive-block-SDF path.
 ```bash
 adasdf_mesh_check model.stl --readiness --out mesh_report.md
 adasdf_mesh_clean model.stl model_clean.stl --report cleanup_report.md
+adasdf_recommend_build model_clean.stl --target-error 1e-3 --memory-mb 512 --use-case contact --out recommendation.md --emit-command
 adasdf_build_adaptive_sdf model_clean.stl model_adaptive.sdfbin --target-error 1e-3 --max-level 5 --block-resolution 8 --report adaptive_report.md
 adasdf_info model_adaptive.sdfbin
 adasdf_query model_adaptive.sdfbin --point 0 0 0
@@ -29,3 +30,7 @@ adasdf_build_compressed_sdf model_clean.stl model_compressed.sdfbin --target-err
 ```
 
 See `stl_to_compressed_sdf_workflow.md`.
+
+v1.8.0-alpha recommendation is experimental and deterministic. It can suggest
+adaptive or compressed parameters, but it is not a universal trained model, not
+fully trained, and not an optimality guarantee.

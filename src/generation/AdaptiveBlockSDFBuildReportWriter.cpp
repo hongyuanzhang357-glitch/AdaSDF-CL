@@ -100,13 +100,13 @@ std::string AdaptiveBlockSDFBuildReportWriter::toMarkdown(
   out << "- This report describes dense adaptive block output.\n";
   out << "- Matrix-SVD compression is available through "
          "ADASDF_COMPRESSED_BLOCK_SDFBIN_V1.\n";
-  out << "- Tucker/HOSVD compression is not implemented in v1.7.0-alpha.\n";
+  out << "- Tucker/HOSVD compression is not implemented in v1.8.0-alpha.\n";
   out << "- GPU-native compressed adaptive query is planned work.\n\n";
 
   out << "## Next Steps\n\n";
   out << "- Use adasdf_build_compressed_sdf or "
          "adasdf_compress_adaptive_sdf for low-rank compressed output.\n";
-  out << "- Surrogate-guided parameter recommendation is planned for v1.8.0-alpha.\n";
+  out << "- Use adasdf_recommend_build for deterministic build recommendation.\n";
   return out.str();
 }
 

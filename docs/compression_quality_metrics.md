@@ -43,3 +43,8 @@ adasdf_build_compressed_sdf model.stl compressed.sdfbin --quality-report quality
 Compression error is separate from expanded-grid query error. A compressed SDF
 can have low reconstruction error and still show expansion error if it is later
 sampled into a coarse global or block `ExpandedSDF`.
+
+v1.8.0-alpha build recommendation estimates compression memory and
+near-surface error before a build, but those estimates do not replace this
+quality audit. Always inspect the actual compression report and sampled quality
+report after building a compressed asset.

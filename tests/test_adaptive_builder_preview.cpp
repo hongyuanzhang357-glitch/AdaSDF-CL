@@ -25,6 +25,8 @@ int main() {
             std::string::npos ||
         markdown.find("LowRankCompression implemented in v1.7.0-alpha") ==
             std::string::npos ||
+        markdown.find("SurrogateRecommendation implemented in v1.8.0-alpha") ==
+            std::string::npos ||
         markdown.find("Tucker/HOSVD compression is not implemented") ==
             std::string::npos) {
       std::cerr << "adaptive preview plan failed\n";

@@ -1,0 +1,39 @@
+#include <adasdf/adasdf.h>
+
+#include <exception>
+#include <iostream>
+#include <string>
+
+namespace {
+
+bool contains(const std::string& text, const std::string& needle) {
+  return text.find(needle) != std::string::npos;
+}
+
+}  // namespace
+
+int main() {
+  try {
+    adasdf::AdaptiveSDFBuildOptions options;
+    const adasdf::AdaptiveSDFBuildPlan plan =
+        adasdf::AdaptiveSDFBuilderPreview::makePlan(options);
+    const std::string markdown =
+        adasdf::AdaptiveSDFBuilderPreview::planToMarkdown(plan);
+    if (!plan.implemented_in_this_version ||
+        !contains(markdown, "SurrogateRecommendation implemented in v1.8.0-alpha") ||
+        !contains(markdown, "deterministic estimator") ||
+        !contains(markdown, "TrainedSurrogateModel planned") ||
+        !contains(markdown, "not a universal trained model") ||
+        !contains(markdown, "not fully trained") ||
+        !contains(markdown, "not an optimality guarantee")) {
+      std::cerr << "preview v1.8 wording missing\n";
+      return 1;
+    }
+    std::cout << "adaptive builder preview v1.8 passed\n";
+    return 0;
+  } catch (const std::exception& exc) {
+    std::cerr << "test_adaptive_builder_preview_v1_8 failed: "
+              << exc.what() << "\n";
+    return 1;
+  }
+}

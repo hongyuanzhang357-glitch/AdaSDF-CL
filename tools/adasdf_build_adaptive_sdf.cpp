@@ -16,7 +16,8 @@ void usage() {
          "[--allow-open-unsigned] [--auto-clean] [--report build_report.md] "
          "[--json build_report.json] [--dry-run] [--enable-low-rank] "
          "[--target-compression-error 1e-3] [--max-rank N] "
-         "[--fixed-rank N] [--keep-near-surface-dense] [--verbose]\n";
+         "[--fixed-rank N] [--keep-near-surface-dense] "
+         "[--recommend] [--verbose]\n";
 }
 
 bool hasValue(int index, int argc) {
@@ -77,6 +78,10 @@ int main(int argc, char** argv) {
       const std::string arg = argv[i];
       if (arg == "--help" || arg == "-h") {
         usage();
+        return 0;
+      } else if (arg == "--recommend") {
+        std::cout
+            << "Use adasdf_recommend_build for parameter recommendation.\n";
         return 0;
       } else if (arg == "--target-error" && hasValue(i, argc)) {
         options.target_near_surface_error = std::stod(argv[++i]);

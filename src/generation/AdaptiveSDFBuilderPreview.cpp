@@ -22,6 +22,8 @@ const char* toString(AdaptiveBuilderStage stage) {
       return "TuckerCompression";
     case AdaptiveBuilderStage::SurrogateRecommendation:
       return "SurrogateRecommendation";
+    case AdaptiveBuilderStage::TrainedSurrogateModel:
+      return "TrainedSurrogateModel";
     case AdaptiveBuilderStage::GPUCompressedQuery:
       return "GPUCompressedQuery";
     case AdaptiveBuilderStage::ErrorAudit:
@@ -45,8 +47,10 @@ AdaptiveSDFBuildPlan AdaptiveSDFBuilderPreview::makePlan(
   plan.implemented_in_this_version = true;
   plan.summary =
       "Adaptive octree/block SDF construction and matrix-SVD low-rank block "
-      "compression are implemented in v1.7.0-alpha. Tucker/HOSVD compression "
-      "and surrogate-guided recommendation remain planned work.";
+      "compression are implemented. v1.8.0-alpha adds experimental "
+      "deterministic surrogate-guided build recommendation. Tucker/HOSVD "
+      "compression, trained surrogate models, and GPU-native compressed query "
+      "remain planned work.";
 
   plan.stages = {
       AdaptiveBuilderStage::MeshDiagnostics,
@@ -57,6 +61,7 @@ AdaptiveSDFBuildPlan AdaptiveSDFBuilderPreview::makePlan(
       AdaptiveBuilderStage::LowRankCompression,
       AdaptiveBuilderStage::TuckerCompression,
       AdaptiveBuilderStage::SurrogateRecommendation,
+      AdaptiveBuilderStage::TrainedSurrogateModel,
       AdaptiveBuilderStage::GPUCompressedQuery,
       AdaptiveBuilderStage::ErrorAudit,
       AdaptiveBuilderStage::SDFBinWrite};
@@ -70,15 +75,16 @@ AdaptiveSDFBuildPlan AdaptiveSDFBuilderPreview::makePlan(
       "OctreeRefinement implemented in v1.6.0-alpha",
       "BlockPartition implemented in v1.6.0-alpha",
       "DenseSampling implemented in v1.6.0-alpha",
-      "LowRankCompression implemented in v1.7.0-alpha using matrix-SVD"};
+      "LowRankCompression implemented in v1.7.0-alpha using matrix-SVD",
+      "SurrogateRecommendation implemented in v1.8.0-alpha as an experimental deterministic estimator"};
   plan.planned_stages = {
       "TuckerCompression planned",
-      "SurrogateRecommendation planned for v1.8.0-alpha",
+      "TrainedSurrogateModel planned",
       "GPUCompressedQuery planned"};
   plan.limitations = {
-      "The v1.7 builder supports matrix-SVD block compression and dense fallback.",
+      "The v1.8 builder supports matrix-SVD block compression and dense fallback.",
       "Tucker/HOSVD compression is not implemented in this release.",
-      "No surrogate-guided parameter recommendation is executed.",
+      "Surrogate-guided parameter recommendation is implemented as a deterministic heuristic estimator, not a universal trained model.",
       "No GPU-native compressed query is executed.",
       "No output .sdfbin is written by the preview CLI."};
   if (!options.enable_low_rank_compression) {
@@ -123,10 +129,14 @@ std::string AdaptiveSDFBuilderPreview::planToMarkdown(
   }
   out << "\nAdaptive octree/block SDF construction is implemented in v1.6.0-alpha. "
          "Low-rank block compression is implemented in v1.7.0-alpha using "
-         "matrix-SVD per adaptive block. Tucker/HOSVD compression is not "
-         "implemented in this release. Use adasdf_build_compressed_sdf for "
-         "one-step STL-to-compressed-SDF construction. This preview "
-         "intentionally does not write a .sdfbin.\n";
+         "matrix-SVD per adaptive block. Surrogate-guided parameter "
+         "recommendation is implemented in v1.8.0-alpha as an experimental "
+         "deterministic estimator. It is not a universal trained model, not "
+         "fully trained, and not an optimality guarantee. Tucker/HOSVD "
+         "compression is not implemented in this release. Use "
+         "adasdf_build_compressed_sdf for one-step STL-to-compressed-SDF "
+         "construction or adasdf_recommend_build for recommendation. This "
+         "preview intentionally does not write a .sdfbin.\n";
   return out.str();
 }
 

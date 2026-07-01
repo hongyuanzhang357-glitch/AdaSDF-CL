@@ -1,0 +1,10 @@
+memory_safety_factor=1.35
+error_safety_factor=1.50
+compression_ratio_safety_factor=0.80
+min_max_level=3
+max_max_level=7
+min_block_resolution=6
+max_block_resolution=16
+min_rank=2
+max_rank=12
+notes=Experimental deterministic build recommender profile for v1.8.0-alpha. Not a universal trained model.

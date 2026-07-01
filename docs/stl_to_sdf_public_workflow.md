@@ -4,7 +4,8 @@ AdaSDF-CL v1.5.0-alpha adds a clone-only, core-free path from STL to a queryable
 uniform dense SDF. v1.6.0-alpha adds a clone-only, core-free path from STL to
 an adaptive octree/block SDF with dense values per block. v1.7.0-alpha adds a
 clone-only, core-free path from STL to a matrix-SVD compressed adaptive block
-SDF.
+SDF. v1.8.0-alpha adds a clone-only, core-free build recommendation step that
+chooses among these public paths.
 
 ```text
 STL
@@ -23,6 +24,7 @@ STL
 ```bash
 adasdf_mesh_check model.stl --readiness --out mesh_report.md
 adasdf_mesh_clean model.stl model_clean.stl --report cleanup_report.md
+adasdf_recommend_build model_clean.stl --target-error 1e-3 --memory-mb 512 --use-case balanced --out recommendation.md --json recommendation.json --emit-command
 adasdf_build_dense_sdf model_clean.stl model_dense.sdfbin --resolution 64 --padding 0.05 --report dense_report.md
 adasdf_info model_dense.sdfbin
 adasdf_query model_dense.sdfbin --point 0 0 0
@@ -61,8 +63,10 @@ adasdf_benchmark_batch_query --model model_compressed.sdfbin --points 10000 --qu
 
 The implemented public builders are a uniform DenseSDF builder, an adaptive
 octree/block dense builder, and a matrix-SVD compressed adaptive block builder.
-v1.7 does not implement Tucker/HOSVD compression, surrogate recommendation, or
-GPU-native compressed adaptive query.
+v1.8 adds deterministic build recommendation, but it is not a universal trained
+model, not fully trained, and not an optimality guarantee. Tucker/HOSVD
+compression, trained surrogate integration, and GPU-native compressed adaptive
+query remain planned.
 
 Open STL meshes can be used in unsigned mode:
 

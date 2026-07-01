@@ -62,5 +62,8 @@ makes mixed compressed/dense assets valid.
 - Direct compressed CPU query is implemented.
 - CUDA workflows use expanded SDF paths after sampling the compressed model.
 - Tucker/HOSVD compression is not implemented.
-- Surrogate-guided recommendation remains planned for v1.8.0-alpha.
+- Surrogate-guided build recommendation is implemented in v1.8.0-alpha through
+  `adasdf_recommend_build`.
+- The v1.8 recommender is deterministic and experimental; it is not a universal
+  trained model, not fully trained, and not an optimality guarantee.
 - GPU-native compressed query remains planned.

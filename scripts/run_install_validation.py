@@ -419,6 +419,8 @@ def main() -> int:
     compressed_direct_report = build.parent / "install_validation_compressed_direct_report.md"
     compressed_direct_compression_report = build.parent / "install_validation_compressed_direct_compression_report.md"
     compressed_direct_quality = build.parent / "install_validation_compressed_direct_quality.md"
+    recommendation_md = build.parent / "install_validation_recommendation.md"
+    recommendation_json = build.parent / "install_validation_recommendation.json"
     adaptive_dryrun_sdfbin = build.parent / "install_validation_adaptive_dryrun.sdfbin"
     adaptive_dryrun_report = build.parent / "install_validation_adaptive_dryrun_plan.md"
     adaptive_preview_sdfbin = build.parent / "install_validation_adaptive_preview.sdfbin"
@@ -432,6 +434,7 @@ def main() -> int:
         "adasdf_build_adaptive_sdf",
         "adasdf_compress_adaptive_sdf",
         "adasdf_build_compressed_sdf",
+        "adasdf_recommend_build",
         "adasdf_info",
         "adasdf_query",
         "adasdf_collide",
@@ -456,6 +459,24 @@ def main() -> int:
             return result.returncode
 
     installed_dense_steps: list[tuple[str, list[str]]] = [
+        (
+            "Installed Build Recommendation CLI",
+            [
+                str(dense_tools["adasdf_recommend_build"]),
+                str(mesh_fixture),
+                "--target-error",
+                "1e-3",
+                "--memory-mb",
+                "256",
+                "--use-case",
+                "contact",
+                "--out",
+                str(recommendation_md),
+                "--json",
+                str(recommendation_json),
+                "--emit-command",
+            ],
+        ),
         (
             "Installed DenseSDF Build CLI",
             [
@@ -682,6 +703,31 @@ def main() -> int:
             ):
                 result.returncode = 1
                 result.output += "\nValidation failed: installed DenseSDF build outputs are missing.\n"
+        elif name == "Installed Build Recommendation CLI":
+            md_text = (
+                recommendation_md.read_text(encoding="utf-8", errors="replace")
+                if recommendation_md.exists()
+                else ""
+            )
+            json_text = (
+                recommendation_json.read_text(encoding="utf-8", errors="replace")
+                if recommendation_json.exists()
+                else ""
+            )
+            if (
+                not recommendation_md.exists()
+                or not recommendation_json.exists()
+                or "AdaSDF-CL build recommender" not in result.output
+                or "Recommended path:" not in result.output
+                or "adasdf_build_" not in result.output
+                or "Build executed: no" not in result.output
+                or "Recommended path" not in md_text
+                or "CLI command" not in md_text
+                or "not a universal trained model" not in md_text
+                or "recommended_recipe" not in json_text
+            ):
+                result.returncode = 1
+                result.output += "\nValidation failed: installed build recommendation output is incomplete.\n"
         elif name == "Installed DenseSDF Info CLI":
             if "ADASDF_DENSE_SDFBIN_V1" not in result.output or "DenseSDF resolution:" not in result.output:
                 result.returncode = 1
@@ -768,7 +814,7 @@ def main() -> int:
                 or not compressed_direct_quality.exists()
                 or "ADASDF_COMPRESSED_BLOCK_SDFBIN_V1" not in result.output
                 or "Reload validation: success" not in result.output
-                or "Surrogate recommendation: planned for v1.8.0-alpha" not in result.output
+                or "adasdf_recommend_build" not in result.output
             ):
                 result.returncode = 1
                 result.output += "\nValidation failed: installed one-step compressed SDF build output is incomplete.\n"
@@ -791,6 +837,7 @@ def main() -> int:
                 or not adaptive_preview_plan.exists()
                 or "Use adasdf_build_adaptive_sdf" not in result.output
                 or "LowRankCompression implemented in v1.7.0-alpha" not in plan_text
+                or "SurrogateRecommendation implemented in v1.8.0-alpha" not in plan_text
             ):
                 result.returncode = 1
                 result.output += "\nValidation failed: installed adaptive preview output is incomplete.\n"

@@ -9,13 +9,16 @@ layout, low-rank compressed representation, or GPU-native compressed SDF.
 
 v1.6.0-alpha adds a separate AdaptiveBlockSDF builder. v1.7.0-alpha adds a
 separate CompressedAdaptiveBlockSDF workflow with matrix-SVD factors and dense
-fallback. DenseSDF remains the uniform baseline.
+fallback. v1.8.0-alpha adds `adasdf_recommend_build` to recommend whether a
+mesh should start with DenseSDF, AdaptiveBlockSDF, or
+CompressedAdaptiveBlockSDF. DenseSDF remains the uniform baseline.
 
 ## Workflow
 
 ```bash
 adasdf_mesh_check model.stl --readiness --out mesh_report.md
 adasdf_mesh_clean model.stl model_clean.stl --report cleanup_report.md
+adasdf_recommend_build model_clean.stl --target-error 1e-3 --memory-mb 512 --use-case balanced --out recommendation.md --emit-command
 adasdf_build_dense_sdf model_clean.stl model_dense.sdfbin --resolution 64 --padding 0.05
 adasdf_info model_dense.sdfbin
 adasdf_query model_dense.sdfbin --point 0 0 0
@@ -71,7 +74,8 @@ values.
   `adasdf_build_adaptive_sdf` for the v1.6 adaptive block dense builder.
 - No low-rank compression in this uniform builder; use
   `adasdf_build_compressed_sdf` for the v1.7 compressed adaptive block path.
-- No surrogate-guided build recommendation.
+- Build recommendation is available separately through `adasdf_recommend_build`
+  in v1.8.0-alpha.
 - No hole filling or self-intersection repair.
 - No generated `.sdfbin` assets are committed to the repository.
 

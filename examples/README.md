@@ -21,6 +21,7 @@ cmake --build build --config Release
 - `17_adaptive_vs_dense_sdf_demo.cpp`: v1.6 comparison between uniform DenseSDF and adaptive block-wise dense SDF on fixed sample points.
 - `18_adaptive_block_compression_demo.cpp`: v1.7 adaptive block SDF compression demo with reload, query, collision, ratio, and error metrics.
 - `19_dense_adaptive_compressed_comparison_demo.cpp`: v1.7 dense vs adaptive vs compressed comparison demo.
+- `20_build_recommendation_demo.cpp`: v1.8 generated STL build recommendation demo; prints a recommended path, estimates, and CLI command without writing `.sdfbin`.
 - `downstream_cmake_project`: package-only external CMake smoke example with a no-input demo adaptive path.
 
 ## Existing-Core Examples
@@ -32,8 +33,9 @@ cmake --build build --config Release
 - `07_contact_reduction_demo.cpp`
 
 These work when a compatible `.sdfbin` and query backend are available. Full
-Tucker/HOSVD compression, surrogate-guided recommendation, and GPU-native
-compressed query remain planned work.
+Tucker/HOSVD compression, trained surrogate integration, and GPU-native
+compressed query remain planned work. v1.8 deterministic build recommendation
+is available through `adasdf_recommend_build`.
 
 ## Preview-Only Examples
 

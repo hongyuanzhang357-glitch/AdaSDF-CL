@@ -16,9 +16,14 @@ only, Planned, Not implemented.
 | Build / Input | adaptive octree builder | Implemented | v1.6 | `AdaptiveOctreeBuilder` | Deterministic near-surface refinement baseline. |
 | Build / Input | adaptive block partitioner | Implemented | v1.6 | `AdaptiveBlockPartitioner` | One dense block per octree leaf. |
 | Build / Input | standalone adaptive block STL builder | Implemented | v1.6 | `AdaptiveBlockSDFBuilder`, `adasdf_build_adaptive_sdf` | Core-free adaptive octree/block builder; block data remains dense. |
-| Build / Input | adaptive compressed builder interface preview | Experimental | v1.5 | `AdaptiveSDFBuilderPreview`, `adasdf_build_adaptive_sdf_preview` | Planning tool; matrix-SVD stage is implemented, Tucker and surrogate stages remain planned. |
+| Build / Input | adaptive compressed builder interface preview | Experimental | v1.5 | `AdaptiveSDFBuilderPreview`, `adasdf_build_adaptive_sdf_preview` | Planning tool; matrix-SVD and deterministic recommendation stages are implemented, trained surrogate and GPU compressed stages remain planned. |
 | Build / Input | low-rank adaptive compressed STL builder | Implemented | v1.7 | `adasdf_build_compressed_sdf`, `adasdf_compress_adaptive_sdf` | Matrix-SVD block compression with dense fallback and quality audit. |
-| Build / Input | Tucker/HOSVD adaptive compression | Planned | - | - | Not implemented in v1.7. |
+| Build / Input | surrogate-guided build recommendation | Experimental | v1.8 | `BuildRecommender`, `adasdf_recommend_build` | Deterministic heuristic-calibrated recommender for DenseSDF, AdaptiveBlockSDF, and CompressedAdaptiveBlockSDF. |
+| Build / Input | mesh-feature-based parameter recommendation | Experimental | v1.8 | `MeshFeatureExtractor`, `BuildSurrogateEstimator` | Uses diagnostics/readiness features, target error, memory budget, and use case. |
+| Build / Input | recommendation profile override | Experimental | v1.8 | `SurrogateProfile`, `--profile` | Key-value constants only; not a universal trained model. |
+| Build / Input | trained surrogate model integration | Planned | - | - | Not implemented. |
+| Build / Input | online recommendation calibration | Planned | - | - | Not implemented. |
+| Build / Input | Tucker/HOSVD adaptive compression | Planned | - | - | Not implemented in v1.8. |
 | Build / Input | mesh diagnostics | Implemented | v1.2 | `MeshDiagnostics`, `adasdf_mesh_check` | Preflight only, no repair. |
 | Build / Input | mesh readiness scoring | Implemented | v1.3 | `MeshReadiness`, `adasdf_mesh_check --readiness` | Preflight suitability score and suggestions. |
 | Build / Input | repair suggestions | Implemented | v1.3 | `MeshReadinessReport` | Text guidance only; input STL is not modified. |
@@ -68,6 +73,8 @@ only, Planned, Not implemented.
 | Accuracy / Reliability | near-surface sign mismatch | Implemented | v1.1.0 | `near_surface_sign_mismatch_rate` | Contact-risk indicator. |
 | Accuracy / Reliability | fallback statistics | Implemented | v1.1.0 | `fallback_count`, `fallback_rate` | Quality and benchmark. |
 | Accuracy / Reliability | compression quality audit | Implemented | v1.7 | `CompressionQuality`, compression CLIs | Dense-adaptive vs compressed comparison with error and sign metrics. |
+| Accuracy / Reliability | build recommendation confidence scoring | Experimental | v1.8 | `RecommendationConfidence` | Low/medium/high heuristic confidence; not a certification. |
+| Accuracy / Reliability | memory/error build estimates | Experimental | v1.8 | `BuildSurrogateEstimator` | Deterministic estimates with safety factors; validate final SDF reports. |
 | Accuracy / Reliability | mesh AABB / scale report | Implemented | v1.2 | `MeshDiagnosticsReport` | Prompts users to confirm units. |
 | Accuracy / Reliability | boundary / non-manifold edge report | Implemented | v1.2 | `MeshDiagnosticsReport` | Topology-level preflight. |
 | Accuracy / Reliability | mesh issue severity classification | Implemented | v1.3 | `MeshIssueSeverity` | Info, warning, and critical. |

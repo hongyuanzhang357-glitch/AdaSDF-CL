@@ -7,6 +7,7 @@ v1.7.0-alpha adds a core-free STL-to-compressed-adaptive-block-SDF workflow.
 ```bash
 adasdf_mesh_check model.stl --readiness --out mesh_report.md
 adasdf_mesh_clean model.stl model_clean.stl --report cleanup_report.md
+adasdf_recommend_build model_clean.stl --target-error 1e-3 --memory-mb 512 --use-case contact --out recommendation.md --json recommendation.json --emit-command
 adasdf_build_compressed_sdf model_clean.stl model_compressed.sdfbin --target-error 1e-3 --max-level 5 --block-resolution 8 --max-rank 8 --report build_report.md --compression-report compression_report.md --quality-report quality_report.md
 adasdf_info model_compressed.sdfbin
 adasdf_query model_compressed.sdfbin --point 0 0 0
@@ -32,5 +33,7 @@ distance fields with the relevant builder option.
 ## Boundaries
 
 The compressed model can be queried directly on CPU and can be expanded for
-CPU/CUDA benchmark workflows. Tucker compression, surrogate-guided parameter
-recommendation, and GPU-native compressed query remain planned work.
+CPU/CUDA benchmark workflows. v1.8 adds deterministic build recommendation
+through `adasdf_recommend_build`; it is not a universal trained model, not
+fully trained, and not an optimality guarantee. Tucker compression, trained
+surrogate integration, and GPU-native compressed query remain planned work.

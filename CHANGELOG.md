@@ -1,5 +1,40 @@
 # Changelog
 
+## 1.8.0-alpha
+
+Surrogate-guided build recommendation for public core-free STL workflows.
+
+### Added
+
+- `adasdf_recommend_build` CLI.
+- `adasdf::MeshFeatureExtractor`.
+- `adasdf::BuildSurrogateEstimator`.
+- `adasdf::SurrogateProfile`.
+- `adasdf::BuildRecommender`.
+- `adasdf::BuildRecommendationWriter`.
+- Markdown and JSON-like recommendation reports.
+- Optional key-value recommendation profiles.
+- `examples/20_build_recommendation_demo.cpp`.
+- Recommendation workflow, schema, profile, and release docs.
+
+### Changed
+
+- Version updated to `1.8.0-alpha`.
+- Adaptive builder preview now marks deterministic surrogate recommendation as
+  implemented and trained surrogate models as planned.
+- `adasdf_build_dense_sdf`, `adasdf_build_adaptive_sdf`, and
+  `adasdf_build_compressed_sdf` accept `--recommend` as a non-building hint.
+- Capability matrix and validation scripts now include `adasdf_recommend_build`.
+
+### Notes
+
+- The recommender is deterministic and experimental.
+- It is not a universal trained model.
+- It is not fully trained.
+- It is not an optimality guarantee.
+- It does not build or write `.sdfbin` output by default.
+- Full low-rank compressed SDF GPU-native query remains planned.
+
 ## 1.7.0-alpha
 
 Low-rank block compression for adaptive block SDFs.

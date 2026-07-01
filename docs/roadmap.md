@@ -35,6 +35,25 @@
 - v1.7 matrix-SVD low-rank block compression, compressed adaptive block
   `.sdfbin` read/write, compression quality audit, and public
   STL-to-compressed-SDF workflow.
+- v1.8 surrogate-guided build recommendation, deterministic build surrogate
+  estimator, recommendation reports, and public recommend-then-build workflow.
+
+## v1.8.0-alpha Scope
+
+- `adasdf_recommend_build` CLI;
+- `MeshFeatureExtractor` over STL diagnostics/readiness features;
+- `BuildSurrogateEstimator` for deterministic memory/error/compression/cost
+  estimates;
+- `SurrogateProfile` key-value calibration constants;
+- `BuildRecommender` and `BuildRecommendationWriter`;
+- DenseSDF, AdaptiveBlockSDF, and CompressedAdaptiveBlockSDF candidate
+  recommendation;
+- target error, memory budget, use case, signed/unsigned policy, dense fallback
+  policy, and compression preference inputs;
+- Markdown and JSON-like recommendation reports;
+- copyable build command output;
+- explicit boundary that the recommender is experimental, deterministic, not a
+  universal trained model, not fully trained, and not an optimality guarantee.
 
 ## v1.7.0-alpha Scope
 
@@ -50,7 +69,7 @@
   comparison examples;
 - compressed SDF support in `adasdf_info`, `adasdf_query`, `adasdf_collide`,
   expansion quality, and batch benchmark `--model`;
-- explicit boundary that Tucker/HOSVD, surrogate-guided recommendation, and
+- explicit boundary that Tucker/HOSVD, trained recommendation models, and
   GPU-native compressed query remain planned.
 
 ## v1.6.0-alpha Scope
@@ -139,13 +158,14 @@
 
 The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`,
 `v1.1.0-alpha`, `v1.1.1-alpha`, `v1.2.0-alpha`, `v1.3.0-alpha`,
-`v1.4.0-alpha`, `v1.5.0-alpha`, and `v1.6.0-alpha` tags are retained for
-traceability. The recommended public pre-release is `v1.7.0-alpha`.
+`v1.4.0-alpha`, `v1.5.0-alpha`, `v1.6.0-alpha`, and `v1.7.0-alpha` tags are
+retained for traceability. The recommended public pre-release is
+`v1.8.0-alpha`.
 
 ## Future Work
 
 - Tucker/HOSVD compression;
-- surrogate-guided builder recommendation;
+- trained surrogate model integration and online recommendation calibration;
 - optional hole-filling workflows with explicit user control;
 - self-intersection detection and repair workflows;
 - real trained surrogate integration with public artifacts and validation

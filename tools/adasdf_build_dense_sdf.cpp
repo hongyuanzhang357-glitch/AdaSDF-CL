@@ -12,7 +12,8 @@ void usage() {
       << "Usage: adasdf_build_dense_sdf input.stl output.sdfbin "
          "[--resolution 64] [--padding 0.05] [--signed|--unsigned] "
          "[--require-watertight] [--allow-open-unsigned] [--auto-clean] "
-         "[--report build_report.md] [--json build_report.json] [--verbose]\n";
+         "[--report build_report.md] [--json build_report.json] "
+         "[--recommend] [--verbose]\n";
 }
 
 bool hasValue(int index, int argc) {
@@ -50,6 +51,10 @@ int main(int argc, char** argv) {
       const std::string arg = argv[i];
       if (arg == "--help" || arg == "-h") {
         usage();
+        return 0;
+      } else if (arg == "--recommend") {
+        std::cout
+            << "Use adasdf_recommend_build for parameter recommendation.\n";
         return 0;
       } else if (arg == "--resolution" && hasValue(i, argc)) {
         options.resolution = std::stoi(argv[++i]);

@@ -58,7 +58,10 @@ std::string CompressionReportWriter::toMarkdown(
   out << "- Matrix-SVD block compression is implemented.\n";
   out << "- Dense fallback is used when compression cannot satisfy the target.\n";
   out << "- Tucker/HOSVD compression is planned, not implemented.\n";
-  out << "- Surrogate recommendation remains planned for v1.8.\n";
+  out << "- Build recommendation is available through adasdf_recommend_build "
+         "in v1.8.\n";
+  out << "- The v1.8 recommender is deterministic, not a universal trained "
+         "model, not fully trained, and not an optimality guarantee.\n";
   out << "- GPU-native compressed query remains planned.\n\n";
   if (!report.warnings.empty()) {
     out << "## Warnings\n\n";

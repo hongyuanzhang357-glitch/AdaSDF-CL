@@ -1,6 +1,14 @@
 # DASH-SDF Surrogate Recommendation
 
-AdaSDF-CL v0.4+ includes the public surface for surrogate-guided build recommendation, but does not embed or execute a surrogate model.
+AdaSDF-CL v0.4+ includes the historical public surface for DASH-SDF
+surrogate-guided build recommendation, but does not embed or execute a trained
+external surrogate model.
+
+AdaSDF-CL v1.8.0-alpha adds a separate public core-free deterministic build
+recommender through `adasdf_recommend_build` and `adasdf::BuildRecommender`.
+That v1.8 path is heuristic-calibrated, not a universal trained model, not
+fully trained, and not an optimality guarantee. See
+`docs/surrogate_guided_recommendation.md`.
 
 ## Public API
 

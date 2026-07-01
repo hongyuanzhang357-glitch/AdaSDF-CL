@@ -23,9 +23,9 @@ int main() {
         !contains(markdown, "LowRankCompression implemented in v1.7.0-alpha") ||
         !contains(markdown, "matrix-SVD") ||
         !contains(markdown, "TuckerCompression planned") ||
-        !contains(markdown, "SurrogateRecommendation planned") ||
+        !contains(markdown, "SurrogateRecommendation implemented in v1.8.0-alpha") ||
         !contains(markdown, "GPUCompressedQuery planned")) {
-      std::cerr << "preview v1.7 wording missing\n";
+      std::cerr << "preview v1.8 wording missing\n";
       return 1;
     }
     std::cout << "adaptive builder preview v1.7 passed\n";

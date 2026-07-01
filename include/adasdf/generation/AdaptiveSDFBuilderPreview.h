@@ -14,6 +14,7 @@ enum class AdaptiveBuilderStage {
   LowRankCompression,
   TuckerCompression,
   SurrogateRecommendation,
+  TrainedSurrogateModel,
   GPUCompressedQuery,
   ErrorAudit,
   SDFBinWrite

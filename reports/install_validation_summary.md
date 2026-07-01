@@ -17,7 +17,7 @@ cmake -S '<source>' -B '<build>' -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD
 -- Selecting Windows SDK version 10.0.22621.0 to target Windows 10.0.26200.
 --
 -- AdaSDF-CL configuration:
---   Version: 1.7.0-alpha
+--   Version: 1.8.0-alpha
 --   Build examples: ON
 --   Build tests: ON
 --   Benchmarks: ON
@@ -33,7 +33,7 @@ cmake -S '<source>' -B '<build>' -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD
 --   FCL: not required
 --
 -- Configuring done (0.1s)
--- Generating done (0.7s)
+-- Generating done (0.9s)
 ...
 ```
 
@@ -46,24 +46,24 @@ cmake --build '<build>' --config Release --parallel -- /nodeReuse:false
 ```text
 适用于 .NET Framework MSBuild 版本 17.14.40+3e7442088
 
-  adasdf_cl_runtime.vcxproj -> <build>\Release\adasdf_cl_runtime.lib
-  test_small_matrix_svd.vcxproj -> <build>\Release\test_small_matrix_svd.exe
-  test_stl_writer.vcxproj -> <build>\Release\test_stl_writer.exe
-  test_collision_object.vcxproj -> <build>\Release\test_collision_object.exe
-  test_batch_query_cpu.vcxproj -> <build>\Release\test_batch_query_cpu.exe
-  test_collision_svg_writer.vcxproj -> <build>\Release\test_collision_svg_writer.exe
-  test_candidate_point_sampler.vcxproj -> <build>\Release\test_candidate_point_sampler.exe
-  adasdf_load_sdfbin_and_query.vcxproj -> <build>\Release\adasdf_load_sdfbin_and_query.exe
-  test_adaptive_builder.vcxproj -> <build>\Release\test_adaptive_builder.exe
-  adasdf_adaptive_builder_preview_demo.vcxproj -> <build>\Release\adasdf_adaptive_builder_preview_demo.exe
-  test_docs_capability_links.cpp
-  adasdf_capability_walkthrough.vcxproj -> <build>\Release\adasdf_capability_walkthrough.exe
-  adasdf_contact_reduction_demo.vcxproj -> <build>\Release\adasdf_contact_reduction_demo.exe
-  test_collision_query.vcxproj -> <build>\Release\test_collision_query.exe
-  adasdf_core_free_demo_collision.vcxproj -> <build>\Release\adasdf_core_free_demo_collision.exe
-  adasdf_collide_boxes_demo.vcxproj -> <build>\Release\adasdf_collide_boxes_demo.exe
-  adasdf_make_demo_box.vcxproj -> <build>\Release\adasdf_make_demo_box.exe
-  adasdf_fcl_style_api.vcxproj -> <build>\Release\adasdf_fcl_style_api.exe
+  FCLAdapter.cpp
+  Backend.cpp
+  CudaQueryBackend.cpp
+  GpuBackend.cpp
+  PointCloudGenerator.cpp
+  CompressedSDF.cpp
+  SmallMatrixSVD.cpp
+  CompressedSDFBlock.cpp
+  BlockLowRankCompressor.cpp
+  CompressionQuality.cpp
+  CompressionReportWriter.cpp
+  AdaptiveSDFBuilder.cpp
+  AdaptiveSDFBuilderPreview.cpp
+  AdaptiveOctree.cpp
+  AdaptiveOctreeBuilder.cpp
+  AdaptiveBlock.cpp
+  AdaptiveBlockPartitioner.cpp
+  AdaptiveBlockSDFBuilder.cpp
 ...
 ```
 
@@ -81,6 +81,7 @@ cmake --install '<build>' --config Release --prefix '<install>'
 -- Installing: <install>/bin/adasdf_collide.exe
 -- Installing: <install>/bin/adasdf_make_demo_box.exe
 -- Installing: <install>/bin/adasdf_recommend_demo.exe
+-- Installing: <install>/bin/adasdf_recommend_build.exe
 -- Installing: <install>/bin/adasdf_build_demo_adaptive.exe
 -- Installing: <install>/bin/adasdf_collide_boxes_demo.exe
 -- Installing: <install>/bin/adasdf_query_mode_demo.exe
@@ -93,7 +94,6 @@ cmake --install '<build>' --config Release --prefix '<install>'
 -- Installing: <install>/bin/adasdf_compress_adaptive_sdf.exe
 -- Installing: <install>/bin/adasdf_build_compressed_sdf.exe
 -- Installing: <install>/bin/adasdf_build_adaptive_sdf_preview.exe
--- Installing: <install>/bin/adasdf_benchmark_batch_query.exe
 ...
 ```
 
@@ -106,7 +106,7 @@ cmake -S '<source>/tests/package' -B '<workspace>/build/adasdf_cl_iv_pkg' '-DCMA
 ```text
 -- Selecting Windows SDK version 10.0.22621.0 to target Windows 10.0.26200.
 -- Configuring done (0.0s)
--- Generating done (0.1s)
+-- Generating done (0.0s)
 -- Build files have been written to: <build>_pkg
 ```
 
@@ -130,7 +130,7 @@ cmake --build '<workspace>/build/adasdf_cl_iv_pkg' --config Release --parallel -
 ```
 
 ```text
-AdaSDF-CL version: 1.7.0-alpha
+AdaSDF-CL version: 1.8.0-alpha
 Position: FCL-style SDF collision backend under development.
 Boundary: complementary SDF backend, not a drop-in FCL replacement.
 
@@ -209,6 +209,31 @@ Report: <local-path>
 Validation note: mesh remained below Ready/Usable readiness after safe cleanup.
 ```
 
+### Installed Build Recommendation CLI: PASS
+
+```bash
+'<install>/bin/adasdf_recommend_build.exe' '<source>/tests/data/mesh_diagnostics/closed_cube_ascii.stl' --target-error 1e-3 --memory-mb 256 --use-case contact --out '<workspace>/build/install_validation_recommendation.md' --json '<workspace>/build/install_validation_recommendation.json' --emit-command
+```
+
+```text
+AdaSDF-CL build recommender
+Input: <local-path>
+Target near-surface error: 0.001
+Memory budget MB: 256
+Use case: contact
+Recommended path: AdaptiveBlockSDF
+Confidence: high
+Estimated memory MB: 5.76123
+Estimated near-surface error: 0.000845728
+Estimated compression ratio: 1
+CLI command: adasdf_build_adaptive_sdf <local-path> closed_cube_ascii_adaptive.sdfbin --target-error 0.001 --min-level 3 --max-level 7 --block-resolution 12 --padding 0.05 --signed --report closed_cube_ascii_adaptive_report.md
+Build executed: no
+Model boundary: experimental deterministic recommender; not a universal trained model; not fully trained; not an optimality guarantee
+Markdown report: <local-path>
+JSON report: <local-path>
+adasdf_build_adaptive_sdf <local-path> closed_cube_ascii_adaptive.sdfbin --target-error 0.001 --min-level 3 --max-level 7 --block-resolution 12 --padding 0.05 --signed --report closed_cube_ascii_adaptive_report.md
+```
+
 ### Installed DenseSDF Build CLI: PASS
 
 ```bash
@@ -223,7 +248,7 @@ Resolution: 24 x 24 x 24
 Signed: yes
 Watertight: yes
 Triangles: 12
-Build time ms: 21.7731
+Build time ms: 21.6543
 Memory bytes: 111128
 Reload validation: success
 Report: <local-path>
@@ -238,7 +263,7 @@ JSON report: <local-path>
 
 ```text
 AdaSDF-CL info
-Library version: 1.7.0-alpha
+Library version: 1.8.0-alpha
 Path: <local-path>
 Model name: uniform dense SDF
 Valid: yes
@@ -326,8 +351,8 @@ Octree nodes: 73
 Leaf blocks: 64
 Near-surface blocks: 64
 Memory bytes: 75248
-Sampling time ms: 12.1228
-Build time ms: 13.3141
+Sampling time ms: 13.2072
+Build time ms: 14.5227
 Format: ADASDF_ADAPTIVE_BLOCK_SDFBIN_V1
 Reload validation: success
 Low-rank compression: not enabled
@@ -343,7 +368,7 @@ JSON report: <local-path>
 
 ```text
 AdaSDF-CL info
-Library version: 1.7.0-alpha
+Library version: 1.8.0-alpha
 Path: <local-path>
 Model name: adaptive block dense SDF
 Valid: yes
@@ -447,7 +472,7 @@ Quality report: <local-path>
 
 ```text
 AdaSDF-CL info
-Library version: 1.7.0-alpha
+Library version: 1.8.0-alpha
 Path: <local-path>
 Model name: compressed adaptive block SDF
 Valid: yes
@@ -464,7 +489,7 @@ CompressedBlockSDF compression_ratio: 0.911266
 CompressedBlockSDF rank_min: 1
 CompressedBlockSDF rank_max: 5
 CompressedBlockSDF max_abs_error: 4.996e-16
-Tucker/HOSVD compression: not implemented in v1.7.0-alpha
+Tucker/HOSVD compression: not implemented in v1.8.0-alpha
 GPU-native compressed query: planned
 ...
 ```
@@ -553,9 +578,9 @@ Fallback rate: 0
 
 ```text
 query_backend,expansion_mode,selected_blocks,num_points,expanded_memory_mb,gpu_resident_memory_mb,setup_ms,expand_ms,upload_sdf_ms,allocation_ms,h2d_points_ms,kernel_ms,sync_ms,d2h_results_ms,postprocess_ms,free_ms,total_ms,query_kernel_ms,query_total_ms,ns_per_query,queries_per_second,fallback_count,max_abs_phi_error,max_normal_error,cuda_available,max_abs_error,mean_abs_error,rms_error,p95_abs_error,sign_mismatch_count,sign_mismatch_rate,ambiguous_sign_count,ambiguous_sign_rate,near_surface_sign_mismatch_count,near_surface_sign_mismatch_rate,fallback_rate,warmup,repeat,kernel_min_ms,kernel_mean_ms,kernel_max_ms,kernel_std_ms,total_min_ms,total_mean_ms,total_max_ms,total_std_ms,output_mode,phi_only,reuse_resident,kernel_only,workspace_reused,allocation_count,workspace_capacity,workspace_device_memory_mb,block_lookup_count,block_scan_count,center_block_hit_rate,neighbor_same_block_rate,download_results,correctness_checked,host_memory,layout,status,error_message
-cpu,none,all,1000,0,0,0,0,0,0.0122,0,NA,NA,0,0,0,2.0022,NA,2.0022,2002.2,499450.6043,0,0,0,false,0,0,0,0,0,0,0,0,0,0,0,0,1,NA,NA,NA,NA,2.0022,2.0022,2.0022,0,"phi,normal",false,false,false,false,0,0,0,0,0,0,0,true,true,paged,aos,ok,
+cpu,none,all,1000,0,0,0,0,0,0.0112,0,NA,NA,0,0,0,2.0351,NA,2.0351,2035.1,491376.3451,0,0,0,false,0,0,0,0,0,0,0,0,0,0,0,0,1,NA,NA,NA,NA,2.0351,2.0351,2.0351,0,"phi,normal",false,false,false,false,0,0,0,0,0,0,0,true,true,paged,aos,ok,
 backend | expansion | output | blocks | points | setup ms | total mean ms | kernel mean ms | ns/query | max phi error | max normal error | status
-cpu | none | phi,normal | all | 1000 | 0 | 2.0022 | NA | 2002.2 | 0 | 0 | ok
+cpu | none | phi,normal | all | 1000 | 0 | 2.0351 | NA | 2035.1 | 0 | 0 | ok
 ```
 
 ### Installed CompressedSDF One-Step Build CLI: PASS
@@ -577,7 +602,7 @@ Max abs error: 4.996e-16
 Quality samples: 4096
 Reload validation: success
 Tucker/HOSVD compression: planned / not implemented
-Surrogate recommendation: planned for v1.8.0-alpha
+Surrogate recommendation: use adasdf_recommend_build (implemented in v1.8.0-alpha)
 GPU-native compressed query: planned
 Build report: <local-path>
 Compression report: <local-path>
@@ -621,7 +646,9 @@ Adaptive octree/block SDF construction is implemented in v1.6.0-alpha as block-w
 Use adasdf_build_adaptive_sdf for block-wise dense adaptive SDF construction.
 Low-rank block compression is implemented in v1.7.0-alpha using matrix-SVD per adaptive block.
 Use adasdf_build_compressed_sdf for one-step compressed output.
-Tucker/HOSVD compression and surrogate recommendation remain planned.
+Surrogate-guided build recommendation is implemented in v1.8.0-alpha as an experimental deterministic estimator.
+Use adasdf_recommend_build for parameter recommendation.
+Tucker/HOSVD compression, trained surrogate models, and GPU-native compressed query remain planned.
 Plan: <local-path>
 ```
 
@@ -633,7 +660,7 @@ Plan: <local-path>
 
 ```text
 AdaSDF-CL package consumer
-Version: 1.7.0-alpha
+Version: 1.8.0-alpha
 Point: 1 2 3
 Demo signed distance at origin: -0.5
 Demo adaptive blocks: 7
@@ -676,7 +703,7 @@ cmake --build '<workspace>/build/adasdf_cl_iv_ds' --config Release --parallel --
 
 ```text
 AdaSDF-CL downstream example
-Version: 1.7.0-alpha
+Version: 1.8.0-alpha
 CPU backend: available
 No .sdfbin supplied; running core-free demo adaptive path.
 Demo signed distance at origin: -0.5

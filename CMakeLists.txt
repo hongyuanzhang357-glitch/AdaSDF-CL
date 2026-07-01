@@ -146,6 +146,11 @@ set(ADASDF_CL_RUNTIME_SOURCES
   src/query/QueryModeConfig.cpp
   src/query/QueryAPI.cpp
   src/query/SDFExpander.cpp
+  src/recommendation/BuildRecommendationWriter.cpp
+  src/recommendation/BuildRecommender.cpp
+  src/recommendation/BuildSurrogateEstimator.cpp
+  src/recommendation/MeshFeatureExtractor.cpp
+  src/recommendation/SurrogateProfile.cpp
   src/visualization/CollisionSVGWriter.cpp)
 
 if(ADASDF_CL_HAS_CUDA_BACKEND)
@@ -293,7 +298,8 @@ set(ADASDF_CL_EXAMPLE_SOURCES
   examples/16_stl_to_adaptive_block_sdf_demo.cpp
   examples/17_adaptive_vs_dense_sdf_demo.cpp
   examples/18_adaptive_block_compression_demo.cpp
-  examples/19_dense_adaptive_compressed_comparison_demo.cpp)
+  examples/19_dense_adaptive_compressed_comparison_demo.cpp
+  examples/20_build_recommendation_demo.cpp)
 
 if(ADASDF_CL_BUILD_EXAMPLES)
   add_executable(adasdf_load_sdfbin_and_query
@@ -370,6 +376,10 @@ if(ADASDF_CL_BUILD_EXAMPLES)
   target_compile_definitions(adasdf_compressed_compare_demo PRIVATE
     ADASDF_CL_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
 
+  add_executable(adasdf_build_recommend_demo
+    examples/20_build_recommendation_demo.cpp)
+  target_link_libraries(adasdf_build_recommend_demo PRIVATE adasdf::cl_runtime)
+
   add_custom_target(adasdf_cl_api_preview_examples SOURCES
     examples/01_build_adaptive_sdf.cpp
     examples/04_batched_gpu_query.cpp)
@@ -398,6 +408,11 @@ target_link_libraries(adasdf_make_demo_box PRIVATE adasdf_cl_runtime)
 
 add_executable(adasdf_recommend_demo tools/adasdf_recommend_demo.cpp)
 target_link_libraries(adasdf_recommend_demo PRIVATE adasdf_cl_runtime)
+
+add_executable(adasdf_recommend_build tools/adasdf_recommend_build.cpp)
+target_link_libraries(adasdf_recommend_build PRIVATE adasdf_cl_runtime)
+set_target_properties(adasdf_recommend_build PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
 
 add_executable(adasdf_build_demo_adaptive tools/adasdf_build_demo_adaptive.cpp)
 target_link_libraries(adasdf_build_demo_adaptive PRIVATE adasdf_cl_runtime)
@@ -557,7 +572,15 @@ set(ADASDF_CL_TEST_SOURCES
   tests/test_compressed_sdf_collision.cpp
   tests/test_compressed_vs_adaptive_consistency.cpp
   tests/test_adaptive_builder_preview_v1_7.cpp
-  tests/test_mesh_diagnostics_fixtures.cpp)
+  tests/test_mesh_diagnostics_fixtures.cpp
+  tests/test_mesh_feature_extractor.cpp
+  tests/test_build_surrogate_estimator.cpp
+  tests/test_surrogate_profile.cpp
+  tests/test_build_recommender.cpp
+  tests/test_build_recommendation_writer.cpp
+  tests/test_recommend_build_cli.cpp
+  tests/test_recommendation_workflow.cpp
+  tests/test_adaptive_builder_preview_v1_8.cpp)
 
 file(GLOB_RECURSE ADASDF_CL_DISCOVERED_FIXTURES
   "${ADASDF_CL_EXISTING_ROOT}/models/*.sdfbin")
@@ -634,6 +657,12 @@ if(ADASDF_CL_BUILD_TESTS)
         ADASDF_CL_QUERY="$<TARGET_FILE_NAME:adasdf_query>"
         ADASDF_CL_COLLIDE="$<TARGET_FILE_NAME:adasdf_collide>")
     endif()
+    if(test_name STREQUAL "test_recommend_build_cli")
+      add_dependencies(${test_name} adasdf_recommend_build adasdf_build_dense_sdf)
+      target_compile_definitions(${test_name} PRIVATE
+        ADASDF_CL_RECOMMEND_BUILD="$<TARGET_FILE_NAME:adasdf_recommend_build>"
+        ADASDF_CL_BUILD_DENSE_SDF="$<TARGET_FILE_NAME:adasdf_build_dense_sdf>")
+    endif()
     if(test_name STREQUAL "test_build_adaptive_sdf_cli" OR
         test_name STREQUAL "test_adaptive_block_sdfbin_roundtrip" OR
         test_name STREQUAL "test_adaptive_sdf_collision" OR
@@ -667,7 +696,8 @@ if(ADASDF_CL_BUILD_TESTS)
     endif()
     if(test_name STREQUAL "test_build_adaptive_sdf_preview_cli" OR
         test_name STREQUAL "test_adaptive_builder_preview_updated" OR
-        test_name STREQUAL "test_adaptive_builder_preview_v1_7")
+        test_name STREQUAL "test_adaptive_builder_preview_v1_7" OR
+        test_name STREQUAL "test_adaptive_builder_preview_v1_8")
       add_dependencies(${test_name} adasdf_build_adaptive_sdf_preview)
       target_compile_definitions(${test_name} PRIVATE
         ADASDF_CL_ADAPTIVE_PREVIEW="$<TARGET_FILE_NAME:adasdf_build_adaptive_sdf_preview>")
@@ -722,6 +752,10 @@ if(ADASDF_CL_BUILD_TESTS)
       set_tests_properties(${test_name} PROPERTIES
         WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_build_dense_sdf>")
     endif()
+    if(test_name STREQUAL "test_recommend_build_cli")
+      set_tests_properties(${test_name} PROPERTIES
+        WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_recommend_build>")
+    endif()
     if(test_name STREQUAL "test_build_adaptive_sdf_cli" OR
         test_name STREQUAL "test_adaptive_block_sdfbin_roundtrip" OR
         test_name STREQUAL "test_adaptive_sdf_collision" OR
@@ -737,7 +771,8 @@ if(ADASDF_CL_BUILD_TESTS)
     endif()
     if(test_name STREQUAL "test_build_adaptive_sdf_preview_cli" OR
         test_name STREQUAL "test_adaptive_builder_preview_updated" OR
-        test_name STREQUAL "test_adaptive_builder_preview_v1_7")
+        test_name STREQUAL "test_adaptive_builder_preview_v1_7" OR
+        test_name STREQUAL "test_adaptive_builder_preview_v1_8")
       set_tests_properties(${test_name} PROPERTIES
         WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_build_adaptive_sdf_preview>")
     endif()
@@ -775,6 +810,7 @@ set(ADASDF_CL_INSTALL_TOOL_TARGETS
   adasdf_collide
   adasdf_make_demo_box
   adasdf_recommend_demo
+  adasdf_recommend_build
   adasdf_build_demo_adaptive
   adasdf_collide_boxes_demo
   adasdf_query_mode_demo
@@ -804,6 +840,8 @@ install(TARGETS ${ADASDF_CL_INSTALL_TOOL_TARGETS}
 install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 install(FILES LICENSE README.md CHANGELOG.md
   DESTINATION ${CMAKE_INSTALL_DOCDIR})
+install(DIRECTORY models/surrogate/v1_8
+  DESTINATION ${CMAKE_INSTALL_DOCDIR}/models/surrogate)
 
 install(EXPORT AdaSDFCLTargets
   FILE AdaSDFCLTargets.cmake

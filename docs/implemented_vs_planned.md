@@ -41,6 +41,12 @@
 - Compressed block `.sdfbin` read/write with `ADASDF_COMPRESSED_BLOCK_SDFBIN_V1`.
 - `adasdf_compress_adaptive_sdf` and `adasdf_build_compressed_sdf` CLIs.
 - Compression quality audit for dense adaptive vs compressed models.
+- Surrogate-guided build recommendation with `adasdf_recommend_build`.
+- `MeshFeatureExtractor`, `BuildSurrogateEstimator`, `SurrogateProfile`,
+  `BuildRecommender`, and `BuildRecommendationWriter`.
+- Markdown and JSON-like build recommendation reports.
+- Copyable DenseSDF, AdaptiveBlockSDF, and CompressedAdaptiveBlockSDF commands
+  from target error, memory budget, and use case.
 - Markdown and JSON-like mesh diagnostics reports.
 - Before/after cleanup diagnostics and readiness reports.
 - `adasdf_mesh_check` CLI, `adasdf_mesh_clean` CLI, CPU-only mesh diagnostics
@@ -54,6 +60,8 @@
 - Adaptive builder: core-free adaptive octree/block dense builder is public.
 - Compression builder: matrix-SVD block compression is implemented, while
   memory-bounded rank allocation remains a simple alpha-level heuristic.
+- Build recommender: deterministic and heuristic-calibrated; not a universal
+  trained model, not fully trained, and not an optimality guarantee.
 - Existing-core bridge: available only when the existing research core and
   dependencies are present.
 - CUDA expanded query: optional and experimental; no compressed-direct query.
@@ -71,7 +79,8 @@
 ## Planned
 
 - Tucker/HOSVD compression.
-- Surrogate-guided adaptive build recommendation.
+- Trained surrogate model integration.
+- Online recommendation calibration.
 - Complex mesh repair and hole filling.
 - Self-intersection detection.
 - FCL fallback backend.

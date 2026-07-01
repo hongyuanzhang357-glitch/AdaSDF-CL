@@ -18,7 +18,10 @@ replacement.
 - Standalone adaptive octree/block SDF builder with dense per-block values.
 - Matrix-SVD compressed adaptive block SDF builder.
 - Compression quality audit and dense fallback blocks.
-- Adaptive builder preview for future Tucker/surrogate/GPU compressed stages.
+- Experimental deterministic build recommender for DenseSDF, AdaptiveBlockSDF,
+  and CompressedAdaptiveBlockSDF parameters.
+- Adaptive builder preview for future Tucker/trained-surrogate/GPU compressed
+  stages.
 
 ## Avoid Wording
 
@@ -31,6 +34,8 @@ replacement.
 - Automatic hole filling or self-intersection repair tool.
 - Industrial mesh certification tool.
 - Guaranteed optimal surrogate recommender.
+- Universal trained build recommender.
+- Fully trained recommendation model.
 - Complete GPU contact solver.
 
 ## Short Description
@@ -40,7 +45,8 @@ queries, penetration-depth estimates, contact normals, batch query tooling,
 expanded-SDF quality audits, optional CUDA expanded-query paths, STL mesh
 diagnostics, SDF build readiness scoring, safe mesh cleanup, and a public
 uniform DenseSDF builder, a public adaptive octree/block SDF builder, and a
-public matrix-SVD compressed adaptive block SDF builder. v1.7 adds the first
-core-free STL-to-compressed-SDF path. It does not fill holes, repair
-self-intersections, implement Tucker/HOSVD compression, or claim GPU-native
-compressed query.
+public matrix-SVD compressed adaptive block SDF builder. v1.8 adds a
+deterministic recommend-then-build parameter recommendation path. It does not
+fill holes, repair self-intersections, implement Tucker/HOSVD compression,
+claim a universal trained recommender, guarantee optimal parameters, or claim
+GPU-native compressed query.

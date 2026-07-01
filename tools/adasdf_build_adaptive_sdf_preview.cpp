@@ -114,8 +114,13 @@ int main(int argc, char** argv) {
     std::cout
         << "Use adasdf_build_compressed_sdf for one-step compressed output.\n";
     std::cout
-        << "Tucker/HOSVD compression and surrogate recommendation remain "
-           "planned.\n";
+        << "Surrogate-guided build recommendation is implemented in "
+           "v1.8.0-alpha as an experimental deterministic estimator.\n";
+    std::cout
+        << "Use adasdf_recommend_build for parameter recommendation.\n";
+    std::cout
+        << "Tucker/HOSVD compression, trained surrogate models, and "
+           "GPU-native compressed query remain planned.\n";
     if (!plan_path.empty()) {
       std::cout << "Plan: " << plan_path.string() << "\n";
     }

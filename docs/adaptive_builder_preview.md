@@ -1,13 +1,15 @@
 # Adaptive Builder Interface Preview
 
-AdaSDF-CL v1.7.0-alpha keeps the adaptive builder preview as a planning tool.
+AdaSDF-CL v1.8.0-alpha keeps the adaptive builder preview as a planning tool.
 Octree refinement, block partitioning, dense block sampling, and matrix-SVD
-low-rank block compression are implemented. The preview documents the remaining
-Tucker/HOSVD, surrogate, and GPU-native compressed-query stages.
+low-rank block compression are implemented. v1.8 adds deterministic
+surrogate-guided build recommendation. The preview documents the remaining
+Tucker/HOSVD, trained-surrogate, and GPU-native compressed-query stages.
 
 It does not generate `.sdfbin` files. Use `adasdf_build_adaptive_sdf` for real
 block-wise dense adaptive SDF construction or `adasdf_build_compressed_sdf` for
-one-step compressed adaptive block SDF output.
+one-step compressed adaptive block SDF output. Use `adasdf_recommend_build` for
+parameter recommendation.
 
 ## CLI
 
@@ -21,6 +23,7 @@ the user requests a real build without `--dry-run`, the CLI fails clearly:
 ```text
 Use adasdf_build_adaptive_sdf for block-wise dense adaptive SDF construction.
 Use adasdf_build_compressed_sdf for one-step compressed output.
+Use adasdf_recommend_build for parameter recommendation.
 ```
 
 ## Planned Stages
@@ -31,8 +34,9 @@ Use adasdf_build_compressed_sdf for one-step compressed output.
 - Block partition: implemented in v1.6.
 - Dense sampling: implemented in v1.6.
 - Low-rank compression: implemented in v1.7 using matrix-SVD.
+- Surrogate recommendation: implemented in v1.8 as a deterministic estimator.
 - Tucker/HOSVD compression: planned.
-- Surrogate recommendation: planned for v1.8.
+- Trained surrogate model: planned.
 - GPU-native compressed query: planned.
 - Error audit.
 - SDFBin write.
@@ -41,15 +45,18 @@ Use adasdf_build_compressed_sdf for one-step compressed output.
 
 `AdaptiveSDFBuilderPreview::makePlan()` returns a plan with
 `implemented_in_this_version == true` for the implemented v1.6 octree/block
-dense builder and v1.7 matrix-SVD compression scope.
+dense builder, v1.7 matrix-SVD compression scope, and v1.8 deterministic
+recommendation scope.
 
 The preview is useful for stabilizing option names, docs, and future workflow
 shape. It is not a substitute for the implemented `adasdf_build_adaptive_sdf`
 or `adasdf_build_compressed_sdf` builders, and it does not pretend that
-Tucker/HOSVD, surrogate-guided recommendation, or GPU-native compressed query
-are complete.
+Tucker/HOSVD, trained surrogate models, or GPU-native compressed query are
+complete. The v1.8 recommender is not a universal trained model, not fully
+trained, and not an optimality guarantee.
 
 ## Future Work
 
-- v1.8: surrogate-guided recommendation.
+- v1.8: deterministic surrogate-guided recommendation.
+- Future: trained surrogate model integration.
 - v1.9: GPU-native adaptive/compressed query.

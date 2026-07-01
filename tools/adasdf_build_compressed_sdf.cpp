@@ -15,7 +15,7 @@ void usage() {
          "[--auto-clean] [--fixed-rank N] [--min-rank N] [--max-rank N] "
          "[--keep-near-surface-dense] [--report build_report.md] "
          "[--compression-report compression_report.md] "
-         "[--quality-report quality_report.md] [--verbose]\n";
+         "[--quality-report quality_report.md] [--recommend] [--verbose]\n";
 }
 
 bool hasValue(int index, int argc) {
@@ -43,6 +43,10 @@ int main(int argc, char** argv) {
       const std::string arg = argv[i];
       if (arg == "--help" || arg == "-h") {
         usage();
+        return 0;
+      } else if (arg == "--recommend") {
+        std::cout
+            << "Use adasdf_recommend_build for parameter recommendation.\n";
         return 0;
       } else if (arg == "--target-error" && hasValue(i, argc)) {
         const double value = std::stod(argv[++i]);
@@ -196,7 +200,9 @@ int main(int argc, char** argv) {
     std::cout << "Quality samples: " << quality_report.sample_count << "\n";
     std::cout << "Reload validation: success\n";
     std::cout << "Tucker/HOSVD compression: planned / not implemented\n";
-    std::cout << "Surrogate recommendation: planned for v1.8.0-alpha\n";
+    std::cout
+        << "Surrogate recommendation: use adasdf_recommend_build "
+           "(implemented in v1.8.0-alpha)\n";
     std::cout << "GPU-native compressed query: planned\n";
     if (!build_report_path.empty()) {
       std::cout << "Build report: " << build_report_path.string() << "\n";

@@ -146,7 +146,7 @@ int main(int argc, char** argv) {
       std::cout << "CompressedBlockSDF rank_min: " << min_rank << "\n";
       std::cout << "CompressedBlockSDF rank_max: " << max_rank << "\n";
       std::cout << "CompressedBlockSDF max_abs_error: " << max_error << "\n";
-      std::cout << "Tucker/HOSVD compression: not implemented in v1.7.0-alpha\n";
+      std::cout << "Tucker/HOSVD compression: not implemented in v1.8.0-alpha\n";
       std::cout << "GPU-native compressed query: planned\n";
     }
     if (const auto analytic = std::dynamic_pointer_cast<AnalyticSDFModel>(model)) {

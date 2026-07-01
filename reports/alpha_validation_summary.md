@@ -13,7 +13,16 @@ cmake -S '<source>' -B '<build>' -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD
 ```
 
 ```text
+-- Building for: Visual Studio 17 2022
 -- Selecting Windows SDK version 10.0.22621.0 to target Windows 10.0.26200.
+-- The CXX compiler identification is MSVC 19.42.34444.0
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.42.34433/bin/Hostx64/x64/cl.exe - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Looking for a CUDA compiler
+-- Looking for a CUDA compiler - NOTFOUND
 CMake Warning at CMakeLists.txt:72 (message):
   ADASDF_CL_ENABLE_CUDA=ON but no CUDA compiler was found.  Building without
   CUDA batch query kernels.
@@ -21,16 +30,7 @@ CMake Warning at CMakeLists.txt:72 (message):
 
 --
 -- AdaSDF-CL configuration:
---   Version: 1.7.0-alpha
---   Build examples: ON
---   Build tests: ON
---   Benchmarks: ON
---   Existing core requested: OFF
---   Existing core found: OFF
---   Adaptive builder: ON
---   Surrogate recommender: ON
---   Demo backend: ON
---   Demo surrogate: ON
+--   Version: 1.8.0-alpha
 ...
 ```
 
@@ -45,20 +45,20 @@ cmake --build '<build>' --config Release -- /nodeReuse:false
 
   1>Checking Build System
   Building Custom Rule <source>/CMakeLists.txt
-  adasdf_cl_runtime.vcxproj -> <build>\Release\adasdf_cl_runtime.lib
-  Building Custom Rule <source>/CMakeLists.txt
-  adasdf_adaptive_block_compression_demo.vcxproj -> <build>\Release\adasdf_adaptive_block_compression_demo.exe
-  Building Custom Rule <source>/CMakeLists.txt
-  adasdf_adaptive_builder_preview_demo.vcxproj -> <build>\Release\adasdf_adaptive_builder_preview_demo.exe
-  Building Custom Rule <source>/CMakeLists.txt
-  adasdf_adaptive_vs_dense_sdf_demo.vcxproj -> <build>\Release\adasdf_adaptive_vs_dense_sdf_demo.exe
-  Building Custom Rule <source>/CMakeLists.txt
-  adasdf_benchmark_batch_query.vcxproj -> <build>\benchmarks\Release\adasdf_benchmark_batch_query.exe
-  Building Custom Rule <source>/CMakeLists.txt
-  adasdf_build.vcxproj -> <build>\Release\adasdf_build.exe
-  Building Custom Rule <source>/CMakeLists.txt
-  adasdf_build_adaptive_sdf.vcxproj -> <build>\tools\Release\adasdf_build_adaptive_sdf.exe
-  Building Custom Rule <source>/CMakeLists.txt
+  FCLAdapter.cpp
+  Backend.cpp
+  CudaQueryBackend.cpp
+  GpuBackend.cpp
+  PointCloudGenerator.cpp
+  CompressedSDF.cpp
+  SmallMatrixSVD.cpp
+  CompressedSDFBlock.cpp
+  BlockLowRankCompressor.cpp
+  CompressionQuality.cpp
+  CompressionReportWriter.cpp
+  AdaptiveSDFBuilder.cpp
+  AdaptiveSDFBuilderPreview.cpp
+  AdaptiveOctree.cpp
 ...
 ```
 
@@ -70,23 +70,23 @@ ctest --test-dir '<build>' -C Release --output-on-failure
 
 ```text
 Test project <build>
-      Start  1: test_sdf_io
- 1/93 Test  #1: test_sdf_io ................................   Passed    0.01 sec
-      Start  2: test_collision_query
- 2/93 Test  #2: test_collision_query .......................   Passed    0.01 sec
-      Start  3: test_distance_query
- 3/93 Test  #3: test_distance_query ........................   Passed    0.02 sec
-      Start  4: test_collision_object
- 4/93 Test  #4: test_collision_object ......................   Passed    0.02 sec
-      Start  5: test_pair_distance_query
- 5/93 Test  #5: test_pair_distance_query ...................   Passed    0.02 sec
-      Start  6: test_pair_collision_query
- 6/93 Test  #6: test_pair_collision_query ..................   Passed    0.01 sec
-      Start  7: test_candidate_point_sampler
- 7/93 Test  #7: test_candidate_point_sampler ...............   Passed    0.23 sec
-      Start  8: test_contact_generator
- 8/93 Test  #8: test_contact_generator .....................   Passed    0.06 sec
-      Start  9: test_contact_reducer
+        Start   1: test_sdf_io
+  1/101 Test   #1: test_sdf_io ................................   Passed    0.02 sec
+        Start   2: test_collision_query
+  2/101 Test   #2: test_collision_query .......................   Passed    0.01 sec
+        Start   3: test_distance_query
+  3/101 Test   #3: test_distance_query ........................   Passed    0.02 sec
+        Start   4: test_collision_object
+  4/101 Test   #4: test_collision_object ......................   Passed    0.02 sec
+        Start   5: test_pair_distance_query
+  5/101 Test   #5: test_pair_distance_query ...................   Passed    0.02 sec
+        Start   6: test_pair_collision_query
+  6/101 Test   #6: test_pair_collision_query ..................   Passed    0.02 sec
+        Start   7: test_candidate_point_sampler
+  7/101 Test   #7: test_candidate_point_sampler ...............   Passed    0.02 sec
+        Start   8: test_contact_generator
+  8/101 Test   #8: test_contact_generator .....................   Passed    0.02 sec
+        Start   9: test_contact_reducer
 ...
 ```
 
@@ -105,6 +105,7 @@ Test project <build>
 [install-validation] Installed Capabilities CLI
 [install-validation] Installed Mesh Check CLI
 [install-validation] Installed Mesh Clean CLI
+[install-validation] Installed Build Recommendation CLI
 [install-validation] Installed DenseSDF Build CLI
 [install-validation] Installed DenseSDF Info CLI
 [install-validation] Installed DenseSDF Query CLI
@@ -114,7 +115,6 @@ Test project <build>
 [install-validation] Installed AdaptiveBlockSDF Query CLI
 [install-validation] Installed AdaptiveBlockSDF Collide CLI
 [install-validation] Installed CompressedSDF Compress CLI
-[install-validation] Installed CompressedSDF Info CLI
 ...
 ```
 
@@ -125,7 +125,7 @@ Test project <build>
 ```
 
 ```text
-AdaSDF-CL version: 1.7.0-alpha
+AdaSDF-CL version: 1.8.0-alpha
 Position: FCL-style SDF collision backend under development.
 Boundary: complementary SDF backend, not a drop-in FCL replacement.
 
@@ -154,7 +154,7 @@ Implemented:
 
 ```text
 AdaSDF-CL capability walkthrough
-Version: 1.7.0-alpha
+Version: 1.8.0-alpha
 Query backends: CPU direct, CPU expanded, optional CUDA expanded
 Point phi: -0.5
 Point normal: 1 0 0
@@ -255,6 +255,31 @@ SDF build readiness: Poor
 ...
 ```
 
+### Build Recommendation CLI: PASS
+
+```bash
+'<build>/tools/Release/adasdf_recommend_build.exe' '<source>/tests/data/mesh_diagnostics/closed_cube_ascii.stl' --target-error 1e-3 --memory-mb 256 --use-case contact --out '<workspace>/build/closed_cube_recommendation.md' --json '<workspace>/build/closed_cube_recommendation.json' --emit-command
+```
+
+```text
+AdaSDF-CL build recommender
+Input: <local-path>
+Target near-surface error: 0.001
+Memory budget MB: 256
+Use case: contact
+Recommended path: AdaptiveBlockSDF
+Confidence: high
+Estimated memory MB: 5.76123
+Estimated near-surface error: 0.000845728
+Estimated compression ratio: 1
+CLI command: adasdf_build_adaptive_sdf <local-path> closed_cube_ascii_adaptive.sdfbin --target-error 0.001 --min-level 3 --max-level 7 --block-resolution 12 --padding 0.05 --signed --report closed_cube_ascii_adaptive_report.md
+Build executed: no
+Model boundary: experimental deterministic recommender; not a universal trained model; not fully trained; not an optimality guarantee
+Markdown report: <local-path>
+JSON report: <local-path>
+adasdf_build_adaptive_sdf <local-path> closed_cube_ascii_adaptive.sdfbin --target-error 0.001 --min-level 3 --max-level 7 --block-resolution 12 --padding 0.05 --signed --report closed_cube_ascii_adaptive_report.md
+```
+
 ### DenseSDF Build CLI: PASS
 
 ```bash
@@ -269,7 +294,7 @@ Resolution: 24 x 24 x 24
 Signed: yes
 Watertight: yes
 Triangles: 12
-Build time ms: 21.1926
+Build time ms: 21.0447
 Memory bytes: 111128
 Reload validation: success
 Report: <local-path>
@@ -284,7 +309,7 @@ JSON report: <local-path>
 
 ```text
 AdaSDF-CL info
-Library version: 1.7.0-alpha
+Library version: 1.8.0-alpha
 Path: <local-path>
 Model name: uniform dense SDF
 Valid: yes
@@ -368,8 +393,8 @@ Octree nodes: 73
 Leaf blocks: 64
 Near-surface blocks: 64
 Memory bytes: 75248
-Sampling time ms: 12.7353
-Build time ms: 14.0139
+Sampling time ms: 12.1479
+Build time ms: 13.4129
 Format: ADASDF_ADAPTIVE_BLOCK_SDFBIN_V1
 Reload validation: success
 Low-rank compression: not enabled
@@ -384,7 +409,7 @@ Low-rank compression: not enabled
 
 ```text
 AdaSDF-CL info
-Library version: 1.7.0-alpha
+Library version: 1.8.0-alpha
 Path: <local-path>
 Model name: adaptive block dense SDF
 Valid: yes
@@ -484,9 +509,9 @@ Near-surface sign mismatch rate: 0
 
 ```text
 query_backend,expansion_mode,selected_blocks,num_points,expanded_memory_mb,gpu_resident_memory_mb,setup_ms,expand_ms,upload_sdf_ms,allocation_ms,h2d_points_ms,kernel_ms,sync_ms,d2h_results_ms,postprocess_ms,free_ms,total_ms,query_kernel_ms,query_total_ms,ns_per_query,queries_per_second,fallback_count,max_abs_phi_error,max_normal_error,cuda_available,max_abs_error,mean_abs_error,rms_error,p95_abs_error,sign_mismatch_count,sign_mismatch_rate,ambiguous_sign_count,ambiguous_sign_rate,near_surface_sign_mismatch_count,near_surface_sign_mismatch_rate,fallback_rate,warmup,repeat,kernel_min_ms,kernel_mean_ms,kernel_max_ms,kernel_std_ms,total_min_ms,total_mean_ms,total_max_ms,total_std_ms,output_mode,phi_only,reuse_resident,kernel_only,workspace_reused,allocation_count,workspace_capacity,workspace_device_memory_mb,block_lookup_count,block_scan_count,center_block_hit_rate,neighbor_same_block_rate,download_results,correctness_checked,host_memory,layout,status,error_message
-cpu,none,all,1000,0,0,0,0,0,0.0134,0,NA,NA,0,0,0,11.9867,NA,11.9867,11986.7,83425.79692,0,0,0,false,0,0,0,0,0,0,0,0,0,0,0,0,1,NA,NA,NA,NA,11.9867,11.9867,11.9867,0,"phi,normal",false,false,false,false,0,0,0,0,0,0,0,true,true,paged,aos,ok,
+cpu,none,all,1000,0,0,0,0,0,0.0169,0,NA,NA,0,0,0,10.8589,NA,10.8589,10858.9,92090.35906,0,0,0,false,0,0,0,0,0,0,0,0,0,0,0,0,1,NA,NA,NA,NA,10.8589,10.8589,10.8589,0,"phi,normal",false,false,false,false,0,0,0,0,0,0,0,true,true,paged,aos,ok,
 backend | expansion | output | blocks | points | setup ms | total mean ms | kernel mean ms | ns/query | max phi error | max normal error | status
-cpu | none | phi,normal | all | 1000 | 0 | 11.9867 | NA | 11986.7 | 0 | 0 | ok
+cpu | none | phi,normal | all | 1000 | 0 | 10.8589 | NA | 10858.9 | 0 | 0 | ok
 ```
 
 ### CompressedSDF Compress CLI: PASS
@@ -525,7 +550,7 @@ JSON report: <local-path>
 
 ```text
 AdaSDF-CL info
-Library version: 1.7.0-alpha
+Library version: 1.8.0-alpha
 Path: <local-path>
 Model name: compressed adaptive block SDF
 Valid: yes
@@ -625,9 +650,9 @@ Near-surface sign mismatch rate: 0
 
 ```text
 query_backend,expansion_mode,selected_blocks,num_points,expanded_memory_mb,gpu_resident_memory_mb,setup_ms,expand_ms,upload_sdf_ms,allocation_ms,h2d_points_ms,kernel_ms,sync_ms,d2h_results_ms,postprocess_ms,free_ms,total_ms,query_kernel_ms,query_total_ms,ns_per_query,queries_per_second,fallback_count,max_abs_phi_error,max_normal_error,cuda_available,max_abs_error,mean_abs_error,rms_error,p95_abs_error,sign_mismatch_count,sign_mismatch_rate,ambiguous_sign_count,ambiguous_sign_rate,near_surface_sign_mismatch_count,near_surface_sign_mismatch_rate,fallback_rate,warmup,repeat,kernel_min_ms,kernel_mean_ms,kernel_max_ms,kernel_std_ms,total_min_ms,total_mean_ms,total_max_ms,total_std_ms,output_mode,phi_only,reuse_resident,kernel_only,workspace_reused,allocation_count,workspace_capacity,workspace_device_memory_mb,block_lookup_count,block_scan_count,center_block_hit_rate,neighbor_same_block_rate,download_results,correctness_checked,host_memory,layout,status,error_message
-cpu,none,all,1000,0,0,0,0,0,0.0135,0,NA,NA,0,0,0,1.99,NA,1.99,1990,502512.5628,0,0,0,false,0,0,0,0,0,0,0,0,0,0,0,0,1,NA,NA,NA,NA,1.99,1.99,1.99,0,"phi,normal",false,false,false,false,0,0,0,0,0,0,0,true,true,paged,aos,ok,
+cpu,none,all,1000,0,0,0,0,0,0.0153,0,NA,NA,0,0,0,1.8692,NA,1.8692,1869.2,534988.2303,0,0,0,false,0,0,0,0,0,0,0,0,0,0,0,0,1,NA,NA,NA,NA,1.8692,1.8692,1.8692,0,"phi,normal",false,false,false,false,0,0,0,0,0,0,0,true,true,paged,aos,ok,
 backend | expansion | output | blocks | points | setup ms | total mean ms | kernel mean ms | ns/query | max phi error | max normal error | status
-cpu | none | phi,normal | all | 1000 | 0 | 1.99 | NA | 1990 | 0 | 0 | ok
+cpu | none | phi,normal | all | 1000 | 0 | 1.8692 | NA | 1869.2 | 0 | 0 | ok
 ```
 
 ### CompressedSDF One-Step Build CLI: PASS
@@ -649,7 +674,7 @@ Max abs error: 4.996e-16
 Quality samples: 4096
 Reload validation: success
 Tucker/HOSVD compression: planned / not implemented
-Surrogate recommendation: planned for v1.8.0-alpha
+Surrogate recommendation: use adasdf_recommend_build (implemented in v1.8.0-alpha)
 GPU-native compressed query: planned
 Build report: <local-path>
 Compression report: <local-path>
@@ -693,7 +718,9 @@ Adaptive octree/block SDF construction is implemented in v1.6.0-alpha as block-w
 Use adasdf_build_adaptive_sdf for block-wise dense adaptive SDF construction.
 Low-rank block compression is implemented in v1.7.0-alpha using matrix-SVD per adaptive block.
 Use adasdf_build_compressed_sdf for one-step compressed output.
-Tucker/HOSVD compression and surrogate recommendation remain planned.
+Surrogate-guided build recommendation is implemented in v1.8.0-alpha as an experimental deterministic estimator.
+Use adasdf_recommend_build for parameter recommendation.
+Tucker/HOSVD compression, trained surrogate models, and GPU-native compressed query remain planned.
 Plan: <local-path>
 ```
 
@@ -756,7 +783,7 @@ Reload validation: success
 
 ```text
 AdaSDF-CL info
-Library version: 1.7.0-alpha
+Library version: 1.8.0-alpha
 Path: <local-path>
 Model name: demo adaptive analytic box
 Valid: yes
@@ -856,16 +883,16 @@ Contact[1]
 
 ```text
 query_backend,expansion_mode,selected_blocks,num_points,expanded_memory_mb,gpu_resident_memory_mb,setup_ms,expand_ms,upload_sdf_ms,allocation_ms,h2d_points_ms,kernel_ms,sync_ms,d2h_results_ms,postprocess_ms,free_ms,total_ms,query_kernel_ms,query_total_ms,ns_per_query,queries_per_second,fallback_count,max_abs_phi_error,max_normal_error,cuda_available,max_abs_error,mean_abs_error,rms_error,p95_abs_error,sign_mismatch_count,sign_mismatch_rate,ambiguous_sign_count,ambiguous_sign_rate,near_surface_sign_mismatch_count,near_surface_sign_mismatch_rate,fallback_rate,warmup,repeat,kernel_min_ms,kernel_mean_ms,kernel_max_ms,kernel_std_ms,total_min_ms,total_mean_ms,total_max_ms,total_std_ms,output_mode,phi_only,reuse_resident,kernel_only,workspace_reused,allocation_count,workspace_capacity,workspace_device_memory_mb,block_lookup_count,block_scan_count,center_block_hit_rate,neighbor_same_block_rate,download_results,correctness_checked,host_memory,layout,status,error_message
-cpu,none,all,10000,0,0,0,0,0,0.1286,0,NA,NA,0,0,0,0.5748,NA,0.5748,57.48,17397355.6,0,0,0,false,0,0,0,0,0,0,0,0,0,0,0,0,1,NA,NA,NA,NA,0.5748,0.5748,0.5748,0,"phi,normal",false,false,false,false,0,0,0,0,0,0,0,true,true,paged,aos,ok,
-cpu,none,all,100000,0,0,0,0,0,0.8719,0,NA,NA,0,0,0,5.4705,NA,5.4705,54.705,18279864.73,0,0,0,false,0,0,0,0,0,0,0,0,0,0,0,0,1,NA,NA,NA,NA,5.4705,5.4705,5.4705,0,"phi,normal",false,false,false,false,0,0,0,0,0,0,0,true,true,paged,aos,ok,
-cpu,none,all,1000000,0,0,0,0,0,7.7506,0,NA,NA,0,0,0,50.0617,NA,50.0617,50.0617,19975350.42,0,0,0,false,0,0,0,0,0,0,0,0,0,0,0,0,1,NA,NA,NA,NA,50.0617,50.0617,50.0617,0,"phi,normal",false,false,false,false,0,0,0,0,0,0,0,true,true,paged,aos,ok,
+cpu,none,all,10000,0,0,0,0,0,0.0982,0,NA,NA,0,0,0,0.5023,NA,0.5023,50.23,19908421.26,0,0,0,false,0,0,0,0,0,0,0,0,0,0,0,0,1,NA,NA,NA,NA,0.5023,0.5023,0.5023,0,"phi,normal",false,false,false,false,0,0,0,0,0,0,0,true,true,paged,aos,ok,
+cpu,none,all,100000,0,0,0,0,0,0.7685,0,NA,NA,0,0,0,4.9401,NA,4.9401,49.401,20242505.21,0,0,0,false,0,0,0,0,0,0,0,0,0,0,0,0,1,NA,NA,NA,NA,4.9401,4.9401,4.9401,0,"phi,normal",false,false,false,false,0,0,0,0,0,0,0,true,true,paged,aos,ok,
+cpu,none,all,1000000,0,0,0,0,0,7.5082,0,NA,NA,0,0,0,48.6355,NA,48.6355,48.6355,20561112.77,0,0,0,false,0,0,0,0,0,0,0,0,0,0,0,0,1,NA,NA,NA,NA,48.6355,48.6355,48.6355,0,"phi,normal",false,false,false,false,0,0,0,0,0,0,0,true,true,paged,aos,ok,
 cuda,global,all,10000,,,,,,,,NA,NA,,,,,NA,,,,0,,NA,false,,,,,0,,0,,0,,,0,1,NA,NA,NA,NA,,,,,"phi,normal",false,false,false,false,0,0,,0,0,,,true,true,paged,aos,skipped,CUDA backend unavailable
 cuda,global,all,100000,,,,,,,,NA,NA,,,,,NA,,,,0,,NA,false,,,,,0,,0,,0,,,0,1,NA,NA,NA,NA,,,,,"phi,normal",false,false,false,false,0,0,,0,0,,,true,true,paged,aos,skipped,CUDA backend unavailable
 cuda,global,all,1000000,,,,,,,,NA,NA,,,,,NA,,,,0,,NA,false,,,,,0,,0,,0,,,0,1,NA,NA,NA,NA,,,,,"phi,normal",false,false,false,false,0,0,,0,0,,,true,true,paged,aos,skipped,CUDA backend unavailable
 backend | expansion | output | blocks | points | setup ms | total mean ms | kernel mean ms | ns/query | max phi error | max normal error | status
-cpu | none | phi,normal | all | 10000 | 0 | 0.5748 | NA | 57.48 | 0 | 0 | ok
-cpu | none | phi,normal | all | 100000 | 0 | 5.4705 | NA | 54.705 | 0 | 0 | ok
-cpu | none | phi,normal | all | 1000000 | 0 | 50.0617 | NA | 50.0617 | 0 | 0 | ok
+cpu | none | phi,normal | all | 10000 | 0 | 0.5023 | NA | 50.23 | 0 | 0 | ok
+cpu | none | phi,normal | all | 100000 | 0 | 4.9401 | NA | 49.401 | 0 | 0 | ok
+cpu | none | phi,normal | all | 1000000 | 0 | 48.6355 | NA | 48.6355 | 0 | 0 | ok
 cuda | global | phi,normal | all | 10000 | SKIPPED | SKIPPED | SKIPPED | SKIPPED | SKIPPED | SKIPPED | skipped
 cuda | global | phi,normal | all | 100000 | SKIPPED | SKIPPED | SKIPPED | SKIPPED | SKIPPED | SKIPPED | skipped
 cuda | global | phi,normal | all | 1000000 | SKIPPED | SKIPPED | SKIPPED | SKIPPED | SKIPPED | SKIPPED | skipped
