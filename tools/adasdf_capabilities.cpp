@@ -66,6 +66,8 @@ int main(int argc, char** argv) {
         "deterministic build surrogate estimator",
         "mesh-feature-based parameter recommendation",
         "adasdf_recommend_build",
+        "pure-Python CLI wrapper",
+        "adasdf_cli subprocess helpers",
         "expansion quality audit",
         "sign mismatch and near-surface mismatch metrics",
         "SVG collision view",
@@ -81,6 +83,7 @@ int main(int argc, char** argv) {
         "memory/error build estimator",
         "recommendation confidence scoring",
         "optional surrogate profile",
+        "Python package editable install",
         "compressed direct query",
         "dense fallback blocks",
         "brute-force adaptive block sampling",
@@ -97,7 +100,8 @@ int main(int argc, char** argv) {
         "FCL fallback backend",
         "CollisionWorld broadphase",
         "CCD",
-        "Python bindings",
+        "native Python / pybind11 bindings",
+        "C API",
         "ROS / MoveIt integration",
         "full low-rank GPU-native SDF query",
         "GPU-native compressed query"};
@@ -134,6 +138,8 @@ int main(int argc, char** argv) {
       std::cout << "- matrix-SVD block compression with dense fallback in v1.7\n";
       std::cout << "- surrogate-guided build recommendation through adasdf_recommend_build in v1.8\n";
       std::cout << "- v1.8 recommendation is deterministic and experimental; it is not a universal trained model, not fully trained, and not an optimality guarantee\n";
+      std::cout << "- pure-Python CLI wrapper through python/adasdf_cli in v1.8.1\n";
+      std::cout << "- v1.8.1 Python wrapper is subprocess-based; it is not pybind11, not a native Python binding, and not a C++ extension module\n";
       std::cout << "- no hole filling, self-intersection repair, Tucker/HOSVD, trained model integration, online calibration, or GPU-native compressed query\n";
       std::cout << "\nDocumentation:\n";
       std::cout << "- docs/capability_matrix.md\n";
@@ -149,6 +155,7 @@ int main(int argc, char** argv) {
       std::cout << "- docs/stl_to_compressed_sdf_workflow.md\n";
       std::cout << "- docs/surrogate_guided_recommendation.md\n";
       std::cout << "- docs/recommended_build_workflow.md\n";
+      std::cout << "- docs/python_cli_wrapper.md\n";
       std::cout << "- docs/implemented_vs_planned.md\n";
       std::cout << "- docs/fcl_complement_strategy.md\n";
       std::cout << "- docs/query_backend_matrix.md\n";

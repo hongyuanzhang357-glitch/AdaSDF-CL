@@ -47,6 +47,9 @@
 - Markdown and JSON-like build recommendation reports.
 - Copyable DenseSDF, AdaptiveBlockSDF, and CompressedAdaptiveBlockSDF commands
   from target error, memory budget, and use case.
+- Pure-Python `adasdf_cli` CLI wrapper for installed AdaSDF-CL tools.
+- Python dataclass result types, dry-run command previews, best-effort stdout
+  parsers, and unittest coverage for the CLI wrapper.
 - Markdown and JSON-like mesh diagnostics reports.
 - Before/after cleanup diagnostics and readiness reports.
 - `adasdf_mesh_check` CLI, `adasdf_mesh_clean` CLI, CPU-only mesh diagnostics
@@ -75,6 +78,8 @@
   the report yet.
 - Adaptive compressed builder: v1.7 implements matrix-SVD block compression.
   Tucker/HOSVD and GPU-native compressed query remain planned.
+- Python package distribution: v1.8.1 supports source-tree `PYTHONPATH` usage
+  and editable install, but no pip release is performed.
 
 ## Planned
 
@@ -86,7 +91,8 @@
 - FCL fallback backend.
 - CollisionWorld broadphase.
 - CCD.
-- Python bindings.
+- Native Python / pybind11 bindings.
+- C API.
 - ROS / MoveIt integration.
 - Real robot STL benchmark suite.
 - Full low-rank GPU-native SDF query.

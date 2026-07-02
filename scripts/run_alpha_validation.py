@@ -48,7 +48,12 @@ def display_command(command: list[str], source: Path, build: Path) -> str:
     return " ".join(rendered)
 
 
-def run_step(name: str, command: list[str], cwd: Path) -> StepResult:
+def run_step(
+    name: str,
+    command: list[str],
+    cwd: Path,
+    env: dict[str, str] | None = None,
+) -> StepResult:
     completed = subprocess.run(
         command,
         cwd=cwd,
@@ -57,6 +62,7 @@ def run_step(name: str, command: list[str], cwd: Path) -> StepResult:
         errors="replace",
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
+        env=env,
     )
     return StepResult(name, command, completed.returncode, completed.stdout)
 
@@ -303,6 +309,22 @@ def main() -> int:
         results.append(result)
         write_report(report_path, results, source, build, config)
         return result.returncode
+
+    python_env = os.environ.copy()
+    python_env["PYTHONPATH"] = str(source / "python")
+    python_env["ADASDF_BIN"] = str(required_demo_tools["adasdf_capabilities"].parent)
+    python_env["ADASDF_TEST_STL"] = str(mesh_fixture)
+    python_env["PYTHONDONTWRITEBYTECODE"] = "1"
+    python_result = run_step(
+        "Python CLI Wrapper Tests",
+        [sys.executable, "-m", "unittest", "discover", "-s", str(source / "python" / "tests")],
+        workspace,
+        env=python_env,
+    )
+    results.append(python_result)
+    if python_result.returncode != 0:
+        write_report(report_path, results, source, build, config)
+        return python_result.returncode
 
     demo_steps = [
         (

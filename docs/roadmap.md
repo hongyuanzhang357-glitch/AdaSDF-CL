@@ -37,6 +37,24 @@
   STL-to-compressed-SDF workflow.
 - v1.8 surrogate-guided build recommendation, deterministic build surrogate
   estimator, recommendation reports, and public recommend-then-build workflow.
+- v1.8.1 pure-Python CLI wrapper, dataclass command results, dry-run command
+  preview, best-effort parsers, and unittest validation.
+
+## v1.8.1-alpha Scope
+
+- `python/adasdf_cli` pure-Python package;
+- subprocess runner over installed AdaSDF-CL CLI tools;
+- `ADASDF_BIN`, `ADASDF_CL_BIN`, `PATH`, and `bin_dir` tool discovery;
+- helpers for mesh check, mesh cleanup, build recommendation, DenseSDF build,
+  AdaptiveBlockSDF build, compressed SDF build, info, query, collide,
+  expansion quality, and benchmark;
+- dataclass result types that preserve command, stdout, stderr, return code,
+  and elapsed time;
+- dry-run command preview;
+- best-effort stdout parsers;
+- unittest coverage and validation-script integration;
+- explicit boundary that this is not pybind11, not a native Python binding, and
+  not a C++ extension module.
 
 ## v1.8.0-alpha Scope
 
@@ -158,9 +176,10 @@
 
 The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`,
 `v1.1.0-alpha`, `v1.1.1-alpha`, `v1.2.0-alpha`, `v1.3.0-alpha`,
-`v1.4.0-alpha`, `v1.5.0-alpha`, `v1.6.0-alpha`, and `v1.7.0-alpha` tags are
+`v1.4.0-alpha`, `v1.5.0-alpha`, `v1.6.0-alpha`, `v1.7.0-alpha`, and
+`v1.8.0-alpha` tags are
 retained for traceability. The recommended public pre-release is
-`v1.8.0-alpha`.
+`v1.8.1-alpha`.
 
 ## Future Work
 
@@ -170,7 +189,7 @@ retained for traceability. The recommended public pre-release is
 - self-intersection detection and repair workflows;
 - real trained surrogate integration with public artifacts and validation
   cards;
-- Python package;
+- native Python / pybind11 bindings and C API;
 - full low-rank compressed SDF GPU expansion and compressed-direct CUDA query;
 - CUDA-accelerated pair collision pipeline;
 - optional real FCL adapter;

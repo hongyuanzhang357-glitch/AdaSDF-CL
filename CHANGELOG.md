@@ -1,5 +1,39 @@
 # Changelog
 
+## 1.8.1-alpha
+
+Python CLI wrapper.
+
+### Added
+
+- Pure-Python `adasdf_cli` wrapper package.
+- Subprocess runner for installed AdaSDF-CL CLI tools.
+- Python helpers for mesh check, mesh clean, build recommendation, DenseSDF
+  build, AdaptiveBlockSDF build, compressed SDF build, info, query, collide,
+  expansion quality, and benchmark.
+- Python dataclass result types that preserve command, stdout, stderr,
+  returncode, and elapsed time.
+- Best-effort output parsers for recommendation, query, collision, info, and
+  benchmark output.
+- Python `unittest` coverage and optional real-CLI smoke tests.
+- Python wrapper documentation and v1.8.1 release draft.
+
+### Changed
+
+- Version updated to `1.8.1-alpha`.
+- Validation scripts now run Python wrapper tests with installed CLI tools.
+- Capability and positioning docs distinguish the implemented CLI wrapper from
+  planned native Python / pybind11 bindings.
+
+### Notes
+
+- This is a subprocess-based convenience layer.
+- It is not a native pybind11 binding.
+- It is not a C++ extension module.
+- It requires installed AdaSDF-CL CLI tools.
+- It uses only the Python standard library at runtime.
+- Native Python bindings remain planned work.
+
 ## 1.8.0-alpha
 
 Surrogate-guided build recommendation for public core-free STL workflows.

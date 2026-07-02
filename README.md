@@ -2,16 +2,22 @@
 
 Adaptive Signed Distance Field Collision Library
 
-Status: 1.8.0-alpha / research preview
+Status: 1.8.1-alpha / research preview
 Build system: CMake
 License: MIT
 Tests: CTest
 
-AdaSDF-CL is an alpha collision and contact library built around signed distance fields. It provides an FCL-style API for distance, collision, and contact queries while keeping CUDA, FCL, Python, and full adaptive backend work optional or future-facing.
+AdaSDF-CL is an alpha collision and contact library built around signed distance fields. It provides an FCL-style API for distance, collision, and contact queries while keeping CUDA, FCL, native Python bindings, and full adaptive backend work optional or future-facing.
 
 AdaSDF-CL is an FCL-style SDF collision backend under development. It complements FCL by providing signed-distance queries, penetration depth, contact normals, batch query, expanded-SDF quality audit and CUDA query paths. It is not a drop-in FCL replacement.
 
-v1.8.0-alpha adds surrogate-guided build recommendation for public core-free
+v1.8.1-alpha adds a lightweight pure-Python CLI wrapper under
+`python/adasdf_cli`. The wrapper calls installed AdaSDF-CL command-line tools
+through `subprocess`, returns dataclass results, supports dry-run command
+preview, and uses only the Python standard library. It is not a native
+pybind11 binding or C++ extension module.
+
+v1.8.0-alpha added surrogate-guided build recommendation for public core-free
 STL workflows. `adasdf_recommend_build` can recommend DenseSDF,
 AdaptiveBlockSDF, or CompressedAdaptiveBlockSDF parameters from an STL, target
 near-surface error, memory budget, and use case. The recommender is
@@ -26,9 +32,9 @@ CPU-only builds remain fully usable.
 
 The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`, `v1.1.0-alpha`,
 `v1.1.1-alpha`, `v1.2.0-alpha`, `v1.3.0-alpha`, `v1.4.0-alpha`,
-`v1.5.0-alpha`, `v1.6.0-alpha`, and `v1.7.0-alpha` tags are
+`v1.5.0-alpha`, `v1.6.0-alpha`, `v1.7.0-alpha`, and `v1.8.0-alpha` tags are
 retained for traceability. The recommended public pre-release is
-`v1.8.0-alpha`.
+`v1.8.1-alpha`.
 
 ## What Is AdaSDF-CL?
 
@@ -63,6 +69,8 @@ collision engine and does not yet replace FCL.
 | Compressed block `.sdfbin` read/write | Implemented |
 | Surrogate-guided build recommendation | Implemented / experimental |
 | `adasdf_recommend_build` | Implemented |
+| Python CLI wrapper | Implemented |
+| Native Python / pybind11 binding | Planned |
 | Adaptive compressed builder interface preview | Planning tool / implemented matrix-SVD status |
 | Existing-core sampled expansion bridge | Existing-core only / partial |
 | Trained surrogate model integration | Planned |
@@ -94,6 +102,56 @@ Detailed capability references:
 - `docs/surrogate_guided_recommendation.md`
 - `docs/recommended_build_workflow.md`
 - `docs/recommendation_profiles.md`
+- `docs/python_cli_wrapper.md`
+
+## Python CLI Wrapper
+
+v1.8.1-alpha adds a source-tree Python package:
+
+```python
+import adasdf_cli as adasdf
+
+adasdf.mesh_check("model.stl", readiness=True, out="mesh_report.md")
+
+rec = adasdf.recommend_build(
+    "model.stl",
+    target_error=1e-3,
+    memory_mb=512,
+    use_case="contact",
+    out="recommendation.md",
+)
+print(rec.recommended_command)
+
+adasdf.build_compressed_sdf(
+    "model.stl",
+    "model_compressed.sdfbin",
+    target_error=1e-3,
+    max_level=4,
+    block_resolution=8,
+    max_rank=8,
+)
+
+q = adasdf.query("model_compressed.sdfbin", point=[0, 0, 0])
+print(q.phi)
+```
+
+After building or installing AdaSDF-CL tools:
+
+```bash
+set ADASDF_BIN=C:\path\to\install\bin
+set PYTHONPATH=C:\path\to\AdaSDF-CL\python
+```
+
+On Linux/macOS:
+
+```bash
+export ADASDF_BIN=/path/to/install/bin
+export PYTHONPATH=/path/to/AdaSDF-CL/python
+```
+
+Every helper also accepts `bin_dir=` and `dry_run=True`. The wrapper is a
+subprocess-based convenience layer. It is not pybind11, not a native Python
+binding, and not a C++ extension module. Native Python bindings remain planned.
 
 ## Surrogate-Guided Build Recommendation
 
@@ -130,7 +188,7 @@ universal trained model, not fully trained, and not an optimality guarantee.
 ```bash
 git clone https://github.com/hongyuanzhang357-glitch/AdaSDF-CL.git
 cd AdaSDF-CL
-git checkout v1.8.0-alpha
+git checkout v1.8.1-alpha
 
 cmake -S . -B build -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD_TESTS=ON -DADASDF_CL_BUILD_BENCHMARKS=ON
 cmake --build build --config Release
@@ -165,6 +223,10 @@ install/bin/adasdf_collide_boxes_demo --target-error 1e-3 --memory-mb 64 --offse
 install/bin/adasdf_query_mode_demo --backend cpu --expansion none --points 100000
 install/bin/adasdf_query_mode_demo --backend cuda --expansion global --points 100000
 install/bin/adasdf_benchmark_batch_query --points 1000000 --query-backend cuda --expansion global --output phi --kernel-only --reuse-resident --warmup 10 --repeat 50 --out benchmark.csv
+
+set ADASDF_BIN=%CD%\install\bin
+set PYTHONPATH=%CD%\python
+python -m unittest discover -s python/tests
 ```
 
 ## Clone-Only Demo Workflow

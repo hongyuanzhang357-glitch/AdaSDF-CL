@@ -86,7 +86,10 @@ only, Planned, Not implemented.
 | Integration | CMake install/export | Implemented | v0.7 | install targets | Public package. |
 | Integration | `find_package(AdaSDFCL CONFIG REQUIRED)` | Implemented | v0.7 | downstream CMake | Tested. |
 | Integration | downstream CMake example | Implemented | v0.7 | `examples/downstream_cmake_project` | No-input demo path. |
-| Integration | Python binding | Planned | - | `PythonBindingPlan` | Plan only. |
+| Integration | Python CLI wrapper | Implemented | v1.8.1 | `python/adasdf_cli` | Pure-Python subprocess wrapper over installed CLI tools; not pybind11. |
+| Integration | Python package distribution | Partial | v1.8.1 | `python/pyproject.toml` | Supports source-tree use and editable install; no pip release in v1.8.1. |
+| Integration | Native Python / pybind11 binding | Planned | - | `PythonBindingPlan` | Not implemented. |
+| Integration | C API | Planned | - | - | Not implemented. |
 | Integration | ROS / MoveIt | Planned | - | - | Not implemented. |
 | Integration | FCL fallback backend | Planned | - | - | Not implemented. |
 | Integration | FCL adapter | Partial | v0.3 | `FCLAdapter` | API shape only. |

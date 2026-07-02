@@ -1,12 +1,13 @@
 # Alpha Status
 
-AdaSDF-CL 1.8.0-alpha is a research-preview release candidate.
+AdaSDF-CL 1.8.1-alpha is a research-preview release candidate.
 
 The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`,
 `v1.1.0-alpha`, `v1.1.1-alpha`, `v1.2.0-alpha`, `v1.3.0-alpha`,
-`v1.4.0-alpha`, `v1.5.0-alpha`, `v1.6.0-alpha`, and `v1.7.0-alpha` tags are
+`v1.4.0-alpha`, `v1.5.0-alpha`, `v1.6.0-alpha`, `v1.7.0-alpha`, and
+`v1.8.0-alpha` tags are
 retained for traceability. The recommended public pre-release is
-`v1.8.0-alpha`.
+`v1.8.1-alpha`.
 
 ## What Works
 
@@ -68,6 +69,11 @@ retained for traceability. The recommended public pre-release is
   and use case.
 - Markdown and JSON-like build recommendation reports with candidate tables,
   confidence, warnings, rationale, and copyable CLI commands.
+- Pure-Python `adasdf_cli` wrapper for installed command-line tools.
+- Python wrapper helpers for mesh check, cleanup, recommendation, SDF builds,
+  info, query, collide, expansion quality, benchmark, and small workflows.
+- Python wrapper dataclass results, dry-run previews, best-effort parsers, and
+  unittest coverage.
 - `AdaptiveSDFBuilderPreview` and `adasdf_build_adaptive_sdf_preview` dry-run
   planning for low-rank compressed construction.
 - Project-generated STL diagnostics and cleanup fixtures.
@@ -136,6 +142,11 @@ a build command. It is deterministic and heuristic-calibrated, not a universal
 trained model, not fully trained, and not an optimality guarantee. It does not
 run the build by default.
 
+v1.8.1-alpha is a Python CLI wrapper release. It provides a pure-Python
+subprocess wrapper over installed AdaSDF-CL CLI tools. It is not pybind11, not a
+native Python binding, and not a C++ extension module. Native Python bindings
+remain planned.
+
 Benchmark `total_ms` is a full query timing. Benchmark `kernel_ms` is CUDA
 kernel event timing. Original UI warmed kernel-average numbers should be
 compared to `--kernel-only --output phi --reuse-resident` rows.
@@ -148,15 +159,17 @@ analysis.
 ## Validation Snapshot
 
 - Expected tests: 101.
+- Expected Python wrapper unittest: PASS, with real CLI smoke enabled when
+  `ADASDF_BIN` and `ADASDF_TEST_STL` are set.
 - Expected install validation: PASS with `ADASDF_CL_USE_EXISTING_CORE=OFF`.
 - Expected alpha validation: PASS.
 - Expected clean check: PASS.
 - Target external collision test verdict for v0.9.0-alpha: PASS for the demo
   adaptive workflow.
 - Expected CUDA-unavailable behavior: GPU benchmark/tests SKIPPED, not FAILED.
-- Current v1.8.0-alpha local CPU CTest target: 101/101 PASS.
-- Current v1.8.0-alpha CUDA validation is optional and should skip gracefully
+- Current v1.8.1-alpha local CPU CTest target: 101/101 PASS.
+- Current v1.8.1-alpha CUDA validation is optional and should skip gracefully
   when CUDA is unavailable.
-- Current v1.8.0-alpha install validation target: PASS.
-- Current v1.8.0-alpha alpha validation target: PASS with install validation.
-- Current v1.8.0-alpha clean check target: PASS.
+- Current v1.8.1-alpha install validation target: PASS.
+- Current v1.8.1-alpha alpha validation target: PASS with install validation.
+- Current v1.8.1-alpha clean check target: PASS.

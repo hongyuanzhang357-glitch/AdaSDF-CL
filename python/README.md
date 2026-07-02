@@ -1,16 +1,112 @@
-# AdaSDF-CL Python Plan
+# AdaSDF-CL Python CLI Wrapper
 
-The Python package is intentionally not implemented in the first pass. The planned binding layer should wrap the stable C++ API after CPU `.sdfbin` loading and query paths are connected.
+`adasdf_cli` is a lightweight, pure-Python wrapper around installed AdaSDF-CL
+command-line tools. It is subprocess-based. It is not a native pybind11 binding,
+not a C++ extension module, and not a replacement for the C++ API.
 
-Planned modules:
+## Requirements
 
-- `adasdf.io`: load and save `.sdfbin` assets.
-- `adasdf.geometry`: `SDFModel`, `CollisionObject`, and transforms.
-- `adasdf.query`: collision, distance, contact, and batch APIs.
-- `adasdf.cuda`: optional GPU batch-query helpers.
+- Python 3.9 or newer.
+- Installed or built AdaSDF-CL CLI tools.
+- No required runtime dependencies beyond the Python standard library.
 
-Binding notes:
+## Use With PYTHONPATH
 
-- Prefer NumPy-compatible buffers for batched query points and contacts.
-- Do not require CUDA to import the CPU package.
-- Keep file-format compatibility tests shared with C++.
+```bash
+set ADASDF_BIN=C:\path\to\adasdf-cl\install\bin
+set PYTHONPATH=C:\path\to\AdaSDF-CL\python
+```
+
+On Linux/macOS:
+
+```bash
+export ADASDF_BIN=/path/to/adasdf-cl/install/bin
+export PYTHONPATH=/path/to/AdaSDF-CL/python
+```
+
+You can also pass `bin_dir=` to each helper.
+
+## Editable Install
+
+Editable install is optional:
+
+```bash
+python -m pip install -e python
+```
+
+## Example
+
+```python
+import adasdf_cli as adasdf
+
+adasdf.mesh_check("model.stl", readiness=True, out="mesh_report.md")
+
+rec = adasdf.recommend_build(
+    "model.stl",
+    target_error=1e-3,
+    memory_mb=512,
+    use_case="contact",
+    out="recommendation.md",
+)
+print(rec.recommended_command)
+
+adasdf.build_compressed_sdf(
+    "model.stl",
+    "model_compressed.sdfbin",
+    target_error=1e-3,
+    max_level=4,
+    block_resolution=8,
+    max_rank=8,
+)
+
+q = adasdf.query("model_compressed.sdfbin", point=[0, 0, 0])
+print(q.phi)
+```
+
+## Dry Run
+
+Every helper supports `dry_run=True`. The command is returned without executing:
+
+```python
+cmd = adasdf.build_compressed_sdf(
+    "model.stl",
+    "model.sdfbin",
+    target_error=1e-3,
+    dry_run=True,
+)
+print(cmd.command_result.stdout)
+```
+
+## Error Handling
+
+All helpers return dataclasses that preserve `stdout`, `stderr`, `returncode`,
+and the command list. With the default `check=True`, non-zero CLI exits raise
+`AdaSDFCommandError` containing the command, return code, and output previews.
+Use `check=False` to inspect failed commands manually.
+
+## API Surface
+
+- `capabilities`
+- `mesh_check`
+- `mesh_clean`
+- `recommend_build`
+- `build_dense_sdf`
+- `build_adaptive_sdf`
+- `compress_adaptive_sdf`
+- `build_compressed_sdf`
+- `info`
+- `query`
+- `collide`
+- `expansion_quality`
+- `benchmark_batch_query`
+- `recommend_then_build_compressed`
+- `preprocess_and_build_compressed`
+
+## Limitations
+
+This wrapper requires installed AdaSDF-CL CLI tools and follows their command
+line behavior. It is not a native Python binding and does not expose in-process
+C++ objects. `adasdf.query()` wraps the current single-point `adasdf_query`
+CLI, so backend, expansion, block selection, and output-mode controls are not
+accepted there yet. Use `benchmark_batch_query()` for batch-query benchmark
+CLI coverage. Native pybind11 bindings and a C API remain planned work.

@@ -20,6 +20,7 @@ replacement.
 - Compression quality audit and dense fallback blocks.
 - Experimental deterministic build recommender for DenseSDF, AdaptiveBlockSDF,
   and CompressedAdaptiveBlockSDF parameters.
+- Pure-Python subprocess wrapper for installed CLI tools.
 - Adaptive builder preview for future Tucker/trained-surrogate/GPU compressed
   stages.
 
@@ -37,6 +38,8 @@ replacement.
 - Universal trained build recommender.
 - Fully trained recommendation model.
 - Complete GPU contact solver.
+- Native Python binding.
+- pybind11 binding in v1.8.1.
 
 ## Short Description
 
@@ -46,7 +49,8 @@ expanded-SDF quality audits, optional CUDA expanded-query paths, STL mesh
 diagnostics, SDF build readiness scoring, safe mesh cleanup, and a public
 uniform DenseSDF builder, a public adaptive octree/block SDF builder, and a
 public matrix-SVD compressed adaptive block SDF builder. v1.8 adds a
-deterministic recommend-then-build parameter recommendation path. It does not
+deterministic recommend-then-build parameter recommendation path. v1.8.1 adds
+a pure-Python subprocess wrapper for the installed CLI tools. It does not
 fill holes, repair self-intersections, implement Tucker/HOSVD compression,
 claim a universal trained recommender, guarantee optimal parameters, or claim
-GPU-native compressed query.
+GPU-native compressed query, and it does not provide a native pybind11 binding.
