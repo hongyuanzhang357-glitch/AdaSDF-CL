@@ -1,13 +1,12 @@
 # Alpha Status
 
-AdaSDF-CL 1.9.0-alpha is a research-preview release candidate.
+AdaSDF-CL 1.10.0-alpha is a research-preview release candidate.
 
 The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`,
 `v1.1.0-alpha`, `v1.1.1-alpha`, `v1.2.0-alpha`, `v1.3.0-alpha`,
 `v1.4.0-alpha`, `v1.5.0-alpha`, `v1.6.0-alpha`, `v1.7.0-alpha`,
-`v1.8.0-alpha`, and `v1.8.1-alpha` tags are
-retained for traceability. The recommended public pre-release is
-`v1.9.0-alpha`.
+`v1.8.0-alpha`, `v1.8.1-alpha`, and `v1.9.0-alpha` tags are retained for
+traceability. The recommended public pre-release is `v1.10.0-alpha`.
 
 ## What Works
 
@@ -62,8 +61,8 @@ retained for traceability. The recommended public pre-release is
 - Compressed SDF query, collision, expansion quality, and benchmark model
   loading.
 - `MeshFeatureExtractor`, `BuildSurrogateEstimator`, `SurrogateProfile`,
-  `BuildRecommender`, and `BuildRecommendationWriter` for deterministic
-  build recommendation.
+  `BuildRecommender`, and `BuildRecommendationWriter` for deterministic build
+  recommendation.
 - `adasdf_recommend_build` for recommending DenseSDF, AdaptiveBlockSDF, or
   CompressedAdaptiveBlockSDF commands from STL, target error, memory budget,
   and use case.
@@ -82,10 +81,20 @@ retained for traceability. The recommended public pre-release is
 - Collision-only early-exit sparse query.
 - `ContactCandidateReducer` for deterministic Top-K candidate selection and
   optional `reduction_radius`.
-- `adasdf_sparse_query`, `adasdf_sparse_collide`,
-  `adasdf_contact_candidates`, and `adasdf_benchmark_sparse_query`.
+- `adasdf_sparse_query`, `adasdf_sparse_collide`, `adasdf_contact_candidates`,
+  and `adasdf_benchmark_sparse_query`.
 - Python wrapper helpers for sparse query, sparse collision, contact
   candidates, and sparse benchmarking.
+- `ActiveBlockSelector` for deterministic contact-aware active block id
+  selection from sparse samples or explicit block ids.
+- `ActiveExpandedBlock`, `ExpandedBlockCache`, and `BlockExpansionManager` for
+  CPU local block expansion and deterministic LRU cache residency.
+- `ActiveBlockQuery` for querying selected expanded local blocks with
+  cache/fallback source reporting.
+- `adasdf_select_active_blocks`, `adasdf_active_block_query`, and
+  `adasdf_benchmark_block_cache`.
+- Python wrapper helpers for active block selection, active block query, and
+  block cache benchmarking.
 - `AdaptiveSDFBuilderPreview` and `adasdf_build_adaptive_sdf_preview` dry-run
   planning for low-rank compressed construction.
 - Project-generated STL diagnostics and cleanup fixtures.
@@ -166,8 +175,15 @@ collision detected, not failure. Contact candidates are Top-K reduced
 candidates for contact budgets, not full solver contacts and not a complete
 contact manifold. Direct compressed query is useful for sparse queries,
 debugging, fallback, and small point sets, but not the main high-throughput GPU
-path. Runtime memory saving for compressed SDF should primarily come from
-contact-aware active block expansion/cache, planned for v1.10.
+path.
+
+v1.10.0-alpha is a CPU active block cache release. It selects local adaptive or
+compressed blocks near sparse/contact samples, expands only those blocks, and
+reuses the dense local blocks through a deterministic CPU cache. This is the
+intended runtime memory-saving path for compressed SDF contact workflows. It is
+not CUDA active block residency, not GPU block upload, not GPU-native
+compressed query, not FCL fallback, not `CollisionWorld`, and not a complete
+contact solver. CUDA active block cache is planned for v1.11.
 
 Benchmark `total_ms` is a full query timing. Benchmark `kernel_ms` is CUDA
 kernel event timing. Original UI warmed kernel-average numbers should be
@@ -180,7 +196,7 @@ analysis.
 
 ## Validation Snapshot
 
-- Expected tests: 111.
+- Expected tests: 121.
 - Expected Python wrapper unittest: PASS, with real CLI smoke enabled when
   `ADASDF_BIN`, `ADASDF_TEST_STL`, and `ADASDF_TEST_SAMPLES` are set.
 - Expected install validation: PASS with `ADASDF_CL_USE_EXISTING_CORE=OFF`.
@@ -189,9 +205,10 @@ analysis.
 - Target external collision test verdict for v0.9.0-alpha: PASS for the demo
   adaptive workflow.
 - Expected CUDA-unavailable behavior: GPU benchmark/tests SKIPPED, not FAILED.
-- Current v1.9.0-alpha local CPU CTest target: 111/111 PASS.
-- Current v1.9.0-alpha CUDA validation is optional and should skip gracefully
+- Current v1.10.0-alpha local CPU CTest target: 121/121 PASS.
+- Current v1.10.0-alpha CUDA validation is optional and should skip gracefully
   when CUDA is unavailable.
-- Current v1.9.0-alpha install validation target: PASS.
-- Current v1.9.0-alpha alpha validation target: PASS with install validation.
-- Current v1.9.0-alpha clean check target: PASS.
+- Current v1.10.0-alpha Python wrapper unittest target: 31/31 PASS.
+- Current v1.10.0-alpha install validation target: PASS.
+- Current v1.10.0-alpha alpha validation target: PASS with install validation.
+- Current v1.10.0-alpha clean check target: PASS.

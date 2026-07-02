@@ -47,9 +47,12 @@ python -m pip install -e python
 - `sparse_query`
 - `sparse_collide`
 - `contact_candidates`
+- `select_active_blocks`
+- `active_block_query`
 - `expansion_quality`
 - `benchmark_batch_query`
 - `benchmark_sparse_query`
+- `benchmark_block_cache`
 - `recommend_then_build_compressed`
 - `preprocess_and_build_compressed`
 
@@ -97,6 +100,15 @@ cand = adasdf.contact_candidates(
     reduction_radius=0.02,
 )
 print(cand.candidate_count)
+
+active = adasdf.active_block_query(
+    "model_compressed.sdfbin",
+    "samples.csv",
+    threshold=0.0,
+    selection_band=1e-3,
+    out="active_query.csv",
+)
+print(active.colliding)
 ```
 
 ## Dry Run
@@ -118,6 +130,10 @@ Helpers return dataclasses that preserve:
 - stdout;
 - stderr;
 - elapsed time.
+
+`active_block_query` treats return code `10` as success with
+`colliding=True`, matching the CLI convention that code `10` means a collision
+was detected.
 
 With `check=True`, a non-zero CLI return code raises `AdaSDFCommandError`.
 With `check=False`, the result is returned for manual inspection.

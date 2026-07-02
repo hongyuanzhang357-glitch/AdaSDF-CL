@@ -60,6 +60,12 @@
   `adasdf_contact_candidates`, and `adasdf_benchmark_sparse_query`.
 - Python wrappers for sparse query, sparse collision, contact candidates, and
   sparse benchmarking.
+- Contact-aware active block selection for adaptive/compressed block SDFs.
+- CPU active expanded-block cache for local compressed SDF runtime queries.
+- `adasdf_select_active_blocks`, `adasdf_active_block_query`, and
+  `adasdf_benchmark_block_cache`.
+- Python wrappers for active block selection, active block query, and block
+  cache benchmarking.
 - Markdown and JSON-like mesh diagnostics reports.
 - Before/after cleanup diagnostics and readiness reports.
 - `adasdf_mesh_check` CLI, `adasdf_mesh_clean` CLI, CPU-only mesh diagnostics
@@ -94,10 +100,12 @@
   and editable install, but no pip release is performed.
 - Direct compressed sparse query: useful for sparse queries, debugging,
   fallback, and small point sets, but not the main high-throughput GPU path.
+- Active block cache: implemented on CPU in v1.10. CUDA active block residency
+  remains planned.
 
 ## Planned
 
-- Contact-aware active block expansion/cache for runtime memory savings.
+- CUDA active block expansion/cache for runtime memory savings.
 - Tucker/HOSVD compression.
 - Trained surrogate model integration.
 - Online recommendation calibration.

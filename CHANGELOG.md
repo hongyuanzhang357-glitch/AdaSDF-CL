@@ -1,5 +1,41 @@
 # Changelog
 
+## 1.10.0-alpha
+
+Contact-aware active block expansion and CPU expanded-block cache.
+
+### Added
+
+- `ActiveBlockSelector` for sparse contact-aware block id selection.
+- `ActiveExpandedBlock` runtime block type.
+- `ExpandedBlockCache` with LRU residency and memory statistics.
+- `BlockExpansionManager` for one-time adaptive/compressed block expansion.
+- `ActiveBlockQuery` with cache/fallback source reporting.
+- `ActiveBlockReportWriter` for CSV, Markdown, and JSON-like output.
+- `adasdf_select_active_blocks` CLI.
+- `adasdf_active_block_query` CLI.
+- `adasdf_benchmark_block_cache` CLI.
+- Python wrappers for active block selection, active block query, and block
+  cache benchmarking.
+- Active block cache tests and validation script coverage.
+
+### Changed
+
+- Version updated to `1.10.0-alpha`.
+- Validation scripts now exercise active block CLI tools.
+- Capability, query backend, runtime memory, and Python wrapper docs now
+  document active block cache as implemented.
+
+### Notes
+
+- v1.10 implements CPU active block cache.
+- CUDA active block cache remains planned.
+- GPU-native compressed SDF query remains planned.
+- `adasdf_active_block_query` return code `10` means collision detected; it is
+  not a program failure.
+- The active cache expands selected local blocks and does not perform global
+  expansion.
+
 ## 1.9.0-alpha
 
 Sparse SDF collision query and contact candidate API.

@@ -36,5 +36,5 @@ on demand.
 
 The main runtime memory advantage of compressed SDF should come from expanding
 only active blocks near contact or query regions rather than globally expanding
-the entire model. Contact-aware active block expansion/cache is planned for
-v1.10.
+the entire model. v1.10 implements this as a CPU active block cache; CUDA active
+block residency remains planned.

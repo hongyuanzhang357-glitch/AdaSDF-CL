@@ -455,6 +455,13 @@ def main() -> int:
     sparse_candidates_csv = build.parent / "install_validation_contact_candidates.csv"
     sparse_candidates_report = build.parent / "install_validation_contact_candidates.md"
     sparse_benchmark_csv = build.parent / "install_validation_sparse_benchmark.csv"
+    active_blocks_csv = build.parent / "install_validation_active_blocks.csv"
+    active_blocks_report = build.parent / "install_validation_active_blocks.md"
+    active_blocks_json = build.parent / "install_validation_active_blocks.json"
+    active_query_csv = build.parent / "install_validation_active_block_query.csv"
+    active_query_report = build.parent / "install_validation_active_block_query.md"
+    block_cache_benchmark_csv = build.parent / "install_validation_block_cache_benchmark.csv"
+    block_cache_benchmark_report = build.parent / "install_validation_block_cache_benchmark.md"
     recommendation_md = build.parent / "install_validation_recommendation.md"
     recommendation_json = build.parent / "install_validation_recommendation.json"
     adaptive_dryrun_sdfbin = build.parent / "install_validation_adaptive_dryrun.sdfbin"
@@ -480,6 +487,9 @@ def main() -> int:
         "adasdf_sparse_collide",
         "adasdf_contact_candidates",
         "adasdf_benchmark_sparse_query",
+        "adasdf_select_active_blocks",
+        "adasdf_active_block_query",
+        "adasdf_benchmark_block_cache",
         "adasdf_build_adaptive_sdf_preview",
     ]
     dense_tools: dict[str, Path] = {}
@@ -758,6 +768,66 @@ def main() -> int:
             ],
         ),
         (
+            "Installed Active Block Selection CLI",
+            [
+                str(dense_tools["adasdf_select_active_blocks"]),
+                str(compressed_direct_sdfbin),
+                str(sample_fixture),
+                "--threshold",
+                "1.0",
+                "--selection-band",
+                "0.1",
+                "--extra-margin",
+                "0.02",
+                "--out",
+                str(active_blocks_csv),
+                "--report",
+                str(active_blocks_report),
+                "--json",
+                str(active_blocks_json),
+            ],
+        ),
+        (
+            "Installed Active Block Query CLI",
+            [
+                str(dense_tools["adasdf_active_block_query"]),
+                str(compressed_direct_sdfbin),
+                str(sample_fixture),
+                "--threshold",
+                "1.0",
+                "--selection-band",
+                "0.1",
+                "--extra-margin",
+                "0.02",
+                "--with-normal",
+                "--out",
+                str(active_query_csv),
+                "--report",
+                str(active_query_report),
+            ],
+        ),
+        (
+            "Installed Active Block Cache Benchmark CLI",
+            [
+                str(dense_tools["adasdf_benchmark_block_cache"]),
+                str(compressed_direct_sdfbin),
+                str(sample_fixture),
+                "--repeat",
+                "2",
+                "--warmup",
+                "1",
+                "--threshold",
+                "1.0",
+                "--selection-band",
+                "0.1",
+                "--compare-direct",
+                "--csv",
+                str(block_cache_benchmark_csv),
+                "--report",
+                str(block_cache_benchmark_report),
+            ],
+        ),
+        (
             "Installed AdaptiveBlockSDF Dry Run CLI",
             [
                 str(dense_tools["adasdf_build_adaptive_sdf"]),
@@ -795,6 +865,12 @@ def main() -> int:
             result.returncode = 0
             result.output += (
                 "\nValidation note: sparse_collide returned 10, which means "
+                "collision detected and is expected for this fixture.\n"
+            )
+        if name == "Installed Active Block Query CLI" and result.returncode == 10:
+            result.returncode = 0
+            result.output += (
+                "\nValidation note: active_block_query returned 10, which means "
                 "collision detected and is expected for this fixture.\n"
             )
         results.append(result)
@@ -995,6 +1071,63 @@ def main() -> int:
             ):
                 result.returncode = 1
                 result.output += "\nValidation failed: installed sparse benchmark output is incomplete.\n"
+        elif name == "Installed Active Block Selection CLI":
+            csv_text = (
+                active_blocks_csv.read_text(encoding="utf-8", errors="replace")
+                if active_blocks_csv.exists()
+                else ""
+            )
+            report_text = (
+                active_blocks_report.read_text(encoding="utf-8", errors="replace")
+                if active_blocks_report.exists()
+                else ""
+            )
+            if (
+                not active_blocks_csv.exists()
+                or not active_blocks_report.exists()
+                or not active_blocks_json.exists()
+                or "Active blocks:" not in result.output
+                or "block_id" not in csv_text.splitlines()[0]
+                or "Active Block Selection Report" not in report_text
+            ):
+                result.returncode = 1
+                result.output += "\nValidation failed: installed active block selection output is incomplete.\n"
+        elif name == "Installed Active Block Query CLI":
+            csv_text = (
+                active_query_csv.read_text(encoding="utf-8", errors="replace")
+                if active_query_csv.exists()
+                else ""
+            )
+            report_text = (
+                active_query_report.read_text(encoding="utf-8", errors="replace")
+                if active_query_report.exists()
+                else ""
+            )
+            if (
+                not active_query_csv.exists()
+                or not active_query_report.exists()
+                or "Status: ok" not in result.output
+                or "Colliding: true" not in result.output
+                or "source" not in csv_text.splitlines()[0]
+                or "Active Block Query Report" not in report_text
+            ):
+                result.returncode = 1
+                result.output += "\nValidation failed: installed active block query output is incomplete.\n"
+        elif name == "Installed Active Block Cache Benchmark CLI":
+            csv_text = (
+                block_cache_benchmark_csv.read_text(encoding="utf-8", errors="replace")
+                if block_cache_benchmark_csv.exists()
+                else ""
+            )
+            if (
+                not block_cache_benchmark_csv.exists()
+                or not block_cache_benchmark_report.exists()
+                or "Average ns per sample:" not in result.output
+                or "active_block_avg_ms" not in csv_text.splitlines()[0]
+                or "direct_avg_ms" not in csv_text.splitlines()[0]
+            ):
+                result.returncode = 1
+                result.output += "\nValidation failed: installed block cache benchmark output is incomplete.\n"
         elif name == "Installed AdaptiveBlockSDF Dry Run CLI":
             if (
                 adaptive_dryrun_sdfbin.exists()

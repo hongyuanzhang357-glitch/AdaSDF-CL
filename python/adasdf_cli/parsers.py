@@ -148,3 +148,17 @@ def parse_sparse_benchmark_metrics(stdout: str) -> Dict[str, object]:
         elif line.startswith("Average ns per sample:"):
             metrics["avg_ns_per_sample"] = line.split(":", 1)[1].strip()
     return metrics
+
+
+def parse_block_cache_benchmark_metrics(stdout: str) -> Dict[str, object]:
+    metrics: Dict[str, object] = {}
+    for line in (stdout or "").splitlines():
+        if line.startswith("Active block cache benchmark mode:"):
+            metrics["mode"] = line.split(":", 1)[1].strip()
+        elif line.startswith("Average ns per sample:"):
+            metrics["avg_ns_per_sample"] = line.split(":", 1)[1].strip()
+        elif line.startswith("sample_count,"):
+            metrics["csv_header"] = line
+        elif metrics.get("csv_header") and "csv_values" not in metrics:
+            metrics["csv_values"] = line
+    return metrics

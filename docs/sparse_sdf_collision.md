@@ -57,3 +57,7 @@ Sparse collision is not FCL fallback, not `CollisionWorld`, not CCD, not a full
 contact manifold, and not a solver. Direct compressed query is useful for sparse
 queries, debugging, fallback, and small point sets. High-throughput GPU query
 still belongs to expanded or future active-block paths.
+
+For compressed SDF runtime memory savings, v1.10 adds a CPU active block cache
+that expands only local blocks selected from sparse samples or contact
+candidates. CUDA active block caching remains planned.

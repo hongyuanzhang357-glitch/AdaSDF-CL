@@ -22,6 +22,10 @@ and other point/sphere proxy sets. Candidate extraction is separate from full
 pair collision. It keeps a deterministic Top-K set so hard-contact solvers do
 not receive every penetrating sample.
 
+v1.10 adds CPU contact-aware active block expansion/cache for the same sparse
+sample and candidate workflows. It is a runtime memory strategy for compressed
+SDF queries, not a full contact manifold generator.
+
 | Contact field | Status | Source | Notes |
 | --- | --- | --- | --- |
 | contact point | Implemented | `Contact::point` | SDF candidate point pipeline. |

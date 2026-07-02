@@ -8,6 +8,7 @@ from typing import Iterable, List, Optional, Sequence, Union
 from .config import AdaSDFConfig, find_tool, preview_tool
 from .parsers import (
     parse_benchmark_metrics,
+    parse_block_cache_benchmark_metrics,
     parse_collision_colliding,
     parse_contact_count,
     parse_field_bool,
@@ -23,6 +24,9 @@ from .parsers import (
 )
 from .results import (
     BenchmarkResult,
+    ActiveBlockQueryResult,
+    ActiveBlockSelectionResult,
+    BlockCacheBenchmarkResult,
     BuildResult,
     CollisionResult,
     CommandResult,
@@ -587,6 +591,151 @@ def benchmark_sparse_query(
     return SparseBenchmarkResult(
         command_result=result,
         metrics=parse_sparse_benchmark_metrics(result.stdout),
+        report_path=Path(report) if report is not None else None,
+        json_path=Path(json) if json is not None else None,
+        csv_path=Path(csv) if csv is not None else None,
+    )
+
+
+def select_active_blocks(
+    model: PathLike,
+    samples_csv: PathLike,
+    *,
+    threshold: float = 0.0,
+    selection_band: float = 0.0,
+    extra_margin: float = 0.0,
+    use_radius: bool = True,
+    include_neighbors: bool = True,
+    query_phi_for_selection: bool = True,
+    max_active_blocks: Optional[int] = None,
+    out: Optional[PathLike] = None,
+    report: Optional[PathLike] = None,
+    json: Optional[PathLike] = None,
+    bin_dir: Optional[PathLike] = None,
+    check: bool = True,
+    dry_run: bool = False,
+) -> ActiveBlockSelectionResult:
+    command = [_tool("adasdf_select_active_blocks", bin_dir, dry_run), _path(model), _path(samples_csv)]
+    _append_value(command, "--threshold", threshold)
+    _append_value(command, "--selection-band", selection_band)
+    _append_value(command, "--extra-margin", extra_margin)
+    _append_bool(command, "--no-radius", not use_radius)
+    _append_bool(command, "--no-neighbors", not include_neighbors)
+    _append_bool(command, "--no-phi-selection", not query_phi_for_selection)
+    _append_value(command, "--max-active-blocks", max_active_blocks)
+    _append_value(command, "--out", _path(out) if out is not None else None)
+    _append_value(command, "--report", _path(report) if report is not None else None)
+    _append_value(command, "--json", _path(json) if json is not None else None)
+    result = _run(command, check=check, dry_run=dry_run)
+    return ActiveBlockSelectionResult(
+        command_result=result,
+        active_block_count=parse_field_int(result.stdout, "Active blocks"),
+        candidate_sample_count=parse_field_int(result.stdout, "Candidate samples"),
+        output_path=Path(out) if out is not None else None,
+        report_path=Path(report) if report is not None else None,
+        json_path=Path(json) if json is not None else None,
+    )
+
+
+def active_block_query(
+    model: PathLike,
+    samples_csv: PathLike,
+    *,
+    threshold: float = 0.0,
+    selection_band: float = 0.0,
+    extra_margin: float = 0.0,
+    with_normal: bool = False,
+    early_exit: bool = False,
+    use_radius: bool = True,
+    include_neighbors: bool = True,
+    fallback: bool = True,
+    include_non_colliding: bool = True,
+    sort: bool = False,
+    cache_max_blocks: Optional[int] = None,
+    cache_max_mb: Optional[float] = None,
+    out: Optional[PathLike] = None,
+    report: Optional[PathLike] = None,
+    json: Optional[PathLike] = None,
+    bin_dir: Optional[PathLike] = None,
+    check: bool = True,
+    dry_run: bool = False,
+) -> ActiveBlockQueryResult:
+    command = [_tool("adasdf_active_block_query", bin_dir, dry_run), _path(model), _path(samples_csv)]
+    _append_value(command, "--threshold", threshold)
+    _append_value(command, "--selection-band", selection_band)
+    _append_value(command, "--extra-margin", extra_margin)
+    command.append("--with-normal" if with_normal else "--phi-only")
+    _append_bool(command, "--early-exit", early_exit)
+    _append_bool(command, "--no-radius", not use_radius)
+    _append_bool(command, "--no-neighbors", not include_neighbors)
+    _append_bool(command, "--no-fallback", not fallback)
+    _append_bool(command, "--colliding-only", not include_non_colliding)
+    _append_bool(command, "--sort", sort)
+    _append_value(command, "--cache-max-blocks", cache_max_blocks)
+    _append_value(command, "--cache-max-mb", cache_max_mb)
+    _append_value(command, "--out", _path(out) if out is not None else None)
+    _append_value(command, "--report", _path(report) if report is not None else None)
+    _append_value(command, "--json", _path(json) if json is not None else None)
+    result = run_command(command, check=False, dry_run=dry_run)
+    if check and result.returncode not in (0, 10):
+        raise AdaSDFCommandError(result.command, result.returncode, result.stdout, result.stderr)
+    return ActiveBlockQueryResult(
+        command_result=result,
+        colliding=True if result.returncode == 10 else parse_collision_colliding(result.stdout),
+        sample_count=parse_field_int(result.stdout, "Sample count"),
+        queried_count=parse_field_int(result.stdout, "Queried count"),
+        result_count=parse_field_int(result.stdout, "Result count"),
+        cache_query_count=parse_field_int(result.stdout, "Cache queries"),
+        fallback_query_count=parse_field_int(result.stdout, "Fallback queries"),
+        resident_blocks=parse_field_int(result.stdout, "Resident blocks"),
+        min_effective_phi=parse_field_float(result.stdout, "Min effective phi"),
+        output_path=Path(out) if out is not None else None,
+        report_path=Path(report) if report is not None else None,
+        json_path=Path(json) if json is not None else None,
+    )
+
+
+def benchmark_block_cache(
+    model: PathLike,
+    samples_csv: PathLike,
+    *,
+    repeat: int = 10,
+    warmup: int = 1,
+    mode: str = "phi-only",
+    threshold: float = 0.0,
+    selection_band: float = 0.0,
+    extra_margin: float = 0.0,
+    use_radius: bool = True,
+    include_neighbors: bool = True,
+    cache_max_blocks: Optional[int] = None,
+    cache_max_mb: Optional[float] = None,
+    compare_direct: bool = False,
+    report: Optional[PathLike] = None,
+    json: Optional[PathLike] = None,
+    csv: Optional[PathLike] = None,
+    bin_dir: Optional[PathLike] = None,
+    check: bool = True,
+    dry_run: bool = False,
+) -> BlockCacheBenchmarkResult:
+    command = [_tool("adasdf_benchmark_block_cache", bin_dir, dry_run), _path(model), _path(samples_csv)]
+    _append_value(command, "--repeat", repeat)
+    _append_value(command, "--warmup", warmup)
+    _append_value(command, "--mode", mode)
+    _append_value(command, "--threshold", threshold)
+    _append_value(command, "--selection-band", selection_band)
+    _append_value(command, "--extra-margin", extra_margin)
+    _append_bool(command, "--no-radius", not use_radius)
+    _append_bool(command, "--no-neighbors", not include_neighbors)
+    _append_value(command, "--cache-max-blocks", cache_max_blocks)
+    _append_value(command, "--cache-max-mb", cache_max_mb)
+    _append_bool(command, "--compare-direct", compare_direct)
+    _append_value(command, "--report", _path(report) if report is not None else None)
+    _append_value(command, "--json", _path(json) if json is not None else None)
+    _append_value(command, "--csv", _path(csv) if csv is not None else None)
+    result = _run(command, check=check, dry_run=dry_run)
+    return BlockCacheBenchmarkResult(
+        command_result=result,
+        metrics=parse_block_cache_benchmark_metrics(result.stdout),
         report_path=Path(report) if report is not None else None,
         json_path=Path(json) if json is not None else None,
         csv_path=Path(csv) if csv is not None else None,

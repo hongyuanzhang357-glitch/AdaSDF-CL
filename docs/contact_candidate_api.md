@@ -52,3 +52,7 @@ normal_x,normal_y,normal_z,object_id,link_id,group_id,label
 Hard-contact solvers are sensitive to constraint count. v1.9 therefore focuses
 on Top-K selection and deterministic reduction instead of passing every
 penetrating sample to a solver.
+
+In v1.10, those sparse samples or reduced candidates can also drive CPU active
+block selection through `ActiveBlockSelector`, allowing compressed SDF workflows
+to expand only local blocks before repeated queries.

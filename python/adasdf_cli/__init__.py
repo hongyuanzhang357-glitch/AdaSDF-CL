@@ -5,7 +5,10 @@ from __future__ import annotations
 from .config import AdaSDFConfig, default_config, find_tool
 from .exceptions import AdaSDFCommandError, AdaSDFError, AdaSDFParseWarning, AdaSDFToolNotFound
 from .results import (
+    ActiveBlockQueryResult,
+    ActiveBlockSelectionResult,
     BenchmarkResult,
+    BlockCacheBenchmarkResult,
     BuildResult,
     CollisionResult,
     CommandResult,
@@ -19,7 +22,9 @@ from .results import (
     SparseQueryResult,
 )
 from .tools import (
+    active_block_query,
     benchmark_batch_query,
+    benchmark_block_cache,
     benchmark_sparse_query,
     build_adaptive_sdf,
     build_compressed_sdf,
@@ -34,12 +39,13 @@ from .tools import (
     mesh_clean,
     query,
     recommend_build,
+    select_active_blocks,
     sparse_collide,
     sparse_query,
 )
 from .workflows import preprocess_and_build_compressed, recommend_then_build_compressed
 
-__version__ = "1.9.0-alpha"
+__version__ = "1.10.0-alpha"
 
 __all__ = [
     "AdaSDFConfig",
@@ -47,7 +53,10 @@ __all__ = [
     "AdaSDFError",
     "AdaSDFParseWarning",
     "AdaSDFToolNotFound",
+    "ActiveBlockQueryResult",
+    "ActiveBlockSelectionResult",
     "BenchmarkResult",
+    "BlockCacheBenchmarkResult",
     "BuildResult",
     "CollisionResult",
     "CommandResult",
@@ -59,7 +68,9 @@ __all__ = [
     "SparseBenchmarkResult",
     "SparseCollisionResult",
     "SparseQueryResult",
+    "active_block_query",
     "benchmark_batch_query",
+    "benchmark_block_cache",
     "benchmark_sparse_query",
     "build_adaptive_sdf",
     "build_compressed_sdf",
@@ -78,6 +89,7 @@ __all__ = [
     "query",
     "recommend_build",
     "recommend_then_build_compressed",
+    "select_active_blocks",
     "sparse_collide",
     "sparse_query",
 ]

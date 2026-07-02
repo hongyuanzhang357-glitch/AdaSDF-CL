@@ -25,6 +25,8 @@ replacement.
 - Collision-only early-exit query.
 - Sample-radius point/sphere proxy collision.
 - Top-K contact candidate reduction for hard-contact budgets.
+- Contact-aware CPU active block expansion/cache for compressed SDF runtime
+  memory savings.
 - Adaptive builder preview for future Tucker/trained-surrogate/GPU compressed
   stages.
 
@@ -47,6 +49,7 @@ replacement.
 - Full contact solver.
 - Complete contact manifold from sparse candidates.
 - GPU-native compressed direct query in v1.9.
+- CUDA active block cache in v1.10.
 
 ## Short Description
 
@@ -59,7 +62,8 @@ public matrix-SVD compressed adaptive block SDF builder. v1.8 adds a
 deterministic recommend-then-build parameter recommendation path. v1.8.1 adds
 a pure-Python subprocess wrapper for the installed CLI tools. v1.9 adds sparse
 point-to-SDF collision, collision-only early exit, sample-radius proxy
-collision, and Top-K contact candidate reduction. It does not fill holes,
+collision, and Top-K contact candidate reduction. v1.10 adds CPU active block
+expansion/cache for local compressed SDF query working sets. It does not fill holes,
 repair self-intersections, implement Tucker/HOSVD compression, claim a
 universal trained recommender, guarantee optimal parameters, claim GPU-native
 compressed query, provide a full contact solver, or provide a native pybind11

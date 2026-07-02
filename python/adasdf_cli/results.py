@@ -108,3 +108,38 @@ class SparseBenchmarkResult:
     report_path: Optional[Path] = None
     json_path: Optional[Path] = None
     csv_path: Optional[Path] = None
+
+
+@dataclass
+class ActiveBlockSelectionResult:
+    command_result: CommandResult
+    active_block_count: Optional[int] = None
+    candidate_sample_count: Optional[int] = None
+    output_path: Optional[Path] = None
+    report_path: Optional[Path] = None
+    json_path: Optional[Path] = None
+
+
+@dataclass
+class ActiveBlockQueryResult:
+    command_result: CommandResult
+    colliding: Optional[bool] = None
+    sample_count: Optional[int] = None
+    queried_count: Optional[int] = None
+    result_count: Optional[int] = None
+    cache_query_count: Optional[int] = None
+    fallback_query_count: Optional[int] = None
+    resident_blocks: Optional[int] = None
+    min_effective_phi: Optional[float] = None
+    output_path: Optional[Path] = None
+    report_path: Optional[Path] = None
+    json_path: Optional[Path] = None
+
+
+@dataclass
+class BlockCacheBenchmarkResult:
+    command_result: CommandResult
+    metrics: Dict[str, Any] = field(default_factory=dict)
+    report_path: Optional[Path] = None
+    json_path: Optional[Path] = None
+    csv_path: Optional[Path] = None

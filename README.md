@@ -2,7 +2,7 @@
 
 Adaptive Signed Distance Field Collision Library
 
-Status: 1.9.0-alpha / research preview
+Status: 1.10.0-alpha / research preview
 Build system: CMake
 License: MIT
 Tests: CTest
@@ -11,7 +11,13 @@ AdaSDF-CL is an alpha collision and contact library built around signed distance
 
 AdaSDF-CL is an FCL-style SDF collision backend under development. It complements FCL by providing signed-distance queries, penetration depth, contact normals, batch query, expanded-SDF quality audit and CUDA query paths. It is not a drop-in FCL replacement.
 
-v1.9.0-alpha adds sparse point-to-SDF collision queries and contact candidate
+v1.10.0-alpha adds contact-aware active block expansion and a CPU expanded
+block cache for compressed/adaptive SDF runtime queries. It selects local
+blocks from sparse samples, expands only those blocks, reports cache/fallback
+sources, and avoids global expansion when a contact workflow only needs a
+small local working set. CUDA active block cache remains planned.
+
+v1.9.0-alpha added sparse point-to-SDF collision queries and contact candidate
 extraction. Sparse query defaults to phi-only, collision-only mode supports
 early exit, sample radius uses `effective_phi = phi - radius`, and Top-K
 candidate reduction keeps hard-contact constraint budgets small. These
@@ -38,10 +44,10 @@ CPU-only builds remain fully usable.
 
 The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`, `v1.1.0-alpha`,
 `v1.1.1-alpha`, `v1.2.0-alpha`, `v1.3.0-alpha`, `v1.4.0-alpha`,
-`v1.5.0-alpha`, `v1.6.0-alpha`, `v1.7.0-alpha`, `v1.8.0-alpha`, and
-`v1.8.1-alpha` tags are
+`v1.5.0-alpha`, `v1.6.0-alpha`, `v1.7.0-alpha`, `v1.8.0-alpha`,
+`v1.8.1-alpha`, and `v1.9.0-alpha` tags are
 retained for traceability. The recommended public pre-release is
-`v1.9.0-alpha`.
+`v1.10.0-alpha`.
 
 ## What Is AdaSDF-CL?
 
@@ -82,6 +88,8 @@ collision engine and does not yet replace FCL.
 | Sample-radius collision proxy | Implemented |
 | Top-K contact candidate reduction | Implemented |
 | Sparse query benchmark | Implemented |
+| Contact-aware active block cache | Implemented |
+| Active block cache benchmark | Implemented |
 | Native Python / pybind11 binding | Planned |
 | Adaptive compressed builder interface preview | Planning tool / implemented matrix-SVD status |
 | Existing-core sampled expansion bridge | Existing-core only / partial |
@@ -119,6 +127,10 @@ Detailed capability references:
 - `docs/contact_candidate_api.md`
 - `docs/hard_contact_collision_budget.md`
 - `docs/sparse_query_benchmarking.md`
+- `docs/active_block_expansion_cache.md`
+- `docs/contact_aware_block_selection.md`
+- `docs/block_cache_benchmarking.md`
+- `docs/runtime_memory_strategy.md`
 
 ## Sparse SDF Collision And Contact Candidates
 
@@ -145,10 +157,32 @@ adasdf_benchmark_sparse_query model.sdfbin samples.csv \
 successful collision status, not a program failure.
 
 Direct compressed query can be useful for sparse queries, debugging, fallback,
-and small point sets. It is not the main high-throughput GPU path. The main
-runtime memory advantage for compressed SDF should come from expanding only
-active blocks near contact/query regions rather than globally expanding the
-entire model. Contact-aware active block expansion/cache is planned for v1.10.
+and small point sets. It is not the main high-throughput GPU path. v1.10 adds
+the CPU active block cache so contact workflows can expand only selected local
+blocks instead of globally expanding the entire model.
+
+## Active Block Expansion Cache
+
+```bash
+adasdf_select_active_blocks model.sdfbin samples.csv \
+  --threshold 0 \
+  --selection-band 1e-3 \
+  --out active_blocks.csv
+
+adasdf_active_block_query model.sdfbin samples.csv \
+  --threshold 0 \
+  --selection-band 1e-3 \
+  --with-normal \
+  --out active_query.csv
+
+adasdf_benchmark_block_cache model.sdfbin samples.csv \
+  --repeat 10 \
+  --compare-direct \
+  --csv block_cache_benchmark.csv
+```
+
+`adasdf_active_block_query` returns code `10` when collision is detected. That
+is a successful collision status, not a program failure.
 
 ## Python CLI Wrapper
 
@@ -251,7 +285,7 @@ universal trained model, not fully trained, and not an optimality guarantee.
 ```bash
 git clone https://github.com/hongyuanzhang357-glitch/AdaSDF-CL.git
 cd AdaSDF-CL
-git checkout v1.9.0-alpha
+git checkout v1.10.0-alpha
 
 cmake -S . -B build -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD_TESTS=ON -DADASDF_CL_BUILD_BENCHMARKS=ON
 cmake --build build --config Release
@@ -645,7 +679,7 @@ FCL-style SDF collision backend under development
 It complements FCL-style workflows with SDF-native signed-distance queries,
 penetration depth, contact normals, batch query, expanded-SDF quality audit, and
 optional CUDA expanded query. A true FCL fallback backend and hybrid mesh/SDF
-pipeline are planned, not implemented in v1.9.0-alpha.
+pipeline are planned, not implemented in v1.10.0-alpha.
 
 See `docs/fcl_complement_strategy.md` and `docs/public_positioning.md`.
 
@@ -658,16 +692,17 @@ See `docs/fcl_complement_strategy.md` and `docs/public_positioning.md`.
   safe cleanup, ASCII STL export, standalone uniform DenseSDF building,
   standalone adaptive octree/block dense SDF building, and matrix-SVD low-rank
   adaptive block compression, pure-Python CLI wrappers, and sparse SDF
-  collision/contact candidate APIs.
+  collision/contact candidate APIs, plus CPU contact-aware active block
+  expansion/cache.
 - Partial / experimental: demo surrogate, adaptive compressed builder preview,
   existing-core bridge, CUDA expanded query backend, block-expanded query,
   direct compressed sparse query for small point sets, and contact manifold
   behavior.
-- Planned: contact-aware active block expansion/cache, Tucker/HOSVD
-  compression, trained surrogate integration, complex mesh repair, hole
-  filling, self-intersection detection, FCL fallback backend, CollisionWorld
-  broadphase, CCD, native Python bindings, ROS/MoveIt, robot benchmarks, and
-  full low-rank GPU-native SDF query.
+- Planned: CUDA active block expansion/cache, Tucker/HOSVD compression, trained
+  surrogate integration, complex mesh repair, hole filling, self-intersection
+  detection, FCL fallback backend, CollisionWorld broadphase, CCD, native
+  Python bindings, ROS/MoveIt, robot benchmarks, and full low-rank GPU-native
+  SDF query.
 
 See `docs/implemented_vs_planned.md` and `docs/capability_matrix.md`.
 

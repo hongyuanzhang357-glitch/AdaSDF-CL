@@ -70,6 +70,24 @@ class ToolCommandBuildingTests(unittest.TestCase):
         self.assertIn("adasdf_benchmark_sparse_query", stdout)
         self.assertIn("--repeat", stdout)
 
+    def test_select_active_blocks_dry_run_command(self):
+        result = adasdf.select_active_blocks("model.sdfbin", "samples.csv", selection_band=0.1, dry_run=True)
+        stdout = result.command_result.stdout
+        self.assertIn("adasdf_select_active_blocks", stdout)
+        self.assertIn("--selection-band", stdout)
+
+    def test_active_block_query_dry_run_command(self):
+        result = adasdf.active_block_query("model.sdfbin", "samples.csv", threshold=0.1, dry_run=True)
+        stdout = result.command_result.stdout
+        self.assertIn("adasdf_active_block_query", stdout)
+        self.assertIn("--phi-only", stdout)
+
+    def test_block_cache_benchmark_dry_run_command(self):
+        result = adasdf.benchmark_block_cache("model.sdfbin", "samples.csv", repeat=2, dry_run=True)
+        stdout = result.command_result.stdout
+        self.assertIn("adasdf_benchmark_block_cache", stdout)
+        self.assertIn("--repeat", stdout)
+
     def test_bin_dir_is_used_in_preview(self):
         result = adasdf.info("model.sdfbin", bin_dir="tools-bin", dry_run=True)
         self.assertIn("tools-bin", result.command_result.stdout)

@@ -42,6 +42,22 @@
 - v1.9 sparse point-to-SDF collision, collision-only early exit, sample-radius
   proxy collision, Top-K contact candidate reduction, sparse benchmark CLI, and
   Python sparse wrappers.
+- v1.10 contact-aware active block selection, CPU local block expansion cache,
+  active block query CLI, block cache benchmark CLI, and Python active block
+  wrappers.
+
+## v1.10.0-alpha Scope
+
+- `ActiveBlockSelector` for sparse contact-aware block id selection;
+- CPU `ExpandedBlockCache` for local dense block residency;
+- `BlockExpansionManager` for adaptive/compressed block expansion;
+- `ActiveBlockQuery` with cache/fallback source reporting;
+- `adasdf_select_active_blocks`, `adasdf_active_block_query`, and
+  `adasdf_benchmark_block_cache`;
+- Python wrapper helpers for active block selection, active block query, and
+  block cache benchmarking;
+- explicit boundary that CUDA active block cache and GPU-native compressed
+  query remain planned.
 
 ## v1.9.0-alpha Scope
 
@@ -61,7 +77,7 @@
   not a complete contact manifold;
 - explicit boundary that direct compressed query is suitable for sparse query,
   debugging, fallback, and small point sets, while high-throughput runtime
-  memory saving is planned through contact-aware active block expansion/cache.
+  memory saving is provided by v1.10 CPU active block expansion/cache.
 
 ## v1.8.1-alpha Scope
 
@@ -206,7 +222,7 @@ retained for traceability. The recommended public pre-release is
 
 ## Future Work
 
-- contact-aware active block expansion/cache for v1.10;
+- CUDA active block expansion/cache after v1.10;
 - Tucker/HOSVD compression;
 - trained surrogate model integration and online recommendation calibration;
 - optional hole-filling workflows with explicit user control;

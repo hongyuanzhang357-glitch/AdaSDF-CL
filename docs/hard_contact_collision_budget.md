@@ -20,9 +20,14 @@ generation as separate stages:
   contact points.
 - Start with small `top_k` values such as 4 or 8.
 - Use `reduction_radius` to avoid clusters of nearly identical constraints.
+- For repeated compressed SDF contact queries near the same region, use the
+  v1.10 CPU active block cache to expand and reuse only local blocks.
 
 ## What v1.9 Does Not Do
 
 v1.9 does not implement stable robot-grade manifold clustering, solver
 constraints, FCL broadphase, CCD, or a `CollisionWorld`. Those remain future
 integration layers.
+
+v1.10 adds CPU active block expansion/cache for runtime memory control. It is
+not CUDA active block residency and not a solver-aware contact manifold.

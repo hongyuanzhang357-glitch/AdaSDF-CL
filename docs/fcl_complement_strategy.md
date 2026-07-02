@@ -14,6 +14,10 @@ v1.9 adds sparse point-to-SDF collision and contact candidate extraction. This
 is useful for robot link samples, foot contacts, grippers, tools, sampled
 geometry, and hard-contact simulations that need bounded candidate counts.
 
+v1.10 adds CPU active block expansion/cache for compressed SDF contact regions.
+It reduces runtime memory pressure for repeated local SDF queries, but it is
+still not an FCL fallback backend or full broadphase layer.
+
 ## Why Not Replace FCL Immediately
 
 FCL has mature mesh collision, broadphase integration, distance queries, and
@@ -73,7 +77,7 @@ adasdf_collide a.sdfbin b.sdfbin --backend sdf
 adasdf_collide a.stl b.stl --backend hybrid
 ```
 
-FCL backend is planned, not implemented in v1.9.0-alpha.
+FCL backend is planned, not implemented in v1.10.0-alpha.
 
 Sparse collision in v1.9 does not add FCL fallback, broadphase, CCD,
 `CollisionWorld`, or full solver contact constraints.
