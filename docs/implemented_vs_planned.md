@@ -50,6 +50,16 @@
 - Pure-Python `adasdf_cli` CLI wrapper for installed AdaSDF-CL tools.
 - Python dataclass result types, dry-run command previews, best-effort stdout
   parsers, and unittest coverage for the CLI wrapper.
+- Sparse point-to-SDF collision query with `CollisionSampleSet`.
+- Collision sample CSV I/O.
+- Sparse collision-only, clearance, and candidate-search modes.
+- Sample-radius proxy collision through `effective_phi = phi - radius`.
+- Collision-only sparse early exit.
+- Top-K contact candidate reduction with optional `reduction_radius`.
+- `adasdf_sparse_query`, `adasdf_sparse_collide`,
+  `adasdf_contact_candidates`, and `adasdf_benchmark_sparse_query`.
+- Python wrappers for sparse query, sparse collision, contact candidates, and
+  sparse benchmarking.
 - Markdown and JSON-like mesh diagnostics reports.
 - Before/after cleanup diagnostics and readiness reports.
 - `adasdf_mesh_check` CLI, `adasdf_mesh_clean` CLI, CPU-only mesh diagnostics
@@ -71,6 +81,8 @@
 - Block-expanded query: useful for selected/local contact regions.
 - Contact manifold: contact reduction exists; stable robot-grade clustering is
   planned.
+- Sparse contact candidates: deterministic Top-K candidates are implemented,
+  but they are not full solver contacts and not a complete contact manifold.
 - Real asset bridge: existing-core fixtures and sampled expansion bridge exist
   when direct query support is available.
 - STL import audit: diagnostics, readiness suggestions, and safe cleanup are
@@ -80,9 +92,12 @@
   Tucker/HOSVD and GPU-native compressed query remain planned.
 - Python package distribution: v1.8.1 supports source-tree `PYTHONPATH` usage
   and editable install, but no pip release is performed.
+- Direct compressed sparse query: useful for sparse queries, debugging,
+  fallback, and small point sets, but not the main high-throughput GPU path.
 
 ## Planned
 
+- Contact-aware active block expansion/cache for runtime memory savings.
 - Tucker/HOSVD compression.
 - Trained surrogate model integration.
 - Online recommendation calibration.
@@ -91,6 +106,7 @@
 - FCL fallback backend.
 - CollisionWorld broadphase.
 - CCD.
+- Solver-aware full contact manifold generation.
 - Native Python / pybind11 bindings.
 - C API.
 - ROS / MoveIt integration.

@@ -10,6 +10,10 @@ contact normals, batch query, expanded-SDF quality audit, and CUDA expanded
 query paths. It also includes STL diagnostics, readiness scoring, and safe mesh
 cleanup as preflight utilities for future SDF construction.
 
+v1.9 adds sparse point-to-SDF collision and contact candidate extraction. This
+is useful for robot link samples, foot contacts, grippers, tools, sampled
+geometry, and hard-contact simulations that need bounded candidate counts.
+
 ## Why Not Replace FCL Immediately
 
 FCL has mature mesh collision, broadphase integration, distance queries, and
@@ -32,6 +36,9 @@ with partial contact manifold behavior and optional CUDA query paths.
 - Expanded-SDF quality audit and sign-risk metrics.
 - Adaptive SDF research workflow.
 - STL diagnostics, readiness scoring, and safe cleanup.
+- Sparse point collision with collision-only early exit.
+- Sample-radius proxy collision through `effective_phi = phi - radius`.
+- Deterministic Top-K contact candidate reduction for contact budgets.
 
 ## Task Comparison
 
@@ -44,6 +51,8 @@ with partial contact manifold behavior and optional CUDA query paths.
 | penetration depth | contact dependent | implemented from SDF | SDF refinement |
 | contact normal | implemented | implemented research-preview | hybrid validation |
 | batch query | limited | implemented CPU/CUDA | SDF acceleration |
+| sparse point collision | limited | implemented CPU direct | robot link/sample narrowphase |
+| contact candidate budget | contact dependent | implemented Top-K sparse candidates | solver-aware manifold |
 | GPU query | not primary | expanded CUDA implemented | hybrid GPU narrowphase |
 | error audit | limited | implemented | audit SDF approximations |
 | CCD | supported by FCL contexts | planned | FCL CCD fallback |
@@ -64,4 +73,7 @@ adasdf_collide a.sdfbin b.sdfbin --backend sdf
 adasdf_collide a.stl b.stl --backend hybrid
 ```
 
-FCL backend is planned, not implemented in v1.4.0-alpha.
+FCL backend is planned, not implemented in v1.9.0-alpha.
+
+Sparse collision in v1.9 does not add FCL fallback, broadphase, CCD,
+`CollisionWorld`, or full solver contact constraints.

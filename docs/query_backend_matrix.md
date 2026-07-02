@@ -3,6 +3,7 @@
 | Backend | Expansion | Supported | Output | Notes |
 | --- | --- | --- | --- | --- |
 | CPU | None | yes | phi, normal | Direct model query; default stable path. |
+| CPU sparse | None | yes | phi, optional normal | `SparseSDFQuery`; defaults to phi-only and supports early-exit collision checks. |
 | CPU | Global | yes | phi, normal | Pre-expanded dense layout; validates expanded behavior. |
 | CPU | Block | yes | phi, normal | All or selected blocks; useful for local contact regions. |
 | CUDA | None | no | - | CUDA requires pre-expanded data. |
@@ -27,6 +28,17 @@ CompressedAdaptiveBlockSDF models built with `adasdf_build_compressed_sdf` or
 matrix-SVD grid values on demand. They also support expansion quality and
 benchmark `--model` through sampled expanded SDF paths. GPU-native compressed
 query is planned work.
+
+Sparse query through `adasdf_sparse_query` and `SparseSDFQuery` is a direct CPU
+path for small point sets. It uses `effective_phi = phi - radius`, defaults to
+phi-only, and computes normals only when requested. Direct compressed query is
+useful for sparse queries, debugging, fallback, and small point sets, but it is
+not the main high-throughput GPU path.
+
+The main runtime memory advantage of compressed SDF should come from expanding
+only active blocks near contact/query regions rather than globally expanding
+the full model. Contact-aware active block expansion/cache is planned for
+v1.10.
 
 `--output phi` is closest to the original UI kernel-only comparison.
 `--output phi,normal` is closer to contact workflow needs. `--device-only` is

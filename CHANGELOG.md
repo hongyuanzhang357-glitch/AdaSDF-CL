@@ -1,5 +1,49 @@
 # Changelog
 
+## 1.9.0-alpha
+
+Sparse SDF collision query and contact candidate API.
+
+### Added
+
+- `CollisionSampleSet` and CSV I/O.
+- Sparse point-to-SDF query API.
+- Collision-only, clearance, and candidate-search sparse query modes.
+- Sample radius support for point/sphere proxy collision through
+  `effective_phi = phi - radius`.
+- Early-exit sparse collision checks.
+- Top-K contact candidate reduction with optional `reduction_radius`.
+- Sparse query and candidate CSV, Markdown, and JSON-like report writers.
+- `adasdf_sparse_query` CLI.
+- `adasdf_sparse_collide` CLI.
+- `adasdf_contact_candidates` CLI.
+- `adasdf_benchmark_sparse_query` CLI.
+- Python wrapper support for sparse query, sparse collision, contact
+  candidates, and sparse query benchmarking.
+- Sparse collision tests and project-generated sample fixtures.
+
+### Changed
+
+- Version updated to `1.9.0-alpha`.
+- Validation scripts now exercise sparse query, sparse collision, contact
+  candidates, sparse benchmark, and Python sparse wrappers.
+- Capability, query backend, contact output, FCL complement, positioning, and
+  Python wrapper docs now document sparse point collision as a first-class use
+  case.
+
+### Notes
+
+- Sparse query defaults to phi-only and does not compute normals unless
+  requested.
+- `adasdf_sparse_collide` return code `10` means collision detected; it is not
+  a program failure.
+- Contact candidates are not full solver contacts and are not a complete
+  contact manifold.
+- Hard-contact workflows should keep contact budgets small.
+- Direct compressed query is appropriate for sparse queries, debugging,
+  fallback, and small point sets, but not the main high-throughput GPU path.
+- Contact-aware active block expansion/cache is planned for v1.10.
+
 ## 1.8.1-alpha
 
 Python CLI wrapper.

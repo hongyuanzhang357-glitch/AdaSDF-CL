@@ -1,0 +1,7 @@
+id,x,y,z,radius,object_id,link_id,group_id,weight,label
+0,0.5,0.5,0.5,0.0,1,1,0,1.0,inside_center
+1,1.5,0.5,0.5,0.0,1,1,0,1.0,outside_x
+2,1.0,0.5,0.5,0.0,1,1,0,1.0,near_surface_x
+3,0.5,1.02,0.5,0.0,1,2,0,1.0,near_outside_y
+4,-0.02,0.5,0.5,0.0,1,2,0,1.0,near_outside_neg_x
+5,0.5,0.5,1.5,0.0,2,3,1,1.0,outside_z

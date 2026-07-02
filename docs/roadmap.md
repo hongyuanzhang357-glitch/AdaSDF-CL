@@ -39,6 +39,29 @@
   estimator, recommendation reports, and public recommend-then-build workflow.
 - v1.8.1 pure-Python CLI wrapper, dataclass command results, dry-run command
   preview, best-effort parsers, and unittest validation.
+- v1.9 sparse point-to-SDF collision, collision-only early exit, sample-radius
+  proxy collision, Top-K contact candidate reduction, sparse benchmark CLI, and
+  Python sparse wrappers.
+
+## v1.9.0-alpha Scope
+
+- `CollisionSampleSet` and CSV I/O;
+- sparse query defaults to phi-only and computes normals only when requested;
+- sample-radius proxy collision through `effective_phi = phi - radius`;
+- collision-only, clearance, and candidate-search sparse modes;
+- collision-only early exit for boolean collision checks;
+- `adasdf_sparse_collide` return code `10` for detected collision, not failure;
+- `ContactCandidateReducer` with deterministic Top-K selection and optional
+  `reduction_radius`;
+- `adasdf_sparse_query`, `adasdf_sparse_collide`,
+  `adasdf_contact_candidates`, and `adasdf_benchmark_sparse_query`;
+- Python wrapper helpers for sparse query, sparse collision, contact candidates,
+  and sparse benchmarking;
+- explicit boundary that sparse contact candidates are not solver contacts and
+  not a complete contact manifold;
+- explicit boundary that direct compressed query is suitable for sparse query,
+  debugging, fallback, and small point sets, while high-throughput runtime
+  memory saving is planned through contact-aware active block expansion/cache.
 
 ## v1.8.1-alpha Scope
 
@@ -176,13 +199,14 @@
 
 The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`,
 `v1.1.0-alpha`, `v1.1.1-alpha`, `v1.2.0-alpha`, `v1.3.0-alpha`,
-`v1.4.0-alpha`, `v1.5.0-alpha`, `v1.6.0-alpha`, `v1.7.0-alpha`, and
-`v1.8.0-alpha` tags are
+`v1.4.0-alpha`, `v1.5.0-alpha`, `v1.6.0-alpha`, `v1.7.0-alpha`,
+`v1.8.0-alpha`, and `v1.8.1-alpha` tags are
 retained for traceability. The recommended public pre-release is
-`v1.8.1-alpha`.
+`v1.9.0-alpha`.
 
 ## Future Work
 
+- contact-aware active block expansion/cache for v1.10;
 - Tucker/HOSVD compression;
 - trained surrogate model integration and online recommendation calibration;
 - optional hole-filling workflows with explicit user control;

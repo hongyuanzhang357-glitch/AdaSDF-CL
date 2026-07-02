@@ -10,24 +10,33 @@ from .parsers import (
     parse_benchmark_metrics,
     parse_collision_colliding,
     parse_contact_count,
+    parse_field_bool,
+    parse_field_float,
+    parse_field_int,
     parse_info_format,
     parse_minimum_distance,
     parse_query_normal,
     parse_query_phi,
     parse_recommended_command,
     parse_recommended_path,
+    parse_sparse_benchmark_metrics,
 )
 from .results import (
     BenchmarkResult,
     BuildResult,
     CollisionResult,
     CommandResult,
+    ContactCandidatesResult,
     InfoResult,
     MeshCheckResult,
     QueryResult,
     RecommendationResult,
+    SparseBenchmarkResult,
+    SparseCollisionResult,
+    SparseQueryResult,
 )
 from .runner import run_command
+from .exceptions import AdaSDFCommandError
 
 PathLike = Union[str, Path]
 
@@ -427,3 +436,158 @@ def benchmark_batch_query(
     _append_value(command, "--repeat", repeat)
     result = _run(command, check=check, dry_run=dry_run)
     return BenchmarkResult(result, metrics=parse_benchmark_metrics(result.stdout))
+
+
+def sparse_query(
+    model: PathLike,
+    samples_csv: PathLike,
+    *,
+    threshold: float = 0.0,
+    with_normal: bool = False,
+    early_exit: bool = False,
+    use_radius: bool = True,
+    include_non_colliding: bool = True,
+    out: Optional[PathLike] = None,
+    report: Optional[PathLike] = None,
+    json: Optional[PathLike] = None,
+    bin_dir: Optional[PathLike] = None,
+    check: bool = True,
+    dry_run: bool = False,
+) -> SparseQueryResult:
+    command = [_tool("adasdf_sparse_query", bin_dir, dry_run), _path(model), _path(samples_csv)]
+    _append_value(command, "--threshold", threshold)
+    command.append("--with-normal" if with_normal else "--phi-only")
+    _append_bool(command, "--early-exit", early_exit)
+    _append_bool(command, "--no-radius", not use_radius)
+    command.append("--include-non-colliding" if include_non_colliding else "--colliding-only")
+    _append_value(command, "--out", _path(out) if out is not None else None)
+    _append_value(command, "--report", _path(report) if report is not None else None)
+    _append_value(command, "--json", _path(json) if json is not None else None)
+    result = _run(command, check=check, dry_run=dry_run)
+    return SparseQueryResult(
+        command_result=result,
+        colliding=parse_collision_colliding(result.stdout),
+        sample_count=parse_field_int(result.stdout, "Sample count"),
+        queried_count=parse_field_int(result.stdout, "Queried samples"),
+        result_count=parse_field_int(result.stdout, "Result count"),
+        min_effective_phi=parse_field_float(result.stdout, "Min effective phi"),
+        output_path=Path(out) if out is not None else None,
+        report_path=Path(report) if report is not None else None,
+        json_path=Path(json) if json is not None else None,
+    )
+
+
+def sparse_collide(
+    model: PathLike,
+    samples_csv: PathLike,
+    *,
+    mode: str = "collision-only",
+    threshold: float = 0.0,
+    early_exit: bool = True,
+    with_normal: bool = False,
+    use_radius: bool = True,
+    return_all_violations: bool = False,
+    report: Optional[PathLike] = None,
+    json: Optional[PathLike] = None,
+    bin_dir: Optional[PathLike] = None,
+    check: bool = True,
+    dry_run: bool = False,
+) -> SparseCollisionResult:
+    command = [_tool("adasdf_sparse_collide", bin_dir, dry_run), _path(model), _path(samples_csv)]
+    _append_value(command, "--mode", mode)
+    _append_value(command, "--threshold", threshold)
+    command.append("--early-exit" if early_exit else "--no-early-exit")
+    _append_bool(command, "--with-normal", with_normal)
+    _append_bool(command, "--no-radius", not use_radius)
+    _append_bool(command, "--return-all-violations", return_all_violations)
+    _append_value(command, "--report", _path(report) if report is not None else None)
+    _append_value(command, "--json", _path(json) if json is not None else None)
+    result = run_command(command, check=False, dry_run=dry_run)
+    if check and result.returncode not in (0, 10):
+        raise AdaSDFCommandError(result.command, result.returncode, result.stdout, result.stderr)
+    return SparseCollisionResult(
+        command_result=result,
+        colliding=parse_collision_colliding(result.stdout) if result.returncode != 10 else True,
+        min_effective_phi=parse_field_float(result.stdout, "Min effective phi"),
+        queried_count=parse_field_int(result.stdout, "Queried samples"),
+        early_exit=parse_field_bool(result.stdout, "Early exit"),
+        report_path=Path(report) if report is not None else None,
+        json_path=Path(json) if json is not None else None,
+    )
+
+
+def contact_candidates(
+    model: PathLike,
+    samples_csv: PathLike,
+    *,
+    top_k: int = 8,
+    threshold: float = 0.0,
+    reduction_radius: float = 0.0,
+    with_normal: bool = True,
+    use_radius: bool = True,
+    out: Optional[PathLike] = None,
+    report: Optional[PathLike] = None,
+    json: Optional[PathLike] = None,
+    bin_dir: Optional[PathLike] = None,
+    check: bool = True,
+    dry_run: bool = False,
+) -> ContactCandidatesResult:
+    command = [_tool("adasdf_contact_candidates", bin_dir, dry_run), _path(model), _path(samples_csv)]
+    _append_value(command, "--top-k", top_k)
+    _append_value(command, "--threshold", threshold)
+    _append_value(command, "--reduction-radius", reduction_radius)
+    command.append("--with-normal" if with_normal else "--no-normal")
+    _append_bool(command, "--no-radius", not use_radius)
+    _append_value(command, "--out", _path(out) if out is not None else None)
+    _append_value(command, "--report", _path(report) if report is not None else None)
+    _append_value(command, "--json", _path(json) if json is not None else None)
+    result = _run(command, check=check, dry_run=dry_run)
+    return ContactCandidatesResult(
+        command_result=result,
+        threshold_candidate_count=parse_field_int(result.stdout, "Threshold candidates"),
+        candidate_count=parse_field_int(result.stdout, "Reduced candidates"),
+        output_path=Path(out) if out is not None else None,
+        report_path=Path(report) if report is not None else None,
+        json_path=Path(json) if json is not None else None,
+    )
+
+
+def benchmark_sparse_query(
+    model: PathLike,
+    samples_csv: PathLike,
+    *,
+    repeat: int = 10,
+    warmup: int = 1,
+    mode: str = "phi-only",
+    threshold: float = 0.0,
+    top_k: Optional[int] = None,
+    early_exit: bool = False,
+    with_normal: bool = False,
+    use_radius: bool = True,
+    report: Optional[PathLike] = None,
+    json: Optional[PathLike] = None,
+    csv: Optional[PathLike] = None,
+    bin_dir: Optional[PathLike] = None,
+    check: bool = True,
+    dry_run: bool = False,
+) -> SparseBenchmarkResult:
+    command = [_tool("adasdf_benchmark_sparse_query", bin_dir, dry_run), _path(model), _path(samples_csv)]
+    _append_value(command, "--repeat", repeat)
+    _append_value(command, "--warmup", warmup)
+    _append_value(command, "--mode", mode)
+    _append_value(command, "--threshold", threshold)
+    _append_value(command, "--top-k", top_k)
+    _append_bool(command, "--early-exit", early_exit)
+    _append_bool(command, "--with-normal", with_normal)
+    _append_bool(command, "--no-radius", not use_radius)
+    _append_value(command, "--report", _path(report) if report is not None else None)
+    _append_value(command, "--json", _path(json) if json is not None else None)
+    _append_value(command, "--csv", _path(csv) if csv is not None else None)
+    result = _run(command, check=check, dry_run=dry_run)
+    return SparseBenchmarkResult(
+        command_result=result,
+        metrics=parse_sparse_benchmark_metrics(result.stdout),
+        report_path=Path(report) if report is not None else None,
+        json_path=Path(json) if json is not None else None,
+        csv_path=Path(csv) if csv is not None else None,
+    )

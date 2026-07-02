@@ -61,6 +61,23 @@ adasdf.build_compressed_sdf(
 
 q = adasdf.query("model_compressed.sdfbin", point=[0, 0, 0])
 print(q.phi)
+
+hit = adasdf.sparse_collide(
+    "model_compressed.sdfbin",
+    "samples.csv",
+    threshold=0.0,
+    early_exit=True,
+)
+print(hit.colliding)
+
+cand = adasdf.contact_candidates(
+    "model_compressed.sdfbin",
+    "samples.csv",
+    top_k=8,
+    threshold=1e-3,
+    reduction_radius=0.02,
+)
+print(cand.candidate_count)
 ```
 
 ## Dry Run
@@ -83,6 +100,8 @@ All helpers return dataclasses that preserve `stdout`, `stderr`, `returncode`,
 and the command list. With the default `check=True`, non-zero CLI exits raise
 `AdaSDFCommandError` containing the command, return code, and output previews.
 Use `check=False` to inspect failed commands manually.
+`sparse_collide()` treats return code `10` as successful collision detection,
+not as a process failure.
 
 ## API Surface
 
@@ -97,8 +116,12 @@ Use `check=False` to inspect failed commands manually.
 - `info`
 - `query`
 - `collide`
+- `sparse_query`
+- `sparse_collide`
+- `contact_candidates`
 - `expansion_quality`
 - `benchmark_batch_query`
+- `benchmark_sparse_query`
 - `recommend_then_build_compressed`
 - `preprocess_and_build_compressed`
 

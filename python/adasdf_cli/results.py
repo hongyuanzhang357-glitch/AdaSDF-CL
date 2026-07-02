@@ -65,3 +65,46 @@ class InfoResult:
 class BenchmarkResult:
     command_result: CommandResult
     metrics: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class SparseQueryResult:
+    command_result: CommandResult
+    colliding: Optional[bool] = None
+    sample_count: Optional[int] = None
+    queried_count: Optional[int] = None
+    result_count: Optional[int] = None
+    min_effective_phi: Optional[float] = None
+    output_path: Optional[Path] = None
+    report_path: Optional[Path] = None
+    json_path: Optional[Path] = None
+
+
+@dataclass
+class SparseCollisionResult:
+    command_result: CommandResult
+    colliding: Optional[bool] = None
+    min_effective_phi: Optional[float] = None
+    queried_count: Optional[int] = None
+    early_exit: Optional[bool] = None
+    report_path: Optional[Path] = None
+    json_path: Optional[Path] = None
+
+
+@dataclass
+class ContactCandidatesResult:
+    command_result: CommandResult
+    threshold_candidate_count: Optional[int] = None
+    candidate_count: Optional[int] = None
+    output_path: Optional[Path] = None
+    report_path: Optional[Path] = None
+    json_path: Optional[Path] = None
+
+
+@dataclass
+class SparseBenchmarkResult:
+    command_result: CommandResult
+    metrics: Dict[str, Any] = field(default_factory=dict)
+    report_path: Optional[Path] = None
+    json_path: Optional[Path] = None
+    csv_path: Optional[Path] = None

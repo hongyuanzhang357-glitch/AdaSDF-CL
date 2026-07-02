@@ -203,8 +203,8 @@ def main() -> int:
             return result.returncode
 
     if args.include_install:
-        install_build = build.parent / "adasdf_cl_iv"
-        install_prefix = build.parent / "adasdf_cl_install"
+        install_build = build.parent / f"{build.name}_install_validation"
+        install_prefix = build.parent / f"{build.name}_install"
         install_result = run_step(
             "Install Validation",
             [
@@ -266,6 +266,13 @@ def main() -> int:
     compressed_direct_report = build.parent / "closed_cube_compressed_direct_report.md"
     compressed_direct_compression_report = build.parent / "closed_cube_compressed_direct_compression_report.md"
     compressed_direct_quality_report = build.parent / "closed_cube_compressed_direct_quality.md"
+    sample_fixture = source / "tests" / "data" / "samples" / "cube_sparse_samples.csv"
+    sparse_results_csv = build.parent / "closed_cube_sparse_results.csv"
+    sparse_report = build.parent / "closed_cube_sparse_report.md"
+    sparse_collision_report = build.parent / "closed_cube_sparse_collision.md"
+    sparse_candidates_csv = build.parent / "closed_cube_contact_candidates.csv"
+    sparse_candidates_report = build.parent / "closed_cube_contact_candidates.md"
+    sparse_benchmark_csv = build.parent / "closed_cube_sparse_benchmark.csv"
     recommendation_md = build.parent / "closed_cube_recommendation.md"
     recommendation_json = build.parent / "closed_cube_recommendation.json"
     adaptive_dryrun_sdfbin = build.parent / "closed_cube_adaptive_dryrun.sdfbin"
@@ -292,6 +299,10 @@ def main() -> int:
         "adasdf_query": find_executable(build, "adasdf_query", config),
         "adasdf_collide": find_executable(build, "adasdf_collide", config),
         "adasdf_expansion_quality": find_executable(build, "adasdf_expansion_quality", config),
+        "adasdf_sparse_query": find_executable(build, "adasdf_sparse_query", config),
+        "adasdf_sparse_collide": find_executable(build, "adasdf_sparse_collide", config),
+        "adasdf_contact_candidates": find_executable(build, "adasdf_contact_candidates", config),
+        "adasdf_benchmark_sparse_query": find_executable(build, "adasdf_benchmark_sparse_query", config),
         "adasdf_collide_boxes_demo": find_executable(build, "adasdf_collide_boxes_demo", config),
         "adasdf_benchmark_batch_query": find_executable(build, "adasdf_benchmark_batch_query", config),
         "adasdf_capability_walkthrough": find_executable(build, "adasdf_capability_walkthrough", config),
@@ -314,6 +325,7 @@ def main() -> int:
     python_env["PYTHONPATH"] = str(source / "python")
     python_env["ADASDF_BIN"] = str(required_demo_tools["adasdf_capabilities"].parent)
     python_env["ADASDF_TEST_STL"] = str(mesh_fixture)
+    python_env["ADASDF_TEST_SAMPLES"] = str(sample_fixture)
     python_env["PYTHONDONTWRITEBYTECODE"] = "1"
     python_result = run_step(
         "Python CLI Wrapper Tests",
@@ -600,6 +612,68 @@ def main() -> int:
             ],
         ),
         (
+            "Sparse Query CLI",
+            [
+                str(required_demo_tools["adasdf_sparse_query"]),
+                str(compressed_direct_sdfbin),
+                str(sample_fixture),
+                "--threshold",
+                "0",
+                "--out",
+                str(sparse_results_csv),
+                "--report",
+                str(sparse_report),
+            ],
+        ),
+        (
+            "Sparse Collide CLI",
+            [
+                str(required_demo_tools["adasdf_sparse_collide"]),
+                str(compressed_direct_sdfbin),
+                str(sample_fixture),
+                "--threshold",
+                "0",
+                "--early-exit",
+                "--report",
+                str(sparse_collision_report),
+            ],
+        ),
+        (
+            "Contact Candidates CLI",
+            [
+                str(required_demo_tools["adasdf_contact_candidates"]),
+                str(compressed_direct_sdfbin),
+                str(sample_fixture),
+                "--top-k",
+                "4",
+                "--threshold",
+                "1e-3",
+                "--reduction-radius",
+                "0.02",
+                "--with-normal",
+                "--out",
+                str(sparse_candidates_csv),
+                "--report",
+                str(sparse_candidates_report),
+            ],
+        ),
+        (
+            "Sparse Query Benchmark",
+            [
+                str(required_demo_tools["adasdf_benchmark_sparse_query"]),
+                str(compressed_direct_sdfbin),
+                str(sample_fixture),
+                "--repeat",
+                "2",
+                "--warmup",
+                "1",
+                "--mode",
+                "phi-only",
+                "--csv",
+                str(sparse_benchmark_csv),
+            ],
+        ),
+        (
             "AdaptiveBlockSDF Dry Run CLI",
             [
                 str(required_demo_tools["adasdf_build_adaptive_sdf"]),
@@ -725,6 +799,12 @@ def main() -> int:
 
     for name, command in demo_steps:
         result = run_step(name, command, workspace)
+        if name == "Sparse Collide CLI" and result.returncode == 10:
+            result.returncode = 0
+            result.output += (
+                "\nValidation note: sparse_collide returned 10, which means "
+                "collision detected and is expected for this fixture.\n"
+            )
         results.append(result)
         allowed_returncodes = (0, 2) if name in (
             "Mesh Cleanup CLI",
@@ -1024,6 +1104,83 @@ def main() -> int:
             ):
                 result.returncode = 1
                 result.output += "\nValidation failed: one-step compressed SDF build output is incomplete.\n"
+                write_report(report_path, results, source, build, config)
+                return result.returncode
+        if name == "Sparse Query CLI":
+            csv_text = (
+                sparse_results_csv.read_text(encoding="utf-8", errors="replace")
+                if sparse_results_csv.exists()
+                else ""
+            )
+            report_text = (
+                sparse_report.read_text(encoding="utf-8", errors="replace")
+                if sparse_report.exists()
+                else ""
+            )
+            if (
+                not sparse_results_csv.exists()
+                or not sparse_report.exists()
+                or "Sample count:" not in result.output
+                or "Colliding:" not in result.output
+                or "effective_phi" not in csv_text
+                or "Sparse SDF Query" not in report_text
+            ):
+                result.returncode = 1
+                result.output += "\nValidation failed: sparse query output is incomplete.\n"
+                write_report(report_path, results, source, build, config)
+                return result.returncode
+        if name == "Sparse Collide CLI":
+            report_text = (
+                sparse_collision_report.read_text(encoding="utf-8", errors="replace")
+                if sparse_collision_report.exists()
+                else ""
+            )
+            if (
+                not sparse_collision_report.exists()
+                or "Colliding: true" not in result.output
+                or "Return code note: 10 means collision detected" not in result.output
+                or "Sparse Collision Query" not in report_text
+            ):
+                result.returncode = 1
+                result.output += "\nValidation failed: sparse collide output is incomplete.\n"
+                write_report(report_path, results, source, build, config)
+                return result.returncode
+        if name == "Contact Candidates CLI":
+            csv_text = (
+                sparse_candidates_csv.read_text(encoding="utf-8", errors="replace")
+                if sparse_candidates_csv.exists()
+                else ""
+            )
+            report_text = (
+                sparse_candidates_report.read_text(encoding="utf-8", errors="replace")
+                if sparse_candidates_report.exists()
+                else ""
+            )
+            if (
+                not sparse_candidates_csv.exists()
+                or not sparse_candidates_report.exists()
+                or "Reduced candidates:" not in result.output
+                or "rank" not in csv_text.splitlines()[0]
+                or "Contact Candidate Report" not in report_text
+            ):
+                result.returncode = 1
+                result.output += "\nValidation failed: contact candidates output is incomplete.\n"
+                write_report(report_path, results, source, build, config)
+                return result.returncode
+        if name == "Sparse Query Benchmark":
+            csv_text = (
+                sparse_benchmark_csv.read_text(encoding="utf-8", errors="replace")
+                if sparse_benchmark_csv.exists()
+                else ""
+            )
+            if (
+                not sparse_benchmark_csv.exists()
+                or "Average ns per sample:" not in result.output
+                or "avg_ns_per_sample" not in csv_text.splitlines()[0]
+                or "phi-only" not in csv_text
+            ):
+                result.returncode = 1
+                result.output += "\nValidation failed: sparse benchmark output is incomplete.\n"
                 write_report(report_path, results, source, build, config)
                 return result.returncode
         if name == "AdaptiveBlockSDF Dry Run CLI":

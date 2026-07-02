@@ -25,6 +25,10 @@ SUPPORTED_TOOLS = {
     "adasdf_collide",
     "adasdf_expansion_quality",
     "adasdf_benchmark_batch_query",
+    "adasdf_sparse_query",
+    "adasdf_sparse_collide",
+    "adasdf_contact_candidates",
+    "adasdf_benchmark_sparse_query",
     "adasdf_capabilities",
 }
 

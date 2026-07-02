@@ -43,6 +43,8 @@ only, Planned, Not implemented.
 | SDF storage / model | existing-core low-rank compressed SDF native public reader | Partial | v0.2 | `CompressedSDF`, `SDFModel` | Existing-core bridge remains separate from the v1.7 core-free compressed block format. |
 | Query | point signed distance | Implemented | v0.2 | `adasdf_query`, `SDFModel::sampleDistance` | Direct model query. |
 | Query | gradient / normal | Implemented | v0.2 | `SDFModel::sampleGradient`, `sampleNormal` | Analytic or finite-difference backed. |
+| Query | sparse point-to-SDF query | Implemented | v1.9 | `SparseSDFQuery`, `adasdf_sparse_query` | Defaults to phi-only; normals are computed only when requested. |
+| Query | sample-radius sparse query | Implemented | v1.9 | `CollisionSample::radius` | Uses `effective_phi = phi - radius`. |
 | Query | CPU direct | Implemented | v1.0.1 | `QueryModeConfig::cpuDirect` | Default stable route. |
 | Query | compressed adaptive CPU direct | Implemented | v1.7 | `CompressedAdaptiveBlockSDFModel` | Matrix-SVD values are reconstructed on demand; dense fallback blocks query directly. |
 | Query | CPU global expanded | Implemented | v1.0.1 | `SDFExpander`, `QueryEngine` | Dense global layout. |
@@ -50,6 +52,7 @@ only, Planned, Not implemented.
 | Query | CUDA global expanded | Experimental | v1.0.1 | `CudaResidentExpandedSDF` | Optional CUDA. |
 | Query | CUDA block expanded | Experimental | v1.0.1 | `CudaResidentExpandedSDF` | Optional CUDA, best for local points. |
 | Query | CUDA compressed-direct | Planned | - | - | Not implemented. |
+| Query | contact-aware active block expansion/cache | Planned | v1.10 target | - | Planned runtime memory path for compressed/contact workflows. |
 | Query | block selection | Implemented | v1.0.1 | `BlockSelection` | Deterministic selected ids. |
 | Query | fallback count | Implemented | v1.0.1 | `QueryEngineStats`, benchmark CSV | Tracks direct fallback where applicable. |
 | Query | kernel-only benchmark | Implemented | v1.0.2 | `--kernel-only` | CUDA timing semantics. |
@@ -63,6 +66,10 @@ only, Planned, Not implemented.
 | Collision / Contact | signed distance | Implemented | v0.5 | `Contact::signed_distance` | Per contact. |
 | Collision / Contact | max contacts | Implemented | v0.7 | `CollisionRequest::max_contacts` | Enforced in CLI/API. |
 | Collision / Contact | deterministic contact reduction | Implemented | v0.5 | `ContactReducer` | Not full manifold clustering. |
+| Collision / Contact | sparse collision-only early exit | Implemented | v1.9 | `SparseCollisionQuery`, `adasdf_sparse_collide` | Return code `10` means collision detected, not failure. |
+| Collision / Contact | sparse clearance query | Implemented | v1.9 | `SparseCollisionMode::Clearance` | Full traversal, returns minimum effective phi. |
+| Collision / Contact | sparse candidate search | Implemented | v1.9 | `SparseCollisionMode::CandidateSearch` | Returns threshold violations for reduction. |
+| Collision / Contact | Top-K contact candidates | Implemented | v1.9 | `ContactCandidateReducer`, `adasdf_contact_candidates` | Deterministic candidate reduction with optional `reduction_radius`; not a full contact manifold. |
 | Collision / Contact | nearest points | Implemented | v0.3 | `DistanceResult` | Pair distance result. |
 | Collision / Contact | contact manifold clustering | Partial | v0.5 | `ContactReducer` | Stable robot-grade manifold planned. |
 | Collision / Contact | CCD | Planned | - | - | Not implemented. |
@@ -97,6 +104,7 @@ only, Planned, Not implemented.
 | Benchmark | CUDA batch query | Experimental | v1.0 | benchmark CLI | Optional CUDA. |
 | Benchmark | warmup / repeat | Implemented | v1.0.2 | `--warmup`, `--repeat` | Repeat statistics. |
 | Benchmark | kernel-only / total-time distinction | Implemented | v1.0.2 | CSV timing fields | Clear timing semantics. |
+| Benchmark | sparse query benchmark | Implemented | v1.9 | `adasdf_benchmark_sparse_query` | CPU sparse phi-only, phi-normal, collision-only, clearance, and candidates modes. |
 | Benchmark | CPU/GPU alignment | Implemented | v1.0 | tests | Optional CUDA skip. |
 | Benchmark | real existing-core asset benchmark | Existing-core only | v0.7 | discovered fixtures | Optional. |
 | Benchmark | FCL comparison benchmark | Planned | - | - | Not implemented. |

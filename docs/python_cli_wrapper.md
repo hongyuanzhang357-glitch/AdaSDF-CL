@@ -44,8 +44,12 @@ python -m pip install -e python
 - `info`
 - `query`
 - `collide`
+- `sparse_query`
+- `sparse_collide`
+- `contact_candidates`
 - `expansion_quality`
 - `benchmark_batch_query`
+- `benchmark_sparse_query`
 - `recommend_then_build_compressed`
 - `preprocess_and_build_compressed`
 
@@ -76,6 +80,23 @@ adasdf.build_compressed_sdf(
 
 q = adasdf.query("model_compressed.sdfbin", point=[0, 0, 0])
 print(q.phi)
+
+hit = adasdf.sparse_collide(
+    "model_compressed.sdfbin",
+    "samples.csv",
+    threshold=0.0,
+    early_exit=True,
+)
+print(hit.colliding)
+
+cand = adasdf.contact_candidates(
+    "model_compressed.sdfbin",
+    "samples.csv",
+    top_k=8,
+    threshold=1e-3,
+    reduction_radius=0.02,
+)
+print(cand.candidate_count)
 ```
 
 ## Dry Run
@@ -100,6 +121,9 @@ Helpers return dataclasses that preserve:
 
 With `check=True`, a non-zero CLI return code raises `AdaSDFCommandError`.
 With `check=False`, the result is returned for manual inspection.
+
+`sparse_collide()` is special: CLI return code `10` means collision detected and
+is treated as a successful result by the wrapper.
 
 ## Limitations
 

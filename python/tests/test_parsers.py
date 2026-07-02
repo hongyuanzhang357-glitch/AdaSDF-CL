@@ -5,11 +5,15 @@ from adasdf_cli.parsers import (
     parse_collision_colliding,
     parse_contact_count,
     parse_info_format,
+    parse_field_bool,
+    parse_field_float,
+    parse_field_int,
     parse_minimum_distance,
     parse_query_normal,
     parse_query_phi,
     parse_recommended_command,
     parse_recommended_path,
+    parse_sparse_benchmark_metrics,
 )
 
 
@@ -54,6 +58,24 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(metrics["backend"], "cpu")
         self.assertEqual(metrics["status"], "ok")
         self.assertEqual(metrics["points"], "1000")
+
+    def test_parse_sparse_fields(self):
+        stdout = (
+            "Sample count: 6\n"
+            "Queried samples: 1\n"
+            "Min effective phi: -0.5\n"
+            "Early exit: true\n"
+        )
+        self.assertEqual(parse_field_int(stdout, "Sample count"), 6)
+        self.assertEqual(parse_field_int(stdout, "Queried samples"), 1)
+        self.assertEqual(parse_field_float(stdout, "Min effective phi"), -0.5)
+        self.assertTrue(parse_field_bool(stdout, "Early exit"))
+
+    def test_parse_sparse_benchmark_metrics(self):
+        stdout = "Sparse benchmark mode: phi-only\nAverage ns per sample: 123.4\n"
+        metrics = parse_sparse_benchmark_metrics(stdout)
+        self.assertEqual(metrics["mode"], "phi-only")
+        self.assertEqual(metrics["avg_ns_per_sample"], "123.4")
 
 
 if __name__ == "__main__":

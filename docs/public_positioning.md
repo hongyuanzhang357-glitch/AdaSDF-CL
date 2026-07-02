@@ -21,6 +21,10 @@ replacement.
 - Experimental deterministic build recommender for DenseSDF, AdaptiveBlockSDF,
   and CompressedAdaptiveBlockSDF parameters.
 - Pure-Python subprocess wrapper for installed CLI tools.
+- Sparse point-to-SDF collision query.
+- Collision-only early-exit query.
+- Sample-radius point/sphere proxy collision.
+- Top-K contact candidate reduction for hard-contact budgets.
 - Adaptive builder preview for future Tucker/trained-surrogate/GPU compressed
   stages.
 
@@ -39,7 +43,10 @@ replacement.
 - Fully trained recommendation model.
 - Complete GPU contact solver.
 - Native Python binding.
-- pybind11 binding in v1.8.1.
+- Native pybind11 binding.
+- Full contact solver.
+- Complete contact manifold from sparse candidates.
+- GPU-native compressed direct query in v1.9.
 
 ## Short Description
 
@@ -50,7 +57,10 @@ diagnostics, SDF build readiness scoring, safe mesh cleanup, and a public
 uniform DenseSDF builder, a public adaptive octree/block SDF builder, and a
 public matrix-SVD compressed adaptive block SDF builder. v1.8 adds a
 deterministic recommend-then-build parameter recommendation path. v1.8.1 adds
-a pure-Python subprocess wrapper for the installed CLI tools. It does not
-fill holes, repair self-intersections, implement Tucker/HOSVD compression,
-claim a universal trained recommender, guarantee optimal parameters, or claim
-GPU-native compressed query, and it does not provide a native pybind11 binding.
+a pure-Python subprocess wrapper for the installed CLI tools. v1.9 adds sparse
+point-to-SDF collision, collision-only early exit, sample-radius proxy
+collision, and Top-K contact candidate reduction. It does not fill holes,
+repair self-intersections, implement Tucker/HOSVD compression, claim a
+universal trained recommender, guarantee optimal parameters, claim GPU-native
+compressed query, provide a full contact solver, or provide a native pybind11
+binding.

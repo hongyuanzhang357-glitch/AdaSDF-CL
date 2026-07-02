@@ -12,6 +12,11 @@ def _smoke_available():
     return bool(bin_dir and test_stl and Path(bin_dir).is_dir() and Path(test_stl).is_file())
 
 
+def _samples_available():
+    samples = os.environ.get("ADASDF_TEST_SAMPLES")
+    return bool(samples and Path(samples).is_file())
+
+
 @unittest.skipUnless(_smoke_available(), "ADASDF_BIN/ADASDF_TEST_STL not set; skipping real CLI smoke")
 class PythonCliSmokeTests(unittest.TestCase):
     def setUp(self):
@@ -62,6 +67,53 @@ class PythonCliSmokeTests(unittest.TestCase):
 
         query = adasdf.query(sdfbin, point=[0.5, 0.5, 0.5], bin_dir=self.bin_dir)
         self.assertIsNotNone(query.phi)
+
+        if _samples_available():
+            samples = Path(os.environ["ADASDF_TEST_SAMPLES"])
+            sparse_csv = self.tmp_path / "sparse.csv"
+            sparse = adasdf.sparse_query(
+                sdfbin,
+                samples,
+                threshold=0.0,
+                out=sparse_csv,
+                bin_dir=self.bin_dir,
+            )
+            self.assertTrue(sparse_csv.exists())
+            self.assertIsNotNone(sparse.colliding)
+
+            collide = adasdf.sparse_collide(
+                sdfbin,
+                samples,
+                threshold=0.0,
+                early_exit=True,
+                bin_dir=self.bin_dir,
+            )
+            self.assertIn(collide.command_result.returncode, (0, 10))
+            self.assertIsNotNone(collide.colliding)
+
+            candidates_csv = self.tmp_path / "candidates.csv"
+            candidates = adasdf.contact_candidates(
+                sdfbin,
+                samples,
+                top_k=4,
+                threshold=1e-3,
+                out=candidates_csv,
+                bin_dir=self.bin_dir,
+            )
+            self.assertTrue(candidates_csv.exists())
+            self.assertIsNotNone(candidates.candidate_count)
+
+            benchmark_csv = self.tmp_path / "sparse_benchmark.csv"
+            benchmark = adasdf.benchmark_sparse_query(
+                sdfbin,
+                samples,
+                repeat=2,
+                warmup=1,
+                csv=benchmark_csv,
+                bin_dir=self.bin_dir,
+            )
+            self.assertTrue(benchmark_csv.exists())
+            self.assertIn("avg_ns_per_sample", benchmark.metrics)
 
 
 if __name__ == "__main__":

@@ -46,6 +46,30 @@ class ToolCommandBuildingTests(unittest.TestCase):
         self.assertIn("adasdf_benchmark_batch_query", stdout)
         self.assertIn("--points", stdout)
 
+    def test_sparse_query_dry_run_command(self):
+        result = adasdf.sparse_query("model.sdfbin", "samples.csv", dry_run=True)
+        stdout = result.command_result.stdout
+        self.assertIn("adasdf_sparse_query", stdout)
+        self.assertIn("--phi-only", stdout)
+
+    def test_sparse_collide_dry_run_command(self):
+        result = adasdf.sparse_collide("model.sdfbin", "samples.csv", dry_run=True)
+        stdout = result.command_result.stdout
+        self.assertIn("adasdf_sparse_collide", stdout)
+        self.assertIn("--mode", stdout)
+
+    def test_contact_candidates_dry_run_command(self):
+        result = adasdf.contact_candidates("model.sdfbin", "samples.csv", top_k=4, dry_run=True)
+        stdout = result.command_result.stdout
+        self.assertIn("adasdf_contact_candidates", stdout)
+        self.assertIn("--top-k", stdout)
+
+    def test_sparse_benchmark_dry_run_command(self):
+        result = adasdf.benchmark_sparse_query("model.sdfbin", "samples.csv", repeat=2, dry_run=True)
+        stdout = result.command_result.stdout
+        self.assertIn("adasdf_benchmark_sparse_query", stdout)
+        self.assertIn("--repeat", stdout)
+
     def test_bin_dir_is_used_in_preview(self):
         result = adasdf.info("model.sdfbin", bin_dir="tools-bin", dry_run=True)
         self.assertIn("tools-bin", result.command_result.stdout)

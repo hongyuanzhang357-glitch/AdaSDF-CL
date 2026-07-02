@@ -17,6 +17,11 @@ CompressedAdaptiveBlockSDF models built by `adasdf_build_compressed_sdf` or
 matrix-SVD blocks reconstruct grid values on demand for direct CPU query, while
 dense fallback blocks keep their original phi values.
 
+v1.9 adds sparse contact candidates for sampled links, tools, feet, grippers,
+and other point/sphere proxy sets. Candidate extraction is separate from full
+pair collision. It keeps a deterministic Top-K set so hard-contact solvers do
+not receive every penetrating sample.
+
 | Contact field | Status | Source | Notes |
 | --- | --- | --- | --- |
 | contact point | Implemented | `Contact::point` | SDF candidate point pipeline. |
@@ -30,9 +35,16 @@ dense fallback blocks keep their original phi values.
 | raw contacts | Implemented | `CollisionResult::numRawContacts` | Before reduction. |
 | reduced contacts | Implemented | `CollisionResult::numReducedContacts` | After deterministic reduction. |
 | deterministic reduction | Implemented | `ContactReducer` | Research-preview reduction. |
+| sparse candidate rank | Implemented | `ContactCandidate::rank` | Top-K sparse candidate output. |
+| sparse effective phi | Implemented | `ContactCandidate::effective_phi` | Uses `phi - radius`. |
+| sparse reduction radius | Implemented | `ContactCandidateOptions::reduction_radius` | Suppresses nearby lower-priority candidates. |
+| sparse candidate budget | Implemented | `ContactCandidateOptions::top_k` | Keeps hard-contact constraint counts small. |
 | nearest point A | Implemented | `DistanceResult::nearestPointA` | Distance query. |
 | nearest point B | Implemented | `DistanceResult::nearestPointB` | Distance query. |
 | contact manifold clustering | Partial | `ContactReducer` | Full stable manifold clustering planned. |
 | contact normal orientation | Partial | SDF gradients | Needs broader validation. |
 | contact confidence | Planned | - | Not implemented. |
 | contact error estimate | Planned | - | Not implemented. |
+
+Sparse contact candidates are reduced candidates, not solver contacts and not
+a complete contact manifold. Solver-aware manifold generation remains planned.

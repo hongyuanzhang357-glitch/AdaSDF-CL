@@ -1,0 +1,28 @@
+# Hard Contact Collision Budget
+
+For hard-contact dynamics, query time is not the only cost. The number and
+stability of contact constraints can dominate solver time, especially when a
+surface sample set produces many clustered penetrating samples.
+
+AdaSDF-CL v1.9.0-alpha therefore treats sparse collision and contact candidate
+generation as separate stages:
+
+- collision-only query answers a boolean question and can stop early;
+- clearance query finds the minimum effective phi over the sample set;
+- candidate-search query returns threshold violations;
+- contact candidate reduction keeps a small, deterministic Top-K set.
+
+## Practical Guidance
+
+- Use collision-only early-exit for fast rejection.
+- Use clearance when the minimum distance matters.
+- Use candidates when a solver or controller needs a bounded set of likely
+  contact points.
+- Start with small `top_k` values such as 4 or 8.
+- Use `reduction_radius` to avoid clusters of nearly identical constraints.
+
+## What v1.9 Does Not Do
+
+v1.9 does not implement stable robot-grade manifold clustering, solver
+constraints, FCL broadphase, CCD, or a `CollisionWorld`. Those remain future
+integration layers.

@@ -14,10 +14,17 @@ cmake -S '<source>' -B '<build>' -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD
 ```
 
 ```text
+-- Building for: Visual Studio 17 2022
 -- Selecting Windows SDK version 10.0.22621.0 to target Windows 10.0.26200.
+-- The CXX compiler identification is MSVC 19.42.34444.0
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.42.34433/bin/Hostx64/x64/cl.exe - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
 --
 -- AdaSDF-CL configuration:
---   Version: 1.8.1-alpha
+--   Version: 1.9.0-alpha
 --   Build examples: ON
 --   Build tests: ON
 --   Benchmarks: ON
@@ -27,13 +34,6 @@ cmake -S '<source>' -B '<build>' -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD
 --   Surrogate recommender: ON
 --   Demo backend: ON
 --   Demo surrogate: ON
---   Collision SVG viewer: ON
---   CUDA backend: OFF
---   CUDA toolkit: not found
---   FCL: not required
---
--- Configuring done (0.1s)
--- Generating done (0.9s)
 ...
 ```
 
@@ -46,24 +46,24 @@ cmake --build '<build>' --config Release --parallel -- /nodeReuse:false
 ```text
 适用于 .NET Framework MSBuild 版本 17.14.40+3e7442088
 
-  adasdf_cl_runtime.vcxproj -> <build>\Release\adasdf_cl_runtime.lib
-  test_mesh_diagnostics_writer.vcxproj -> <build>\Release\test_mesh_diagnostics_writer.exe
-  test_sign_mismatch_metrics.vcxproj -> <build>\Release\test_sign_mismatch_metrics.exe
-  test_contact_generator.vcxproj -> <build>\Release\test_contact_generator.exe
-  test_pair_distance_query.vcxproj -> <build>\Release\test_pair_distance_query.exe
-  test_contact_only_sdfbin.vcxproj -> <build>\Release\test_contact_only_sdfbin.exe
-  test_stl_reader.vcxproj -> <build>\Release\test_stl_reader.exe
-  test_surrogate_recommender.vcxproj -> <build>\Release\test_surrogate_recommender.exe
-  test_adaptive_block_sdf_model.vcxproj -> <build>\Release\test_adaptive_block_sdf_model.exe
-  adasdf_build_adaptive_sdf_preview.vcxproj -> <build>\tools\Release\adasdf_build_adaptive_sdf_preview.exe
-  test_collision_svg_writer.vcxproj -> <build>\Release\test_collision_svg_writer.exe
-  test_query_engine_cpu.vcxproj -> <build>\Release\test_query_engine_cpu.exe
-  test_mesh_diagnostics_fixtures.vcxproj -> <build>\Release\test_mesh_diagnostics_fixtures.exe
-  test_demo_adaptive_builder.vcxproj -> <build>\Release\test_demo_adaptive_builder.exe
-  test_mesh_diagnostics.vcxproj -> <build>\Release\test_mesh_diagnostics.exe
-  adasdf_core_free_demo_collision.vcxproj -> <build>\Release\adasdf_core_free_demo_collision.exe
-  test_compressed_adaptive_block_sdf_model.vcxproj -> <build>\Release\test_compressed_adaptive_block_sdf_model.exe
-  test_cpu_gpu_alignment.vcxproj -> <build>\Release\test_cpu_gpu_alignment.exe
+  1>Checking Build System
+  Building Custom Rule <source>/CMakeLists.txt
+  FCLAdapter.cpp
+  Backend.cpp
+  CudaQueryBackend.cpp
+  GpuBackend.cpp
+  PointCloudGenerator.cpp
+  CompressedSDF.cpp
+  SmallMatrixSVD.cpp
+  CompressedSDFBlock.cpp
+  BlockLowRankCompressor.cpp
+  CompressionQuality.cpp
+  CompressionReportWriter.cpp
+  AdaptiveSDFBuilder.cpp
+  AdaptiveSDFBuilderPreview.cpp
+  AdaptiveOctree.cpp
+  AdaptiveOctreeBuilder.cpp
+  AdaptiveBlock.cpp
 ...
 ```
 
@@ -74,52 +74,63 @@ cmake --install '<build>' --config Release --prefix '<install>'
 ```
 
 ```text
--- Up-to-date: <install>/lib/adasdf_cl_runtime.lib
--- Up-to-date: <install>/bin/adasdf_build.exe
--- Up-to-date: <install>/bin/adasdf_info.exe
--- Up-to-date: <install>/bin/adasdf_query.exe
--- Up-to-date: <install>/bin/adasdf_collide.exe
--- Up-to-date: <install>/bin/adasdf_make_demo_box.exe
--- Up-to-date: <install>/bin/adasdf_recommend_demo.exe
--- Up-to-date: <install>/bin/adasdf_recommend_build.exe
--- Up-to-date: <install>/bin/adasdf_build_demo_adaptive.exe
--- Up-to-date: <install>/bin/adasdf_collide_boxes_demo.exe
--- Up-to-date: <install>/bin/adasdf_query_mode_demo.exe
--- Up-to-date: <install>/bin/adasdf_expansion_quality.exe
--- Up-to-date: <install>/bin/adasdf_capabilities.exe
--- Up-to-date: <install>/bin/adasdf_mesh_check.exe
--- Up-to-date: <install>/bin/adasdf_mesh_clean.exe
--- Up-to-date: <install>/bin/adasdf_build_dense_sdf.exe
--- Up-to-date: <install>/bin/adasdf_build_adaptive_sdf.exe
--- Up-to-date: <install>/bin/adasdf_compress_adaptive_sdf.exe
--- Up-to-date: <install>/bin/adasdf_build_compressed_sdf.exe
--- Up-to-date: <install>/bin/adasdf_build_adaptive_sdf_preview.exe
+-- Installing: <install>/lib/adasdf_cl_runtime.lib
+-- Installing: <install>/bin/adasdf_build.exe
+-- Installing: <install>/bin/adasdf_info.exe
+-- Installing: <install>/bin/adasdf_query.exe
+-- Installing: <install>/bin/adasdf_collide.exe
+-- Installing: <install>/bin/adasdf_make_demo_box.exe
+-- Installing: <install>/bin/adasdf_recommend_demo.exe
+-- Installing: <install>/bin/adasdf_recommend_build.exe
+-- Installing: <install>/bin/adasdf_build_demo_adaptive.exe
+-- Installing: <install>/bin/adasdf_collide_boxes_demo.exe
+-- Installing: <install>/bin/adasdf_query_mode_demo.exe
+-- Installing: <install>/bin/adasdf_expansion_quality.exe
+-- Installing: <install>/bin/adasdf_capabilities.exe
+-- Installing: <install>/bin/adasdf_mesh_check.exe
+-- Installing: <install>/bin/adasdf_mesh_clean.exe
+-- Installing: <install>/bin/adasdf_build_dense_sdf.exe
+-- Installing: <install>/bin/adasdf_build_adaptive_sdf.exe
+-- Installing: <install>/bin/adasdf_compress_adaptive_sdf.exe
+-- Installing: <install>/bin/adasdf_build_compressed_sdf.exe
+-- Installing: <install>/bin/adasdf_build_adaptive_sdf_preview.exe
 ...
 ```
 
 ### Package Configure: PASS
 
 ```bash
-cmake -S '<source>/tests/package' -B '<workspace>/build/adasdf_cl_iv_pkg' '-DCMAKE_PREFIX_PATH=<install>'
+cmake -S '<source>/tests/package' -B '<workspace>/build/adasdf_cl-v1_9_alpha_validation_install_validation_pkg' '-DCMAKE_PREFIX_PATH=<install>'
 ```
 
 ```text
+-- Building for: Visual Studio 17 2022
 -- Selecting Windows SDK version 10.0.22621.0 to target Windows 10.0.26200.
--- Configuring done (0.0s)
--- Generating done (0.0s)
+-- The CXX compiler identification is MSVC 19.42.34444.0
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.42.34433/bin/Hostx64/x64/cl.exe - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Configuring done (1.9s)
+-- Generating done (0.1s)
 -- Build files have been written to: <build>_pkg
 ```
 
 ### Package Build: PASS
 
 ```bash
-cmake --build '<workspace>/build/adasdf_cl_iv_pkg' --config Release --parallel -- /nodeReuse:false
+cmake --build '<workspace>/build/adasdf_cl-v1_9_alpha_validation_install_validation_pkg' --config Release --parallel -- /nodeReuse:false
 ```
 
 ```text
 适用于 .NET Framework MSBuild 版本 17.14.40+3e7442088
 
+  1>Checking Build System
+  Building Custom Rule <source>/tests/package/CMakeLists.txt
+  test_find_package.cpp
   test_find_package.vcxproj -> <build>_pkg\Release\test_find_package.exe
+  Building Custom Rule <source>/tests/package/CMakeLists.txt
 ```
 
 ### Python CLI Wrapper Tests: PASS
@@ -129,9 +140,9 @@ cmake --build '<workspace>/build/adasdf_cl_iv_pkg' --config Release --parallel -
 ```
 
 ```text
-......................
+............................
 ----------------------------------------------------------------------
-Ran 22 tests in 0.307s
+Ran 28 tests in 0.554s
 
 OK
 ```
@@ -143,7 +154,7 @@ OK
 ```
 
 ```text
-AdaSDF-CL version: 1.8.1-alpha
+AdaSDF-CL version: 1.9.0-alpha
 Position: FCL-style SDF collision backend under development.
 Boundary: complementary SDF backend, not a drop-in FCL replacement.
 
@@ -261,7 +272,7 @@ Resolution: 24 x 24 x 24
 Signed: yes
 Watertight: yes
 Triangles: 12
-Build time ms: 23.3674
+Build time ms: 23.1256
 Memory bytes: 111128
 Reload validation: success
 Report: <local-path>
@@ -276,7 +287,7 @@ JSON report: <local-path>
 
 ```text
 AdaSDF-CL info
-Library version: 1.8.1-alpha
+Library version: 1.9.0-alpha
 Path: <local-path>
 Model name: uniform dense SDF
 Valid: yes
@@ -364,8 +375,8 @@ Octree nodes: 73
 Leaf blocks: 64
 Near-surface blocks: 64
 Memory bytes: 75248
-Sampling time ms: 14.0934
-Build time ms: 15.5316
+Sampling time ms: 15.9613
+Build time ms: 17.5846
 Format: ADASDF_ADAPTIVE_BLOCK_SDFBIN_V1
 Reload validation: success
 Low-rank compression: not enabled
@@ -381,7 +392,7 @@ JSON report: <local-path>
 
 ```text
 AdaSDF-CL info
-Library version: 1.8.1-alpha
+Library version: 1.9.0-alpha
 Path: <local-path>
 Model name: adaptive block dense SDF
 Valid: yes
@@ -485,7 +496,7 @@ Quality report: <local-path>
 
 ```text
 AdaSDF-CL info
-Library version: 1.8.1-alpha
+Library version: 1.9.0-alpha
 Path: <local-path>
 Model name: compressed adaptive block SDF
 Valid: yes
@@ -591,9 +602,9 @@ Fallback rate: 0
 
 ```text
 query_backend,expansion_mode,selected_blocks,num_points,expanded_memory_mb,gpu_resident_memory_mb,setup_ms,expand_ms,upload_sdf_ms,allocation_ms,h2d_points_ms,kernel_ms,sync_ms,d2h_results_ms,postprocess_ms,free_ms,total_ms,query_kernel_ms,query_total_ms,ns_per_query,queries_per_second,fallback_count,max_abs_phi_error,max_normal_error,cuda_available,max_abs_error,mean_abs_error,rms_error,p95_abs_error,sign_mismatch_count,sign_mismatch_rate,ambiguous_sign_count,ambiguous_sign_rate,near_surface_sign_mismatch_count,near_surface_sign_mismatch_rate,fallback_rate,warmup,repeat,kernel_min_ms,kernel_mean_ms,kernel_max_ms,kernel_std_ms,total_min_ms,total_mean_ms,total_max_ms,total_std_ms,output_mode,phi_only,reuse_resident,kernel_only,workspace_reused,allocation_count,workspace_capacity,workspace_device_memory_mb,block_lookup_count,block_scan_count,center_block_hit_rate,neighbor_same_block_rate,download_results,correctness_checked,host_memory,layout,status,error_message
-cpu,none,all,1000,0,0,0,0,0,0.0163,0,NA,NA,0,0,0,2.2554,NA,2.2554,2255.4,443380.3316,0,0,0,false,0,0,0,0,0,0,0,0,0,0,0,0,1,NA,NA,NA,NA,2.2554,2.2554,2.2554,0,"phi,normal",false,false,false,false,0,0,0,0,0,0,0,true,true,paged,aos,ok,
+cpu,none,all,1000,0,0,0,0,0,0.0117,0,NA,NA,0,0,0,2.0439,NA,2.0439,2043.9,489260.727,0,0,0,false,0,0,0,0,0,0,0,0,0,0,0,0,1,NA,NA,NA,NA,2.0439,2.0439,2.0439,0,"phi,normal",false,false,false,false,0,0,0,0,0,0,0,true,true,paged,aos,ok,
 backend | expansion | output | blocks | points | setup ms | total mean ms | kernel mean ms | ns/query | max phi error | max normal error | status
-cpu | none | phi,normal | all | 1000 | 0 | 2.2554 | NA | 2255.4 | 0 | 0 | ok
+cpu | none | phi,normal | all | 1000 | 0 | 2.0439 | NA | 2043.9 | 0 | 0 | ok
 ```
 
 ### Installed CompressedSDF One-Step Build CLI: PASS
@@ -620,6 +631,80 @@ GPU-native compressed query: planned
 Build report: <local-path>
 Compression report: <local-path>
 Quality report: <local-path>
+```
+
+### Installed Sparse Query CLI: PASS
+
+```bash
+'<install>/bin/adasdf_sparse_query.exe' '<workspace>/build/install_validation_compressed_direct.sdfbin' '<source>/tests/data/samples/cube_sparse_samples.csv' --threshold 0 --out '<workspace>/build/install_validation_sparse_results.csv' --report '<workspace>/build/install_validation_sparse_report.md'
+```
+
+```text
+AdaSDF-CL sparse SDF query
+Sample count: 6
+Queried count: 6
+Result count: 6
+Colliding: true
+Min phi: -0.5
+Min effective phi: -0.5
+Early exit: false
+Elapsed ms: 0.0067
+Output mode: phi-only
+Status: ok
+```
+
+### Installed Sparse Collide CLI: PASS
+
+```bash
+'<install>/bin/adasdf_sparse_collide.exe' '<workspace>/build/install_validation_compressed_direct.sdfbin' '<source>/tests/data/samples/cube_sparse_samples.csv' --threshold 0 --early-exit --report '<workspace>/build/install_validation_sparse_collision.md'
+```
+
+```text
+AdaSDF-CL sparse collision query
+Mode: collision-only
+Colliding: true
+Min phi: -0.5
+Min effective phi: -0.5
+First hit sample id: 0
+Sample count: 6
+Queried samples: 1
+Early exit: true
+Elapsed ms: 0.0023
+Return code note: 10 means collision detected, not failure
+Status: ok
+
+Validation note: sparse_collide returned 10, which means collision detected and is expected for this fixture.
+```
+
+### Installed Contact Candidates CLI: PASS
+
+```bash
+'<install>/bin/adasdf_contact_candidates.exe' '<workspace>/build/install_validation_compressed_direct.sdfbin' '<source>/tests/data/samples/cube_sparse_samples.csv' --top-k 4 --threshold 1e-3 --reduction-radius 0.02 --with-normal --out '<workspace>/build/install_validation_contact_candidates.csv' --report '<workspace>/build/install_validation_contact_candidates.md'
+```
+
+```text
+AdaSDF-CL contact candidates
+Input samples: 6
+Threshold candidates: 2
+Reduced candidates: 2
+Top-K: 4
+Min effective phi: -0.5
+This is not a full contact manifold or solver constraints.
+Status: ok
+```
+
+### Installed Sparse Query Benchmark CLI: PASS
+
+```bash
+'<install>/bin/adasdf_benchmark_sparse_query.exe' '<workspace>/build/install_validation_compressed_direct.sdfbin' '<source>/tests/data/samples/cube_sparse_samples.csv' --repeat 2 --warmup 1 --mode phi-only --csv '<workspace>/build/install_validation_sparse_benchmark.csv'
+```
+
+```text
+sample_count,repeat,warmup,total_ms,avg_ms,avg_us,avg_ns_per_sample,queried_samples_avg,early_exit_rate,mode,with_normal,threshold,top_k,status
+6,2,1,0.0082,0.0041,4.1,683.333,6,0,phi-only,false,0,8,ok
+Sparse benchmark mode: phi-only
+Average ns per sample: 683.333
+Status: ok
 ```
 
 ### Installed AdaptiveBlockSDF Dry Run CLI: PASS
@@ -668,12 +753,12 @@ Plan: <local-path>
 ### Package Run: PASS
 
 ```bash
-'<workspace>/build/adasdf_cl_iv_pkg/Release/test_find_package.exe'
+'<workspace>/build/adasdf_cl-v1_9_alpha_validation_install_validation_pkg/Release/test_find_package.exe'
 ```
 
 ```text
 AdaSDF-CL package consumer
-Version: 1.8.1-alpha
+Version: 1.9.0-alpha
 Point: 1 2 3
 Demo signed distance at origin: -0.5
 Demo adaptive blocks: 7
@@ -685,37 +770,48 @@ CPU backend available: true
 ### Downstream Configure: PASS
 
 ```bash
-cmake -S '<source>/examples/downstream_cmake_project' -B '<workspace>/build/adasdf_cl_iv_ds' '-DCMAKE_PREFIX_PATH=<install>'
+cmake -S '<source>/examples/downstream_cmake_project' -B '<workspace>/build/adasdf_cl-v1_9_alpha_validation_install_validation_ds' '-DCMAKE_PREFIX_PATH=<install>'
 ```
 
 ```text
+-- Building for: Visual Studio 17 2022
 -- Selecting Windows SDK version 10.0.22621.0 to target Windows 10.0.26200.
--- Configuring done (0.0s)
--- Generating done (0.0s)
+-- The CXX compiler identification is MSVC 19.42.34444.0
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.42.34433/bin/Hostx64/x64/cl.exe - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Configuring done (2.1s)
+-- Generating done (0.1s)
 -- Build files have been written to: <build>_ds
 ```
 
 ### Downstream Build: PASS
 
 ```bash
-cmake --build '<workspace>/build/adasdf_cl_iv_ds' --config Release --parallel -- /nodeReuse:false
+cmake --build '<workspace>/build/adasdf_cl-v1_9_alpha_validation_install_validation_ds' --config Release --parallel -- /nodeReuse:false
 ```
 
 ```text
 适用于 .NET Framework MSBuild 版本 17.14.40+3e7442088
 
+  1>Checking Build System
+  Building Custom Rule <source>/examples/downstream_cmake_project/CMakeLists.txt
+  main.cpp
   adasdf_downstream.vcxproj -> <build>_ds\Release\adasdf_downstream.exe
+  Building Custom Rule <source>/examples/downstream_cmake_project/CMakeLists.txt
 ```
 
 ### Downstream Run: PASS
 
 ```bash
-'<workspace>/build/adasdf_cl_iv_ds/Release/adasdf_downstream.exe'
+'<workspace>/build/adasdf_cl-v1_9_alpha_validation_install_validation_ds/Release/adasdf_downstream.exe'
 ```
 
 ```text
 AdaSDF-CL downstream example
-Version: 1.8.1-alpha
+Version: 1.9.0-alpha
 CPU backend: available
 No .sdfbin supplied; running core-free demo adaptive path.
 Demo signed distance at origin: -0.5

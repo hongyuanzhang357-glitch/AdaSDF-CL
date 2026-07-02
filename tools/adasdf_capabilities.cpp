@@ -68,6 +68,14 @@ int main(int argc, char** argv) {
         "adasdf_recommend_build",
         "pure-Python CLI wrapper",
         "adasdf_cli subprocess helpers",
+        "sparse point-to-SDF collision query",
+        "collision-only sparse early-exit query",
+        "sample-radius collision proxy",
+        "Top-K sparse contact candidate reduction",
+        "adasdf_sparse_query",
+        "adasdf_sparse_collide",
+        "adasdf_contact_candidates",
+        "adasdf_benchmark_sparse_query",
         "expansion quality audit",
         "sign mismatch and near-surface mismatch metrics",
         "SVG collision view",
@@ -90,7 +98,8 @@ int main(int argc, char** argv) {
         "adasdf_build_adaptive_sdf_preview dry-run",
         "existing-core sampled expansion bridge",
         "CUDA expanded query backend",
-        "block-expanded query for local contact regions"};
+        "block-expanded query for local contact regions",
+        "full contact manifold from sparse candidates"};
     static const char* const planned[] = {
         "Tucker/HOSVD compression",
         "trained surrogate model integration",
@@ -104,7 +113,9 @@ int main(int argc, char** argv) {
         "C API",
         "ROS / MoveIt integration",
         "full low-rank GPU-native SDF query",
-        "GPU-native compressed query"};
+        "GPU-native compressed query",
+        "contact-aware active block expansion/cache",
+        "solver-aware contact manifold"};
 
     std::cout << "AdaSDF-CL version: " << adasdf::versionString() << "\n";
     std::cout
@@ -140,6 +151,13 @@ int main(int argc, char** argv) {
       std::cout << "- v1.8 recommendation is deterministic and experimental; it is not a universal trained model, not fully trained, and not an optimality guarantee\n";
       std::cout << "- pure-Python CLI wrapper through python/adasdf_cli in v1.8.1\n";
       std::cout << "- v1.8.1 Python wrapper is subprocess-based; it is not pybind11, not a native Python binding, and not a C++ extension module\n";
+      std::cout << "- sparse point-to-SDF collision query and contact candidates in v1.9\n";
+      std::cout << "- sparse query defaults to phi-only and does not compute normals unless requested\n";
+      std::cout << "- sparse collision-only mode supports early exit and returns code 10 for detected collision\n";
+      std::cout << "- sample radius uses effective_phi = phi - radius for point/sphere proxy collision\n";
+      std::cout << "- contact candidates are Top-K reduced candidates for contact budgets, not full solver contacts or a complete contact manifold\n";
+      std::cout << "- direct compressed query is useful for sparse queries, debugging, fallback, and small point sets, but not the main high-throughput GPU path\n";
+      std::cout << "- runtime memory saving for compressed SDF should primarily come from contact-aware active block expansion/cache planned for v1.10\n";
       std::cout << "- no hole filling, self-intersection repair, Tucker/HOSVD, trained model integration, online calibration, or GPU-native compressed query\n";
       std::cout << "\nDocumentation:\n";
       std::cout << "- docs/capability_matrix.md\n";
@@ -156,6 +174,10 @@ int main(int argc, char** argv) {
       std::cout << "- docs/surrogate_guided_recommendation.md\n";
       std::cout << "- docs/recommended_build_workflow.md\n";
       std::cout << "- docs/python_cli_wrapper.md\n";
+      std::cout << "- docs/sparse_sdf_collision.md\n";
+      std::cout << "- docs/contact_candidate_api.md\n";
+      std::cout << "- docs/hard_contact_collision_budget.md\n";
+      std::cout << "- docs/sparse_query_benchmarking.md\n";
       std::cout << "- docs/implemented_vs_planned.md\n";
       std::cout << "- docs/fcl_complement_strategy.md\n";
       std::cout << "- docs/query_backend_matrix.md\n";
