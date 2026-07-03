@@ -34,6 +34,11 @@ const ActiveExpandedBlock* ExpandedBlockCache::get(int block_id) {
   return &it->second.block;
 }
 
+const ActiveExpandedBlock* ExpandedBlockCache::peek(int block_id) const {
+  auto it = entries_.find(block_id);
+  return it == entries_.end() ? nullptr : &it->second.block;
+}
+
 void ExpandedBlockCache::put(ActiveExpandedBlock block) {
   if (!block.isValid()) {
     return;

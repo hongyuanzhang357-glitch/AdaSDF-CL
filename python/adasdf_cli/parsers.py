@@ -162,3 +162,25 @@ def parse_block_cache_benchmark_metrics(stdout: str) -> Dict[str, object]:
         elif metrics.get("csv_header") and "csv_values" not in metrics:
             metrics["csv_values"] = line
     return metrics
+
+
+def parse_cuda_block_cache_benchmark_metrics(stdout: str) -> Dict[str, object]:
+    metrics: Dict[str, object] = {}
+    for line in (stdout or "").splitlines():
+        if line.startswith("CUDA block cache benchmark mode:"):
+            metrics["mode"] = line.split(":", 1)[1].strip()
+        elif line.startswith("Average ns per sample:"):
+            metrics["avg_ns_per_sample"] = line.split(":", 1)[1].strip()
+        elif line.startswith("CUDA total avg ms:"):
+            metrics["cuda_total_avg_ms"] = line.split(":", 1)[1].strip()
+        elif line.startswith("CUDA kernel avg ms:"):
+            metrics["cuda_kernel_avg_ms"] = line.split(":", 1)[1].strip()
+        elif line.startswith("CPU active avg ms:"):
+            metrics["cpu_active_avg_ms"] = line.split(":", 1)[1].strip()
+        elif line.startswith("Direct sparse avg ms:"):
+            metrics["direct_sparse_avg_ms"] = line.split(":", 1)[1].strip()
+        elif line.startswith("sample_count,"):
+            metrics["csv_header"] = line
+        elif metrics.get("csv_header") and "csv_values" not in metrics:
+            metrics["csv_values"] = line
+    return metrics

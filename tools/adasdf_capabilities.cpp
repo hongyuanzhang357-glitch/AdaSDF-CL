@@ -76,6 +76,13 @@ int main(int argc, char** argv) {
         "adasdf_sparse_collide",
         "adasdf_contact_candidates",
         "adasdf_benchmark_sparse_query",
+        "contact-aware active block expansion/cache",
+        "adasdf_select_active_blocks",
+        "adasdf_active_block_query",
+        "adasdf_benchmark_block_cache",
+        "CUDA active block cache baseline",
+        "adasdf_cuda_active_block_query",
+        "adasdf_benchmark_cuda_block_cache",
         "expansion quality audit",
         "sign mismatch and near-surface mismatch metrics",
         "SVG collision view",
@@ -98,6 +105,7 @@ int main(int argc, char** argv) {
         "adasdf_build_adaptive_sdf_preview dry-run",
         "existing-core sampled expansion bridge",
         "CUDA expanded query backend",
+        "CUDA active block cache residency reuse",
         "block-expanded query for local contact regions",
         "full contact manifold from sparse candidates"};
     static const char* const planned[] = {
@@ -114,7 +122,6 @@ int main(int argc, char** argv) {
         "ROS / MoveIt integration",
         "full low-rank GPU-native SDF query",
         "GPU-native compressed query",
-        "contact-aware active block expansion/cache",
         "solver-aware contact manifold"};
 
     std::cout << "AdaSDF-CL version: " << adasdf::versionString() << "\n";
@@ -157,7 +164,9 @@ int main(int argc, char** argv) {
       std::cout << "- sample radius uses effective_phi = phi - radius for point/sphere proxy collision\n";
       std::cout << "- contact candidates are Top-K reduced candidates for contact budgets, not full solver contacts or a complete contact manifold\n";
       std::cout << "- direct compressed query is useful for sparse queries, debugging, fallback, and small point sets, but not the main high-throughput GPU path\n";
-      std::cout << "- runtime memory saving for compressed SDF should primarily come from contact-aware active block expansion/cache planned for v1.10\n";
+      std::cout << "- CPU active block expansion/cache is implemented in v1.10 for local compressed SDF runtime memory savings\n";
+      std::cout << "- CUDA active block cache baseline is implemented in v1.11 by uploading CPU-expanded active dense blocks to GPU\n";
+      std::cout << "- v1.11 CUDA active block query is not GPU-native compressed SVD reconstruction and not per-point low-rank factor reconstruction\n";
       std::cout << "- no hole filling, self-intersection repair, Tucker/HOSVD, trained model integration, online calibration, or GPU-native compressed query\n";
       std::cout << "\nDocumentation:\n";
       std::cout << "- docs/capability_matrix.md\n";
@@ -178,6 +187,10 @@ int main(int argc, char** argv) {
       std::cout << "- docs/contact_candidate_api.md\n";
       std::cout << "- docs/hard_contact_collision_budget.md\n";
       std::cout << "- docs/sparse_query_benchmarking.md\n";
+      std::cout << "- docs/active_block_expansion_cache.md\n";
+      std::cout << "- docs/block_cache_benchmarking.md\n";
+      std::cout << "- docs/cuda_active_block_cache.md\n";
+      std::cout << "- docs/cuda_active_block_benchmarking.md\n";
       std::cout << "- docs/implemented_vs_planned.md\n";
       std::cout << "- docs/fcl_complement_strategy.md\n";
       std::cout << "- docs/query_backend_matrix.md\n";

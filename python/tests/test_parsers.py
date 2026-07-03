@@ -4,6 +4,7 @@ from adasdf_cli.parsers import (
     parse_benchmark_metrics,
     parse_collision_colliding,
     parse_contact_count,
+    parse_cuda_block_cache_benchmark_metrics,
     parse_info_format,
     parse_field_bool,
     parse_field_float,
@@ -76,6 +77,17 @@ class ParserTests(unittest.TestCase):
         metrics = parse_sparse_benchmark_metrics(stdout)
         self.assertEqual(metrics["mode"], "phi-only")
         self.assertEqual(metrics["avg_ns_per_sample"], "123.4")
+
+    def test_parse_cuda_block_cache_benchmark_metrics(self):
+        stdout = (
+            "CUDA block cache benchmark mode: phi-only\n"
+            "CUDA kernel avg ms: 1.25\n"
+            "Average ns per sample: 12.5\n"
+        )
+        metrics = parse_cuda_block_cache_benchmark_metrics(stdout)
+        self.assertEqual(metrics["mode"], "phi-only")
+        self.assertEqual(metrics["cuda_kernel_avg_ms"], "1.25")
+        self.assertEqual(metrics["avg_ns_per_sample"], "12.5")
 
 
 if __name__ == "__main__":

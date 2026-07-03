@@ -1,5 +1,41 @@
 # Changelog
 
+## 1.11.0-alpha
+
+CUDA active block cache and GPU local active-block query.
+
+### Added
+
+- `CudaActiveBlockBuffer` for uploading CPU-expanded active dense blocks.
+- `CudaActiveBlockCache` for coordinating CPU active expansion and CUDA upload.
+- `CudaActiveBlockQuery` for phi-only and phi+normal sparse active-block
+  queries on GPU.
+- `CudaActiveBlockBenchmark` for comparing CUDA active block query timing
+  against CPU active block and direct sparse query baselines.
+- `adasdf_cuda_active_block_query` CLI.
+- `adasdf_benchmark_cuda_block_cache` CLI.
+- Python wrappers for CUDA active block query and CUDA block cache benchmark.
+- CUDA active block API, CLI, Python contract, and CPU-only unavailable-path
+  tests.
+
+### Changed
+
+- Version updated to `1.11.0-alpha`.
+- Validation scripts now discover the CUDA active block tools and treat return
+  code `20` as a successful CUDA-unavailable skip.
+
+### Notes
+
+- v1.11 selects active blocks on CPU, expands active blocks on CPU, uploads
+  expanded local dense blocks to GPU, and queries those local dense blocks with
+  CUDA.
+- v1.11 is not GPU-native compressed SVD reconstruction and does not do
+  per-point low-rank factor reconstruction on GPU.
+- CUDA remains optional. CPU-only builds and install validation remain
+  supported.
+- `adasdf_cuda_active_block_query` returns code `10` when collision is
+  detected and code `20` when CUDA is unavailable.
+
 ## 1.10.0-alpha
 
 Contact-aware active block expansion and CPU expanded-block cache.

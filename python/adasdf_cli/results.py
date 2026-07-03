@@ -143,3 +143,32 @@ class BlockCacheBenchmarkResult:
     report_path: Optional[Path] = None
     json_path: Optional[Path] = None
     csv_path: Optional[Path] = None
+
+
+@dataclass
+class CudaActiveBlockQueryResult:
+    command_result: CommandResult
+    cuda_available: Optional[bool] = None
+    colliding: Optional[bool] = None
+    sample_count: Optional[int] = None
+    queried_count: Optional[int] = None
+    result_count: Optional[int] = None
+    active_block_count: Optional[int] = None
+    expanded_block_count: Optional[int] = None
+    fallback_query_count: Optional[int] = None
+    gpu_memory_bytes: Optional[int] = None
+    kernel_time_ms: Optional[float] = None
+    total_time_ms: Optional[float] = None
+    output_path: Optional[Path] = None
+    report_path: Optional[Path] = None
+    json_path: Optional[Path] = None
+
+
+@dataclass
+class CudaBlockCacheBenchmarkResult:
+    command_result: CommandResult
+    cuda_available: Optional[bool] = None
+    metrics: Dict[str, Any] = field(default_factory=dict)
+    report_path: Optional[Path] = None
+    json_path: Optional[Path] = None
+    csv_path: Optional[Path] = None

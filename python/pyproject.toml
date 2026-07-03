@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "adasdf-cli"
-version = "1.10.0a0"
+version = "1.11.0a0"
 description = "Lightweight Python CLI wrapper for AdaSDF-CL tools"
 requires-python = ">=3.9"
 dependencies = []

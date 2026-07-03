@@ -36,6 +36,7 @@ class ExpandedBlockCache {
   const ExpandedBlockCacheOptions& options() const;
   bool contains(int block_id) const;
   const ActiveExpandedBlock* get(int block_id);
+  const ActiveExpandedBlock* peek(int block_id) const;
   void put(ActiveExpandedBlock block);
   void clear();
   std::vector<int> residentBlockIds() const;

@@ -158,6 +158,10 @@ set(ADASDF_CL_RUNTIME_SOURCES
   src/runtime/BlockExpansionManager.cpp
   src/runtime/ActiveBlockQuery.cpp
   src/runtime/ActiveBlockReportWriter.cpp
+  src/runtime/cuda/CudaActiveBlockBuffer.cpp
+  src/runtime/cuda/CudaActiveBlockCache.cpp
+  src/runtime/cuda/CudaActiveBlockQuery.cpp
+  src/runtime/cuda/CudaActiveBlockBenchmark.cpp
   src/recommendation/BuildRecommendationWriter.cpp
   src/recommendation/BuildRecommender.cpp
   src/recommendation/BuildSurrogateEstimator.cpp
@@ -167,7 +171,8 @@ set(ADASDF_CL_RUNTIME_SOURCES
 
 if(ADASDF_CL_HAS_CUDA_BACKEND)
   list(APPEND ADASDF_CL_RUNTIME_SOURCES
-    src/backend/CudaQueryKernels.cu)
+    src/backend/CudaQueryKernels.cu
+    src/runtime/cuda/CudaActiveBlockKernels.cu)
 endif()
 
 set(ADASDF_CL_HAS_EXISTING_CORE OFF)
@@ -508,6 +513,12 @@ target_link_libraries(adasdf_active_block_query PRIVATE adasdf_cl_runtime)
 set_target_properties(adasdf_active_block_query PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
 
+add_executable(adasdf_cuda_active_block_query
+  tools/adasdf_cuda_active_block_query.cpp)
+target_link_libraries(adasdf_cuda_active_block_query PRIVATE adasdf_cl_runtime)
+set_target_properties(adasdf_cuda_active_block_query PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
+
 if(ADASDF_CL_BUILD_BENCHMARKS)
   add_executable(adasdf_benchmark_batch_query
     benchmarks/adasdf_benchmark_batch_query.cpp)
@@ -525,6 +536,12 @@ if(ADASDF_CL_BUILD_BENCHMARKS)
     tools/adasdf_benchmark_block_cache.cpp)
   target_link_libraries(adasdf_benchmark_block_cache PRIVATE adasdf_cl_runtime)
   set_target_properties(adasdf_benchmark_block_cache PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
+
+  add_executable(adasdf_benchmark_cuda_block_cache
+    tools/adasdf_benchmark_cuda_block_cache.cpp)
+  target_link_libraries(adasdf_benchmark_cuda_block_cache PRIVATE adasdf_cl_runtime)
+  set_target_properties(adasdf_benchmark_cuda_block_cache PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
 endif()
 
@@ -649,7 +666,16 @@ set(ADASDF_CL_TEST_SOURCES
   tests/test_select_active_blocks_cli.cpp
   tests/test_active_block_query_cli.cpp
   tests/test_benchmark_block_cache_cli.cpp
-  tests/test_active_block_cache_vs_direct.cpp)
+  tests/test_active_block_cache_vs_direct.cpp
+  tests/test_cuda_active_block_buffer.cpp
+  tests/test_cuda_active_block_cache.cpp
+  tests/test_cuda_active_block_query_unavailable.cpp
+  tests/test_cuda_active_block_query.cpp
+  tests/test_cuda_active_block_alignment.cpp
+  tests/test_cuda_active_block_phi_normal.cpp
+  tests/test_cuda_active_block_cli.cpp
+  tests/test_benchmark_cuda_block_cache_cli.cpp
+  tests/test_cuda_active_block_python_contract.cpp)
 
 file(GLOB_RECURSE ADASDF_CL_DISCOVERED_FIXTURES
   "${ADASDF_CL_EXISTING_ROOT}/models/*.sdfbin")
@@ -830,6 +856,15 @@ if(ADASDF_CL_BUILD_TESTS)
         ADASDF_CL_SELECT_ACTIVE_BLOCKS="$<TARGET_FILE_NAME:adasdf_select_active_blocks>"
         ADASDF_CL_ACTIVE_BLOCK_QUERY="$<TARGET_FILE_NAME:adasdf_active_block_query>")
     endif()
+    if(test_name STREQUAL "test_cuda_active_block_query_unavailable" OR
+        test_name STREQUAL "test_cuda_active_block_cli")
+      add_dependencies(${test_name}
+        adasdf_build_compressed_sdf
+        adasdf_cuda_active_block_query)
+      target_compile_definitions(${test_name} PRIVATE
+        ADASDF_CL_BUILD_COMPRESSED_SDF="$<TARGET_FILE_NAME:adasdf_build_compressed_sdf>"
+        ADASDF_CL_CUDA_ACTIVE_BLOCK_QUERY="$<TARGET_FILE_NAME:adasdf_cuda_active_block_query>")
+    endif()
     if(test_name STREQUAL "test_benchmark_block_cache_cli")
       add_dependencies(${test_name} adasdf_build_compressed_sdf)
       target_compile_definitions(${test_name} PRIVATE
@@ -838,6 +873,16 @@ if(ADASDF_CL_BUILD_TESTS)
         add_dependencies(${test_name} adasdf_benchmark_block_cache)
         target_compile_definitions(${test_name} PRIVATE
           ADASDF_CL_BENCHMARK_BLOCK_CACHE="$<TARGET_FILE_NAME:adasdf_benchmark_block_cache>")
+      endif()
+    endif()
+    if(test_name STREQUAL "test_benchmark_cuda_block_cache_cli")
+      add_dependencies(${test_name} adasdf_build_compressed_sdf)
+      target_compile_definitions(${test_name} PRIVATE
+        ADASDF_CL_BUILD_COMPRESSED_SDF="$<TARGET_FILE_NAME:adasdf_build_compressed_sdf>")
+      if(TARGET adasdf_benchmark_cuda_block_cache)
+        add_dependencies(${test_name} adasdf_benchmark_cuda_block_cache)
+        target_compile_definitions(${test_name} PRIVATE
+          ADASDF_CL_BENCHMARK_CUDA_BLOCK_CACHE="$<TARGET_FILE_NAME:adasdf_benchmark_cuda_block_cache>")
       endif()
     endif()
     add_test(NAME ${test_name} COMMAND ${test_name})
@@ -935,10 +980,21 @@ if(ADASDF_CL_BUILD_TESTS)
       set_tests_properties(${test_name} PROPERTIES
         WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_select_active_blocks>")
     endif()
+    if(test_name STREQUAL "test_cuda_active_block_query_unavailable" OR
+        test_name STREQUAL "test_cuda_active_block_cli")
+      set_tests_properties(${test_name} PROPERTIES
+        WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_cuda_active_block_query>")
+    endif()
     if(test_name STREQUAL "test_benchmark_block_cache_cli")
       if(TARGET adasdf_benchmark_block_cache)
         set_tests_properties(${test_name} PROPERTIES
           WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_benchmark_block_cache>")
+      endif()
+    endif()
+    if(test_name STREQUAL "test_benchmark_cuda_block_cache_cli")
+      if(TARGET adasdf_benchmark_cuda_block_cache)
+        set_tests_properties(${test_name} PROPERTIES
+          WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_benchmark_cuda_block_cache>")
       endif()
     endif()
   endforeach()
@@ -977,12 +1033,14 @@ set(ADASDF_CL_INSTALL_TOOL_TARGETS
   adasdf_sparse_collide
   adasdf_contact_candidates
   adasdf_select_active_blocks
-  adasdf_active_block_query)
+  adasdf_active_block_query
+  adasdf_cuda_active_block_query)
 if(ADASDF_CL_BUILD_BENCHMARKS)
   list(APPEND ADASDF_CL_INSTALL_TOOL_TARGETS
     adasdf_benchmark_batch_query
     adasdf_benchmark_sparse_query
-    adasdf_benchmark_block_cache)
+    adasdf_benchmark_block_cache
+    adasdf_benchmark_cuda_block_cache)
 endif()
 
 install(TARGETS ${ADASDF_CL_INSTALL_TARGETS}

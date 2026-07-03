@@ -1,12 +1,13 @@
 # Alpha Status
 
-AdaSDF-CL 1.10.0-alpha is a research-preview release candidate.
+AdaSDF-CL 1.11.0-alpha is a research-preview release candidate.
 
 The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`,
 `v1.1.0-alpha`, `v1.1.1-alpha`, `v1.2.0-alpha`, `v1.3.0-alpha`,
 `v1.4.0-alpha`, `v1.5.0-alpha`, `v1.6.0-alpha`, `v1.7.0-alpha`,
-`v1.8.0-alpha`, `v1.8.1-alpha`, and `v1.9.0-alpha` tags are retained for
-traceability. The recommended public pre-release is `v1.10.0-alpha`.
+`v1.8.0-alpha`, `v1.8.1-alpha`, `v1.9.0-alpha`, and `v1.10.0-alpha` tags are
+retained for traceability. The recommended public pre-release is
+`v1.11.0-alpha`.
 
 ## What Works
 
@@ -95,6 +96,13 @@ traceability. The recommended public pre-release is `v1.10.0-alpha`.
   `adasdf_benchmark_block_cache`.
 - Python wrapper helpers for active block selection, active block query, and
   block cache benchmarking.
+- `CudaActiveBlockBuffer`, `CudaActiveBlockCache`, `CudaActiveBlockQuery`, and
+  `CudaActiveBlockBenchmark` for optional CUDA local active-block query over
+  CPU-expanded active dense blocks.
+- `adasdf_cuda_active_block_query` and
+  `adasdf_benchmark_cuda_block_cache`.
+- Python wrapper helpers for CUDA active block query and CUDA block cache
+  benchmarking.
 - `AdaptiveSDFBuilderPreview` and `adasdf_build_adaptive_sdf_preview` dry-run
   planning for low-rank compressed construction.
 - Project-generated STL diagnostics and cleanup fixtures.
@@ -121,6 +129,12 @@ queries only after SDF data has been pre-expanded into global or block dense
 data. `CUDA + None` is rejected because compressed-direct GPU query is not
 implemented. This is not a full low-rank compressed SDF GPU expansion and is
 not an industrial GPU collision pipeline.
+
+The v1.11 CUDA active block path is also optional and intentionally bounded. It
+selects active blocks on CPU, expands them on CPU, uploads the expanded local
+dense blocks to GPU, and runs local dense-grid interpolation on CUDA. It is not
+GPU-native compressed SVD reconstruction and does not reconstruct low-rank
+factors per point on GPU.
 
 ExpandedSDF is an approximation of direct model queries. v1.1.x adds quality
 metrics so users can inspect absolute error, p95 error, sign mismatch,

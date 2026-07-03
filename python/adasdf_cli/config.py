@@ -30,6 +30,11 @@ SUPPORTED_TOOLS = {
     "adasdf_contact_candidates",
     "adasdf_benchmark_sparse_query",
     "adasdf_capabilities",
+    "adasdf_select_active_blocks",
+    "adasdf_active_block_query",
+    "adasdf_benchmark_block_cache",
+    "adasdf_cuda_active_block_query",
+    "adasdf_benchmark_cuda_block_cache",
 }
 
 

@@ -52,7 +52,9 @@ only, Planned, Not implemented.
 | Query | CUDA global expanded | Experimental | v1.0.1 | `CudaResidentExpandedSDF` | Optional CUDA. |
 | Query | CUDA block expanded | Experimental | v1.0.1 | `CudaResidentExpandedSDF` | Optional CUDA, best for local points. |
 | Query | CUDA compressed-direct | Planned | - | - | Not implemented. |
-| Query | contact-aware active block expansion/cache | Implemented | v1.10 | `ActiveBlockSelector`, `ExpandedBlockCache`, `ActiveBlockQuery` | CPU local expansion cache for compressed/contact workflows; CUDA active cache remains planned. |
+| Query | contact-aware active block expansion/cache | Implemented | v1.10 | `ActiveBlockSelector`, `ExpandedBlockCache`, `ActiveBlockQuery` | CPU local expansion cache for compressed/contact workflows. |
+| Query | CUDA active block cache baseline | Experimental | v1.11 | `CudaActiveBlockCache`, `adasdf_cuda_active_block_query` | CPU selects and expands active blocks, then uploads expanded local dense blocks to CUDA for local block interpolation. Not GPU-native compressed SVD reconstruction. |
+| Query | CUDA active block phi+normal query | Experimental | v1.11 | `CudaActiveBlockQuery` | Phi-only and phi+normal sparse query over uploaded active dense blocks; CUDA unavailable returns skip code `20` in CLI. |
 | Query | block selection | Implemented | v1.0.1 | `BlockSelection` | Deterministic selected ids. |
 | Query | fallback count | Implemented | v1.0.1 | `QueryEngineStats`, benchmark CSV | Tracks direct fallback where applicable. |
 | Query | kernel-only benchmark | Implemented | v1.0.2 | `--kernel-only` | CUDA timing semantics. |
@@ -106,6 +108,7 @@ only, Planned, Not implemented.
 | Benchmark | kernel-only / total-time distinction | Implemented | v1.0.2 | CSV timing fields | Clear timing semantics. |
 | Benchmark | sparse query benchmark | Implemented | v1.9 | `adasdf_benchmark_sparse_query` | CPU sparse phi-only, phi-normal, collision-only, clearance, and candidates modes. |
 | Benchmark | active block cache benchmark | Implemented | v1.10 | `adasdf_benchmark_block_cache` | Compares CPU active block cached query with direct sparse query. |
+| Benchmark | CUDA active block cache benchmark | Experimental | v1.11 | `adasdf_benchmark_cuda_block_cache` | Reports CUDA total/kernel/upload/download timing and CPU/direct sparse baselines; CUDA unavailable returns code `20`. |
 | Benchmark | CPU/GPU alignment | Implemented | v1.0 | tests | Optional CUDA skip. |
 | Benchmark | real existing-core asset benchmark | Existing-core only | v0.7 | discovered fixtures | Optional. |
 | Benchmark | FCL comparison benchmark | Planned | - | - | Not implemented. |

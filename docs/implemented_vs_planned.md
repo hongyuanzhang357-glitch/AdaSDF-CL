@@ -66,6 +66,11 @@
   `adasdf_benchmark_block_cache`.
 - Python wrappers for active block selection, active block query, and block
   cache benchmarking.
+- CUDA active block cache baseline over CPU-expanded active dense blocks.
+- `adasdf_cuda_active_block_query` and
+  `adasdf_benchmark_cuda_block_cache`.
+- Python wrappers for CUDA active block query and CUDA block cache
+  benchmarking.
 - Markdown and JSON-like mesh diagnostics reports.
 - Before/after cleanup diagnostics and readiness reports.
 - `adasdf_mesh_check` CLI, `adasdf_mesh_clean` CLI, CPU-only mesh diagnostics
@@ -100,12 +105,14 @@
   and editable install, but no pip release is performed.
 - Direct compressed sparse query: useful for sparse queries, debugging,
   fallback, and small point sets, but not the main high-throughput GPU path.
-- Active block cache: implemented on CPU in v1.10. CUDA active block residency
-  remains planned.
+- Active block cache: implemented on CPU in v1.10 and as a CUDA upload/query
+  baseline in v1.11; persistent GPU residency reuse remains planned.
+- CUDA active block query: CPU still performs selection and expansion; CUDA
+  performs local dense-grid interpolation over uploaded active blocks.
 
 ## Planned
 
-- CUDA active block expansion/cache for runtime memory savings.
+- Persistent CUDA active block residency reuse and faster active block lookup.
 - Tucker/HOSVD compression.
 - Trained surrogate model integration.
 - Online recommendation calibration.

@@ -462,6 +462,10 @@ def main() -> int:
     active_query_report = build.parent / "install_validation_active_block_query.md"
     block_cache_benchmark_csv = build.parent / "install_validation_block_cache_benchmark.csv"
     block_cache_benchmark_report = build.parent / "install_validation_block_cache_benchmark.md"
+    cuda_active_query_csv = build.parent / "install_validation_cuda_active_block_query.csv"
+    cuda_active_query_report = build.parent / "install_validation_cuda_active_block_query.md"
+    cuda_block_cache_benchmark_csv = build.parent / "install_validation_cuda_block_cache_benchmark.csv"
+    cuda_block_cache_benchmark_report = build.parent / "install_validation_cuda_block_cache_benchmark.md"
     recommendation_md = build.parent / "install_validation_recommendation.md"
     recommendation_json = build.parent / "install_validation_recommendation.json"
     adaptive_dryrun_sdfbin = build.parent / "install_validation_adaptive_dryrun.sdfbin"
@@ -490,6 +494,8 @@ def main() -> int:
         "adasdf_select_active_blocks",
         "adasdf_active_block_query",
         "adasdf_benchmark_block_cache",
+        "adasdf_cuda_active_block_query",
+        "adasdf_benchmark_cuda_block_cache",
         "adasdf_build_adaptive_sdf_preview",
     ]
     dense_tools: dict[str, Path] = {}
@@ -828,6 +834,46 @@ def main() -> int:
             ],
         ),
         (
+            "Installed CUDA Active Block Query CLI",
+            [
+                str(dense_tools["adasdf_cuda_active_block_query"]),
+                str(compressed_direct_sdfbin),
+                str(sample_fixture),
+                "--threshold",
+                "1.0",
+                "--selection-band",
+                "0.1",
+                "--extra-margin",
+                "0.02",
+                "--with-normal",
+                "--out",
+                str(cuda_active_query_csv),
+                "--report",
+                str(cuda_active_query_report),
+            ],
+        ),
+        (
+            "Installed CUDA Active Block Cache Benchmark CLI",
+            [
+                str(dense_tools["adasdf_benchmark_cuda_block_cache"]),
+                str(compressed_direct_sdfbin),
+                str(sample_fixture),
+                "--repeat",
+                "2",
+                "--warmup",
+                "0",
+                "--threshold",
+                "1.0",
+                "--selection-band",
+                "0.1",
+                "--compare-direct",
+                "--csv",
+                str(cuda_block_cache_benchmark_csv),
+                "--report",
+                str(cuda_block_cache_benchmark_report),
+            ],
+        ),
+        (
             "Installed AdaptiveBlockSDF Dry Run CLI",
             [
                 str(dense_tools["adasdf_build_adaptive_sdf"]),
@@ -872,6 +918,24 @@ def main() -> int:
             result.output += (
                 "\nValidation note: active_block_query returned 10, which means "
                 "collision detected and is expected for this fixture.\n"
+            )
+        if name == "Installed CUDA Active Block Query CLI" and result.returncode in (10, 20):
+            if result.returncode == 10:
+                result.output += (
+                    "\nValidation note: cuda_active_block_query returned 10, which means "
+                    "collision detected and is expected for this fixture.\n"
+                )
+            else:
+                result.output += (
+                    "\nValidation note: cuda_active_block_query returned 20, which means "
+                    "CUDA was unavailable and the run was skipped as expected.\n"
+                )
+            result.returncode = 0
+        if name == "Installed CUDA Active Block Cache Benchmark CLI" and result.returncode == 20:
+            result.returncode = 0
+            result.output += (
+                "\nValidation note: benchmark_cuda_block_cache returned 20, which means "
+                "CUDA was unavailable and the run was skipped as expected.\n"
             )
         results.append(result)
         if result.returncode != 0:
@@ -1128,6 +1192,50 @@ def main() -> int:
             ):
                 result.returncode = 1
                 result.output += "\nValidation failed: installed block cache benchmark output is incomplete.\n"
+        elif name == "Installed CUDA Active Block Query CLI":
+            csv_text = (
+                cuda_active_query_csv.read_text(encoding="utf-8", errors="replace")
+                if cuda_active_query_csv.exists()
+                else ""
+            )
+            report_text = (
+                cuda_active_query_report.read_text(encoding="utf-8", errors="replace")
+                if cuda_active_query_report.exists()
+                else ""
+            )
+            if (
+                not cuda_active_query_csv.exists()
+                or not cuda_active_query_report.exists()
+                or "CUDA available:" not in result.output
+                or not ("Status: ok" in result.output or "Status: skipped" in result.output)
+                or "source" not in (csv_text.splitlines()[0] if csv_text.splitlines() else "")
+                or "CUDA Active Block Query Report" not in report_text
+            ):
+                result.returncode = 1
+                result.output += "\nValidation failed: installed CUDA active block query output is incomplete.\n"
+        elif name == "Installed CUDA Active Block Cache Benchmark CLI":
+            csv_text = (
+                cuda_block_cache_benchmark_csv.read_text(encoding="utf-8", errors="replace")
+                if cuda_block_cache_benchmark_csv.exists()
+                else ""
+            )
+            report_text = (
+                cuda_block_cache_benchmark_report.read_text(encoding="utf-8", errors="replace")
+                if cuda_block_cache_benchmark_report.exists()
+                else ""
+            )
+            header = csv_text.splitlines()[0] if csv_text.splitlines() else ""
+            if (
+                not cuda_block_cache_benchmark_csv.exists()
+                or not cuda_block_cache_benchmark_report.exists()
+                or "CUDA available:" not in result.output
+                or not ("Status: ok" in result.output or "Status: skipped" in result.output)
+                or "cuda_kernel_avg_ms" not in header
+                or "cuda_available" not in header
+                or "CUDA Active Block Cache Benchmark" not in report_text
+            ):
+                result.returncode = 1
+                result.output += "\nValidation failed: installed CUDA block cache benchmark output is incomplete.\n"
         elif name == "Installed AdaptiveBlockSDF Dry Run CLI":
             if (
                 adaptive_dryrun_sdfbin.exists()

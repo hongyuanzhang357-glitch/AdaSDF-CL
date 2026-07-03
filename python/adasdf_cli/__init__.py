@@ -13,6 +13,8 @@ from .results import (
     CollisionResult,
     CommandResult,
     ContactCandidatesResult,
+    CudaActiveBlockQueryResult,
+    CudaBlockCacheBenchmarkResult,
     InfoResult,
     MeshCheckResult,
     QueryResult,
@@ -25,6 +27,7 @@ from .tools import (
     active_block_query,
     benchmark_batch_query,
     benchmark_block_cache,
+    benchmark_cuda_block_cache,
     benchmark_sparse_query,
     build_adaptive_sdf,
     build_compressed_sdf,
@@ -33,6 +36,7 @@ from .tools import (
     collide,
     compress_adaptive_sdf,
     contact_candidates,
+    cuda_active_block_query,
     expansion_quality,
     info,
     mesh_check,
@@ -45,7 +49,7 @@ from .tools import (
 )
 from .workflows import preprocess_and_build_compressed, recommend_then_build_compressed
 
-__version__ = "1.10.0-alpha"
+__version__ = "1.11.0-alpha"
 
 __all__ = [
     "AdaSDFConfig",
@@ -61,6 +65,8 @@ __all__ = [
     "CollisionResult",
     "CommandResult",
     "ContactCandidatesResult",
+    "CudaActiveBlockQueryResult",
+    "CudaBlockCacheBenchmarkResult",
     "InfoResult",
     "MeshCheckResult",
     "QueryResult",
@@ -71,6 +77,7 @@ __all__ = [
     "active_block_query",
     "benchmark_batch_query",
     "benchmark_block_cache",
+    "benchmark_cuda_block_cache",
     "benchmark_sparse_query",
     "build_adaptive_sdf",
     "build_compressed_sdf",
@@ -79,6 +86,7 @@ __all__ = [
     "collide",
     "compress_adaptive_sdf",
     "contact_candidates",
+    "cuda_active_block_query",
     "default_config",
     "expansion_quality",
     "find_tool",

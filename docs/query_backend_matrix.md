@@ -10,6 +10,7 @@
 | CUDA | None | no | - | CUDA requires pre-expanded data. |
 | CUDA | Global | yes | phi, normal / phi-only | Resident expanded layout; optional CUDA. |
 | CUDA | Block | yes | phi, normal / phi-only | Selected block support; point distribution matters. |
+| CUDA active block cache | Local active block | yes | phi, optional normal | CPU selects and expands active blocks, CUDA queries uploaded local dense blocks. Optional CUDA; unavailable tools return `20`. |
 
 CPU direct is the default most stable path. CPU expanded modes validate and
 simulate GPU layouts without requiring CUDA. CUDA only runs expanded layouts.
@@ -39,8 +40,10 @@ not the main high-throughput GPU path.
 The main runtime memory advantage of compressed SDF comes from expanding only
 active blocks near contact/query regions rather than globally expanding the
 full model. v1.10 implements this as a CPU active block cache through
-`ActiveBlockSelector`, `BlockExpansionManager`, and `ActiveBlockQuery`. CUDA
-active block cache remains planned.
+`ActiveBlockSelector`, `BlockExpansionManager`, and `ActiveBlockQuery`.
+v1.11 adds a CUDA active block baseline by uploading those CPU-expanded active
+dense blocks to GPU and running local dense-grid interpolation. It is not
+GPU-native compressed SVD reconstruction.
 
 `--output phi` is closest to the original UI kernel-only comparison.
 `--output phi,normal` is closer to contact workflow needs. `--device-only` is

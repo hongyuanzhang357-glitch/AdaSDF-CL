@@ -2,7 +2,7 @@
 
 Adaptive Signed Distance Field Collision Library
 
-Status: 1.10.0-alpha / research preview
+Status: 1.11.0-alpha / research preview
 Build system: CMake
 License: MIT
 Tests: CTest
@@ -11,11 +11,16 @@ AdaSDF-CL is an alpha collision and contact library built around signed distance
 
 AdaSDF-CL is an FCL-style SDF collision backend under development. It complements FCL by providing signed-distance queries, penetration depth, contact normals, batch query, expanded-SDF quality audit and CUDA query paths. It is not a drop-in FCL replacement.
 
-v1.10.0-alpha adds contact-aware active block expansion and a CPU expanded
+v1.11.0-alpha adds a CUDA active block cache baseline. It selects and expands
+active blocks on CPU, uploads expanded local dense blocks to GPU, and runs
+CUDA local block interpolation for phi-only or phi+normal sparse queries. It
+is not GPU-native compressed SVD reconstruction.
+
+v1.10.0-alpha added contact-aware active block expansion and a CPU expanded
 block cache for compressed/adaptive SDF runtime queries. It selects local
 blocks from sparse samples, expands only those blocks, reports cache/fallback
 sources, and avoids global expansion when a contact workflow only needs a
-small local working set. CUDA active block cache remains planned.
+small local working set.
 
 v1.9.0-alpha added sparse point-to-SDF collision queries and contact candidate
 extraction. Sparse query defaults to phi-only, collision-only mode supports
@@ -45,9 +50,9 @@ CPU-only builds remain fully usable.
 The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`, `v1.1.0-alpha`,
 `v1.1.1-alpha`, `v1.2.0-alpha`, `v1.3.0-alpha`, `v1.4.0-alpha`,
 `v1.5.0-alpha`, `v1.6.0-alpha`, `v1.7.0-alpha`, `v1.8.0-alpha`,
-`v1.8.1-alpha`, and `v1.9.0-alpha` tags are
+`v1.8.1-alpha`, `v1.9.0-alpha`, and `v1.10.0-alpha` tags are
 retained for traceability. The recommended public pre-release is
-`v1.10.0-alpha`.
+`v1.11.0-alpha`.
 
 ## What Is AdaSDF-CL?
 
@@ -90,6 +95,8 @@ collision engine and does not yet replace FCL.
 | Sparse query benchmark | Implemented |
 | Contact-aware active block cache | Implemented |
 | Active block cache benchmark | Implemented |
+| CUDA active block cache | Implemented / experimental |
+| CUDA local active-block query | Implemented / experimental |
 | Native Python / pybind11 binding | Planned |
 | Adaptive compressed builder interface preview | Planning tool / implemented matrix-SVD status |
 | Existing-core sampled expansion bridge | Existing-core only / partial |
@@ -130,6 +137,8 @@ Detailed capability references:
 - `docs/active_block_expansion_cache.md`
 - `docs/contact_aware_block_selection.md`
 - `docs/block_cache_benchmarking.md`
+- `docs/cuda_active_block_cache.md`
+- `docs/cuda_active_block_benchmarking.md`
 - `docs/runtime_memory_strategy.md`
 
 ## Sparse SDF Collision And Contact Candidates
@@ -183,6 +192,27 @@ adasdf_benchmark_block_cache model.sdfbin samples.csv \
 
 `adasdf_active_block_query` returns code `10` when collision is detected. That
 is a successful collision status, not a program failure.
+
+## CUDA Active Block Cache
+
+```bash
+adasdf_cuda_active_block_query model.sdfbin samples.csv \
+  --threshold 0 \
+  --selection-band 1e-3 \
+  --phi-only \
+  --out cuda_active_query.csv
+
+adasdf_benchmark_cuda_block_cache model.sdfbin samples.csv \
+  --repeat 20 \
+  --warmup 5 \
+  --mode phi-only \
+  --compare-direct \
+  --csv cuda_block_cache_benchmark.csv
+```
+
+`adasdf_cuda_active_block_query` returns code `10` when collision is detected
+and code `20` when CUDA is unavailable. Return code `20` is an explicit skip,
+not a repository or model failure.
 
 ## Python CLI Wrapper
 
