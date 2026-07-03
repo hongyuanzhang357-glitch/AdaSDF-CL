@@ -8,6 +8,7 @@ from typing import Iterable, List, Optional, Sequence, Union
 from .config import AdaSDFConfig, find_tool, preview_tool
 from .parsers import (
     parse_benchmark_metrics,
+    parse_build_acceleration_stats,
     parse_block_cache_benchmark_metrics,
     parse_collision_colliding,
     parse_contact_count,
@@ -212,6 +213,9 @@ def build_dense_sdf(
     signed: bool = True,
     unsigned: bool = False,
     auto_clean: bool = False,
+    accel: Optional[str] = None,
+    threads: Optional[int] = None,
+    benchmark_brute_reference: bool = False,
     report: Optional[PathLike] = None,
     json: Optional[PathLike] = None,
     bin_dir: Optional[PathLike] = None,
@@ -223,6 +227,9 @@ def build_dense_sdf(
     _append_value(command, "--padding", padding)
     _append_signed(command, signed, unsigned)
     _append_bool(command, "--auto-clean", auto_clean)
+    _append_value(command, "--accel", accel)
+    _append_value(command, "--threads", threads)
+    _append_bool(command, "--benchmark-brute-reference", benchmark_brute_reference)
     _append_value(command, "--report", _path(report) if report is not None else None)
     _append_value(command, "--json", _path(json) if json is not None else None)
     result = _run(command, check=check, dry_run=dry_run)
@@ -241,6 +248,9 @@ def build_adaptive_sdf(
     signed: bool = True,
     unsigned: bool = False,
     auto_clean: bool = False,
+    accel: Optional[str] = None,
+    threads: Optional[int] = None,
+    benchmark_brute_reference: bool = False,
     report: Optional[PathLike] = None,
     json: Optional[PathLike] = None,
     dry_run_builder: bool = False,
@@ -256,6 +266,9 @@ def build_adaptive_sdf(
     _append_value(command, "--padding", padding)
     _append_signed(command, signed, unsigned)
     _append_bool(command, "--auto-clean", auto_clean)
+    _append_value(command, "--accel", accel)
+    _append_value(command, "--threads", threads)
+    _append_bool(command, "--benchmark-brute-reference", benchmark_brute_reference)
     _append_value(command, "--report", _path(report) if report is not None else None)
     _append_value(command, "--json", _path(json) if json is not None else None)
     _append_bool(command, "--dry-run", dry_run_builder)
@@ -307,6 +320,9 @@ def build_compressed_sdf(
     signed: bool = True,
     unsigned: bool = False,
     auto_clean: bool = False,
+    accel: Optional[str] = None,
+    threads: Optional[int] = None,
+    benchmark_brute_reference: bool = False,
     report: Optional[PathLike] = None,
     compression_report: Optional[PathLike] = None,
     quality_report: Optional[PathLike] = None,
@@ -322,6 +338,9 @@ def build_compressed_sdf(
     _append_value(command, "--padding", padding)
     _append_signed(command, signed, unsigned)
     _append_bool(command, "--auto-clean", auto_clean)
+    _append_value(command, "--accel", accel)
+    _append_value(command, "--threads", threads)
+    _append_bool(command, "--benchmark-brute-reference", benchmark_brute_reference)
     _append_value(command, "--fixed-rank", fixed_rank)
     _append_value(command, "--max-rank", max_rank)
     _append_value(command, "--report", _path(report) if report is not None else None)
@@ -443,6 +462,40 @@ def benchmark_batch_query(
     _append_value(command, "--repeat", repeat)
     result = _run(command, check=check, dry_run=dry_run)
     return BenchmarkResult(result, metrics=parse_benchmark_metrics(result.stdout))
+
+
+def benchmark_builder_acceleration(
+    input_stl: PathLike,
+    *,
+    builder: str = "dense",
+    accel: str = "bvh",
+    threads: Optional[int] = None,
+    repeat: int = 3,
+    warmup: int = 1,
+    benchmark_brute_reference: bool = False,
+    resolution: Optional[int] = None,
+    min_level: Optional[int] = None,
+    max_level: Optional[int] = None,
+    block_resolution: Optional[int] = None,
+    unsigned: bool = False,
+    bin_dir: Optional[PathLike] = None,
+    check: bool = True,
+    dry_run: bool = False,
+) -> BenchmarkResult:
+    command = [_tool("adasdf_benchmark_builder_acceleration", bin_dir, dry_run), _path(input_stl)]
+    _append_value(command, "--builder", builder)
+    _append_value(command, "--accel", accel)
+    _append_value(command, "--threads", threads)
+    _append_value(command, "--repeat", repeat)
+    _append_value(command, "--warmup", warmup)
+    _append_bool(command, "--benchmark-brute-reference", benchmark_brute_reference)
+    _append_value(command, "--resolution", resolution)
+    _append_value(command, "--min-level", min_level)
+    _append_value(command, "--max-level", max_level)
+    _append_value(command, "--block-resolution", block_resolution)
+    _append_bool(command, "--unsigned", unsigned)
+    result = _run(command, check=check, dry_run=dry_run)
+    return BenchmarkResult(result, metrics=parse_build_acceleration_stats(result.stdout))
 
 
 def sparse_query(

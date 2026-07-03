@@ -140,6 +140,61 @@ def parse_field_bool(stdout: str, label: str) -> Optional[bool]:
     return match.group(1).strip().lower() in {"true", "yes", "1"}
 
 
+def parse_speedup(stdout: str) -> Optional[float]:
+    return parse_field_float(stdout, "Speedup vs brute reference")
+
+
+def parse_bvh_build_time_ms(stdout: str) -> Optional[float]:
+    return parse_field_float(stdout, "BVH build time ms")
+
+
+def parse_sampling_time_ms(stdout: str) -> Optional[float]:
+    return parse_field_float(stdout, "Sampling time ms")
+
+
+def parse_threads(stdout: str) -> Optional[int]:
+    value = parse_field_int(stdout, "Threads used")
+    if value is not None:
+        return value
+    return parse_field_int(stdout, "Threads")
+
+
+def parse_build_acceleration_stats(stdout: str) -> Dict[str, object]:
+    metrics: Dict[str, object] = {}
+    for label, key in (
+        ("Builder", "builder"),
+        ("Acceleration", "acceleration"),
+        ("Used BVH", "used_bvh"),
+        ("Sample count", "sample_count"),
+        ("BVH nodes", "bvh_nodes"),
+        ("BVH leaves", "bvh_leaves"),
+        ("Total build time ms", "total_build_time_ms"),
+        ("Build time ms", "build_time_ms"),
+        ("Brute reference time ms", "brute_reference_time_ms"),
+    ):
+        match = _search(rf"^{re.escape(label)}:\s*(.+)$", stdout)
+        if match:
+            metrics[key] = match.group(1).strip()
+    threads = parse_threads(stdout)
+    if threads is not None:
+        metrics["threads"] = threads
+    bvh_ms = parse_bvh_build_time_ms(stdout)
+    if bvh_ms is not None:
+        metrics["bvh_build_time_ms"] = bvh_ms
+    sampling_ms = parse_sampling_time_ms(stdout)
+    if sampling_ms is not None:
+        metrics["sampling_time_ms"] = sampling_ms
+    speedup = parse_speedup(stdout)
+    if speedup is not None:
+        metrics["speedup_vs_bruteforce"] = speedup
+    for line in (stdout or "").splitlines():
+        if line.startswith("builder,acceleration,"):
+            metrics["csv_header"] = line
+        elif metrics.get("csv_header") and "csv_values" not in metrics:
+            metrics["csv_values"] = line
+    return metrics
+
+
 def parse_sparse_benchmark_metrics(stdout: str) -> Dict[str, object]:
     metrics: Dict[str, object] = {}
     for line in (stdout or "").splitlines():

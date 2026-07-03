@@ -4,6 +4,8 @@
 #include <fstream>
 #include <sstream>
 
+#include "adasdf/acceleration/BuildAccelerationReport.h"
+
 namespace adasdf {
 namespace {
 
@@ -84,6 +86,8 @@ std::string AdaptiveBlockSDFBuildReportWriter::toMarkdown(
   out << "- Sampling time ms: " << report.sampling_time_ms << "\n";
   out << "- Build time ms: " << report.build_time_ms << "\n\n";
 
+  out << adasdf::toMarkdown(report.acceleration_stats) << "\n\n";
+
   out << "## Warnings\n\n";
   if (report.warnings.empty()) {
     out << "- none\n\n";
@@ -95,8 +99,8 @@ std::string AdaptiveBlockSDFBuildReportWriter::toMarkdown(
   }
 
   out << "## Limitations\n\n";
-  out << "- The adaptive dense builder uses brute-force triangle distance, "
-         "not BVH acceleration.\n";
+  out << "- Brute-force triangle distance remains the default reference path.\n";
+  out << "- BVH acceleration is an optional CPU path for adaptive block sampling.\n";
   out << "- This report describes dense adaptive block output.\n";
   out << "- Matrix-SVD compression is available through "
          "ADASDF_COMPRESSED_BLOCK_SDFBIN_V1.\n";
@@ -133,6 +137,8 @@ std::string AdaptiveBlockSDFBuildReportWriter::toJson(
   out << "  \"memory_bytes\": " << report.memory_bytes << ",\n";
   out << "  \"sampling_time_ms\": " << report.sampling_time_ms << ",\n";
   out << "  \"build_time_ms\": " << report.build_time_ms << ",\n";
+  out << "  \"acceleration\": " << adasdf::toJson(report.acceleration_stats)
+      << ",\n";
   out << "  \"low_rank_compression\": \"available via ADASDF_COMPRESSED_BLOCK_SDFBIN_V1\",\n";
   out << "  \"warnings\": [";
   for (std::size_t i = 0; i < report.warnings.size(); ++i) {

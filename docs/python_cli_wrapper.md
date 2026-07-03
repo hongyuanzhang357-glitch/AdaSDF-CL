@@ -41,6 +41,7 @@ python -m pip install -e python
 - `build_adaptive_sdf`
 - `compress_adaptive_sdf`
 - `build_compressed_sdf`
+- `benchmark_builder_acceleration`
 - `info`
 - `query`
 - `collide`
@@ -51,6 +52,7 @@ python -m pip install -e python
 - `active_block_query`
 - `expansion_quality`
 - `benchmark_batch_query`
+- `benchmark_builder_acceleration`
 - `benchmark_sparse_query`
 - `benchmark_block_cache`
 - `recommend_then_build_compressed`
@@ -79,7 +81,18 @@ adasdf.build_compressed_sdf(
     max_level=4,
     block_resolution=8,
     max_rank=8,
+    accel="bvh",
+    threads=4,
 )
+
+bench = adasdf.benchmark_builder_acceleration(
+    "model.stl",
+    builder="compressed",
+    accel="bvh",
+    threads=4,
+    benchmark_brute_reference=True,
+)
+print(bench.metrics)
 
 q = adasdf.query("model_compressed.sdfbin", point=[0, 0, 0])
 print(q.phi)

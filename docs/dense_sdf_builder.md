@@ -12,6 +12,8 @@ separate CompressedAdaptiveBlockSDF workflow with matrix-SVD factors and dense
 fallback. v1.8.0-alpha adds `adasdf_recommend_build` to recommend whether a
 mesh should start with DenseSDF, AdaptiveBlockSDF, or
 CompressedAdaptiveBlockSDF. DenseSDF remains the uniform baseline.
+v1.12.0-alpha adds optional CPU BVH-accelerated sampling through
+`--accel bvh`; `--accel brute` remains the default reference path.
 
 ## Workflow
 
@@ -19,7 +21,7 @@ CompressedAdaptiveBlockSDF. DenseSDF remains the uniform baseline.
 adasdf_mesh_check model.stl --readiness --out mesh_report.md
 adasdf_mesh_clean model.stl model_clean.stl --report cleanup_report.md
 adasdf_recommend_build model_clean.stl --target-error 1e-3 --memory-mb 512 --use-case balanced --out recommendation.md --emit-command
-adasdf_build_dense_sdf model_clean.stl model_dense.sdfbin --resolution 64 --padding 0.05
+adasdf_build_dense_sdf model_clean.stl model_dense.sdfbin --resolution 64 --padding 0.05 --accel bvh --threads 4
 adasdf_info model_dense.sdfbin
 adasdf_query model_dense.sdfbin --point 0 0 0
 adasdf_collide model_dense.sdfbin model_dense.sdfbin --max-contacts 4
@@ -32,7 +34,9 @@ adasdf_collide model_dense.sdfbin model_dense.sdfbin --max-contacts 4
 - `TriangleDistance`: robust point-to-triangle distance with degenerate
   triangle fallback.
 - `MeshSign`: deterministic ray-casting sign estimate for watertight meshes.
-- `DenseSDFBuilder`: brute-force STL/TriangleMesh sampling into a uniform grid.
+- `DenseSDFBuilder`: brute-force or optional BVH STL/TriangleMesh sampling
+  into a uniform grid.
+- `TriangleBVH` and `BVHSDFSampler`: optional CPU builder acceleration.
 - `DenseSDFBuildReportWriter`: Markdown and JSON-like build reports.
 - `DenseSDFBin`: text `.sdfbin` format with magic `ADASDF_DENSE_SDFBIN_V1`.
 - `adasdf_build_dense_sdf`: public CLI for building dense `.sdfbin` assets.
@@ -45,6 +49,20 @@ signed mode. Users can request an unsigned distance field with `--unsigned`.
 The v1.5 sign estimator is alpha-level ray casting. It is deterministic and
 tested on project fixtures, but it is not industrial geometry certification and
 does not prove that an arbitrary STL is free from self-intersections.
+
+## Acceleration
+
+`adasdf_build_dense_sdf` supports:
+
+```bash
+--accel brute
+--accel bvh
+--threads 4
+--benchmark-brute-reference
+```
+
+BVH acceleration affects build-time sampling only. It is not GPU BVH and does
+not change the DenseSDF query backend or file format.
 
 ## DenseSDFBin Format
 

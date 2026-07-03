@@ -1,13 +1,14 @@
 # Alpha Status
 
-AdaSDF-CL 1.11.0-alpha is a research-preview release candidate.
+AdaSDF-CL 1.12.0-alpha is a research-preview release candidate.
 
 The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`,
 `v1.1.0-alpha`, `v1.1.1-alpha`, `v1.2.0-alpha`, `v1.3.0-alpha`,
 `v1.4.0-alpha`, `v1.5.0-alpha`, `v1.6.0-alpha`, `v1.7.0-alpha`,
-`v1.8.0-alpha`, `v1.8.1-alpha`, `v1.9.0-alpha`, and `v1.10.0-alpha` tags are
+`v1.8.0-alpha`, `v1.8.1-alpha`, `v1.9.0-alpha`, `v1.10.0-alpha`, and
+`v1.11.0-alpha` tags are
 retained for traceability. The recommended public pre-release is
-`v1.11.0-alpha`.
+`v1.12.0-alpha`.
 
 ## What Works
 
@@ -42,6 +43,10 @@ retained for traceability. The recommended public pre-release is
 - `adasdf_mesh_check` CLI with diagnostics, readiness scoring, safe cleanup
   hooks, Markdown, and JSON-like reports.
 - `adasdf_mesh_clean` CLI for safe cleanup and clean ASCII STL output.
+- CPU TriangleBVH acceleration for DenseSDF, AdaptiveBlockSDF, and
+  CompressedAdaptiveBlockSDF builder sampling.
+- Deterministic stdlib multi-threaded builder sampling with `--threads N`.
+- `adasdf_benchmark_builder_acceleration` for builder acceleration timing.
 - `DenseSDFModel`, `DenseSDFBuilder`, `DenseSDFBin`, and
   `adasdf_build_dense_sdf` for a public core-free STL-to-uniform-SDF path.
 - DenseSDF query, collision, expansion quality, and benchmark model loading.
@@ -197,7 +202,13 @@ reuses the dense local blocks through a deterministic CPU cache. This is the
 intended runtime memory-saving path for compressed SDF contact workflows. It is
 not CUDA active block residency, not GPU block upload, not GPU-native
 compressed query, not FCL fallback, not `CollisionWorld`, and not a complete
-contact solver. CUDA active block cache is planned for v1.11.
+contact solver.
+
+v1.12.0-alpha is a CPU BVH builder acceleration release. It keeps brute-force
+sampling as the default reference path and adds optional `--accel bvh` and
+`--threads N` for DenseSDF, AdaptiveBlockSDF, and CompressedAdaptiveBlockSDF
+builders. It is not GPU BVH, not FCL fallback, not `CollisionWorld`, not a
+contact solver, and not a low-rank compression math change.
 
 Benchmark `total_ms` is a full query timing. Benchmark `kernel_ms` is CUDA
 kernel event timing. Original UI warmed kernel-average numbers should be
@@ -210,7 +221,7 @@ analysis.
 
 ## Validation Snapshot
 
-- Expected tests: 121.
+- Expected tests: 141.
 - Expected Python wrapper unittest: PASS, with real CLI smoke enabled when
   `ADASDF_BIN`, `ADASDF_TEST_STL`, and `ADASDF_TEST_SAMPLES` are set.
 - Expected install validation: PASS with `ADASDF_CL_USE_EXISTING_CORE=OFF`.
@@ -219,10 +230,10 @@ analysis.
 - Target external collision test verdict for v0.9.0-alpha: PASS for the demo
   adaptive workflow.
 - Expected CUDA-unavailable behavior: GPU benchmark/tests SKIPPED, not FAILED.
-- Current v1.10.0-alpha local CPU CTest target: 121/121 PASS.
-- Current v1.10.0-alpha CUDA validation is optional and should skip gracefully
+- Current v1.12.0-alpha local CPU CTest target: 141/141 PASS.
+- Current v1.12.0-alpha CUDA validation is optional and should skip gracefully
   when CUDA is unavailable.
-- Current v1.10.0-alpha Python wrapper unittest target: 31/31 PASS.
-- Current v1.10.0-alpha install validation target: PASS.
-- Current v1.10.0-alpha alpha validation target: PASS with install validation.
-- Current v1.10.0-alpha clean check target: PASS.
+- Current v1.12.0-alpha Python wrapper unittest target: 34/34 PASS.
+- Current v1.12.0-alpha install validation target: PASS.
+- Current v1.12.0-alpha alpha validation target: PASS with install validation.
+- Current v1.12.0-alpha clean check target: PASS.

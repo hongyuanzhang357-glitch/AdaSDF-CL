@@ -12,6 +12,7 @@ void usage() {
       << "Usage: adasdf_build_dense_sdf input.stl output.sdfbin "
          "[--resolution 64] [--padding 0.05] [--signed|--unsigned] "
          "[--require-watertight] [--allow-open-unsigned] [--auto-clean] "
+         "[--accel brute|bvh] [--threads N] [--benchmark-brute-reference] "
          "[--report build_report.md] [--json build_report.json] "
          "[--recommend] [--verbose]\n";
 }
@@ -30,6 +31,15 @@ void writeReports(
   if (!json.empty()) {
     adasdf::DenseSDFBuildReportWriter::writeJson(json.string(), report);
   }
+}
+
+bool parseAcceleration(const std::string& value, adasdf::DenseSDFBuildOptions* options) {
+  adasdf::SDFSamplingAcceleration acceleration;
+  if (!adasdf::parseSDFSamplingAcceleration(value, &acceleration)) {
+    return false;
+  }
+  options->acceleration = acceleration;
+  return true;
 }
 
 }  // namespace
@@ -71,6 +81,15 @@ int main(int argc, char** argv) {
         options.require_watertight_for_signed = false;
       } else if (arg == "--auto-clean") {
         options.auto_safe_cleanup = true;
+      } else if (arg == "--accel" && hasValue(i, argc)) {
+        if (!parseAcceleration(argv[++i], &options)) {
+          std::cerr << "Unknown acceleration mode: " << argv[i] << "\n";
+          return 1;
+        }
+      } else if (arg == "--threads" && hasValue(i, argc)) {
+        options.threads = std::stoi(argv[++i]);
+      } else if (arg == "--benchmark-brute-reference") {
+        options.benchmark_brute_reference = true;
       } else if (arg == "--report" && hasValue(i, argc)) {
         report_path = argv[++i];
       } else if (arg == "--json" && hasValue(i, argc)) {
@@ -141,6 +160,25 @@ int main(int argc, char** argv) {
     std::cout << "Signed: " << (report.signed_distance ? "yes" : "no") << "\n";
     std::cout << "Watertight: " << (report.watertight ? "yes" : "no") << "\n";
     std::cout << "Triangles: " << report.triangle_count << "\n";
+    std::cout << "Acceleration: "
+              << adasdf::toString(report.acceleration_stats.acceleration)
+              << "\n";
+    std::cout << "Used BVH: " << (report.used_bvh ? "yes" : "no") << "\n";
+    std::cout << "Threads requested: "
+              << report.acceleration_stats.threads_requested << "\n";
+    std::cout << "Threads used: " << report.threads_used << "\n";
+    std::cout << "BVH build time ms: "
+              << report.acceleration_stats.bvh_build_time_ms << "\n";
+    std::cout << "Sampling time ms: "
+              << report.acceleration_stats.sampling_time_ms << "\n";
+    std::cout << "BVH nodes: "
+              << report.acceleration_stats.bvh_node_count << "\n";
+    std::cout << "BVH leaves: "
+              << report.acceleration_stats.bvh_leaf_count << "\n";
+    std::cout << "Brute reference time ms: "
+              << report.acceleration_stats.brute_reference_time_ms << "\n";
+    std::cout << "Speedup vs brute reference: "
+              << report.acceleration_stats.speedup_vs_bruteforce << "\n";
     std::cout << "Build time ms: " << report.build_time_ms << "\n";
     std::cout << "Memory bytes: " << report.memory_bytes << "\n";
     std::cout << "Reload validation: success\n";

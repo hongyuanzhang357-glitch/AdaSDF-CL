@@ -1,5 +1,33 @@
 # Changelog
 
+## 1.12.0-alpha
+
+BVH-accelerated SDF builder sampling and deterministic parallel sampling.
+
+### Added
+
+- CPU `TriangleAABB`, `TriangleBVH`, and deterministic median-split
+  `TriangleBVHBuilder`.
+- `BVHNearestTriangleQuery`, `BVHRayIntersectionQuery`, and `BVHSDFSampler`.
+- `ParallelSampling` stdlib helper for deterministic multi-threaded sampling.
+- Builder options and CLI flags: `--accel brute|bvh`, `--threads N`, and
+  `--benchmark-brute-reference`.
+- `adasdf_benchmark_builder_acceleration` CLI.
+- Python wrapper parameters and parsers for builder acceleration.
+- BVH acceleration docs, benchmark docs, and v1.12 release draft.
+
+### Changed
+
+- Version updated to `1.12.0-alpha`.
+- DenseSDF, AdaptiveBlockSDF, and CompressedAdaptiveBlockSDF builders can use
+  optional BVH sampling while keeping brute force as the default reference.
+
+### Notes
+
+- v1.12 is CPU-only builder acceleration. It is not GPU BVH, not FCL fallback,
+  not CollisionWorld, and not a low-rank math change.
+- CPU-only builds remain fully supported.
+
 ## 1.11.0-alpha
 
 CUDA active block cache and GPU local active-block query.

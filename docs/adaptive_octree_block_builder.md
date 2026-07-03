@@ -13,13 +13,14 @@ Implemented in v1.6.0-alpha:
 - `AdaptiveBlockSDFModel` with direct distance and finite-difference gradient queries.
 - `ADASDF_ADAPTIVE_BLOCK_SDFBIN_V1` read/write support.
 - `adasdf_build_adaptive_sdf`.
+- Optional CPU BVH-accelerated block sampling in v1.12.0-alpha.
 
 Not implemented in v1.6.0-alpha:
 
 - SVD / Tucker / TT compression.
 - Surrogate-guided parameter recommendation.
 - GPU-native compressed adaptive query.
-- BVH-accelerated build sampling.
+- GPU BVH build sampling.
 
 ## Pipeline
 
@@ -31,6 +32,7 @@ STL
 -> AdaptiveOctreeBuilder
 -> AdaptiveBlockPartitioner
 -> AdaptiveBlockSDFBuilder
+   (--accel brute by default, optional --accel bvh)
 -> AdaptiveBlockSDFModel
 -> ADASDF_ADAPTIVE_BLOCK_SDFBIN_V1
 -> SDFBinReader / query / collide / benchmark / expansion quality
@@ -57,3 +59,14 @@ a compressed representation.
 v1.7.0-alpha adds a separate compressed adaptive block representation using
 matrix-SVD factors and dense fallback. See `low_rank_block_compression.md` and
 `stl_to_compressed_sdf_workflow.md`.
+
+## Acceleration
+
+v1.12.0-alpha adds:
+
+```bash
+adasdf_build_adaptive_sdf model.stl model_adaptive.sdfbin --accel bvh --threads 4
+```
+
+The BVH path accelerates CPU sampling inside adaptive dense blocks. The octree
+refinement policy and block storage format remain unchanged.

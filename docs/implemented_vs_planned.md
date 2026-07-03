@@ -41,6 +41,10 @@
 - Compressed block `.sdfbin` read/write with `ADASDF_COMPRESSED_BLOCK_SDFBIN_V1`.
 - `adasdf_compress_adaptive_sdf` and `adasdf_build_compressed_sdf` CLIs.
 - Compression quality audit for dense adaptive vs compressed models.
+- CPU TriangleBVH acceleration for DenseSDF, AdaptiveBlockSDF, and
+  CompressedAdaptiveBlockSDF builder sampling.
+- Deterministic stdlib parallel builder sampling.
+- `adasdf_benchmark_builder_acceleration` for builder acceleration reports.
 - Surrogate-guided build recommendation with `adasdf_recommend_build`.
 - `MeshFeatureExtractor`, `BuildSurrogateEstimator`, `SurrogateProfile`,
   `BuildRecommender`, and `BuildRecommendationWriter`.
@@ -109,9 +113,12 @@
   baseline in v1.11; persistent GPU residency reuse remains planned.
 - CUDA active block query: CPU still performs selection and expansion; CUDA
   performs local dense-grid interpolation over uploaded active blocks.
+- BVH builder acceleration: implemented on CPU for builder sampling only; no
+  GPU BVH and no FCL fallback.
 
 ## Planned
 
+- GPU BVH or other GPU-native builder acceleration.
 - Persistent CUDA active block residency reuse and faster active block lookup.
 - Tucker/HOSVD compression.
 - Trained surrogate model integration.

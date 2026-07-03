@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+#include "adasdf/acceleration/BuildAccelerationReport.h"
 #include "adasdf/generation/AdaptiveOctreeBuilder.h"
 #include "adasdf/geometry/AdaptiveBlockSDFModel.h"
 #include "adasdf/mesh/MeshDiagnostics.h"
@@ -32,6 +33,10 @@ struct AdaptiveBlockSDFBuildOptions {
   double vertex_merge_tolerance = 1e-12;
   double degenerate_area_epsilon = 1e-14;
 
+  SDFSamplingAcceleration acceleration = SDFSamplingAcceleration::BruteForce;
+  int threads = 1;
+  bool benchmark_brute_reference = false;
+
   bool verbose = true;
 };
 
@@ -57,6 +62,9 @@ struct AdaptiveBlockSDFBuildReport {
 
   double build_time_ms = 0.0;
   double sampling_time_ms = 0.0;
+  bool used_bvh = false;
+  int threads_used = 1;
+  BuildAccelerationStats acceleration_stats;
 
   MeshDiagnosticsReport diagnostics;
   MeshReadinessReport readiness;

@@ -14,12 +14,24 @@ void usage() {
          "[--block-resolution N] [--padding 0.05] [--signed|--unsigned] "
          "[--auto-clean] [--fixed-rank N] [--min-rank N] [--max-rank N] "
          "[--keep-near-surface-dense] [--report build_report.md] "
+         "[--accel brute|bvh] [--threads N] [--benchmark-brute-reference] "
          "[--compression-report compression_report.md] "
          "[--quality-report quality_report.md] [--recommend] [--verbose]\n";
 }
 
 bool hasValue(int index, int argc) {
   return index + 1 < argc;
+}
+
+bool parseAcceleration(
+    const std::string& value,
+    adasdf::AdaptiveBlockSDFBuildOptions* options) {
+  adasdf::SDFSamplingAcceleration acceleration;
+  if (!adasdf::parseSDFSamplingAcceleration(value, &acceleration)) {
+    return false;
+  }
+  options->acceleration = acceleration;
+  return true;
 }
 
 }  // namespace
@@ -68,6 +80,15 @@ int main(int argc, char** argv) {
         build_options.require_watertight_for_signed = false;
       } else if (arg == "--auto-clean") {
         build_options.auto_safe_cleanup = true;
+      } else if (arg == "--accel" && hasValue(i, argc)) {
+        if (!parseAcceleration(argv[++i], &build_options)) {
+          std::cerr << "Unknown acceleration mode: " << argv[i] << "\n";
+          return 1;
+        }
+      } else if (arg == "--threads" && hasValue(i, argc)) {
+        build_options.threads = std::stoi(argv[++i]);
+      } else if (arg == "--benchmark-brute-reference") {
+        build_options.benchmark_brute_reference = true;
       } else if (arg == "--fixed-rank" && hasValue(i, argc)) {
         compression_options.fixed_rank = std::stoi(argv[++i]);
         compression_options.rank_selection = adasdf::RankSelectionMode::FixedRank;
@@ -189,6 +210,28 @@ int main(int argc, char** argv) {
     std::cout << "Output: " << output.string() << "\n";
     std::cout << "Format: ADASDF_COMPRESSED_BLOCK_SDFBIN_V1\n";
     std::cout << "Adaptive blocks: " << build_report.block_count << "\n";
+    std::cout << "Acceleration: "
+              << adasdf::toString(build_report.acceleration_stats.acceleration)
+              << "\n";
+    std::cout << "Used BVH: " << (build_report.used_bvh ? "yes" : "no")
+              << "\n";
+    std::cout << "Threads requested: "
+              << build_report.acceleration_stats.threads_requested << "\n";
+    std::cout << "Threads used: " << build_report.threads_used << "\n";
+    std::cout << "BVH build time ms: "
+              << build_report.acceleration_stats.bvh_build_time_ms << "\n";
+    std::cout << "Sampling time ms: " << build_report.sampling_time_ms
+              << "\n";
+    std::cout << "BVH nodes: "
+              << build_report.acceleration_stats.bvh_node_count << "\n";
+    std::cout << "BVH leaves: "
+              << build_report.acceleration_stats.bvh_leaf_count << "\n";
+    std::cout << "Brute reference time ms: "
+              << build_report.acceleration_stats.brute_reference_time_ms
+              << "\n";
+    std::cout << "Speedup vs brute reference: "
+              << build_report.acceleration_stats.speedup_vs_bruteforce
+              << "\n";
     std::cout << "Matrix-SVD blocks: "
               << compression_report.compressed_block_count << "\n";
     std::cout << "Dense fallback blocks: "

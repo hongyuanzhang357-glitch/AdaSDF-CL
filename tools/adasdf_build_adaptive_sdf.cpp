@@ -15,6 +15,7 @@ void usage() {
          "[--padding 0.05] [--signed|--unsigned] [--require-watertight] "
          "[--allow-open-unsigned] [--auto-clean] [--report build_report.md] "
          "[--json build_report.json] [--dry-run] [--enable-low-rank] "
+         "[--accel brute|bvh] [--threads N] [--benchmark-brute-reference] "
          "[--target-compression-error 1e-3] [--max-rank N] "
          "[--fixed-rank N] [--keep-near-surface-dense] "
          "[--recommend] [--verbose]\n";
@@ -54,6 +55,17 @@ adasdf::AdaptiveBlockSDFBuildReport dryRunReport(
   report.warnings.push_back(
       "Low-rank matrix-SVD block compression is available in v1.7.0-alpha.");
   return report;
+}
+
+bool parseAcceleration(
+    const std::string& value,
+    adasdf::AdaptiveBlockSDFBuildOptions* options) {
+  adasdf::SDFSamplingAcceleration acceleration;
+  if (!adasdf::parseSDFSamplingAcceleration(value, &acceleration)) {
+    return false;
+  }
+  options->acceleration = acceleration;
+  return true;
 }
 
 }  // namespace
@@ -106,6 +118,15 @@ int main(int argc, char** argv) {
         options.require_watertight_for_signed = false;
       } else if (arg == "--auto-clean") {
         options.auto_safe_cleanup = true;
+      } else if (arg == "--accel" && hasValue(i, argc)) {
+        if (!parseAcceleration(argv[++i], &options)) {
+          std::cerr << "Unknown acceleration mode: " << argv[i] << "\n";
+          return 1;
+        }
+      } else if (arg == "--threads" && hasValue(i, argc)) {
+        options.threads = std::stoi(argv[++i]);
+      } else if (arg == "--benchmark-brute-reference") {
+        options.benchmark_brute_reference = true;
       } else if (arg == "--report" && hasValue(i, argc)) {
         report_path = argv[++i];
       } else if (arg == "--json" && hasValue(i, argc)) {
@@ -163,6 +184,9 @@ int main(int argc, char** argv) {
       std::cout << "Octree levels: " << options.min_octree_level << "-"
                 << options.max_octree_level << "\n";
       std::cout << "Block resolution: " << options.block_resolution << "\n";
+      std::cout << "Acceleration: " << adasdf::toString(options.acceleration)
+                << "\n";
+      std::cout << "Threads requested: " << options.threads << "\n";
       std::cout << "Format: "
                 << (enable_low_rank ? "ADASDF_COMPRESSED_BLOCK_SDFBIN_V1"
                                     : "ADASDF_ADAPTIVE_BLOCK_SDFBIN_V1")
@@ -254,6 +278,23 @@ int main(int argc, char** argv) {
     std::cout << "Near-surface blocks: "
               << report.near_surface_block_count << "\n";
     std::cout << "Memory bytes: " << report.memory_bytes << "\n";
+    std::cout << "Acceleration: "
+              << adasdf::toString(report.acceleration_stats.acceleration)
+              << "\n";
+    std::cout << "Used BVH: " << (report.used_bvh ? "yes" : "no") << "\n";
+    std::cout << "Threads requested: "
+              << report.acceleration_stats.threads_requested << "\n";
+    std::cout << "Threads used: " << report.threads_used << "\n";
+    std::cout << "BVH build time ms: "
+              << report.acceleration_stats.bvh_build_time_ms << "\n";
+    std::cout << "BVH nodes: "
+              << report.acceleration_stats.bvh_node_count << "\n";
+    std::cout << "BVH leaves: "
+              << report.acceleration_stats.bvh_leaf_count << "\n";
+    std::cout << "Brute reference time ms: "
+              << report.acceleration_stats.brute_reference_time_ms << "\n";
+    std::cout << "Speedup vs brute reference: "
+              << report.acceleration_stats.speedup_vs_bruteforce << "\n";
     std::cout << "Sampling time ms: " << report.sampling_time_ms << "\n";
     std::cout << "Build time ms: " << report.build_time_ms << "\n";
     std::cout << "Format: "

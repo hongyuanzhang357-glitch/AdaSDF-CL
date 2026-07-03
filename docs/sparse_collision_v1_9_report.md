@@ -83,6 +83,6 @@ Final validation was run before tagging:
 ## Next Steps
 
 - v1.10: contact-aware active block expansion/cache.
-- v1.11: BVH-accelerated builder.
-- v1.12: solver-aware contact manifold.
-- v1.13: `CollisionWorld` and broadphase.
+- v1.11: CUDA active block cache baseline.
+- v1.12: BVH-accelerated builder.
+- Future: solver-aware contact manifold and `CollisionWorld` broadphase.

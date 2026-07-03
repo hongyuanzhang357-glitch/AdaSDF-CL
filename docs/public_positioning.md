@@ -27,6 +27,8 @@ replacement.
 - Top-K contact candidate reduction for hard-contact budgets.
 - Contact-aware CPU active block expansion/cache for compressed SDF runtime
   memory savings.
+- Optional CPU BVH acceleration for STL-to-SDF builder sampling.
+- Deterministic multi-threaded builder sampling.
 - Adaptive builder preview for future Tucker/trained-surrogate/GPU compressed
   stages.
 
@@ -44,12 +46,14 @@ replacement.
 - Universal trained build recommender.
 - Fully trained recommendation model.
 - Complete GPU contact solver.
+- GPU BVH.
 - Native Python binding.
 - Native pybind11 binding.
 - Full contact solver.
 - Complete contact manifold from sparse candidates.
 - GPU-native compressed direct query in v1.9.
 - CUDA active block cache in v1.10.
+- BVH acceleration as a GPU query backend.
 
 ## Short Description
 
@@ -63,8 +67,10 @@ deterministic recommend-then-build parameter recommendation path. v1.8.1 adds
 a pure-Python subprocess wrapper for the installed CLI tools. v1.9 adds sparse
 point-to-SDF collision, collision-only early exit, sample-radius proxy
 collision, and Top-K contact candidate reduction. v1.10 adds CPU active block
-expansion/cache for local compressed SDF query working sets. It does not fill holes,
-repair self-intersections, implement Tucker/HOSVD compression, claim a
-universal trained recommender, guarantee optimal parameters, claim GPU-native
-compressed query, provide a full contact solver, or provide a native pybind11
-binding.
+expansion/cache for local compressed SDF query working sets. v1.12 adds an
+optional CPU TriangleBVH builder acceleration path and deterministic
+multi-threaded builder sampling. It does not fill holes, repair
+self-intersections, implement Tucker/HOSVD compression, claim a universal
+trained recommender, guarantee optimal parameters, claim GPU-native compressed
+query, provide GPU BVH, provide a full contact solver, or provide a native
+pybind11 binding.

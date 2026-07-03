@@ -1,28 +1,18 @@
 #include "adasdf/generation/DenseSDFBuilder.h"
 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <cmath>
 #include <limits>
 
+#include "adasdf/acceleration/BVHSDFSampler.h"
+#include "adasdf/acceleration/ParallelSampling.h"
 #include "adasdf/mesh/MeshCleanup.h"
-#include "adasdf/mesh/MeshSign.h"
 #include "adasdf/mesh/STLReader.h"
-#include "adasdf/mesh/TriangleDistance.h"
 
 namespace adasdf {
 namespace {
-
-std::size_t valueIndex(int i, int j, int k, int nx, int ny) {
-  return static_cast<std::size_t>(i) +
-         static_cast<std::size_t>(nx) *
-             (static_cast<std::size_t>(j) +
-              static_cast<std::size_t>(ny) * static_cast<std::size_t>(k));
-}
-
-bool validIndex(const TriangleMesh& mesh, int index) {
-  return index >= 0 && static_cast<std::size_t>(index) < mesh.vertices.size();
-}
 
 void assignReport(DenseSDFBuildReport* out, const DenseSDFBuildReport& value) {
   if (out != nullptr) {
@@ -37,23 +27,16 @@ Vector3 gridPoint(const DenseSDFGrid& grid, int i, int j, int k) {
       grid.origin.z + static_cast<double>(k) * grid.spacing.z};
 }
 
-double minTriangleDistance(const TriangleMesh& mesh, const Vector3& p) {
-  double min_dist = std::numeric_limits<double>::infinity();
-  for (const MeshTriangle& triangle : mesh.triangles) {
-    if (!validIndex(mesh, triangle.v0) || !validIndex(mesh, triangle.v1) ||
-        !validIndex(mesh, triangle.v2)) {
-      continue;
-    }
-    const double dist = pointTriangleDistance(
-        p,
-        toVector3(mesh.vertices[triangle.v0]),
-        toVector3(mesh.vertices[triangle.v1]),
-        toVector3(mesh.vertices[triangle.v2]));
-    if (std::isfinite(dist)) {
-      min_dist = std::min(min_dist, dist);
-    }
-  }
-  return min_dist;
+Vector3 gridPointFromIndex(const DenseSDFGrid& grid, std::size_t index) {
+  const int i = static_cast<int>(index % static_cast<std::size_t>(grid.nx));
+  const int j = static_cast<int>(
+      (index / static_cast<std::size_t>(grid.nx)) %
+      static_cast<std::size_t>(grid.ny));
+  const int k = static_cast<int>(
+      index /
+      (static_cast<std::size_t>(grid.nx) *
+       static_cast<std::size_t>(grid.ny)));
+  return gridPoint(grid, i, j, k);
 }
 
 TriangleMesh maybeCleanup(
@@ -121,32 +104,106 @@ DenseSDFGrid makeGrid(
       static_cast<std::size_t>(resolution) *
       static_cast<std::size_t>(resolution));
 
-  bool warned_ambiguous = false;
-  for (int k = 0; k < grid.nz; ++k) {
-    for (int j = 0; j < grid.ny; ++j) {
-      for (int i = 0; i < grid.nx; ++i) {
-        const Vector3 p = gridPoint(grid, i, j, k);
-        double phi = minTriangleDistance(mesh, p);
-        if (!std::isfinite(phi)) {
-          phi = 0.0;
+  BuildAccelerationStats stats;
+  stats.acceleration = options.acceleration;
+  stats.threads_requested = std::max(1, options.threads);
+
+  BVHSDFSamplerOptions sampler_options;
+  sampler_options.acceleration = options.acceleration;
+  sampler_options.signed_distance = options.signed_distance;
+  sampler_options.bvh_options.degenerate_area_epsilon =
+      options.degenerate_area_epsilon;
+  BVHSDFSampler sampler;
+  sampler.reset(mesh, sampler_options, &stats);
+  const bool use_bvh =
+      options.acceleration == SDFSamplingAcceleration::BVH && sampler.hasBVH();
+
+  const std::size_t total = grid.phi.size();
+  std::atomic<std::size_t> nearest_node_visits{0};
+  std::atomic<std::size_t> nearest_triangle_tests{0};
+  std::atomic<std::size_t> ray_node_visits{0};
+  std::atomic<std::size_t> ray_triangle_tests{0};
+  std::atomic<std::size_t> ambiguous_count{0};
+  std::atomic<std::size_t> fallback_count{0};
+  ParallelSamplingOptions parallel_options;
+  parallel_options.threads = std::max(1, options.threads);
+  const ParallelSamplingStats parallel_stats = parallelFor(
+      total,
+      parallel_options,
+      [&](std::size_t index) {
+        const Vector3 p = gridPointFromIndex(grid, index);
+        const BVHSDFSampleResult sample =
+            use_bvh
+                ? BVHSDFSampler::sampleWithBVH(
+                      mesh,
+                      sampler.bvh(),
+                      p,
+                      sampler_options)
+                : BVHSDFSampler::sampleBruteForce(
+                      mesh,
+                      p,
+                      options.signed_distance);
+        grid.phi[index] = sample.success ? sample.phi : 0.0;
+        nearest_node_visits.fetch_add(
+            sample.nearest.node_visits,
+            std::memory_order_relaxed);
+        nearest_triangle_tests.fetch_add(
+            sample.nearest.triangle_tests,
+            std::memory_order_relaxed);
+        ray_node_visits.fetch_add(
+            sample.ray.node_visits,
+            std::memory_order_relaxed);
+        ray_triangle_tests.fetch_add(
+            sample.ray.triangle_tests,
+            std::memory_order_relaxed);
+        if (sample.ambiguous_sign) {
+          ambiguous_count.fetch_add(1, std::memory_order_relaxed);
         }
-        if (options.signed_distance) {
-          const MeshSignResult sign = MeshSign::classifyPoint(mesh, p);
-          if (sign == MeshSignResult::Inside) {
-            phi = -phi;
-          } else if (sign == MeshSignResult::OnSurface) {
-            phi = 0.0;
-          } else if (sign == MeshSignResult::Ambiguous && !warned_ambiguous) {
-            warned_ambiguous = true;
-            report.warnings.push_back(
-                "MeshSign produced ambiguous samples; ambiguous points were "
-                "kept as unsigned distances.");
-          }
+        if (sample.fallback_sign) {
+          fallback_count.fetch_add(1, std::memory_order_relaxed);
         }
-        grid.phi[valueIndex(i, j, k, grid.nx, grid.ny)] = phi;
-      }
+      });
+
+  stats.sample_count = total;
+  stats.threads_used = parallel_stats.threads_used;
+  stats.sampling_time_ms = parallel_stats.elapsed_ms;
+  stats.nearest_node_visits = nearest_node_visits.load();
+  stats.nearest_triangle_tests = nearest_triangle_tests.load();
+  stats.ray_node_visits = ray_node_visits.load();
+  stats.ray_triangle_tests = ray_triangle_tests.load();
+  stats.ambiguous_sign_count = ambiguous_count.load();
+  stats.fallback_count = fallback_count.load();
+
+  if (options.benchmark_brute_reference &&
+      options.acceleration == SDFSamplingAcceleration::BVH) {
+    const auto ref0 = std::chrono::steady_clock::now();
+    volatile double checksum = 0.0;
+    for (std::size_t index = 0; index < total; ++index) {
+      const BVHSDFSampleResult sample =
+          BVHSDFSampler::sampleBruteForce(
+              mesh,
+              gridPointFromIndex(grid, index),
+              options.signed_distance);
+      checksum += sample.phi;
+    }
+    (void)checksum;
+    const auto ref1 = std::chrono::steady_clock::now();
+    stats.brute_reference_time_ms =
+        std::chrono::duration<double, std::milli>(ref1 - ref0).count();
+    if (stats.sampling_time_ms > 0.0) {
+      stats.speedup_vs_bruteforce =
+          stats.brute_reference_time_ms / stats.sampling_time_ms;
     }
   }
+
+  if (stats.ambiguous_sign_count > 0) {
+    report.warnings.push_back(
+        "MeshSign produced ambiguous samples; ambiguous points were kept as "
+        "unsigned distances or resolved through brute-force fallback.");
+  }
+  report.used_bvh = use_bvh;
+  report.threads_used = stats.threads_used;
+  report.acceleration_stats = stats;
   return grid;
 }
 

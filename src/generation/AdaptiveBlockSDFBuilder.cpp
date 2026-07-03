@@ -1,71 +1,19 @@
 #include "adasdf/generation/AdaptiveBlockSDFBuilder.h"
 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <cmath>
 #include <limits>
 
+#include "adasdf/acceleration/BVHSDFSampler.h"
+#include "adasdf/acceleration/ParallelSampling.h"
 #include "adasdf/generation/AdaptiveBlockPartitioner.h"
 #include "adasdf/mesh/MeshCleanup.h"
-#include "adasdf/mesh/MeshSign.h"
 #include "adasdf/mesh/STLReader.h"
-#include "adasdf/mesh/TriangleDistance.h"
 
 namespace adasdf {
 namespace {
-
-std::size_t valueIndex(int i, int j, int k, int nx, int ny) {
-  return static_cast<std::size_t>(i) +
-         static_cast<std::size_t>(nx) *
-             (static_cast<std::size_t>(j) +
-              static_cast<std::size_t>(ny) * static_cast<std::size_t>(k));
-}
-
-bool validIndex(const TriangleMesh& mesh, int index) {
-  return index >= 0 && static_cast<std::size_t>(index) < mesh.vertices.size();
-}
-
-double minTriangleDistance(const TriangleMesh& mesh, const Vector3& p) {
-  double min_dist = std::numeric_limits<double>::infinity();
-  for (const MeshTriangle& triangle : mesh.triangles) {
-    if (!validIndex(mesh, triangle.v0) || !validIndex(mesh, triangle.v1) ||
-        !validIndex(mesh, triangle.v2)) {
-      continue;
-    }
-    const double dist = pointTriangleDistance(
-        p,
-        toVector3(mesh.vertices[triangle.v0]),
-        toVector3(mesh.vertices[triangle.v1]),
-        toVector3(mesh.vertices[triangle.v2]));
-    if (std::isfinite(dist)) {
-      min_dist = std::min(min_dist, dist);
-    }
-  }
-  return min_dist;
-}
-
-double signedPhi(
-    const TriangleMesh& mesh,
-    const Vector3& p,
-    bool signed_distance,
-    bool* ambiguous) {
-  double phi = minTriangleDistance(mesh, p);
-  if (!std::isfinite(phi)) {
-    return 0.0;
-  }
-  if (!signed_distance) {
-    return phi;
-  }
-  const MeshSignResult sign = MeshSign::classifyPoint(mesh, p);
-  if (sign == MeshSignResult::Inside) {
-    phi = -phi;
-  } else if (sign == MeshSignResult::OnSurface) {
-    phi = 0.0;
-  } else if (sign == MeshSignResult::Ambiguous && ambiguous != nullptr) {
-    *ambiguous = true;
-  }
-  return phi;
-}
 
 Vector3 gridPoint(const AdaptiveSDFBlock& block, int i, int j, int k) {
   return {
@@ -74,38 +22,146 @@ Vector3 gridPoint(const AdaptiveSDFBlock& block, int i, int j, int k) {
       block.origin.z + static_cast<double>(k) * block.spacing.z};
 }
 
+Vector3 gridPointFromIndex(const AdaptiveSDFBlock& block, std::size_t index) {
+  const int i = static_cast<int>(index % static_cast<std::size_t>(block.nx));
+  const int j = static_cast<int>(
+      (index / static_cast<std::size_t>(block.nx)) %
+      static_cast<std::size_t>(block.ny));
+  const int k = static_cast<int>(
+      index /
+      (static_cast<std::size_t>(block.nx) *
+       static_cast<std::size_t>(block.ny)));
+  return gridPoint(block, i, j, k);
+}
+
+struct BlockSampleLocation {
+  std::size_t block_index = 0;
+  std::size_t local_index = 0;
+};
+
 void sampleBlocks(
     const TriangleMesh& mesh,
     AdaptiveSDFBlockSet& block_set,
-    bool signed_distance,
+    const AdaptiveBlockSDFBuildOptions& options,
     AdaptiveBlockSDFBuildReport& report) {
-  bool warned_ambiguous = false;
-  for (AdaptiveSDFBlock& block : block_set.blocks) {
-    block.signed_distance = signed_distance;
+  std::vector<BlockSampleLocation> locations;
+  for (std::size_t block_index = 0; block_index < block_set.blocks.size();
+       ++block_index) {
+    AdaptiveSDFBlock& block = block_set.blocks[block_index];
+    block.signed_distance = options.signed_distance;
     block.phi.resize(
         static_cast<std::size_t>(block.nx) *
         static_cast<std::size_t>(block.ny) *
         static_cast<std::size_t>(block.nz));
-    for (int k = 0; k < block.nz; ++k) {
-      for (int j = 0; j < block.ny; ++j) {
-        for (int i = 0; i < block.nx; ++i) {
-          bool ambiguous = false;
-          const double phi = signedPhi(
-              mesh,
-              gridPoint(block, i, j, k),
-              signed_distance,
-              &ambiguous);
-          if (ambiguous && !warned_ambiguous) {
-            warned_ambiguous = true;
-            report.warnings.push_back(
-                "MeshSign produced ambiguous adaptive block samples; ambiguous "
-                "points were kept as unsigned distances.");
-          }
-          block.phi[valueIndex(i, j, k, block.nx, block.ny)] = phi;
-        }
-      }
+    for (std::size_t local = 0; local < block.phi.size(); ++local) {
+      locations.push_back({block_index, local});
     }
   }
+
+  BuildAccelerationStats stats;
+  stats.acceleration = options.acceleration;
+  stats.threads_requested = std::max(1, options.threads);
+
+  BVHSDFSamplerOptions sampler_options;
+  sampler_options.acceleration = options.acceleration;
+  sampler_options.signed_distance = options.signed_distance;
+  sampler_options.bvh_options.degenerate_area_epsilon =
+      options.degenerate_area_epsilon;
+  BVHSDFSampler sampler;
+  sampler.reset(mesh, sampler_options, &stats);
+  const bool use_bvh =
+      options.acceleration == SDFSamplingAcceleration::BVH && sampler.hasBVH();
+
+  std::atomic<std::size_t> nearest_node_visits{0};
+  std::atomic<std::size_t> nearest_triangle_tests{0};
+  std::atomic<std::size_t> ray_node_visits{0};
+  std::atomic<std::size_t> ray_triangle_tests{0};
+  std::atomic<std::size_t> ambiguous_count{0};
+  std::atomic<std::size_t> fallback_count{0};
+
+  ParallelSamplingOptions parallel_options;
+  parallel_options.threads = std::max(1, options.threads);
+  const ParallelSamplingStats parallel_stats = parallelFor(
+      locations.size(),
+      parallel_options,
+      [&](std::size_t index) {
+        const BlockSampleLocation loc = locations[index];
+        AdaptiveSDFBlock& block = block_set.blocks[loc.block_index];
+        const Vector3 p = gridPointFromIndex(block, loc.local_index);
+        const BVHSDFSampleResult sample =
+            use_bvh
+                ? BVHSDFSampler::sampleWithBVH(
+                      mesh,
+                      sampler.bvh(),
+                      p,
+                      sampler_options)
+                : BVHSDFSampler::sampleBruteForce(
+                      mesh,
+                      p,
+                      options.signed_distance);
+        block.phi[loc.local_index] = sample.success ? sample.phi : 0.0;
+        nearest_node_visits.fetch_add(
+            sample.nearest.node_visits,
+            std::memory_order_relaxed);
+        nearest_triangle_tests.fetch_add(
+            sample.nearest.triangle_tests,
+            std::memory_order_relaxed);
+        ray_node_visits.fetch_add(
+            sample.ray.node_visits,
+            std::memory_order_relaxed);
+        ray_triangle_tests.fetch_add(
+            sample.ray.triangle_tests,
+            std::memory_order_relaxed);
+        if (sample.ambiguous_sign) {
+          ambiguous_count.fetch_add(1, std::memory_order_relaxed);
+        }
+        if (sample.fallback_sign) {
+          fallback_count.fetch_add(1, std::memory_order_relaxed);
+        }
+      });
+
+  stats.sample_count = locations.size();
+  stats.threads_used = parallel_stats.threads_used;
+  stats.sampling_time_ms = parallel_stats.elapsed_ms;
+  stats.nearest_node_visits = nearest_node_visits.load();
+  stats.nearest_triangle_tests = nearest_triangle_tests.load();
+  stats.ray_node_visits = ray_node_visits.load();
+  stats.ray_triangle_tests = ray_triangle_tests.load();
+  stats.ambiguous_sign_count = ambiguous_count.load();
+  stats.fallback_count = fallback_count.load();
+
+  if (options.benchmark_brute_reference &&
+      options.acceleration == SDFSamplingAcceleration::BVH) {
+    const auto ref0 = std::chrono::steady_clock::now();
+    volatile double checksum = 0.0;
+    for (const BlockSampleLocation& loc : locations) {
+      const AdaptiveSDFBlock& block = block_set.blocks[loc.block_index];
+      const BVHSDFSampleResult sample =
+          BVHSDFSampler::sampleBruteForce(
+              mesh,
+              gridPointFromIndex(block, loc.local_index),
+              options.signed_distance);
+      checksum += sample.phi;
+    }
+    (void)checksum;
+    const auto ref1 = std::chrono::steady_clock::now();
+    stats.brute_reference_time_ms =
+        std::chrono::duration<double, std::milli>(ref1 - ref0).count();
+    if (stats.sampling_time_ms > 0.0) {
+      stats.speedup_vs_bruteforce =
+          stats.brute_reference_time_ms / stats.sampling_time_ms;
+    }
+  }
+
+  if (stats.ambiguous_sign_count > 0) {
+    report.warnings.push_back(
+        "MeshSign produced ambiguous adaptive block samples; ambiguous points "
+        "were kept as unsigned distances or resolved through brute-force "
+        "fallback.");
+  }
+  report.used_bvh = use_bvh;
+  report.threads_used = stats.threads_used;
+  report.acceleration_stats = stats;
 }
 
 void assignReport(
@@ -233,10 +289,11 @@ std::shared_ptr<SDFModel> AdaptiveBlockSDFBuilder::fromMesh(
   blocks.signed_distance = options.signed_distance;
 
   const auto sample0 = std::chrono::steady_clock::now();
-  sampleBlocks(working_mesh, blocks, options.signed_distance, report);
+  sampleBlocks(working_mesh, blocks, options, report);
   const auto sample1 = std::chrono::steady_clock::now();
   report.sampling_time_ms =
       std::chrono::duration<double, std::milli>(sample1 - sample0).count();
+  report.acceleration_stats.sampling_time_ms = report.sampling_time_ms;
 
   auto model = std::make_shared<AdaptiveBlockSDFModel>(std::move(blocks));
   if (!model->isValid()) {

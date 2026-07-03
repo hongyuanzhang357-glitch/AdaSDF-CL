@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+#include "adasdf/acceleration/BuildAccelerationReport.h"
 #include "adasdf/geometry/DenseSDFModel.h"
 #include "adasdf/mesh/MeshDiagnostics.h"
 #include "adasdf/mesh/MeshReadiness.h"
@@ -24,6 +25,10 @@ struct DenseSDFBuildOptions {
 
   double vertex_merge_tolerance = 1e-12;
   double degenerate_area_epsilon = 1e-14;
+
+  SDFSamplingAcceleration acceleration = SDFSamplingAcceleration::BruteForce;
+  int threads = 1;
+  bool benchmark_brute_reference = false;
 
   bool verbose = true;
 };
@@ -46,6 +51,10 @@ struct DenseSDFBuildReport {
   bool signed_distance = true;
   bool used_cleanup = false;
   bool watertight = false;
+  bool used_bvh = false;
+  int threads_used = 1;
+
+  BuildAccelerationStats acceleration_stats;
 
   MeshDiagnosticsReport diagnostics;
   MeshReadinessReport readiness;

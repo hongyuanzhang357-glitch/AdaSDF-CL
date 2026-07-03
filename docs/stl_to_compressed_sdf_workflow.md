@@ -8,7 +8,7 @@ v1.7.0-alpha adds a core-free STL-to-compressed-adaptive-block-SDF workflow.
 adasdf_mesh_check model.stl --readiness --out mesh_report.md
 adasdf_mesh_clean model.stl model_clean.stl --report cleanup_report.md
 adasdf_recommend_build model_clean.stl --target-error 1e-3 --memory-mb 512 --use-case contact --out recommendation.md --json recommendation.json --emit-command
-adasdf_build_compressed_sdf model_clean.stl model_compressed.sdfbin --target-error 1e-3 --max-level 5 --block-resolution 8 --max-rank 8 --report build_report.md --compression-report compression_report.md --quality-report quality_report.md
+adasdf_build_compressed_sdf model_clean.stl model_compressed.sdfbin --target-error 1e-3 --max-level 5 --block-resolution 8 --max-rank 8 --accel bvh --threads 4 --report build_report.md --compression-report compression_report.md --quality-report quality_report.md
 adasdf_info model_compressed.sdfbin
 adasdf_query model_compressed.sdfbin --point 0 0 0
 adasdf_collide model_compressed.sdfbin model_compressed.sdfbin --max-contacts 4
@@ -37,3 +37,7 @@ CPU/CUDA benchmark workflows. v1.8 adds deterministic build recommendation
 through `adasdf_recommend_build`; it is not a universal trained model, not
 fully trained, and not an optimality guarantee. Tucker compression, trained
 surrogate integration, and GPU-native compressed query remain planned work.
+
+v1.12 adds optional CPU BVH builder sampling for the adaptive build stage of
+the compressed workflow. It does not change Matrix-SVD compression math and is
+not GPU-native compressed query.

@@ -79,6 +79,14 @@ target_compile_definitions(adasdf_cl INTERFACE
   ADASDF_CL_HAS_CUDA_BACKEND=$<BOOL:${ADASDF_CL_HAS_CUDA_BACKEND}>)
 
 set(ADASDF_CL_RUNTIME_SOURCES
+  src/acceleration/BuildAccelerationReport.cpp
+  src/acceleration/TriangleAABB.cpp
+  src/acceleration/TriangleBVH.cpp
+  src/acceleration/TriangleBVHBuilder.cpp
+  src/acceleration/BVHNearestTriangleQuery.cpp
+  src/acceleration/BVHRayIntersectionQuery.cpp
+  src/acceleration/BVHSDFSampler.cpp
+  src/acceleration/ParallelSampling.cpp
   src/adapters/FCLAdapter.cpp
   src/backend/Backend.cpp
   src/backend/CudaQueryBackend.cpp
@@ -538,6 +546,12 @@ if(ADASDF_CL_BUILD_BENCHMARKS)
   set_target_properties(adasdf_benchmark_block_cache PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
 
+  add_executable(adasdf_benchmark_builder_acceleration
+    tools/adasdf_benchmark_builder_acceleration.cpp)
+  target_link_libraries(adasdf_benchmark_builder_acceleration PRIVATE adasdf_cl_runtime)
+  set_target_properties(adasdf_benchmark_builder_acceleration PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
+
   add_executable(adasdf_benchmark_cuda_block_cache
     tools/adasdf_benchmark_cuda_block_cache.cpp)
   target_link_libraries(adasdf_benchmark_cuda_block_cache PRIVATE adasdf_cl_runtime)
@@ -611,8 +625,15 @@ set(ADASDF_CL_TEST_SOURCES
   tests/test_mesh_clean_cli.cpp
   tests/test_mesh_cleanup_roundtrip.cpp
   tests/test_triangle_distance.cpp
+  tests/test_triangle_aabb.cpp
+  tests/test_triangle_bvh_builder.cpp
+  tests/test_bvh_nearest_triangle_query.cpp
+  tests/test_bvh_ray_intersection_query.cpp
+  tests/test_bvh_sdf_sampler.cpp
+  tests/test_parallel_sampling.cpp
   tests/test_mesh_sign.cpp
   tests/test_dense_sdf_builder.cpp
+  tests/test_dense_sdf_builder_bvh.cpp
   tests/test_dense_sdfbin_roundtrip.cpp
   tests/test_build_dense_sdf_cli.cpp
   tests/test_dense_sdf_collision.cpp
@@ -621,6 +642,7 @@ set(ADASDF_CL_TEST_SOURCES
   tests/test_adaptive_octree_builder.cpp
   tests/test_adaptive_block_partitioner.cpp
   tests/test_adaptive_block_sdf_builder.cpp
+  tests/test_adaptive_block_sdf_builder_bvh.cpp
   tests/test_adaptive_block_sdf_model.cpp
   tests/test_adaptive_block_sdfbin_roundtrip.cpp
   tests/test_build_adaptive_sdf_cli.cpp
@@ -635,8 +657,11 @@ set(ADASDF_CL_TEST_SOURCES
   tests/test_compression_quality.cpp
   tests/test_compress_adaptive_sdf_cli.cpp
   tests/test_build_compressed_sdf_cli.cpp
+  tests/test_compressed_sdf_builder_bvh_cli.cpp
   tests/test_compressed_sdf_collision.cpp
   tests/test_compressed_vs_adaptive_consistency.cpp
+  tests/test_bvh_vs_bruteforce_consistency.cpp
+  tests/test_benchmark_builder_acceleration_cli.cpp
   tests/test_adaptive_builder_preview_v1_7.cpp
   tests/test_mesh_diagnostics_fixtures.cpp
   tests/test_mesh_feature_extractor.cpp
@@ -779,6 +804,7 @@ if(ADASDF_CL_BUILD_TESTS)
         ADASDF_CL_COLLIDE="$<TARGET_FILE_NAME:adasdf_collide>")
     endif()
     if(test_name STREQUAL "test_build_compressed_sdf_cli" OR
+        test_name STREQUAL "test_compressed_sdf_builder_bvh_cli" OR
         test_name STREQUAL "test_compressed_block_sdfbin_roundtrip" OR
         test_name STREQUAL "test_compressed_sdf_collision")
       add_dependencies(${test_name}
@@ -875,6 +901,13 @@ if(ADASDF_CL_BUILD_TESTS)
           ADASDF_CL_BENCHMARK_BLOCK_CACHE="$<TARGET_FILE_NAME:adasdf_benchmark_block_cache>")
       endif()
     endif()
+    if(test_name STREQUAL "test_benchmark_builder_acceleration_cli")
+      if(TARGET adasdf_benchmark_builder_acceleration)
+        add_dependencies(${test_name} adasdf_benchmark_builder_acceleration)
+        target_compile_definitions(${test_name} PRIVATE
+          ADASDF_CL_BENCHMARK_BUILDER_ACCELERATION="$<TARGET_FILE_NAME:adasdf_benchmark_builder_acceleration>")
+      endif()
+    endif()
     if(test_name STREQUAL "test_benchmark_cuda_block_cache_cli")
       add_dependencies(${test_name} adasdf_build_compressed_sdf)
       target_compile_definitions(${test_name} PRIVATE
@@ -930,6 +963,7 @@ if(ADASDF_CL_BUILD_TESTS)
         WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_build_adaptive_sdf>")
     endif()
     if(test_name STREQUAL "test_build_compressed_sdf_cli" OR
+        test_name STREQUAL "test_compressed_sdf_builder_bvh_cli" OR
         test_name STREQUAL "test_compressed_block_sdfbin_roundtrip" OR
         test_name STREQUAL "test_compressed_sdf_collision")
       set_tests_properties(${test_name} PROPERTIES
@@ -991,6 +1025,12 @@ if(ADASDF_CL_BUILD_TESTS)
           WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_benchmark_block_cache>")
       endif()
     endif()
+    if(test_name STREQUAL "test_benchmark_builder_acceleration_cli")
+      if(TARGET adasdf_benchmark_builder_acceleration)
+        set_tests_properties(${test_name} PROPERTIES
+          WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_benchmark_builder_acceleration>")
+      endif()
+    endif()
     if(test_name STREQUAL "test_benchmark_cuda_block_cache_cli")
       if(TARGET adasdf_benchmark_cuda_block_cache)
         set_tests_properties(${test_name} PROPERTIES
@@ -1040,6 +1080,7 @@ if(ADASDF_CL_BUILD_BENCHMARKS)
     adasdf_benchmark_batch_query
     adasdf_benchmark_sparse_query
     adasdf_benchmark_block_cache
+    adasdf_benchmark_builder_acceleration
     adasdf_benchmark_cuda_block_cache)
 endif()
 

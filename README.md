@@ -2,7 +2,7 @@
 
 Adaptive Signed Distance Field Collision Library
 
-Status: 1.11.0-alpha / research preview
+Status: 1.12.0-alpha / research preview
 Build system: CMake
 License: MIT
 Tests: CTest
@@ -11,7 +11,13 @@ AdaSDF-CL is an alpha collision and contact library built around signed distance
 
 AdaSDF-CL is an FCL-style SDF collision backend under development. It complements FCL by providing signed-distance queries, penetration depth, contact normals, batch query, expanded-SDF quality audit and CUDA query paths. It is not a drop-in FCL replacement.
 
-v1.11.0-alpha adds a CUDA active block cache baseline. It selects and expands
+v1.12.0-alpha adds optional CPU TriangleBVH acceleration for DenseSDF,
+AdaptiveBlockSDF, and CompressedAdaptiveBlockSDF builder sampling. The default
+builder path remains `--accel brute`; `--accel bvh` selects the new
+deterministic BVH path, `--threads N` enables stdlib parallel sampling, and
+`adasdf_benchmark_builder_acceleration` reports builder speedups.
+
+v1.11.0-alpha added a CUDA active block cache baseline. It selects and expands
 active blocks on CPU, uploads expanded local dense blocks to GPU, and runs
 CUDA local block interpolation for phi-only or phi+normal sparse queries. It
 is not GPU-native compressed SVD reconstruction.
@@ -50,9 +56,9 @@ CPU-only builds remain fully usable.
 The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`, `v1.1.0-alpha`,
 `v1.1.1-alpha`, `v1.2.0-alpha`, `v1.3.0-alpha`, `v1.4.0-alpha`,
 `v1.5.0-alpha`, `v1.6.0-alpha`, `v1.7.0-alpha`, `v1.8.0-alpha`,
-`v1.8.1-alpha`, `v1.9.0-alpha`, and `v1.10.0-alpha` tags are
+`v1.8.1-alpha`, `v1.9.0-alpha`, `v1.10.0-alpha`, and `v1.11.0-alpha` tags are
 retained for traceability. The recommended public pre-release is
-`v1.11.0-alpha`.
+`v1.12.0-alpha`.
 
 ## What Is AdaSDF-CL?
 

@@ -17,7 +17,7 @@ cmake -S '<source>' -B '<build>' -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD
 -- Selecting Windows SDK version 10.0.22621.0 to target Windows 10.0.26200.
 --
 -- AdaSDF-CL configuration:
---   Version: 1.11.0-alpha
+--   Version: 1.12.0-alpha
 --   Build examples: ON
 --   Build tests: ON
 --   Benchmarks: ON
@@ -33,7 +33,7 @@ cmake -S '<source>' -B '<build>' -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD
 --   FCL: not required
 --
 -- Configuring done (0.1s)
--- Generating done (1.1s)
+-- Generating done (1.2s)
 ...
 ```
 
@@ -57,7 +57,7 @@ cmake --build '<build>' --config Release --parallel -- /nodeReuse:false
   Building Custom Rule <source>/CMakeLists.txt
   Building Custom Rule <source>/CMakeLists.txt
   Building Custom Rule <source>/CMakeLists.txt
-  test_active_block_report_writer.vcxproj -> <build>\Release\test_active_block_report_writer.exe
+  Building Custom Rule <source>/CMakeLists.txt
   Building Custom Rule <source>/CMakeLists.txt
   Building Custom Rule <source>/CMakeLists.txt
   Building Custom Rule <source>/CMakeLists.txt
@@ -86,7 +86,7 @@ cmake --install '<build>' --config Release --prefix '<install>'
 -- Up-to-date: <install>/bin/adasdf_collide_boxes_demo.exe
 -- Up-to-date: <install>/bin/adasdf_query_mode_demo.exe
 -- Up-to-date: <install>/bin/adasdf_expansion_quality.exe
--- Installing: <install>/bin/adasdf_capabilities.exe
+-- Up-to-date: <install>/bin/adasdf_capabilities.exe
 -- Up-to-date: <install>/bin/adasdf_mesh_check.exe
 -- Up-to-date: <install>/bin/adasdf_mesh_clean.exe
 -- Up-to-date: <install>/bin/adasdf_build_dense_sdf.exe
@@ -100,7 +100,7 @@ cmake --install '<build>' --config Release --prefix '<install>'
 ### Package Configure: PASS
 
 ```bash
-cmake -S '<source>/tests/package' -B '<workspace>/build/adasdf_cl-v1_11-alpha_install_validation_pkg' '-DCMAKE_PREFIX_PATH=<install>'
+cmake -S '<source>/tests/package' -B '<workspace>/build/adasdf_cl-v1_12-alpha_install_validation_pkg' '-DCMAKE_PREFIX_PATH=<install>'
 ```
 
 ```text
@@ -113,7 +113,7 @@ cmake -S '<source>/tests/package' -B '<workspace>/build/adasdf_cl-v1_11-alpha_in
 ### Package Build: PASS
 
 ```bash
-cmake --build '<workspace>/build/adasdf_cl-v1_11-alpha_install_validation_pkg' --config Release --parallel -- /nodeReuse:false
+cmake --build '<workspace>/build/adasdf_cl-v1_12-alpha_install_validation_pkg' --config Release --parallel -- /nodeReuse:false
 ```
 
 ```text
@@ -134,7 +134,7 @@ cmake --build '<workspace>/build/adasdf_cl-v1_11-alpha_install_validation_pkg' -
 ```text
 ..................................
 ----------------------------------------------------------------------
-Ran 34 tests in 0.428s
+Ran 34 tests in 0.554s
 
 OK
 ```
@@ -146,7 +146,7 @@ OK
 ```
 
 ```text
-AdaSDF-CL version: 1.11.0-alpha
+AdaSDF-CL version: 1.12.0-alpha
 Position: FCL-style SDF collision backend under development.
 Boundary: complementary SDF backend, not a drop-in FCL replacement.
 
@@ -264,11 +264,20 @@ Resolution: 24 x 24 x 24
 Signed: yes
 Watertight: yes
 Triangles: 12
-Build time ms: 21.7402
+Acceleration: brute
+Used BVH: no
+Threads requested: 1
+Threads used: 1
+BVH build time ms: 0
+Sampling time ms: 21.6901
+BVH nodes: 0
+BVH leaves: 0
+Brute reference time ms: 0
+Speedup vs brute reference: 0
+Build time ms: 21.766
 Memory bytes: 111128
 Reload validation: success
-Report: <local-path>
-JSON report: <local-path>
+...
 ```
 
 ### Installed DenseSDF Info CLI: PASS
@@ -279,7 +288,7 @@ JSON report: <local-path>
 
 ```text
 AdaSDF-CL info
-Library version: 1.11.0-alpha
+Library version: 1.12.0-alpha
 Path: <local-path>
 Model name: uniform dense SDF
 Valid: yes
@@ -367,13 +376,14 @@ Octree nodes: 73
 Leaf blocks: 64
 Near-surface blocks: 64
 Memory bytes: 75248
-Sampling time ms: 12.5653
-Build time ms: 13.8386
-Format: ADASDF_ADAPTIVE_BLOCK_SDFBIN_V1
-Reload validation: success
-Low-rank compression: not enabled
-Report: <local-path>
-JSON report: <local-path>
+Acceleration: brute
+Used BVH: no
+Threads requested: 1
+Threads used: 1
+BVH build time ms: 0
+BVH nodes: 0
+BVH leaves: 0
+...
 ```
 
 ### Installed AdaptiveBlockSDF Info CLI: PASS
@@ -384,7 +394,7 @@ JSON report: <local-path>
 
 ```text
 AdaSDF-CL info
-Library version: 1.11.0-alpha
+Library version: 1.12.0-alpha
 Path: <local-path>
 Model name: adaptive block dense SDF
 Valid: yes
@@ -488,7 +498,7 @@ Quality report: <local-path>
 
 ```text
 AdaSDF-CL info
-Library version: 1.11.0-alpha
+Library version: 1.12.0-alpha
 Path: <local-path>
 Model name: compressed adaptive block SDF
 Valid: yes
@@ -594,9 +604,9 @@ Fallback rate: 0
 
 ```text
 query_backend,expansion_mode,selected_blocks,num_points,expanded_memory_mb,gpu_resident_memory_mb,setup_ms,expand_ms,upload_sdf_ms,allocation_ms,h2d_points_ms,kernel_ms,sync_ms,d2h_results_ms,postprocess_ms,free_ms,total_ms,query_kernel_ms,query_total_ms,ns_per_query,queries_per_second,fallback_count,max_abs_phi_error,max_normal_error,cuda_available,max_abs_error,mean_abs_error,rms_error,p95_abs_error,sign_mismatch_count,sign_mismatch_rate,ambiguous_sign_count,ambiguous_sign_rate,near_surface_sign_mismatch_count,near_surface_sign_mismatch_rate,fallback_rate,warmup,repeat,kernel_min_ms,kernel_mean_ms,kernel_max_ms,kernel_std_ms,total_min_ms,total_mean_ms,total_max_ms,total_std_ms,output_mode,phi_only,reuse_resident,kernel_only,workspace_reused,allocation_count,workspace_capacity,workspace_device_memory_mb,block_lookup_count,block_scan_count,center_block_hit_rate,neighbor_same_block_rate,download_results,correctness_checked,host_memory,layout,status,error_message
-cpu,none,all,1000,0,0,0,0,0,0.0153,0,NA,NA,0,0,0,1.927,NA,1.927,1927,518941.3596,0,0,0,false,0,0,0,0,0,0,0,0,0,0,0,0,1,NA,NA,NA,NA,1.927,1.927,1.927,0,"phi,normal",false,false,false,false,0,0,0,0,0,0,0,true,true,paged,aos,ok,
+cpu,none,all,1000,0,0,0,0,0,0.0139,0,NA,NA,0,0,0,1.9746,NA,1.9746,1974.6,506431.6824,0,0,0,false,0,0,0,0,0,0,0,0,0,0,0,0,1,NA,NA,NA,NA,1.9746,1.9746,1.9746,0,"phi,normal",false,false,false,false,0,0,0,0,0,0,0,true,true,paged,aos,ok,
 backend | expansion | output | blocks | points | setup ms | total mean ms | kernel mean ms | ns/query | max phi error | max normal error | status
-cpu | none | phi,normal | all | 1000 | 0 | 1.927 | NA | 1927 | 0 | 0 | ok
+cpu | none | phi,normal | all | 1000 | 0 | 1.9746 | NA | 1974.6 | 0 | 0 | ok
 ```
 
 ### Installed CompressedSDF One-Step Build CLI: PASS
@@ -611,18 +621,22 @@ Input: <local-path>
 Output: <local-path>
 Format: ADASDF_COMPRESSED_BLOCK_SDFBIN_V1
 Adaptive blocks: 64
+Acceleration: brute
+Used BVH: no
+Threads requested: 1
+Threads used: 1
+BVH build time ms: 0
+Sampling time ms: 13.4686
+BVH nodes: 0
+BVH leaves: 0
+Brute reference time ms: 0
+Speedup vs brute reference: 0
 Matrix-SVD blocks: 64
 Dense fallback blocks: 0
 Compression ratio: 0.911266
 Max abs error: 4.996e-16
 Quality samples: 4096
-Reload validation: success
-Tucker/HOSVD compression: planned / not implemented
-Surrogate recommendation: use adasdf_recommend_build (implemented in v1.8.0-alpha)
-GPU-native compressed query: planned
-Build report: <local-path>
-Compression report: <local-path>
-Quality report: <local-path>
+...
 ```
 
 ### Installed Sparse Query CLI: PASS
@@ -661,7 +675,7 @@ First hit sample id: 0
 Sample count: 6
 Queried samples: 1
 Early exit: true
-Elapsed ms: 0.0022
+Elapsed ms: 0.0064
 Return code note: 10 means collision detected, not failure
 Status: ok
 
@@ -693,9 +707,9 @@ Status: ok
 
 ```text
 sample_count,repeat,warmup,total_ms,avg_ms,avg_us,avg_ns_per_sample,queried_samples_avg,early_exit_rate,mode,with_normal,threshold,top_k,status
-6,2,1,0.0077,0.00385,3.85,641.667,6,0,phi-only,false,0,8,ok
+6,2,1,0.0082,0.0041,4.1,683.333,6,0,phi-only,false,0,8,ok
 Sparse benchmark mode: phi-only
-Average ns per sample: 641.667
+Average ns per sample: 683.333
 Status: ok
 ```
 
@@ -733,7 +747,7 @@ Resident blocks: 64
 Resident memory bytes: 74752
 Colliding: true
 Min effective phi: -0.5
-Query time ms: 0.1134
+Query time ms: 0.1243
 Status: ok
 
 Validation note: active_block_query returned 10, which means collision detected and is expected for this fixture.
@@ -747,9 +761,9 @@ Validation note: active_block_query returned 10, which means collision detected 
 
 ```text
 sample_count,repeat,warmup,active_block_count,expanded_block_count,cache_memory_bytes,cache_hit_rate,fallback_query_count,active_block_avg_ms,active_block_ns_per_sample,direct_avg_ms,direct_ns_per_sample,mode,threshold,selection_band,status
-6,2,1,45,45,52560,1.000000,4,0.015200,2533.333333,0.004200,700.000000,phi-only,1.000000,0.100000,ok
+6,2,1,45,45,52560,1.000000,4,0.014500,2416.666667,0.003800,633.333333,phi-only,1.000000,0.100000,ok
 Active block cache benchmark mode: phi-only
-Average ns per sample: 2533.33
+Average ns per sample: 2416.67
 Status: ok
 ```
 
@@ -823,6 +837,8 @@ Dry run: yes
 Signed: yes
 Octree levels: 1-2
 Block resolution: 5
+Acceleration: brute
+Threads requested: 1
 Format: ADASDF_ADAPTIVE_BLOCK_SDFBIN_V1
 Output written: no
 Low-rank compression: not enabled
@@ -855,12 +871,12 @@ Plan: <local-path>
 ### Package Run: PASS
 
 ```bash
-'<workspace>/build/adasdf_cl-v1_11-alpha_install_validation_pkg/Release/test_find_package.exe'
+'<workspace>/build/adasdf_cl-v1_12-alpha_install_validation_pkg/Release/test_find_package.exe'
 ```
 
 ```text
 AdaSDF-CL package consumer
-Version: 1.11.0-alpha
+Version: 1.12.0-alpha
 Point: 1 2 3
 Demo signed distance at origin: -0.5
 Demo adaptive blocks: 7
@@ -872,7 +888,7 @@ CPU backend available: true
 ### Downstream Configure: PASS
 
 ```bash
-cmake -S '<source>/examples/downstream_cmake_project' -B '<workspace>/build/adasdf_cl-v1_11-alpha_install_validation_ds' '-DCMAKE_PREFIX_PATH=<install>'
+cmake -S '<source>/examples/downstream_cmake_project' -B '<workspace>/build/adasdf_cl-v1_12-alpha_install_validation_ds' '-DCMAKE_PREFIX_PATH=<install>'
 ```
 
 ```text
@@ -885,7 +901,7 @@ cmake -S '<source>/examples/downstream_cmake_project' -B '<workspace>/build/adas
 ### Downstream Build: PASS
 
 ```bash
-cmake --build '<workspace>/build/adasdf_cl-v1_11-alpha_install_validation_ds' --config Release --parallel -- /nodeReuse:false
+cmake --build '<workspace>/build/adasdf_cl-v1_12-alpha_install_validation_ds' --config Release --parallel -- /nodeReuse:false
 ```
 
 ```text
@@ -900,12 +916,12 @@ cmake --build '<workspace>/build/adasdf_cl-v1_11-alpha_install_validation_ds' --
 ### Downstream Run: PASS
 
 ```bash
-'<workspace>/build/adasdf_cl-v1_11-alpha_install_validation_ds/Release/adasdf_downstream.exe'
+'<workspace>/build/adasdf_cl-v1_12-alpha_install_validation_ds/Release/adasdf_downstream.exe'
 ```
 
 ```text
 AdaSDF-CL downstream example
-Version: 1.11.0-alpha
+Version: 1.12.0-alpha
 CPU backend: available
 No .sdfbin supplied; running core-free demo adaptive path.
 Demo signed distance at origin: -0.5

@@ -4,6 +4,8 @@
 #include <fstream>
 #include <sstream>
 
+#include "adasdf/acceleration/BuildAccelerationReport.h"
+
 namespace adasdf {
 namespace {
 
@@ -66,6 +68,8 @@ std::string DenseSDFBuildReportWriter::toMarkdown(
   out << "- Memory bytes: " << report.memory_bytes << "\n";
   out << "- Build time ms: " << report.build_time_ms << "\n\n";
 
+  out << adasdf::toMarkdown(report.acceleration_stats) << "\n\n";
+
   out << "## Warnings\n\n";
   if (report.warnings.empty()) {
     out << "- none\n\n";
@@ -77,8 +81,9 @@ std::string DenseSDFBuildReportWriter::toMarkdown(
   }
 
   out << "## Limitations\n\n";
-  out << "- v1.5 uses brute-force triangle distance, not BVH acceleration.\n";
-  out << "- v1.5 sign classification uses alpha-level ray casting.\n";
+  out << "- Brute-force triangle distance remains the default reference path.\n";
+  out << "- BVH acceleration is an optional CPU path for builder sampling.\n";
+  out << "- Sign classification uses alpha-level ray casting.\n";
   out << "- This is a uniform dense SDF builder, not the adaptive "
          "octree/block/low-rank builder.\n";
   return out.str();
@@ -100,6 +105,8 @@ std::string DenseSDFBuildReportWriter::toJson(
       << report.nz << "],\n";
   out << "  \"padding\": " << report.padding << ",\n";
   out << "  \"build_time_ms\": " << report.build_time_ms << ",\n";
+  out << "  \"acceleration\": " << adasdf::toJson(report.acceleration_stats)
+      << ",\n";
   out << "  \"triangle_count\": " << report.triangle_count << ",\n";
   out << "  \"vertex_count\": " << report.vertex_count << ",\n";
   out << "  \"memory_bytes\": " << report.memory_bytes << ",\n";

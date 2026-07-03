@@ -45,6 +45,20 @@
 - v1.10 contact-aware active block selection, CPU local block expansion cache,
   active block query CLI, block cache benchmark CLI, and Python active block
   wrappers.
+- v1.11 CUDA active block cache baseline over CPU-expanded active dense blocks.
+- v1.12 CPU TriangleBVH builder acceleration, deterministic parallel sampling,
+  and builder acceleration benchmark CLI.
+
+## v1.12.0-alpha Scope
+
+- CPU `TriangleBVH` acceleration for builder distance/sign sampling;
+- `--accel brute` reference path and `--accel bvh` accelerated path;
+- deterministic stdlib `--threads N` sampling;
+- builder acceleration statistics in stdout and build reports;
+- `adasdf_benchmark_builder_acceleration`;
+- Python wrapper parameters and parsers for builder acceleration;
+- explicit boundary that GPU BVH, FCL fallback, CollisionWorld, pybind11, and
+  low-rank math changes are not included.
 
 ## v1.10.0-alpha Scope
 
