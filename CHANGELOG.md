@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.13.0-alpha.1
+
+CI hotfix release.
+
+### Fixed
+
+- Fixed GitHub Actions compatibility for the v1.13 contact stabilization
+  release by reusing the already-built CI tree during install validation
+  instead of rebuilding the full project in the Ubuntu job.
+- Aligned CI configure options with install validation options so the reused
+  build directory remains compatible across validation steps.
+- Preserved the `v1.13.0-alpha` tag without moving it.
+
+### Notes
+
+- No algorithmic changes intended.
+- `v1.13.0-alpha` remains unchanged.
+- Use `v1.13.0-alpha.1` for the green CI pre-release.
+
 ## 1.13.0-alpha
 
 Solver-aware contact candidate stabilization.

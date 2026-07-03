@@ -8,6 +8,7 @@ jobs:
   build:
     name: ${{ matrix.os }} ${{ matrix.config }}
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -23,10 +24,18 @@ jobs:
           cmake -S . -B ../build/adasdf_cl_ci
           -DADASDF_CL_BUILD_EXAMPLES=ON
           -DADASDF_CL_BUILD_TESTS=ON
+          -DADASDF_CL_BUILD_BENCHMARKS=ON
           -DADASDF_CL_USE_EXISTING_CORE=OFF
+          -DADASDF_CL_ENABLE_ADAPTIVE_BUILDER=ON
+          -DADASDF_CL_ENABLE_SURROGATE_RECOMMENDER=ON
+          -DADASDF_CL_ENABLE_DEMO_BACKEND=ON
+          -DADASDF_CL_ENABLE_DEMO_SURROGATE=ON
+          -DADASDF_CL_ENABLE_COLLISION_VIEWER=ON
+          -DADASDF_CL_ENABLE_CUDA=OFF
+          -DCMAKE_BUILD_TYPE=${{ matrix.config }}
 
       - name: Build
-        run: cmake --build ../build/adasdf_cl_ci --config ${{ matrix.config }}
+        run: cmake --build ../build/adasdf_cl_ci --config ${{ matrix.config }} --parallel
 
       - name: Test
         run: ctest --test-dir ../build/adasdf_cl_ci -C ${{ matrix.config }} --output-on-failure
@@ -35,9 +44,10 @@ jobs:
         run: >
           python scripts/run_install_validation.py
           --source .
-          --build ../build/adasdf_cl_ci_install_validation
+          --build ../build/adasdf_cl_ci
           --install ../build/adasdf_cl_ci_install
           --config ${{ matrix.config }}
+          --reuse-build
 
       - name: Clean repo check
         run: python scripts/check_repo_clean.py .

@@ -219,6 +219,11 @@ def main() -> int:
     parser.add_argument("--package-build", default="")
     parser.add_argument("--downstream-build", default="")
     parser.add_argument("--config", default="Debug")
+    parser.add_argument(
+        "--reuse-build",
+        action="store_true",
+        help="Reuse an existing configured and built source tree for install validation.",
+    )
     args = parser.parse_args()
 
     source = resolve_path(args.source, Path.cwd())
@@ -243,45 +248,68 @@ def main() -> int:
     package_source = source / "tests" / "package"
     downstream_source = source / "examples" / "downstream_cmake_project"
 
-    steps: list[tuple[str, list[str]]] = [
-        (
-            "Configure",
-            [
-                "cmake",
-                "-S",
-                str(source),
-                "-B",
-                str(build),
-                "-DADASDF_CL_BUILD_EXAMPLES=ON",
-                "-DADASDF_CL_BUILD_TESTS=ON",
-                "-DADASDF_CL_BUILD_BENCHMARKS=ON",
-                "-DADASDF_CL_USE_EXISTING_CORE=OFF",
-                "-DADASDF_CL_ENABLE_ADAPTIVE_BUILDER=ON",
-                "-DADASDF_CL_ENABLE_SURROGATE_RECOMMENDER=ON",
-                "-DADASDF_CL_ENABLE_DEMO_BACKEND=ON",
-                "-DADASDF_CL_ENABLE_DEMO_SURROGATE=ON",
-                "-DADASDF_CL_ENABLE_COLLISION_VIEWER=ON",
-                "-DADASDF_CL_ENABLE_CUDA=OFF",
-                f"-DCMAKE_INSTALL_PREFIX={install}",
-                *cmake_build_type_args(config),
-            ],
-        ),
-        ("Build", cmake_build_command(build, config)),
-        ("Install", ["cmake", "--install", str(build), "--config", config, "--prefix", str(install)]),
-        (
-            "Package Configure",
-            [
-                "cmake",
-                "-S",
-                str(package_source),
-                "-B",
-                str(package_build),
-                f"-DCMAKE_PREFIX_PATH={install}",
-                *cmake_build_type_args(config),
-            ],
-        ),
-        ("Package Build", cmake_build_command(package_build, config)),
-    ]
+    steps: list[tuple[str, list[str]]]
+    if args.reuse_build:
+        steps = [
+            (
+                "Reuse Existing Build",
+                [
+                    sys.executable,
+                    "-c",
+                    (
+                        "from pathlib import Path; "
+                        f"build = Path(r'''{build}'''); "
+                        "cache = build / 'CMakeCache.txt'; "
+                        "print('Reusing existing build:', build); "
+                        "raise SystemExit(0 if cache.is_file() else 1)"
+                    ),
+                ],
+            )
+        ]
+    else:
+        steps = [
+            (
+                "Configure",
+                [
+                    "cmake",
+                    "-S",
+                    str(source),
+                    "-B",
+                    str(build),
+                    "-DADASDF_CL_BUILD_EXAMPLES=ON",
+                    "-DADASDF_CL_BUILD_TESTS=ON",
+                    "-DADASDF_CL_BUILD_BENCHMARKS=ON",
+                    "-DADASDF_CL_USE_EXISTING_CORE=OFF",
+                    "-DADASDF_CL_ENABLE_ADAPTIVE_BUILDER=ON",
+                    "-DADASDF_CL_ENABLE_SURROGATE_RECOMMENDER=ON",
+                    "-DADASDF_CL_ENABLE_DEMO_BACKEND=ON",
+                    "-DADASDF_CL_ENABLE_DEMO_SURROGATE=ON",
+                    "-DADASDF_CL_ENABLE_COLLISION_VIEWER=ON",
+                    "-DADASDF_CL_ENABLE_CUDA=OFF",
+                    f"-DCMAKE_INSTALL_PREFIX={install}",
+                    *cmake_build_type_args(config),
+                ],
+            ),
+            ("Build", cmake_build_command(build, config)),
+        ]
+    steps.extend(
+        [
+            ("Install", ["cmake", "--install", str(build), "--config", config, "--prefix", str(install)]),
+            (
+                "Package Configure",
+                [
+                    "cmake",
+                    "-S",
+                    str(package_source),
+                    "-B",
+                    str(package_build),
+                    f"-DCMAKE_PREFIX_PATH={install}",
+                    *cmake_build_type_args(config),
+                ],
+            ),
+            ("Package Build", cmake_build_command(package_build, config)),
+        ]
+    )
 
     results: list[StepResult] = []
     for name, command in steps:

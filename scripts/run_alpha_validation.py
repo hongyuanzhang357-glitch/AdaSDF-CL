@@ -203,7 +203,6 @@ def main() -> int:
             return result.returncode
 
     if args.include_install:
-        install_build = build.parent / f"{build.name}_install_validation"
         install_prefix = build.parent / f"{build.name}_install"
         install_result = run_step(
             "Install Validation",
@@ -213,11 +212,12 @@ def main() -> int:
                 "--source",
                 str(source),
                 "--build",
-                str(install_build),
+                str(build),
                 "--install",
                 str(install_prefix),
                 "--config",
                 config,
+                "--reuse-build",
             ],
             workspace,
         )
