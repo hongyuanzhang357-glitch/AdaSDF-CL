@@ -12,6 +12,7 @@ from .parsers import (
     parse_block_cache_benchmark_metrics,
     parse_collision_colliding,
     parse_contact_count,
+    parse_contact_reduction_benchmark_metrics,
     parse_cuda_block_cache_benchmark_metrics,
     parse_field_bool,
     parse_field_float,
@@ -22,6 +23,9 @@ from .parsers import (
     parse_query_phi,
     parse_recommended_command,
     parse_recommended_path,
+    parse_raw_candidate_count,
+    parse_patch_count,
+    parse_solver_contact_count,
     parse_sparse_benchmark_metrics,
 )
 from .results import (
@@ -33,12 +37,15 @@ from .results import (
     CollisionResult,
     CommandResult,
     ContactCandidatesResult,
+    ContactReductionBenchmarkResult,
+    ContactStabilizationResult,
     CudaActiveBlockQueryResult,
     CudaBlockCacheBenchmarkResult,
     InfoResult,
     MeshCheckResult,
     QueryResult,
     RecommendationResult,
+    SolverContactsResult,
     SparseBenchmarkResult,
     SparseCollisionResult,
     SparseQueryResult,
@@ -609,6 +616,140 @@ def contact_candidates(
         output_path=Path(out) if out is not None else None,
         report_path=Path(report) if report is not None else None,
         json_path=Path(json) if json is not None else None,
+    )
+
+
+def stabilize_contacts(
+    candidates_csv: PathLike,
+    *,
+    max_contacts: int = 8,
+    max_contacts_per_link: Optional[int] = None,
+    max_contacts_per_patch: Optional[int] = None,
+    patch_radius: float = 0.02,
+    normal_cos: Optional[float] = None,
+    min_penetration: Optional[float] = None,
+    cluster: bool = True,
+    normal_consistency: bool = True,
+    duplicate_removal: bool = True,
+    out: Optional[PathLike] = None,
+    json: Optional[PathLike] = None,
+    report: Optional[PathLike] = None,
+    bin_dir: Optional[PathLike] = None,
+    check: bool = True,
+    dry_run: bool = False,
+) -> ContactStabilizationResult:
+    command = [_tool("adasdf_stabilize_contacts", bin_dir, dry_run), _path(candidates_csv)]
+    _append_value(command, "--max-contacts", max_contacts)
+    _append_value(command, "--max-contacts-per-link", max_contacts_per_link)
+    _append_value(command, "--max-contacts-per-patch", max_contacts_per_patch)
+    _append_value(command, "--patch-radius", patch_radius)
+    _append_value(command, "--normal-cos", normal_cos)
+    _append_value(command, "--min-penetration", min_penetration)
+    _append_bool(command, "--no-cluster", not cluster)
+    _append_bool(command, "--no-normal-consistency", not normal_consistency)
+    _append_bool(command, "--no-duplicate-removal", not duplicate_removal)
+    _append_value(command, "--out", _path(out) if out is not None else None)
+    _append_value(command, "--json", _path(json) if json is not None else None)
+    _append_value(command, "--report", _path(report) if report is not None else None)
+    result = _run(command, check=check, dry_run=dry_run)
+    return ContactStabilizationResult(
+        command_result=result,
+        input_candidate_count=parse_field_int(result.stdout, "Input candidates"),
+        patch_count=parse_patch_count(result.stdout),
+        solver_contact_count=parse_solver_contact_count(result.stdout),
+        output_path=Path(out) if out is not None else None,
+        report_path=Path(report) if report is not None else None,
+        json_path=Path(json) if json is not None else None,
+    )
+
+
+def solver_contact_candidates(
+    model: PathLike,
+    samples_csv: PathLike,
+    *,
+    threshold: float = 1e-3,
+    top_k: int = 32,
+    reduction_radius: float = 0.0,
+    max_contacts: int = 8,
+    max_contacts_per_link: Optional[int] = None,
+    max_contacts_per_patch: Optional[int] = None,
+    patch_radius: float = 0.02,
+    normal_cos: Optional[float] = None,
+    min_penetration: Optional[float] = None,
+    with_normal: bool = True,
+    use_radius: bool = True,
+    out: Optional[PathLike] = None,
+    candidates_out: Optional[PathLike] = None,
+    json: Optional[PathLike] = None,
+    report: Optional[PathLike] = None,
+    bin_dir: Optional[PathLike] = None,
+    check: bool = True,
+    dry_run: bool = False,
+) -> SolverContactsResult:
+    command = [_tool("adasdf_solver_contact_candidates", bin_dir, dry_run), _path(model), _path(samples_csv)]
+    _append_value(command, "--threshold", threshold)
+    _append_value(command, "--top-k", top_k)
+    _append_value(command, "--reduction-radius", reduction_radius)
+    _append_value(command, "--max-contacts", max_contacts)
+    _append_value(command, "--max-contacts-per-link", max_contacts_per_link)
+    _append_value(command, "--max-contacts-per-patch", max_contacts_per_patch)
+    _append_value(command, "--patch-radius", patch_radius)
+    _append_value(command, "--normal-cos", normal_cos)
+    _append_value(command, "--min-penetration", min_penetration)
+    command.append("--with-normal" if with_normal else "--no-normal")
+    _append_bool(command, "--no-radius", not use_radius)
+    _append_value(command, "--out", _path(out) if out is not None else None)
+    _append_value(command, "--candidates-out", _path(candidates_out) if candidates_out is not None else None)
+    _append_value(command, "--json", _path(json) if json is not None else None)
+    _append_value(command, "--report", _path(report) if report is not None else None)
+    result = _run(command, check=check, dry_run=dry_run)
+    return SolverContactsResult(
+        command_result=result,
+        sample_count=parse_field_int(result.stdout, "Samples"),
+        raw_candidate_count=parse_raw_candidate_count(result.stdout),
+        patch_count=parse_patch_count(result.stdout),
+        solver_contact_count=parse_solver_contact_count(result.stdout),
+        output_path=Path(out) if out is not None else None,
+        candidates_path=Path(candidates_out) if candidates_out is not None else None,
+        report_path=Path(report) if report is not None else None,
+        json_path=Path(json) if json is not None else None,
+    )
+
+
+def benchmark_contact_reduction(
+    model: PathLike,
+    samples_csv: PathLike,
+    *,
+    threshold: float = 1e-3,
+    top_k: int = 64,
+    max_contacts: int = 8,
+    patch_radius: float = 0.02,
+    repeat: int = 10,
+    warmup: int = 1,
+    report: Optional[PathLike] = None,
+    json: Optional[PathLike] = None,
+    csv: Optional[PathLike] = None,
+    bin_dir: Optional[PathLike] = None,
+    check: bool = True,
+    dry_run: bool = False,
+) -> ContactReductionBenchmarkResult:
+    command = [_tool("adasdf_benchmark_contact_reduction", bin_dir, dry_run), _path(model), _path(samples_csv)]
+    _append_value(command, "--threshold", threshold)
+    _append_value(command, "--top-k", top_k)
+    _append_value(command, "--max-contacts", max_contacts)
+    _append_value(command, "--patch-radius", patch_radius)
+    _append_value(command, "--repeat", repeat)
+    _append_value(command, "--warmup", warmup)
+    _append_value(command, "--report", _path(report) if report is not None else None)
+    _append_value(command, "--json", _path(json) if json is not None else None)
+    _append_value(command, "--csv", _path(csv) if csv is not None else None)
+    result = _run(command, check=check, dry_run=dry_run)
+    return ContactReductionBenchmarkResult(
+        command_result=result,
+        metrics=parse_contact_reduction_benchmark_metrics(result.stdout),
+        report_path=Path(report) if report is not None else None,
+        json_path=Path(json) if json is not None else None,
+        csv_path=Path(csv) if csv is not None else None,
     )
 
 

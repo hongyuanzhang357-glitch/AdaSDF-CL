@@ -2,7 +2,7 @@
 
 Adaptive Signed Distance Field Collision Library
 
-Status: 1.12.0-alpha / research preview
+Status: 1.13.0-alpha / research preview
 Build system: CMake
 License: MIT
 Tests: CTest
@@ -10,6 +10,12 @@ Tests: CTest
 AdaSDF-CL is an alpha collision and contact library built around signed distance fields. It provides an FCL-style API for distance, collision, and contact queries while keeping CUDA, FCL, native Python bindings, and full adaptive backend work optional or future-facing.
 
 AdaSDF-CL is an FCL-style SDF collision backend under development. It complements FCL by providing signed-distance queries, penetration depth, contact normals, batch query, expanded-SDF quality audit and CUDA query paths. It is not a drop-in FCL replacement.
+
+v1.13.0-alpha adds solver-aware contact candidate stabilization. It clusters
+and reduces SDF contact candidates under a user-defined contact budget,
+enforces deterministic ordering and normal consistency, and exports
+solver-ready contact candidates for hard-contact simulation workflows. It does
+not implement a contact solver, impulses, friction, or solver constraints.
 
 v1.12.0-alpha adds optional CPU TriangleBVH acceleration for DenseSDF,
 AdaptiveBlockSDF, and CompressedAdaptiveBlockSDF builder sampling. The default
@@ -56,9 +62,10 @@ CPU-only builds remain fully usable.
 The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`, `v1.1.0-alpha`,
 `v1.1.1-alpha`, `v1.2.0-alpha`, `v1.3.0-alpha`, `v1.4.0-alpha`,
 `v1.5.0-alpha`, `v1.6.0-alpha`, `v1.7.0-alpha`, `v1.8.0-alpha`,
-`v1.8.1-alpha`, `v1.9.0-alpha`, `v1.10.0-alpha`, and `v1.11.0-alpha` tags are
+`v1.8.1-alpha`, `v1.9.0-alpha`, `v1.10.0-alpha`, `v1.11.0-alpha`, and
+`v1.12.0-alpha` tags are
 retained for traceability. The recommended public pre-release is
-`v1.12.0-alpha`.
+`v1.13.0-alpha`.
 
 ## What Is AdaSDF-CL?
 
@@ -98,6 +105,9 @@ collision engine and does not yet replace FCL.
 | Collision-only sparse early exit | Implemented |
 | Sample-radius collision proxy | Implemented |
 | Top-K contact candidate reduction | Implemented |
+| Solver-aware contact candidates | Implemented |
+| Contact patch clustering and budget | Implemented |
+| Solver contact CSV/Markdown/JSON-like export | Implemented |
 | Sparse query benchmark | Implemented |
 | Contact-aware active block cache | Implemented |
 | Active block cache benchmark | Implemented |
@@ -138,7 +148,12 @@ Detailed capability references:
 - `docs/python_cli_wrapper.md`
 - `docs/sparse_sdf_collision.md`
 - `docs/contact_candidate_api.md`
+- `docs/solver_aware_contact_candidates.md`
+- `docs/contact_budget.md`
+- `docs/contact_clustering.md`
+- `docs/solver_contact_export.md`
 - `docs/hard_contact_collision_budget.md`
+- `docs/contact_reduction_benchmarking.md`
 - `docs/sparse_query_benchmarking.md`
 - `docs/active_block_expansion_cache.md`
 - `docs/contact_aware_block_selection.md`
@@ -175,6 +190,34 @@ Direct compressed query can be useful for sparse queries, debugging, fallback,
 and small point sets. It is not the main high-throughput GPU path. v1.10 adds
 the CPU active block cache so contact workflows can expand only selected local
 blocks instead of globally expanding the entire model.
+
+## Solver-aware contact candidates
+
+v1.13.0-alpha stabilizes sparse SDF contact candidates into a small
+solver-ready contact set:
+
+```bash
+adasdf_solver_contact_candidates model.sdfbin samples.csv \
+  --threshold 1e-3 \
+  --top-k 32 \
+  --max-contacts 8 \
+  --patch-radius 0.02 \
+  --with-normal \
+  --out solver_contacts.csv \
+  --report solver_contacts.md
+
+adasdf_benchmark_contact_reduction model.sdfbin samples.csv \
+  --threshold 1e-3 \
+  --top-k 64 \
+  --max-contacts 8 \
+  --repeat 100 \
+  --csv contact_reduction_benchmark.csv
+```
+
+This exports solver-ready candidates, not solver constraints. It does not
+compute impulses or friction forces. Hard-contact solvers should keep contact
+budgets small and use `--max-contacts`, `--patch-radius`, and normal
+consistency to control solver load.
 
 ## Active Block Expansion Cache
 

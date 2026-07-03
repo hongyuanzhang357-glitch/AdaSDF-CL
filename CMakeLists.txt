@@ -92,6 +92,13 @@ set(ADASDF_CL_RUNTIME_SOURCES
   src/backend/CudaQueryBackend.cpp
   src/backend/GpuBackend.cpp
   src/benchmark/PointCloudGenerator.cpp
+  src/contact/ContactBudget.cpp
+  src/contact/ContactPatch.cpp
+  src/contact/ContactClusterer.cpp
+  src/contact/ContactStabilizer.cpp
+  src/contact/SolverContact.cpp
+  src/contact/SolverContactExporter.cpp
+  src/contact/ContactStabilizationReportWriter.cpp
   src/compression/CompressedSDF.cpp
   src/compression/SmallMatrixSVD.cpp
   src/compression/CompressedSDFBlock.cpp
@@ -511,6 +518,17 @@ target_link_libraries(adasdf_contact_candidates PRIVATE adasdf_cl_runtime)
 set_target_properties(adasdf_contact_candidates PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
 
+add_executable(adasdf_stabilize_contacts tools/adasdf_stabilize_contacts.cpp)
+target_link_libraries(adasdf_stabilize_contacts PRIVATE adasdf_cl_runtime)
+set_target_properties(adasdf_stabilize_contacts PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
+
+add_executable(adasdf_solver_contact_candidates
+  tools/adasdf_solver_contact_candidates.cpp)
+target_link_libraries(adasdf_solver_contact_candidates PRIVATE adasdf_cl_runtime)
+set_target_properties(adasdf_solver_contact_candidates PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
+
 add_executable(adasdf_select_active_blocks tools/adasdf_select_active_blocks.cpp)
 target_link_libraries(adasdf_select_active_blocks PRIVATE adasdf_cl_runtime)
 set_target_properties(adasdf_select_active_blocks PROPERTIES
@@ -550,6 +568,12 @@ if(ADASDF_CL_BUILD_BENCHMARKS)
     tools/adasdf_benchmark_builder_acceleration.cpp)
   target_link_libraries(adasdf_benchmark_builder_acceleration PRIVATE adasdf_cl_runtime)
   set_target_properties(adasdf_benchmark_builder_acceleration PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
+
+  add_executable(adasdf_benchmark_contact_reduction
+    tools/adasdf_benchmark_contact_reduction.cpp)
+  target_link_libraries(adasdf_benchmark_contact_reduction PRIVATE adasdf_cl_runtime)
+  set_target_properties(adasdf_benchmark_contact_reduction PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
 
   add_executable(adasdf_benchmark_cuda_block_cache
@@ -676,10 +700,22 @@ set(ADASDF_CL_TEST_SOURCES
   tests/test_sparse_sdf_query.cpp
   tests/test_sparse_collision_query.cpp
   tests/test_contact_candidate_reducer.cpp
+  tests/test_contact_budget.cpp
+  tests/test_contact_patch.cpp
+  tests/test_contact_clusterer.cpp
+  tests/test_contact_stabilizer.cpp
+  tests/test_solver_contact_builder.cpp
+  tests/test_solver_contact_exporter.cpp
+  tests/test_contact_stabilization_report_writer.cpp
+  tests/test_solver_contact_budget_behavior.cpp
+  tests/test_contact_determinism.cpp
   tests/test_sparse_query_report_writer.cpp
   tests/test_sparse_query_cli.cpp
   tests/test_sparse_collide_cli.cpp
   tests/test_contact_candidates_cli.cpp
+  tests/test_stabilize_contacts_cli.cpp
+  tests/test_solver_contact_candidates_cli.cpp
+  tests/test_benchmark_contact_reduction_cli.cpp
   tests/test_benchmark_sparse_query_cli.cpp
   tests/test_sparse_collision_modes.cpp
   tests/test_active_block_selector.cpp
@@ -861,6 +897,19 @@ if(ADASDF_CL_BUILD_TESTS)
         ADASDF_CL_BUILD_DENSE_SDF="$<TARGET_FILE_NAME:adasdf_build_dense_sdf>"
         ADASDF_CL_CONTACT_CANDIDATES="$<TARGET_FILE_NAME:adasdf_contact_candidates>")
     endif()
+    if(test_name STREQUAL "test_stabilize_contacts_cli")
+      add_dependencies(${test_name} adasdf_stabilize_contacts)
+      target_compile_definitions(${test_name} PRIVATE
+        ADASDF_CL_STABILIZE_CONTACTS="$<TARGET_FILE_NAME:adasdf_stabilize_contacts>")
+    endif()
+    if(test_name STREQUAL "test_solver_contact_candidates_cli")
+      add_dependencies(${test_name}
+        adasdf_build_dense_sdf
+        adasdf_solver_contact_candidates)
+      target_compile_definitions(${test_name} PRIVATE
+        ADASDF_CL_BUILD_DENSE_SDF="$<TARGET_FILE_NAME:adasdf_build_dense_sdf>"
+        ADASDF_CL_SOLVER_CONTACT_CANDIDATES="$<TARGET_FILE_NAME:adasdf_solver_contact_candidates>")
+    endif()
     if(test_name STREQUAL "test_benchmark_sparse_query_cli")
       add_dependencies(${test_name} adasdf_build_dense_sdf)
       target_compile_definitions(${test_name} PRIVATE
@@ -906,6 +955,16 @@ if(ADASDF_CL_BUILD_TESTS)
         add_dependencies(${test_name} adasdf_benchmark_builder_acceleration)
         target_compile_definitions(${test_name} PRIVATE
           ADASDF_CL_BENCHMARK_BUILDER_ACCELERATION="$<TARGET_FILE_NAME:adasdf_benchmark_builder_acceleration>")
+      endif()
+    endif()
+    if(test_name STREQUAL "test_benchmark_contact_reduction_cli")
+      add_dependencies(${test_name} adasdf_build_dense_sdf)
+      target_compile_definitions(${test_name} PRIVATE
+        ADASDF_CL_BUILD_DENSE_SDF="$<TARGET_FILE_NAME:adasdf_build_dense_sdf>")
+      if(TARGET adasdf_benchmark_contact_reduction)
+        add_dependencies(${test_name} adasdf_benchmark_contact_reduction)
+        target_compile_definitions(${test_name} PRIVATE
+          ADASDF_CL_BENCHMARK_CONTACT_REDUCTION="$<TARGET_FILE_NAME:adasdf_benchmark_contact_reduction>")
       endif()
     endif()
     if(test_name STREQUAL "test_benchmark_cuda_block_cache_cli")
@@ -1003,6 +1062,14 @@ if(ADASDF_CL_BUILD_TESTS)
       set_tests_properties(${test_name} PROPERTIES
         WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_contact_candidates>")
     endif()
+    if(test_name STREQUAL "test_stabilize_contacts_cli")
+      set_tests_properties(${test_name} PROPERTIES
+        WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_stabilize_contacts>")
+    endif()
+    if(test_name STREQUAL "test_solver_contact_candidates_cli")
+      set_tests_properties(${test_name} PROPERTIES
+        WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_solver_contact_candidates>")
+    endif()
     if(test_name STREQUAL "test_benchmark_sparse_query_cli")
       if(TARGET adasdf_benchmark_sparse_query)
         set_tests_properties(${test_name} PROPERTIES
@@ -1029,6 +1096,12 @@ if(ADASDF_CL_BUILD_TESTS)
       if(TARGET adasdf_benchmark_builder_acceleration)
         set_tests_properties(${test_name} PROPERTIES
           WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_benchmark_builder_acceleration>")
+      endif()
+    endif()
+    if(test_name STREQUAL "test_benchmark_contact_reduction_cli")
+      if(TARGET adasdf_benchmark_contact_reduction)
+        set_tests_properties(${test_name} PROPERTIES
+          WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_benchmark_contact_reduction>")
       endif()
     endif()
     if(test_name STREQUAL "test_benchmark_cuda_block_cache_cli")
@@ -1072,6 +1145,8 @@ set(ADASDF_CL_INSTALL_TOOL_TARGETS
   adasdf_sparse_query
   adasdf_sparse_collide
   adasdf_contact_candidates
+  adasdf_stabilize_contacts
+  adasdf_solver_contact_candidates
   adasdf_select_active_blocks
   adasdf_active_block_query
   adasdf_cuda_active_block_query)
@@ -1081,6 +1156,7 @@ if(ADASDF_CL_BUILD_BENCHMARKS)
     adasdf_benchmark_sparse_query
     adasdf_benchmark_block_cache
     adasdf_benchmark_builder_acceleration
+    adasdf_benchmark_contact_reduction
     adasdf_benchmark_cuda_block_cache)
 endif()
 

@@ -58,6 +58,12 @@ contact manifold, and not a solver. Direct compressed query is useful for sparse
 queries, debugging, fallback, and small point sets. High-throughput GPU query
 still belongs to expanded or future active-block paths.
 
+v1.13 adds a solver-ready export layer on top of sparse candidates:
+`adasdf_solver_contact_candidates` and `adasdf_stabilize_contacts`. These tools
+cluster, budget, and deterministically order candidates for external solvers.
+They still do not compute impulses, friction, Jacobian rows, or solver
+constraints.
+
 For compressed SDF runtime memory savings, v1.10 adds a CPU active block cache
 that expands only local blocks selected from sparse samples or contact
 candidates. CUDA active block caching remains planned.

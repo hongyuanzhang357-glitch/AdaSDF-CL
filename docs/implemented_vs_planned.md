@@ -64,6 +64,11 @@
   `adasdf_contact_candidates`, and `adasdf_benchmark_sparse_query`.
 - Python wrappers for sparse query, sparse collision, contact candidates, and
   sparse benchmarking.
+- Solver-aware contact candidate stabilization with `ContactBudget`,
+  `ContactPatch`, `ContactClusterer`, `ContactStabilizer`, `SolverContactSet`,
+  and deterministic `stable_key` export.
+- `adasdf_stabilize_contacts`, `adasdf_solver_contact_candidates`, and
+  `adasdf_benchmark_contact_reduction`.
 - Contact-aware active block selection for adaptive/compressed block SDFs.
 - CPU active expanded-block cache for local compressed SDF runtime queries.
 - `adasdf_select_active_blocks`, `adasdf_active_block_query`, and
@@ -96,8 +101,9 @@
 - Block-expanded query: useful for selected/local contact regions.
 - Contact manifold: contact reduction exists; stable robot-grade clustering is
   planned.
-- Sparse contact candidates: deterministic Top-K candidates are implemented,
-  but they are not full solver contacts and not a complete contact manifold.
+- Sparse contact candidates: deterministic Top-K candidates are implemented.
+  v1.13 can stabilize them into solver-ready candidates, but this is still not
+  a full solver, not solver constraints, and not impulses or friction.
 - Real asset bridge: existing-core fixtures and sampled expansion bridge exist
   when direct query support is available.
 - STL import audit: diagnostics, readiness suggestions, and safe cleanup are
@@ -128,7 +134,8 @@
 - FCL fallback backend.
 - CollisionWorld broadphase.
 - CCD.
-- Solver-aware full contact manifold generation.
+- Temporal contact coherence and warm-start matching for solver contacts.
+- Full contact solver, friction, Jacobians, and impulses.
 - Native Python / pybind11 bindings.
 - C API.
 - ROS / MoveIt integration.

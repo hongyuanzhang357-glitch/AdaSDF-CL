@@ -102,6 +102,39 @@ class ContactCandidatesResult:
 
 
 @dataclass
+class ContactStabilizationResult:
+    command_result: CommandResult
+    input_candidate_count: Optional[int] = None
+    patch_count: Optional[int] = None
+    solver_contact_count: Optional[int] = None
+    output_path: Optional[Path] = None
+    report_path: Optional[Path] = None
+    json_path: Optional[Path] = None
+
+
+@dataclass
+class SolverContactsResult:
+    command_result: CommandResult
+    sample_count: Optional[int] = None
+    raw_candidate_count: Optional[int] = None
+    patch_count: Optional[int] = None
+    solver_contact_count: Optional[int] = None
+    output_path: Optional[Path] = None
+    candidates_path: Optional[Path] = None
+    report_path: Optional[Path] = None
+    json_path: Optional[Path] = None
+
+
+@dataclass
+class ContactReductionBenchmarkResult:
+    command_result: CommandResult
+    metrics: Dict[str, Any] = field(default_factory=dict)
+    report_path: Optional[Path] = None
+    json_path: Optional[Path] = None
+    csv_path: Optional[Path] = None
+
+
+@dataclass
 class SparseBenchmarkResult:
     command_result: CommandResult
     metrics: Dict[str, Any] = field(default_factory=dict)

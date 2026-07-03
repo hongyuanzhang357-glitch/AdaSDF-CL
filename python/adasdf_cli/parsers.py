@@ -67,7 +67,12 @@ def parse_collision_colliding(stdout: str) -> Optional[bool]:
 
 
 def parse_contact_count(stdout: str) -> Optional[int]:
-    for pattern in (r"^Contact count:\s*(\d+)\s*$", r"^Returned contacts:\s*(\d+)\s*$"):
+    for pattern in (
+        r"^Contact count:\s*(\d+)\s*$",
+        r"^Returned contacts:\s*(\d+)\s*$",
+        r"^Solver contacts:\s*(\d+)\s*$",
+        r"^Output solver contacts:\s*(\d+)\s*$",
+    ):
         match = _search(pattern, stdout)
         if match:
             try:
@@ -159,6 +164,32 @@ def parse_threads(stdout: str) -> Optional[int]:
     return parse_field_int(stdout, "Threads")
 
 
+def parse_solver_contact_count(stdout: str) -> Optional[int]:
+    return parse_contact_count(stdout)
+
+
+def parse_patch_count(stdout: str) -> Optional[int]:
+    value = parse_field_int(stdout, "Patches")
+    if value is not None:
+        return value
+    return parse_field_int(stdout, "patch_count")
+
+
+def parse_raw_candidate_count(stdout: str) -> Optional[int]:
+    value = parse_field_int(stdout, "Raw candidates")
+    if value is not None:
+        return value
+    return parse_field_int(stdout, "raw_candidate_count")
+
+
+def parse_reduction_ratio(stdout: str) -> Optional[float]:
+    return parse_field_float(stdout, "candidate_reduction_ratio")
+
+
+def parse_avg_reduction_ms(stdout: str) -> Optional[float]:
+    return parse_field_float(stdout, "avg_reduction_ms")
+
+
 def parse_build_acceleration_stats(stdout: str) -> Dict[str, object]:
     metrics: Dict[str, object] = {}
     for label, key in (
@@ -202,6 +233,33 @@ def parse_sparse_benchmark_metrics(stdout: str) -> Dict[str, object]:
             metrics["mode"] = line.split(":", 1)[1].strip()
         elif line.startswith("Average ns per sample:"):
             metrics["avg_ns_per_sample"] = line.split(":", 1)[1].strip()
+    return metrics
+
+
+def parse_contact_reduction_benchmark_metrics(stdout: str) -> Dict[str, object]:
+    metrics: Dict[str, object] = {}
+    for label, key in (
+        ("sample_count", "sample_count"),
+        ("raw_candidate_count", "raw_candidate_count"),
+        ("patch_count", "patch_count"),
+        ("solver_contact_count", "solver_contact_count"),
+        ("candidate_reduction_ratio", "candidate_reduction_ratio"),
+        ("avg_query_ms", "avg_query_ms"),
+        ("avg_reduction_ms", "avg_reduction_ms"),
+        ("avg_total_ms", "avg_total_ms"),
+        ("max_contacts", "max_contacts"),
+        ("patch_radius", "patch_radius"),
+        ("repeat", "repeat"),
+        ("warmup", "warmup"),
+    ):
+        match = _search(rf"^{re.escape(label)}:\s*(.+)$", stdout)
+        if match:
+            metrics[key] = match.group(1).strip()
+    for line in (stdout or "").splitlines():
+        if line.startswith("sample_count,raw_candidate_count,"):
+            metrics["csv_header"] = line
+        elif metrics.get("csv_header") and "csv_values" not in metrics:
+            metrics["csv_values"] = line
     return metrics
 
 

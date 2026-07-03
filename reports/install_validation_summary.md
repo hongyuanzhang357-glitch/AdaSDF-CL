@@ -17,7 +17,7 @@ cmake -S '<source>' -B '<build>' -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD
 -- Selecting Windows SDK version 10.0.22621.0 to target Windows 10.0.26200.
 --
 -- AdaSDF-CL configuration:
---   Version: 1.12.0-alpha
+--   Version: 1.13.0-alpha
 --   Build examples: ON
 --   Build tests: ON
 --   Benchmarks: ON
@@ -33,7 +33,7 @@ cmake -S '<source>' -B '<build>' -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD
 --   FCL: not required
 --
 -- Configuring done (0.1s)
--- Generating done (1.2s)
+-- Generating done (1.3s)
 ...
 ```
 
@@ -57,7 +57,7 @@ cmake --build '<build>' --config Release --parallel -- /nodeReuse:false
   Building Custom Rule <source>/CMakeLists.txt
   Building Custom Rule <source>/CMakeLists.txt
   Building Custom Rule <source>/CMakeLists.txt
-  Building Custom Rule <source>/CMakeLists.txt
+  test_sparse_collision_query.vcxproj -> <build>\Release\test_sparse_collision_query.exe
   Building Custom Rule <source>/CMakeLists.txt
   Building Custom Rule <source>/CMakeLists.txt
   Building Custom Rule <source>/CMakeLists.txt
@@ -100,7 +100,7 @@ cmake --install '<build>' --config Release --prefix '<install>'
 ### Package Configure: PASS
 
 ```bash
-cmake -S '<source>/tests/package' -B '<workspace>/build/adasdf_cl-v1_12-alpha_install_validation_pkg' '-DCMAKE_PREFIX_PATH=<install>'
+cmake -S '<source>/tests/package' -B '<workspace>/build/adasdf_cl-v1_13_alpha_validation_install_validation_pkg' '-DCMAKE_PREFIX_PATH=<install>'
 ```
 
 ```text
@@ -113,7 +113,7 @@ cmake -S '<source>/tests/package' -B '<workspace>/build/adasdf_cl-v1_12-alpha_in
 ### Package Build: PASS
 
 ```bash
-cmake --build '<workspace>/build/adasdf_cl-v1_12-alpha_install_validation_pkg' --config Release --parallel -- /nodeReuse:false
+cmake --build '<workspace>/build/adasdf_cl-v1_13_alpha_validation_install_validation_pkg' --config Release --parallel -- /nodeReuse:false
 ```
 
 ```text
@@ -132,9 +132,9 @@ cmake --build '<workspace>/build/adasdf_cl-v1_12-alpha_install_validation_pkg' -
 ```
 
 ```text
-..................................
+.......................................
 ----------------------------------------------------------------------
-Ran 34 tests in 0.554s
+Ran 39 tests in 0.399s
 
 OK
 ```
@@ -146,7 +146,7 @@ OK
 ```
 
 ```text
-AdaSDF-CL version: 1.12.0-alpha
+AdaSDF-CL version: 1.13.0-alpha
 Position: FCL-style SDF collision backend under development.
 Boundary: complementary SDF backend, not a drop-in FCL replacement.
 
@@ -269,12 +269,12 @@ Used BVH: no
 Threads requested: 1
 Threads used: 1
 BVH build time ms: 0
-Sampling time ms: 21.6901
+Sampling time ms: 21.6527
 BVH nodes: 0
 BVH leaves: 0
 Brute reference time ms: 0
 Speedup vs brute reference: 0
-Build time ms: 21.766
+Build time ms: 21.7334
 Memory bytes: 111128
 Reload validation: success
 ...
@@ -288,7 +288,7 @@ Reload validation: success
 
 ```text
 AdaSDF-CL info
-Library version: 1.12.0-alpha
+Library version: 1.13.0-alpha
 Path: <local-path>
 Model name: uniform dense SDF
 Valid: yes
@@ -394,7 +394,7 @@ BVH leaves: 0
 
 ```text
 AdaSDF-CL info
-Library version: 1.12.0-alpha
+Library version: 1.13.0-alpha
 Path: <local-path>
 Model name: adaptive block dense SDF
 Valid: yes
@@ -498,7 +498,7 @@ Quality report: <local-path>
 
 ```text
 AdaSDF-CL info
-Library version: 1.12.0-alpha
+Library version: 1.13.0-alpha
 Path: <local-path>
 Model name: compressed adaptive block SDF
 Valid: yes
@@ -604,9 +604,9 @@ Fallback rate: 0
 
 ```text
 query_backend,expansion_mode,selected_blocks,num_points,expanded_memory_mb,gpu_resident_memory_mb,setup_ms,expand_ms,upload_sdf_ms,allocation_ms,h2d_points_ms,kernel_ms,sync_ms,d2h_results_ms,postprocess_ms,free_ms,total_ms,query_kernel_ms,query_total_ms,ns_per_query,queries_per_second,fallback_count,max_abs_phi_error,max_normal_error,cuda_available,max_abs_error,mean_abs_error,rms_error,p95_abs_error,sign_mismatch_count,sign_mismatch_rate,ambiguous_sign_count,ambiguous_sign_rate,near_surface_sign_mismatch_count,near_surface_sign_mismatch_rate,fallback_rate,warmup,repeat,kernel_min_ms,kernel_mean_ms,kernel_max_ms,kernel_std_ms,total_min_ms,total_mean_ms,total_max_ms,total_std_ms,output_mode,phi_only,reuse_resident,kernel_only,workspace_reused,allocation_count,workspace_capacity,workspace_device_memory_mb,block_lookup_count,block_scan_count,center_block_hit_rate,neighbor_same_block_rate,download_results,correctness_checked,host_memory,layout,status,error_message
-cpu,none,all,1000,0,0,0,0,0,0.0139,0,NA,NA,0,0,0,1.9746,NA,1.9746,1974.6,506431.6824,0,0,0,false,0,0,0,0,0,0,0,0,0,0,0,0,1,NA,NA,NA,NA,1.9746,1.9746,1.9746,0,"phi,normal",false,false,false,false,0,0,0,0,0,0,0,true,true,paged,aos,ok,
+cpu,none,all,1000,0,0,0,0,0,0.0192,0,NA,NA,0,0,0,1.9861,NA,1.9861,1986.1,503499.3203,0,0,0,false,0,0,0,0,0,0,0,0,0,0,0,0,1,NA,NA,NA,NA,1.9861,1.9861,1.9861,0,"phi,normal",false,false,false,false,0,0,0,0,0,0,0,true,true,paged,aos,ok,
 backend | expansion | output | blocks | points | setup ms | total mean ms | kernel mean ms | ns/query | max phi error | max normal error | status
-cpu | none | phi,normal | all | 1000 | 0 | 1.9746 | NA | 1974.6 | 0 | 0 | ok
+cpu | none | phi,normal | all | 1000 | 0 | 1.9861 | NA | 1986.1 | 0 | 0 | ok
 ```
 
 ### Installed CompressedSDF One-Step Build CLI: PASS
@@ -626,7 +626,7 @@ Used BVH: no
 Threads requested: 1
 Threads used: 1
 BVH build time ms: 0
-Sampling time ms: 13.4686
+Sampling time ms: 13.2316
 BVH nodes: 0
 BVH leaves: 0
 Brute reference time ms: 0
@@ -654,7 +654,7 @@ Colliding: true
 Min phi: -0.5
 Min effective phi: -0.5
 Early exit: false
-Elapsed ms: 0.0064
+Elapsed ms: 0.0063
 Output mode: phi-only
 Status: ok
 ```
@@ -675,7 +675,7 @@ First hit sample id: 0
 Sample count: 6
 Queried samples: 1
 Early exit: true
-Elapsed ms: 0.0064
+Elapsed ms: 0.0026
 Return code note: 10 means collision detected, not failure
 Status: ok
 
@@ -699,6 +699,66 @@ This is not a full contact manifold or solver constraints.
 Status: ok
 ```
 
+### Installed Contact Stabilization CLI: PASS
+
+```bash
+'<install>/bin/adasdf_stabilize_contacts.exe' '<workspace>/build/install_validation_contact_candidates.csv' --max-contacts 8 --patch-radius 0.02 --out '<workspace>/build/install_validation_stabilized_solver_contacts.csv' --json '<workspace>/build/install_validation_stabilized_solver_contacts.json' --report '<workspace>/build/install_validation_stabilized_solver_contacts.md'
+```
+
+```text
+AdaSDF-CL stabilize contacts
+Input candidates: 2
+Patches: 2
+Output solver contacts: 2
+Max contacts: 8
+Warnings: 0
+This exports solver-ready candidates, not solver constraints.
+No impulses or friction forces are computed.
+Status: ok
+```
+
+### Installed Solver Contact Candidates CLI: PASS
+
+```bash
+'<install>/bin/adasdf_solver_contact_candidates.exe' '<workspace>/build/install_validation_compressed_direct.sdfbin' '<source>/tests/data/samples/cube_sparse_samples.csv' --threshold 1e-3 --top-k 32 --max-contacts 8 --patch-radius 0.02 --with-normal --out '<workspace>/build/install_validation_solver_contacts.csv' --candidates-out '<workspace>/build/install_validation_solver_raw_candidates.csv' --json '<workspace>/build/install_validation_solver_contacts.json' --report '<workspace>/build/install_validation_solver_contacts.md'
+```
+
+```text
+AdaSDF-CL solver contact candidates
+Samples: 6
+Raw candidates: 2
+Patches: 2
+Solver contacts: 2
+Max penetration: 0.501
+Max contacts: 8
+This exports solver-ready candidates, not solver constraints.
+No impulses or friction forces are computed.
+Status: ok
+```
+
+### Installed Contact Reduction Benchmark CLI: PASS
+
+```bash
+'<install>/bin/adasdf_benchmark_contact_reduction.exe' '<workspace>/build/install_validation_compressed_direct.sdfbin' '<source>/tests/data/samples/cube_sparse_samples.csv' --threshold 1e-3 --top-k 64 --max-contacts 8 --patch-radius 0.02 --repeat 2 --warmup 1 --csv '<workspace>/build/install_validation_contact_reduction_benchmark.csv' --json '<workspace>/build/install_validation_contact_reduction_benchmark.json' --report '<workspace>/build/install_validation_contact_reduction_benchmark.md'
+```
+
+```text
+AdaSDF-CL contact reduction benchmark
+sample_count: 6
+raw_candidate_count: 2
+patch_count: 2
+solver_contact_count: 2
+candidate_reduction_ratio: 1
+avg_query_ms: 0.0159
+avg_reduction_ms: 0.00555
+avg_total_ms: 0.02145
+max_contacts: 8
+patch_radius: 0.02
+repeat: 2
+warmup: 1
+Status: ok
+```
+
 ### Installed Sparse Query Benchmark CLI: PASS
 
 ```bash
@@ -707,9 +767,9 @@ Status: ok
 
 ```text
 sample_count,repeat,warmup,total_ms,avg_ms,avg_us,avg_ns_per_sample,queried_samples_avg,early_exit_rate,mode,with_normal,threshold,top_k,status
-6,2,1,0.0082,0.0041,4.1,683.333,6,0,phi-only,false,0,8,ok
+6,2,1,0.0081,0.00405,4.05,675,6,0,phi-only,false,0,8,ok
 Sparse benchmark mode: phi-only
-Average ns per sample: 683.333
+Average ns per sample: 675
 Status: ok
 ```
 
@@ -747,7 +807,7 @@ Resident blocks: 64
 Resident memory bytes: 74752
 Colliding: true
 Min effective phi: -0.5
-Query time ms: 0.1243
+Query time ms: 0.1135
 Status: ok
 
 Validation note: active_block_query returned 10, which means collision detected and is expected for this fixture.
@@ -761,9 +821,9 @@ Validation note: active_block_query returned 10, which means collision detected 
 
 ```text
 sample_count,repeat,warmup,active_block_count,expanded_block_count,cache_memory_bytes,cache_hit_rate,fallback_query_count,active_block_avg_ms,active_block_ns_per_sample,direct_avg_ms,direct_ns_per_sample,mode,threshold,selection_band,status
-6,2,1,45,45,52560,1.000000,4,0.014500,2416.666667,0.003800,633.333333,phi-only,1.000000,0.100000,ok
+6,2,1,45,45,52560,1.000000,4,0.014100,2350.000000,0.003650,608.333333,phi-only,1.000000,0.100000,ok
 Active block cache benchmark mode: phi-only
-Average ns per sample: 2416.67
+Average ns per sample: 2350
 Status: ok
 ```
 
@@ -871,12 +931,12 @@ Plan: <local-path>
 ### Package Run: PASS
 
 ```bash
-'<workspace>/build/adasdf_cl-v1_12-alpha_install_validation_pkg/Release/test_find_package.exe'
+'<workspace>/build/adasdf_cl-v1_13_alpha_validation_install_validation_pkg/Release/test_find_package.exe'
 ```
 
 ```text
 AdaSDF-CL package consumer
-Version: 1.12.0-alpha
+Version: 1.13.0-alpha
 Point: 1 2 3
 Demo signed distance at origin: -0.5
 Demo adaptive blocks: 7
@@ -888,7 +948,7 @@ CPU backend available: true
 ### Downstream Configure: PASS
 
 ```bash
-cmake -S '<source>/examples/downstream_cmake_project' -B '<workspace>/build/adasdf_cl-v1_12-alpha_install_validation_ds' '-DCMAKE_PREFIX_PATH=<install>'
+cmake -S '<source>/examples/downstream_cmake_project' -B '<workspace>/build/adasdf_cl-v1_13_alpha_validation_install_validation_ds' '-DCMAKE_PREFIX_PATH=<install>'
 ```
 
 ```text
@@ -901,7 +961,7 @@ cmake -S '<source>/examples/downstream_cmake_project' -B '<workspace>/build/adas
 ### Downstream Build: PASS
 
 ```bash
-cmake --build '<workspace>/build/adasdf_cl-v1_12-alpha_install_validation_ds' --config Release --parallel -- /nodeReuse:false
+cmake --build '<workspace>/build/adasdf_cl-v1_13_alpha_validation_install_validation_ds' --config Release --parallel -- /nodeReuse:false
 ```
 
 ```text
@@ -916,12 +976,12 @@ cmake --build '<workspace>/build/adasdf_cl-v1_12-alpha_install_validation_ds' --
 ### Downstream Run: PASS
 
 ```bash
-'<workspace>/build/adasdf_cl-v1_12-alpha_install_validation_ds/Release/adasdf_downstream.exe'
+'<workspace>/build/adasdf_cl-v1_13_alpha_validation_install_validation_ds/Release/adasdf_downstream.exe'
 ```
 
 ```text
 AdaSDF-CL downstream example
-Version: 1.12.0-alpha
+Version: 1.13.0-alpha
 CPU backend: available
 No .sdfbin supplied; running core-free demo adaptive path.
 Demo signed distance at origin: -0.5

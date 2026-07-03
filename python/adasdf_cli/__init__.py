@@ -13,12 +13,15 @@ from .results import (
     CollisionResult,
     CommandResult,
     ContactCandidatesResult,
+    ContactReductionBenchmarkResult,
+    ContactStabilizationResult,
     CudaActiveBlockQueryResult,
     CudaBlockCacheBenchmarkResult,
     InfoResult,
     MeshCheckResult,
     QueryResult,
     RecommendationResult,
+    SolverContactsResult,
     SparseBenchmarkResult,
     SparseCollisionResult,
     SparseQueryResult,
@@ -28,6 +31,7 @@ from .tools import (
     benchmark_batch_query,
     benchmark_block_cache,
     benchmark_builder_acceleration,
+    benchmark_contact_reduction,
     benchmark_cuda_block_cache,
     benchmark_sparse_query,
     build_adaptive_sdf,
@@ -45,12 +49,14 @@ from .tools import (
     query,
     recommend_build,
     select_active_blocks,
+    solver_contact_candidates,
     sparse_collide,
     sparse_query,
+    stabilize_contacts,
 )
 from .workflows import preprocess_and_build_compressed, recommend_then_build_compressed
 
-__version__ = "1.12.0-alpha"
+__version__ = "1.13.0-alpha"
 
 __all__ = [
     "AdaSDFConfig",
@@ -66,12 +72,15 @@ __all__ = [
     "CollisionResult",
     "CommandResult",
     "ContactCandidatesResult",
+    "ContactReductionBenchmarkResult",
+    "ContactStabilizationResult",
     "CudaActiveBlockQueryResult",
     "CudaBlockCacheBenchmarkResult",
     "InfoResult",
     "MeshCheckResult",
     "QueryResult",
     "RecommendationResult",
+    "SolverContactsResult",
     "SparseBenchmarkResult",
     "SparseCollisionResult",
     "SparseQueryResult",
@@ -79,6 +88,7 @@ __all__ = [
     "benchmark_batch_query",
     "benchmark_block_cache",
     "benchmark_builder_acceleration",
+    "benchmark_contact_reduction",
     "benchmark_cuda_block_cache",
     "benchmark_sparse_query",
     "build_adaptive_sdf",
@@ -100,6 +110,8 @@ __all__ = [
     "recommend_build",
     "recommend_then_build_compressed",
     "select_active_blocks",
+    "solver_contact_candidates",
     "sparse_collide",
     "sparse_query",
+    "stabilize_contacts",
 ]

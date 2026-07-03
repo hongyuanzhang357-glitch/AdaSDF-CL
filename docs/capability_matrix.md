@@ -74,6 +74,9 @@ only, Planned, Not implemented.
 | Collision / Contact | sparse clearance query | Implemented | v1.9 | `SparseCollisionMode::Clearance` | Full traversal, returns minimum effective phi. |
 | Collision / Contact | sparse candidate search | Implemented | v1.9 | `SparseCollisionMode::CandidateSearch` | Returns threshold violations for reduction. |
 | Collision / Contact | Top-K contact candidates | Implemented | v1.9 | `ContactCandidateReducer`, `adasdf_contact_candidates` | Deterministic candidate reduction with optional `reduction_radius`; not a full contact manifold. |
+| Collision / Contact | solver-aware contact candidates | Implemented | v1.13 | `ContactStabilizer`, `adasdf_solver_contact_candidates` | Clusters and budgets SDF candidates into solver-ready contacts; not a contact solver and no impulses/friction. |
+| Collision / Contact | contact patch clustering | Implemented | v1.13 | `ContactClusterer`, `ContactPatch` | Spatial and normal-consistent patches with deterministic representatives. |
+| Collision / Contact | solver contact export | Implemented | v1.13 | `SolverContactExporter`, `adasdf_stabilize_contacts` | CSV, Markdown, and JSON-like solver-ready candidate export. |
 | Collision / Contact | nearest points | Implemented | v0.3 | `DistanceResult` | Pair distance result. |
 | Collision / Contact | contact manifold clustering | Partial | v0.5 | `ContactReducer` | Stable robot-grade manifold planned. |
 | Collision / Contact | CCD | Planned | - | - | Not implemented. |
@@ -110,6 +113,7 @@ only, Planned, Not implemented.
 | Benchmark | kernel-only / total-time distinction | Implemented | v1.0.2 | CSV timing fields | Clear timing semantics. |
 | Benchmark | sparse query benchmark | Implemented | v1.9 | `adasdf_benchmark_sparse_query` | CPU sparse phi-only, phi-normal, collision-only, clearance, and candidates modes. |
 | Benchmark | active block cache benchmark | Implemented | v1.10 | `adasdf_benchmark_block_cache` | Compares CPU active block cached query with direct sparse query. |
+| Benchmark | contact reduction benchmark | Implemented | v1.13 | `adasdf_benchmark_contact_reduction` | Measures sparse query plus contact stabilization overhead and candidate reduction ratio. |
 | Benchmark | CUDA active block cache benchmark | Experimental | v1.11 | `adasdf_benchmark_cuda_block_cache` | Reports CUDA total/kernel/upload/download timing and CPU/direct sparse baselines; CUDA unavailable returns code `20`. |
 | Benchmark | CPU/GPU alignment | Implemented | v1.0 | tests | Optional CUDA skip. |
 | Benchmark | real existing-core asset benchmark | Existing-core only | v0.7 | discovered fixtures | Optional. |

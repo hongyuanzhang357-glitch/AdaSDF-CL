@@ -53,6 +53,11 @@ Hard-contact solvers are sensitive to constraint count. v1.9 therefore focuses
 on Top-K selection and deterministic reduction instead of passing every
 penetrating sample to a solver.
 
+v1.13 adds `ContactStabilizer` and `SolverContactSet` for solver-ready
+candidate export. This clusters nearby candidates, checks normal consistency,
+enforces a contact budget, and emits deterministic stable keys. It still does
+not compute impulses, friction, solver constraints, or a full contact solver.
+
 In v1.10, those sparse samples or reduced candidates can also drive CPU active
 block selection through `ActiveBlockSelector`, allowing compressed SDF workflows
 to expand only local blocks before repeated queries.

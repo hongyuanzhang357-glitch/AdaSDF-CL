@@ -64,6 +64,24 @@ class ToolCommandBuildingTests(unittest.TestCase):
         self.assertIn("adasdf_contact_candidates", stdout)
         self.assertIn("--top-k", stdout)
 
+    def test_stabilize_contacts_dry_run_command(self):
+        result = adasdf.stabilize_contacts("candidates.csv", max_contacts=4, dry_run=True)
+        stdout = result.command_result.stdout
+        self.assertIn("adasdf_stabilize_contacts", stdout)
+        self.assertIn("--max-contacts", stdout)
+
+    def test_solver_contact_candidates_dry_run_command(self):
+        result = adasdf.solver_contact_candidates("model.sdfbin", "samples.csv", top_k=16, dry_run=True)
+        stdout = result.command_result.stdout
+        self.assertIn("adasdf_solver_contact_candidates", stdout)
+        self.assertIn("--top-k", stdout)
+
+    def test_contact_reduction_benchmark_dry_run_command(self):
+        result = adasdf.benchmark_contact_reduction("model.sdfbin", "samples.csv", repeat=2, dry_run=True)
+        stdout = result.command_result.stdout
+        self.assertIn("adasdf_benchmark_contact_reduction", stdout)
+        self.assertIn("--repeat", stdout)
+
     def test_sparse_benchmark_dry_run_command(self):
         result = adasdf.benchmark_sparse_query("model.sdfbin", "samples.csv", repeat=2, dry_run=True)
         stdout = result.command_result.stdout

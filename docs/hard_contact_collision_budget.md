@@ -11,6 +11,8 @@ generation as separate stages:
 - clearance query finds the minimum effective phi over the sample set;
 - candidate-search query returns threshold violations;
 - contact candidate reduction keeps a small, deterministic Top-K set.
+- solver-aware stabilization clusters candidates into patches and applies a
+  final solver contact budget before export.
 
 ## Practical Guidance
 
@@ -30,4 +32,6 @@ constraints, FCL broadphase, CCD, or a `CollisionWorld`. Those remain future
 integration layers.
 
 v1.10 adds CPU active block expansion/cache for runtime memory control. It is
-not CUDA active block residency and not a solver-aware contact manifold.
+not CUDA active block residency and not a contact solver. Solver-ready
+candidate export is available in v1.13, but impulses, friction forces,
+Jacobians, and solver constraints remain out of scope.

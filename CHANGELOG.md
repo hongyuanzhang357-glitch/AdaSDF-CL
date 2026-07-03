@@ -1,5 +1,30 @@
 # Changelog
 
+## 1.13.0-alpha
+
+Solver-aware contact candidate stabilization.
+
+### Added
+
+- `ContactBudget` for hard-contact candidate limits.
+- `ContactPatch` and `ContactClusterer`.
+- `ContactStabilizer` with duplicate removal, thresholding, clustering, and
+  deterministic budget enforcement.
+- `SolverContact` and `SolverContactSet` export.
+- Solver contact CSV, Markdown, and JSON-like writers.
+- `adasdf_stabilize_contacts` CLI.
+- `adasdf_solver_contact_candidates` CLI.
+- `adasdf_benchmark_contact_reduction` CLI.
+- Python wrapper support for stabilized solver contacts.
+- Determinism and contact budget tests.
+
+### Notes
+
+- Solver-ready contacts are not solver impulses.
+- v1.13 does not implement a contact solver.
+- Contact budget is important for hard-contact dynamics.
+- Temporal coherence and warm-start tracking remain planned work.
+
 ## 1.12.0-alpha
 
 BVH-accelerated SDF builder sampling and deterministic parallel sampling.

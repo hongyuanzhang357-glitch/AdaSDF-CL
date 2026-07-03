@@ -48,6 +48,9 @@ python -m pip install -e python
 - `sparse_query`
 - `sparse_collide`
 - `contact_candidates`
+- `stabilize_contacts`
+- `solver_contact_candidates`
+- `benchmark_contact_reduction`
 - `select_active_blocks`
 - `active_block_query`
 - `expansion_quality`
@@ -114,6 +117,26 @@ cand = adasdf.contact_candidates(
 )
 print(cand.candidate_count)
 
+solver_contacts = adasdf.solver_contact_candidates(
+    "model_compressed.sdfbin",
+    "samples.csv",
+    threshold=1e-3,
+    top_k=32,
+    max_contacts=8,
+    patch_radius=0.02,
+    out="solver_contacts.csv",
+)
+print(solver_contacts.solver_contact_count)
+
+bench_contacts = adasdf.benchmark_contact_reduction(
+    "model_compressed.sdfbin",
+    "samples.csv",
+    repeat=2,
+    warmup=1,
+    csv="contact_reduction.csv",
+)
+print(bench_contacts.metrics)
+
 active = adasdf.active_block_query(
     "model_compressed.sdfbin",
     "samples.csv",
@@ -123,6 +146,10 @@ active = adasdf.active_block_query(
 )
 print(active.colliding)
 ```
+
+`solver_contact_candidates()` and `stabilize_contacts()` export
+solver-ready candidates, not solver constraints. They do not compute impulses,
+friction forces, Jacobian rows, or a contact solution.
 
 ## Dry Run
 

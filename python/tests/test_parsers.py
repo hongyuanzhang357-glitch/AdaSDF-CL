@@ -4,6 +4,7 @@ from adasdf_cli.parsers import (
     parse_benchmark_metrics,
     parse_collision_colliding,
     parse_contact_count,
+    parse_contact_reduction_benchmark_metrics,
     parse_cuda_block_cache_benchmark_metrics,
     parse_info_format,
     parse_field_bool,
@@ -12,8 +13,13 @@ from adasdf_cli.parsers import (
     parse_minimum_distance,
     parse_query_normal,
     parse_query_phi,
+    parse_raw_candidate_count,
     parse_recommended_command,
     parse_recommended_path,
+    parse_reduction_ratio,
+    parse_patch_count,
+    parse_solver_contact_count,
+    parse_avg_reduction_ms,
     parse_sparse_benchmark_metrics,
 )
 
@@ -77,6 +83,33 @@ class ParserTests(unittest.TestCase):
         metrics = parse_sparse_benchmark_metrics(stdout)
         self.assertEqual(metrics["mode"], "phi-only")
         self.assertEqual(metrics["avg_ns_per_sample"], "123.4")
+
+    def test_parse_solver_contact_fields(self):
+        stdout = (
+            "Raw candidates: 32\n"
+            "Patches: 5\n"
+            "Solver contacts: 8\n"
+            "candidate_reduction_ratio: 0.25\n"
+            "avg_reduction_ms: 0.12\n"
+        )
+        self.assertEqual(parse_raw_candidate_count(stdout), 32)
+        self.assertEqual(parse_patch_count(stdout), 5)
+        self.assertEqual(parse_solver_contact_count(stdout), 8)
+        self.assertEqual(parse_reduction_ratio(stdout), 0.25)
+        self.assertEqual(parse_avg_reduction_ms(stdout), 0.12)
+
+    def test_parse_contact_reduction_benchmark_metrics(self):
+        stdout = (
+            "sample_count: 6\n"
+            "raw_candidate_count: 4\n"
+            "patch_count: 2\n"
+            "solver_contact_count: 2\n"
+            "avg_reduction_ms: 0.5\n"
+        )
+        metrics = parse_contact_reduction_benchmark_metrics(stdout)
+        self.assertEqual(metrics["sample_count"], "6")
+        self.assertEqual(metrics["raw_candidate_count"], "4")
+        self.assertEqual(metrics["avg_reduction_ms"], "0.5")
 
     def test_parse_cuda_block_cache_benchmark_metrics(self):
         stdout = (

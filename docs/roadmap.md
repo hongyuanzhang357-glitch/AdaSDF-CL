@@ -48,6 +48,22 @@
 - v1.11 CUDA active block cache baseline over CPU-expanded active dense blocks.
 - v1.12 CPU TriangleBVH builder acceleration, deterministic parallel sampling,
   and builder acceleration benchmark CLI.
+- v1.13 solver-aware contact candidate stabilization, contact patch clustering,
+  solver contact export, and contact reduction benchmark CLI.
+
+## v1.13.0-alpha Scope
+
+- `ContactBudget` for small hard-contact candidate budgets;
+- `ContactPatch` and `ContactClusterer` for spatial and normal-consistent
+  candidate patches;
+- `ContactStabilizer` for duplicate removal, thresholding, clustering, patch
+  representatives, deterministic ordering, and budget enforcement;
+- `SolverContactSet` and CSV/Markdown/JSON-like export;
+- `adasdf_stabilize_contacts`, `adasdf_solver_contact_candidates`, and
+  `adasdf_benchmark_contact_reduction`;
+- Python wrapper helpers for solver-ready contacts;
+- explicit boundary that solver-ready candidates are not solver constraints,
+  impulses, friction, Jacobian rows, or a contact solver.
 
 ## v1.12.0-alpha Scope
 
@@ -230,9 +246,10 @@
 The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`,
 `v1.1.0-alpha`, `v1.1.1-alpha`, `v1.2.0-alpha`, `v1.3.0-alpha`,
 `v1.4.0-alpha`, `v1.5.0-alpha`, `v1.6.0-alpha`, `v1.7.0-alpha`,
-`v1.8.0-alpha`, and `v1.8.1-alpha` tags are
+`v1.8.0-alpha`, `v1.8.1-alpha`, `v1.9.0-alpha`, `v1.10.0-alpha`,
+`v1.11.0-alpha`, and `v1.12.0-alpha` tags are
 retained for traceability. The recommended public pre-release is
-`v1.9.0-alpha`.
+`v1.13.0-alpha`.
 
 ## Future Work
 

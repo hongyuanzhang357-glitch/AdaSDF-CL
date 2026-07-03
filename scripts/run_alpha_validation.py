@@ -272,6 +272,16 @@ def main() -> int:
     sparse_collision_report = build.parent / "closed_cube_sparse_collision.md"
     sparse_candidates_csv = build.parent / "closed_cube_contact_candidates.csv"
     sparse_candidates_report = build.parent / "closed_cube_contact_candidates.md"
+    stabilized_contacts_csv = build.parent / "closed_cube_stabilized_solver_contacts.csv"
+    stabilized_contacts_json = build.parent / "closed_cube_stabilized_solver_contacts.json"
+    stabilized_contacts_report = build.parent / "closed_cube_stabilized_solver_contacts.md"
+    solver_contacts_csv = build.parent / "closed_cube_solver_contacts.csv"
+    solver_contacts_json = build.parent / "closed_cube_solver_contacts.json"
+    solver_contacts_report = build.parent / "closed_cube_solver_contacts.md"
+    solver_raw_candidates_csv = build.parent / "closed_cube_solver_raw_candidates.csv"
+    contact_reduction_benchmark_csv = build.parent / "closed_cube_contact_reduction_benchmark.csv"
+    contact_reduction_benchmark_json = build.parent / "closed_cube_contact_reduction_benchmark.json"
+    contact_reduction_benchmark_report = build.parent / "closed_cube_contact_reduction_benchmark.md"
     sparse_benchmark_csv = build.parent / "closed_cube_sparse_benchmark.csv"
     active_blocks_csv = build.parent / "closed_cube_active_blocks.csv"
     active_blocks_report = build.parent / "closed_cube_active_blocks.md"
@@ -313,12 +323,15 @@ def main() -> int:
         "adasdf_sparse_query": find_executable(build, "adasdf_sparse_query", config),
         "adasdf_sparse_collide": find_executable(build, "adasdf_sparse_collide", config),
         "adasdf_contact_candidates": find_executable(build, "adasdf_contact_candidates", config),
+        "adasdf_stabilize_contacts": find_executable(build, "adasdf_stabilize_contacts", config),
+        "adasdf_solver_contact_candidates": find_executable(build, "adasdf_solver_contact_candidates", config),
         "adasdf_benchmark_sparse_query": find_executable(build, "adasdf_benchmark_sparse_query", config),
         "adasdf_select_active_blocks": find_executable(build, "adasdf_select_active_blocks", config),
         "adasdf_active_block_query": find_executable(build, "adasdf_active_block_query", config),
         "adasdf_benchmark_block_cache": find_executable(build, "adasdf_benchmark_block_cache", config),
         "adasdf_cuda_active_block_query": find_executable(build, "adasdf_cuda_active_block_query", config),
         "adasdf_benchmark_cuda_block_cache": find_executable(build, "adasdf_benchmark_cuda_block_cache", config),
+        "adasdf_benchmark_contact_reduction": find_executable(build, "adasdf_benchmark_contact_reduction", config),
         "adasdf_collide_boxes_demo": find_executable(build, "adasdf_collide_boxes_demo", config),
         "adasdf_benchmark_batch_query": find_executable(build, "adasdf_benchmark_batch_query", config),
         "adasdf_capability_walkthrough": find_executable(build, "adasdf_capability_walkthrough", config),
@@ -671,6 +684,74 @@ def main() -> int:
                 str(sparse_candidates_csv),
                 "--report",
                 str(sparse_candidates_report),
+            ],
+        ),
+        (
+            "Contact Stabilization CLI",
+            [
+                str(required_demo_tools["adasdf_stabilize_contacts"]),
+                str(sparse_candidates_csv),
+                "--max-contacts",
+                str(max_contacts),
+                "--patch-radius",
+                "0.02",
+                "--out",
+                str(stabilized_contacts_csv),
+                "--json",
+                str(stabilized_contacts_json),
+                "--report",
+                str(stabilized_contacts_report),
+            ],
+        ),
+        (
+            "Solver Contact Candidates CLI",
+            [
+                str(required_demo_tools["adasdf_solver_contact_candidates"]),
+                str(compressed_direct_sdfbin),
+                str(sample_fixture),
+                "--threshold",
+                "1e-3",
+                "--top-k",
+                "32",
+                "--max-contacts",
+                str(max_contacts),
+                "--patch-radius",
+                "0.02",
+                "--with-normal",
+                "--out",
+                str(solver_contacts_csv),
+                "--candidates-out",
+                str(solver_raw_candidates_csv),
+                "--json",
+                str(solver_contacts_json),
+                "--report",
+                str(solver_contacts_report),
+            ],
+        ),
+        (
+            "Contact Reduction Benchmark",
+            [
+                str(required_demo_tools["adasdf_benchmark_contact_reduction"]),
+                str(compressed_direct_sdfbin),
+                str(sample_fixture),
+                "--threshold",
+                "1e-3",
+                "--top-k",
+                "64",
+                "--max-contacts",
+                str(max_contacts),
+                "--patch-radius",
+                "0.02",
+                "--repeat",
+                "2",
+                "--warmup",
+                "1",
+                "--csv",
+                str(contact_reduction_benchmark_csv),
+                "--json",
+                str(contact_reduction_benchmark_json),
+                "--report",
+                str(contact_reduction_benchmark_report),
             ],
         ),
         (
@@ -1307,6 +1388,117 @@ def main() -> int:
             ):
                 result.returncode = 1
                 result.output += "\nValidation failed: contact candidates output is incomplete.\n"
+                write_report(report_path, results, source, build, config)
+                return result.returncode
+        if name == "Contact Stabilization CLI":
+            csv_text = (
+                stabilized_contacts_csv.read_text(encoding="utf-8", errors="replace")
+                if stabilized_contacts_csv.exists()
+                else ""
+            )
+            json_text = (
+                stabilized_contacts_json.read_text(encoding="utf-8", errors="replace")
+                if stabilized_contacts_json.exists()
+                else ""
+            )
+            report_text = (
+                stabilized_contacts_report.read_text(encoding="utf-8", errors="replace")
+                if stabilized_contacts_report.exists()
+                else ""
+            )
+            header = csv_text.splitlines()[0] if csv_text.splitlines() else ""
+            match = re.search(r"Output solver contacts:\s+(\d+)", result.output)
+            if (
+                not stabilized_contacts_csv.exists()
+                or not stabilized_contacts_json.exists()
+                or not stabilized_contacts_report.exists()
+                or not match
+                or int(match.group(1)) > max_contacts
+                or "stable_key" not in header
+                or "contact_count" not in json_text
+                or "Contact Stabilization Report" not in report_text
+                or "not solver impulses" not in report_text
+            ):
+                result.returncode = 1
+                result.output += "\nValidation failed: contact stabilization output is incomplete.\n"
+                write_report(report_path, results, source, build, config)
+                return result.returncode
+        if name == "Solver Contact Candidates CLI":
+            csv_text = (
+                solver_contacts_csv.read_text(encoding="utf-8", errors="replace")
+                if solver_contacts_csv.exists()
+                else ""
+            )
+            raw_text = (
+                solver_raw_candidates_csv.read_text(encoding="utf-8", errors="replace")
+                if solver_raw_candidates_csv.exists()
+                else ""
+            )
+            json_text = (
+                solver_contacts_json.read_text(encoding="utf-8", errors="replace")
+                if solver_contacts_json.exists()
+                else ""
+            )
+            report_text = (
+                solver_contacts_report.read_text(encoding="utf-8", errors="replace")
+                if solver_contacts_report.exists()
+                else ""
+            )
+            header = csv_text.splitlines()[0] if csv_text.splitlines() else ""
+            raw_header = raw_text.splitlines()[0] if raw_text.splitlines() else ""
+            match = re.search(r"Solver contacts:\s+(\d+)", result.output)
+            if (
+                not solver_contacts_csv.exists()
+                or not solver_contacts_json.exists()
+                or not solver_contacts_report.exists()
+                or not solver_raw_candidates_csv.exists()
+                or not match
+                or int(match.group(1)) > max_contacts
+                or "Raw candidates:" not in result.output
+                or "Patches:" not in result.output
+                or "stable_key" not in header
+                or "rank" not in raw_header
+                or "contact_count" not in json_text
+                or "Solver-Ready Contact Candidates" not in report_text
+                or "No impulses or friction forces are computed" not in result.output
+            ):
+                result.returncode = 1
+                result.output += "\nValidation failed: solver contact candidates output is incomplete.\n"
+                write_report(report_path, results, source, build, config)
+                return result.returncode
+        if name == "Contact Reduction Benchmark":
+            csv_text = (
+                contact_reduction_benchmark_csv.read_text(encoding="utf-8", errors="replace")
+                if contact_reduction_benchmark_csv.exists()
+                else ""
+            )
+            json_text = (
+                contact_reduction_benchmark_json.read_text(encoding="utf-8", errors="replace")
+                if contact_reduction_benchmark_json.exists()
+                else ""
+            )
+            report_text = (
+                contact_reduction_benchmark_report.read_text(encoding="utf-8", errors="replace")
+                if contact_reduction_benchmark_report.exists()
+                else ""
+            )
+            header = csv_text.splitlines()[0] if csv_text.splitlines() else ""
+            match = re.search(r"solver_contact_count:\s+(\d+)", result.output)
+            if (
+                not contact_reduction_benchmark_csv.exists()
+                or not contact_reduction_benchmark_json.exists()
+                or not contact_reduction_benchmark_report.exists()
+                or not match
+                or int(match.group(1)) > max_contacts
+                or "avg_reduction_ms:" not in result.output
+                or "candidate_reduction_ratio:" not in result.output
+                or "avg_reduction_ms" not in header
+                or "candidate_reduction_ratio" not in header
+                or "avg_reduction_ms" not in json_text
+                or "Contact Reduction Benchmark" not in report_text
+            ):
+                result.returncode = 1
+                result.output += "\nValidation failed: contact reduction benchmark output is incomplete.\n"
                 write_report(report_path, results, source, build, config)
                 return result.returncode
         if name == "Sparse Query Benchmark":

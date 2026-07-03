@@ -1,14 +1,14 @@
 # Alpha Status
 
-AdaSDF-CL 1.12.0-alpha is a research-preview release candidate.
+AdaSDF-CL 1.13.0-alpha is a research-preview release candidate.
 
 The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`,
 `v1.1.0-alpha`, `v1.1.1-alpha`, `v1.2.0-alpha`, `v1.3.0-alpha`,
 `v1.4.0-alpha`, `v1.5.0-alpha`, `v1.6.0-alpha`, `v1.7.0-alpha`,
-`v1.8.0-alpha`, `v1.8.1-alpha`, `v1.9.0-alpha`, `v1.10.0-alpha`, and
-`v1.11.0-alpha` tags are
+`v1.8.0-alpha`, `v1.8.1-alpha`, `v1.9.0-alpha`, `v1.10.0-alpha`,
+`v1.11.0-alpha`, and `v1.12.0-alpha` tags are
 retained for traceability. The recommended public pre-release is
-`v1.12.0-alpha`.
+`v1.13.0-alpha`.
 
 ## What Works
 
@@ -91,6 +91,13 @@ retained for traceability. The recommended public pre-release is
   and `adasdf_benchmark_sparse_query`.
 - Python wrapper helpers for sparse query, sparse collision, contact
   candidates, and sparse benchmarking.
+- `ContactBudget`, `ContactPatch`, `ContactClusterer`, `ContactStabilizer`,
+  `SolverContact`, and `SolverContactSet` for solver-aware contact candidate
+  stabilization.
+- `adasdf_stabilize_contacts`, `adasdf_solver_contact_candidates`, and
+  `adasdf_benchmark_contact_reduction`.
+- Python wrapper helpers for stabilized solver contacts and contact reduction
+  benchmarking.
 - `ActiveBlockSelector` for deterministic contact-aware active block id
   selection from sparse samples or explicit block ids.
 - `ActiveExpandedBlock`, `ExpandedBlockCache`, and `BlockExpansionManager` for
@@ -210,6 +217,11 @@ sampling as the default reference path and adds optional `--accel bvh` and
 builders. It is not GPU BVH, not FCL fallback, not `CollisionWorld`, not a
 contact solver, and not a low-rank compression math change.
 
+v1.13.0-alpha is a solver-aware contact candidate stabilization release. It
+clusters and budgets SDF contact candidates into deterministic solver-ready
+contacts for external hard-contact workflows. It is not a contact solver, does
+not compute impulses or friction, and does not generate solver constraints.
+
 Benchmark `total_ms` is a full query timing. Benchmark `kernel_ms` is CUDA
 kernel event timing. Original UI warmed kernel-average numbers should be
 compared to `--kernel-only --output phi --reuse-resident` rows.
@@ -221,19 +233,19 @@ analysis.
 
 ## Validation Snapshot
 
-- Expected tests: 141.
-- Expected Python wrapper unittest: PASS, with real CLI smoke enabled when
-  `ADASDF_BIN`, `ADASDF_TEST_STL`, and `ADASDF_TEST_SAMPLES` are set.
-- Expected install validation: PASS with `ADASDF_CL_USE_EXISTING_CORE=OFF`.
-- Expected alpha validation: PASS.
-- Expected clean check: PASS.
+- Expected tests: 153.
+- Python wrapper unittest: PASS, 39/39 with real CLI smoke enabled through
+  `ADASDF_BIN`, `ADASDF_TEST_STL`, and `ADASDF_TEST_SAMPLES`.
+- Install validation: PASS with `ADASDF_CL_USE_EXISTING_CORE=OFF`.
+- Alpha validation: PASS.
+- Clean check: PASS.
 - Target external collision test verdict for v0.9.0-alpha: PASS for the demo
   adaptive workflow.
 - Expected CUDA-unavailable behavior: GPU benchmark/tests SKIPPED, not FAILED.
-- Current v1.12.0-alpha local CPU CTest target: 141/141 PASS.
-- Current v1.12.0-alpha CUDA validation is optional and should skip gracefully
+- Current v1.13.0-alpha local CPU CTest: PASS, 153/153.
+- Current v1.13.0-alpha CUDA validation is optional and should skip gracefully
   when CUDA is unavailable.
-- Current v1.12.0-alpha Python wrapper unittest target: 34/34 PASS.
-- Current v1.12.0-alpha install validation target: PASS.
-- Current v1.12.0-alpha alpha validation target: PASS with install validation.
-- Current v1.12.0-alpha clean check target: PASS.
+- Current v1.13.0-alpha Python wrapper unittest: PASS, 39/39.
+- Current v1.13.0-alpha install validation: PASS.
+- Current v1.13.0-alpha alpha validation: PASS.
+- Current v1.13.0-alpha clean check: PASS.

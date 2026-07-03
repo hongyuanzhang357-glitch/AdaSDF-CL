@@ -103,6 +103,41 @@ class PythonCliSmokeTests(unittest.TestCase):
             self.assertTrue(candidates_csv.exists())
             self.assertIsNotNone(candidates.candidate_count)
 
+            solver_contacts_csv = self.tmp_path / "solver_contacts.csv"
+            solver_contacts = adasdf.solver_contact_candidates(
+                sdfbin,
+                samples,
+                threshold=1e-3,
+                top_k=8,
+                max_contacts=4,
+                out=solver_contacts_csv,
+                bin_dir=self.bin_dir,
+            )
+            self.assertTrue(solver_contacts_csv.exists())
+            self.assertIsNotNone(solver_contacts.solver_contact_count)
+
+            stabilized_csv = self.tmp_path / "stabilized_contacts.csv"
+            stabilized = adasdf.stabilize_contacts(
+                candidates_csv,
+                max_contacts=4,
+                out=stabilized_csv,
+                bin_dir=self.bin_dir,
+            )
+            self.assertTrue(stabilized_csv.exists())
+            self.assertIsNotNone(stabilized.solver_contact_count)
+
+            contact_benchmark_csv = self.tmp_path / "contact_reduction_benchmark.csv"
+            contact_benchmark = adasdf.benchmark_contact_reduction(
+                sdfbin,
+                samples,
+                repeat=2,
+                warmup=1,
+                csv=contact_benchmark_csv,
+                bin_dir=self.bin_dir,
+            )
+            self.assertTrue(contact_benchmark_csv.exists())
+            self.assertIn("avg_reduction_ms", contact_benchmark.metrics)
+
             benchmark_csv = self.tmp_path / "sparse_benchmark.csv"
             benchmark = adasdf.benchmark_sparse_query(
                 sdfbin,

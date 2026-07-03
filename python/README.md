@@ -78,6 +78,17 @@ cand = adasdf.contact_candidates(
     reduction_radius=0.02,
 )
 print(cand.candidate_count)
+
+solver_contacts = adasdf.solver_contact_candidates(
+    "model_compressed.sdfbin",
+    "samples.csv",
+    threshold=1e-3,
+    top_k=32,
+    max_contacts=8,
+    patch_radius=0.02,
+    out="solver_contacts.csv",
+)
+print(solver_contacts.solver_contact_count)
 ```
 
 ## Dry Run
@@ -119,9 +130,12 @@ not as a process failure.
 - `sparse_query`
 - `sparse_collide`
 - `contact_candidates`
+- `stabilize_contacts`
+- `solver_contact_candidates`
 - `expansion_quality`
 - `benchmark_batch_query`
 - `benchmark_sparse_query`
+- `benchmark_contact_reduction`
 - `recommend_then_build_compressed`
 - `preprocess_and_build_compressed`
 
