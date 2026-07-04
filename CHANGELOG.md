@@ -1,5 +1,42 @@
 # Changelog
 
+## 1.14.0-alpha
+
+CollisionWorld broadphase and multi-object sample-based SDF collision.
+
+### Added
+
+- `WorldTransform`, `CollisionGroupMask`, `WorldObject`, and
+  `CollisionWorld`.
+- Deterministic `AABBBroadphase` for enabled-state, static-static,
+  group/mask, and AABB overlap filtering.
+- `WorldSceneIO` for simple CSV world scenes.
+- `WorldSparseCollision` for broadphase pairs plus existing sparse SDF
+  narrowphase.
+- `WorldSolverContacts` and `WorldReportWriter` for solver-ready world contact
+  candidate export.
+- CLIs: `adasdf_world_broadphase`, `adasdf_world_sparse_collide`,
+  `adasdf_world_solver_contacts`, and `adasdf_benchmark_collision_world`.
+- Python wrapper helpers for the new world CLIs.
+- CollisionWorld scene format docs, v1.14 report, release draft, and
+  validation coverage.
+
+### Changed
+
+- Version updated to `1.14.0-alpha`.
+- Install and alpha validation now exercise the world CLIs with generated
+  validation scenes outside the source tree.
+- Capability, status, roadmap, positioning, and README docs now mark
+  CollisionWorld broadphase as implemented.
+
+### Notes
+
+- World narrowphase is sample-based SDF collision, not exact mesh-vs-mesh
+  contact.
+- Solver contacts are candidates, not solver constraints or solver impulses.
+- v1.14 does not implement FCL fallback, CCD, ROS/MoveIt, pybind11/native
+  Python bindings, or a general scene graph.
+
 ## 1.13.0-alpha.2
 
 CI hotfix release for the v1.13 tag workflow.

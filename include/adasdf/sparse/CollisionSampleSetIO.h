@@ -1,5 +1,6 @@
 #pragma once
 
+#include <filesystem>
 #include <string>
 #include <vector>
 
@@ -16,7 +17,13 @@ struct CollisionSampleSetReadResult {
 
 class CollisionSampleSetIO {
  public:
+  static CollisionSampleSetReadResult readCSV(const std::filesystem::path& path);
   static CollisionSampleSetReadResult readCSV(const std::string& path);
+
+  static bool writeCSV(
+      const std::filesystem::path& path,
+      const CollisionSampleSet& sample_set,
+      std::string* error_message = nullptr);
 
   static bool writeCSV(
       const std::string& path,

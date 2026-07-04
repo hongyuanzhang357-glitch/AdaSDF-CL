@@ -297,3 +297,26 @@ def parse_cuda_block_cache_benchmark_metrics(stdout: str) -> Dict[str, object]:
         elif metrics.get("csv_header") and "csv_values" not in metrics:
             metrics["csv_values"] = line
     return metrics
+
+
+def parse_collision_world_benchmark_metrics(stdout: str) -> Dict[str, object]:
+    metrics: Dict[str, object] = {}
+    for label, key in (
+        ("mode", "mode"),
+        ("broadphase_pairs", "broadphase_pairs"),
+        ("queried_pairs", "queried_pairs"),
+        ("violations", "violations"),
+        ("solver_contacts", "solver_contacts"),
+        ("avg_total_ms", "avg_total_ms"),
+        ("repeat", "repeat"),
+        ("warmup", "warmup"),
+    ):
+        match = _search(rf"^{re.escape(label)}:\s*(.+)$", stdout, flags=re.MULTILINE)
+        if match:
+            metrics[key] = match.group(1).strip()
+    for line in (stdout or "").splitlines():
+        if line.startswith("mode,broadphase_pairs,"):
+            metrics["csv_header"] = line
+        elif metrics.get("csv_header") and "csv_values" not in metrics:
+            metrics["csv_values"] = line
+    return metrics

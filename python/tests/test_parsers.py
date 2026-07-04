@@ -5,6 +5,7 @@ from adasdf_cli.parsers import (
     parse_collision_colliding,
     parse_contact_count,
     parse_contact_reduction_benchmark_metrics,
+    parse_collision_world_benchmark_metrics,
     parse_cuda_block_cache_benchmark_metrics,
     parse_info_format,
     parse_field_bool,
@@ -121,6 +122,20 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(metrics["mode"], "phi-only")
         self.assertEqual(metrics["cuda_kernel_avg_ms"], "1.25")
         self.assertEqual(metrics["avg_ns_per_sample"], "12.5")
+
+    def test_parse_collision_world_benchmark_metrics(self):
+        stdout = (
+            "mode: sparse\n"
+            "broadphase_pairs: 2\n"
+            "queried_pairs: 2\n"
+            "violations: 1\n"
+            "solver_contacts: 0\n"
+            "avg_total_ms: 0.25\n"
+        )
+        metrics = parse_collision_world_benchmark_metrics(stdout)
+        self.assertEqual(metrics["mode"], "sparse")
+        self.assertEqual(metrics["broadphase_pairs"], "2")
+        self.assertEqual(metrics["avg_total_ms"], "0.25")
 
 
 if __name__ == "__main__":

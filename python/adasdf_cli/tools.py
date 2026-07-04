@@ -10,6 +10,7 @@ from .parsers import (
     parse_benchmark_metrics,
     parse_build_acceleration_stats,
     parse_block_cache_benchmark_metrics,
+    parse_collision_world_benchmark_metrics,
     parse_collision_colliding,
     parse_contact_count,
     parse_contact_reduction_benchmark_metrics,
@@ -35,6 +36,7 @@ from .results import (
     BlockCacheBenchmarkResult,
     BuildResult,
     CollisionResult,
+    CollisionWorldBenchmarkResult,
     CommandResult,
     ContactCandidatesResult,
     ContactReductionBenchmarkResult,
@@ -49,6 +51,9 @@ from .results import (
     SparseBenchmarkResult,
     SparseCollisionResult,
     SparseQueryResult,
+    WorldBroadphaseResult,
+    WorldSolverContactsResult,
+    WorldSparseCollisionResult,
 )
 from .runner import run_command
 from .exceptions import AdaSDFCommandError
@@ -1046,6 +1051,162 @@ def benchmark_cuda_block_cache(
         command_result=result,
         cuda_available=parse_field_bool(result.stdout, "CUDA available"),
         metrics=parse_cuda_block_cache_benchmark_metrics(result.stdout),
+        report_path=Path(report) if report is not None else None,
+        json_path=Path(json) if json is not None else None,
+        csv_path=Path(csv) if csv is not None else None,
+    )
+
+
+def world_broadphase(
+    scene_csv: PathLike,
+    *,
+    include_disabled: bool = False,
+    include_static_static: bool = False,
+    use_group_mask: bool = True,
+    aabb_margin: Optional[float] = None,
+    out: Optional[PathLike] = None,
+    report: Optional[PathLike] = None,
+    json: Optional[PathLike] = None,
+    bin_dir: Optional[PathLike] = None,
+    check: bool = True,
+    dry_run: bool = False,
+) -> WorldBroadphaseResult:
+    command = [_tool("adasdf_world_broadphase", bin_dir, dry_run), _path(scene_csv)]
+    _append_bool(command, "--include-disabled", include_disabled)
+    _append_bool(command, "--include-static-static", include_static_static)
+    _append_bool(command, "--no-group-mask", not use_group_mask)
+    _append_value(command, "--aabb-margin", aabb_margin)
+    _append_value(command, "--out", _path(out) if out is not None else None)
+    _append_value(command, "--report", _path(report) if report is not None else None)
+    _append_value(command, "--json", _path(json) if json is not None else None)
+    result = _run(command, check=check, dry_run=dry_run)
+    return WorldBroadphaseResult(
+        command_result=result,
+        object_count=parse_field_int(result.stdout, "Objects"),
+        tested_pair_count=parse_field_int(result.stdout, "Tested pairs"),
+        overlap_pair_count=parse_field_int(result.stdout, "Overlap pairs"),
+        output_path=Path(out) if out is not None else None,
+        report_path=Path(report) if report is not None else None,
+        json_path=Path(json) if json is not None else None,
+    )
+
+
+def world_sparse_collide(
+    scene_csv: PathLike,
+    *,
+    mode: str = "collision-only",
+    threshold: float = 0.0,
+    bidirectional: bool = True,
+    early_exit: Optional[bool] = None,
+    with_normal: bool = False,
+    use_radius: bool = True,
+    include_static_static: bool = False,
+    use_group_mask: bool = True,
+    out: Optional[PathLike] = None,
+    report: Optional[PathLike] = None,
+    json: Optional[PathLike] = None,
+    bin_dir: Optional[PathLike] = None,
+    check: bool = True,
+    dry_run: bool = False,
+) -> WorldSparseCollisionResult:
+    command = [_tool("adasdf_world_sparse_collide", bin_dir, dry_run), _path(scene_csv)]
+    _append_value(command, "--mode", mode)
+    _append_value(command, "--threshold", threshold)
+    command.append("--bidirectional" if bidirectional else "--one-way")
+    if early_exit is not None:
+        command.append("--early-exit" if early_exit else "--no-early-exit")
+    _append_bool(command, "--with-normal", with_normal)
+    _append_bool(command, "--no-radius", not use_radius)
+    _append_bool(command, "--include-static-static", include_static_static)
+    _append_bool(command, "--no-group-mask", not use_group_mask)
+    _append_value(command, "--out", _path(out) if out is not None else None)
+    _append_value(command, "--report", _path(report) if report is not None else None)
+    _append_value(command, "--json", _path(json) if json is not None else None)
+    result = run_command(command, check=False, dry_run=dry_run)
+    if check and result.returncode not in (0, 10):
+        raise AdaSDFCommandError(result.command, result.returncode, result.stdout, result.stderr)
+    return WorldSparseCollisionResult(
+        command_result=result,
+        colliding=True if result.returncode == 10 else parse_collision_colliding(result.stdout),
+        broadphase_pair_count=parse_field_int(result.stdout, "Broadphase pairs"),
+        queried_pair_count=parse_field_int(result.stdout, "Queried pairs"),
+        queried_sample_count=parse_field_int(result.stdout, "Queried samples"),
+        violation_count=parse_field_int(result.stdout, "Violations"),
+        min_effective_phi=parse_field_float(result.stdout, "Min effective phi"),
+        output_path=Path(out) if out is not None else None,
+        report_path=Path(report) if report is not None else None,
+        json_path=Path(json) if json is not None else None,
+    )
+
+
+def world_solver_contacts(
+    scene_csv: PathLike,
+    *,
+    threshold: float = 1e-3,
+    top_k: int = 64,
+    reduction_radius: float = 0.0,
+    max_contacts: int = 8,
+    patch_radius: float = 0.02,
+    use_radius: bool = True,
+    include_static_static: bool = False,
+    out: Optional[PathLike] = None,
+    report: Optional[PathLike] = None,
+    json: Optional[PathLike] = None,
+    bin_dir: Optional[PathLike] = None,
+    check: bool = True,
+    dry_run: bool = False,
+) -> WorldSolverContactsResult:
+    command = [_tool("adasdf_world_solver_contacts", bin_dir, dry_run), _path(scene_csv)]
+    _append_value(command, "--threshold", threshold)
+    _append_value(command, "--top-k", top_k)
+    _append_value(command, "--reduction-radius", reduction_radius)
+    _append_value(command, "--max-contacts", max_contacts)
+    _append_value(command, "--patch-radius", patch_radius)
+    _append_bool(command, "--no-radius", not use_radius)
+    _append_bool(command, "--include-static-static", include_static_static)
+    _append_value(command, "--out", _path(out) if out is not None else None)
+    _append_value(command, "--report", _path(report) if report is not None else None)
+    _append_value(command, "--json", _path(json) if json is not None else None)
+    result = _run(command, check=check, dry_run=dry_run)
+    return WorldSolverContactsResult(
+        command_result=result,
+        raw_candidate_count=parse_raw_candidate_count(result.stdout),
+        reduced_candidate_count=parse_field_int(result.stdout, "Reduced candidates"),
+        patch_count=parse_patch_count(result.stdout),
+        solver_contact_count=parse_solver_contact_count(result.stdout),
+        max_penetration=parse_field_float(result.stdout, "Max penetration"),
+        output_path=Path(out) if out is not None else None,
+        report_path=Path(report) if report is not None else None,
+        json_path=Path(json) if json is not None else None,
+    )
+
+
+def benchmark_collision_world(
+    scene_csv: PathLike,
+    *,
+    mode: str = "sparse",
+    threshold: float = 0.0,
+    repeat: int = 10,
+    warmup: int = 1,
+    report: Optional[PathLike] = None,
+    json: Optional[PathLike] = None,
+    csv: Optional[PathLike] = None,
+    bin_dir: Optional[PathLike] = None,
+    check: bool = True,
+    dry_run: bool = False,
+) -> CollisionWorldBenchmarkResult:
+    command = [_tool("adasdf_benchmark_collision_world", bin_dir, dry_run), _path(scene_csv)]
+    _append_value(command, "--mode", mode)
+    _append_value(command, "--threshold", threshold)
+    _append_value(command, "--repeat", repeat)
+    _append_value(command, "--warmup", warmup)
+    _append_value(command, "--report", _path(report) if report is not None else None)
+    _append_value(command, "--json", _path(json) if json is not None else None)
+    _append_value(command, "--csv", _path(csv) if csv is not None else None)
+    result = _run(command, check=check, dry_run=dry_run)
+    return CollisionWorldBenchmarkResult(
+        command_result=result,
+        metrics=parse_collision_world_benchmark_metrics(result.stdout),
         report_path=Path(report) if report is not None else None,
         json_path=Path(json) if json is not None else None,
         csv_path=Path(csv) if csv is not None else None,

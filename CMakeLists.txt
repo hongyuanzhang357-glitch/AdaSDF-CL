@@ -167,6 +167,15 @@ set(ADASDF_CL_RUNTIME_SOURCES
   src/sparse/SparseCollisionQuery.cpp
   src/sparse/ContactCandidateReducer.cpp
   src/sparse/SparseQueryReportWriter.cpp
+  src/world/WorldTransform.cpp
+  src/world/CollisionGroupMask.cpp
+  src/world/WorldObject.cpp
+  src/world/CollisionWorld.cpp
+  src/world/AABBBroadphase.cpp
+  src/world/WorldSceneIO.cpp
+  src/world/WorldSparseCollision.cpp
+  src/world/WorldSolverContacts.cpp
+  src/world/WorldReportWriter.cpp
   src/runtime/ActiveBlockSelector.cpp
   src/runtime/ExpandedBlock.cpp
   src/runtime/ExpandedBlockCache.cpp
@@ -437,6 +446,8 @@ set_target_properties(adasdf_collide PROPERTIES
 
 add_executable(adasdf_make_demo_box tools/adasdf_make_demo_box.cpp)
 target_link_libraries(adasdf_make_demo_box PRIVATE adasdf_cl_runtime)
+set_target_properties(adasdf_make_demo_box PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
 
 add_executable(adasdf_recommend_demo tools/adasdf_recommend_demo.cpp)
 target_link_libraries(adasdf_recommend_demo PRIVATE adasdf_cl_runtime)
@@ -529,6 +540,23 @@ target_link_libraries(adasdf_solver_contact_candidates PRIVATE adasdf_cl_runtime
 set_target_properties(adasdf_solver_contact_candidates PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
 
+add_executable(adasdf_world_broadphase tools/adasdf_world_broadphase.cpp)
+target_link_libraries(adasdf_world_broadphase PRIVATE adasdf_cl_runtime)
+set_target_properties(adasdf_world_broadphase PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
+
+add_executable(adasdf_world_sparse_collide
+  tools/adasdf_world_sparse_collide.cpp)
+target_link_libraries(adasdf_world_sparse_collide PRIVATE adasdf_cl_runtime)
+set_target_properties(adasdf_world_sparse_collide PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
+
+add_executable(adasdf_world_solver_contacts
+  tools/adasdf_world_solver_contacts.cpp)
+target_link_libraries(adasdf_world_solver_contacts PRIVATE adasdf_cl_runtime)
+set_target_properties(adasdf_world_solver_contacts PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
+
 add_executable(adasdf_select_active_blocks tools/adasdf_select_active_blocks.cpp)
 target_link_libraries(adasdf_select_active_blocks PRIVATE adasdf_cl_runtime)
 set_target_properties(adasdf_select_active_blocks PROPERTIES
@@ -574,6 +602,12 @@ if(ADASDF_CL_BUILD_BENCHMARKS)
     tools/adasdf_benchmark_contact_reduction.cpp)
   target_link_libraries(adasdf_benchmark_contact_reduction PRIVATE adasdf_cl_runtime)
   set_target_properties(adasdf_benchmark_contact_reduction PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
+
+  add_executable(adasdf_benchmark_collision_world
+    tools/adasdf_benchmark_collision_world.cpp)
+  target_link_libraries(adasdf_benchmark_collision_world PRIVATE adasdf_cl_runtime)
+  set_target_properties(adasdf_benchmark_collision_world PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
 
   add_executable(adasdf_benchmark_cuda_block_cache
@@ -718,6 +752,18 @@ set(ADASDF_CL_TEST_SOURCES
   tests/test_benchmark_contact_reduction_cli.cpp
   tests/test_benchmark_sparse_query_cli.cpp
   tests/test_sparse_collision_modes.cpp
+  tests/test_world_transform.cpp
+  tests/test_collision_group_mask.cpp
+  tests/test_collision_world.cpp
+  tests/test_aabb_broadphase.cpp
+  tests/test_world_scene_io.cpp
+  tests/test_world_sparse_collision.cpp
+  tests/test_world_solver_contacts.cpp
+  tests/test_world_report_writer.cpp
+  tests/test_world_broadphase_cli.cpp
+  tests/test_world_sparse_collide_cli.cpp
+  tests/test_world_solver_contacts_cli.cpp
+  tests/test_benchmark_collision_world_cli.cpp
   tests/test_active_block_selector.cpp
   tests/test_expanded_block.cpp
   tests/test_expanded_block_cache.cpp
@@ -910,6 +956,20 @@ if(ADASDF_CL_BUILD_TESTS)
         ADASDF_CL_BUILD_DENSE_SDF="$<TARGET_FILE_NAME:adasdf_build_dense_sdf>"
         ADASDF_CL_SOLVER_CONTACT_CANDIDATES="$<TARGET_FILE_NAME:adasdf_solver_contact_candidates>")
     endif()
+    if(test_name STREQUAL "test_world_broadphase_cli" OR
+        test_name STREQUAL "test_world_sparse_collide_cli" OR
+        test_name STREQUAL "test_world_solver_contacts_cli")
+      add_dependencies(${test_name}
+        adasdf_make_demo_box
+        adasdf_world_broadphase
+        adasdf_world_sparse_collide
+        adasdf_world_solver_contacts)
+      target_compile_definitions(${test_name} PRIVATE
+        ADASDF_CL_MAKE_DEMO_BOX="$<TARGET_FILE_NAME:adasdf_make_demo_box>"
+        ADASDF_CL_WORLD_BROADPHASE="$<TARGET_FILE_NAME:adasdf_world_broadphase>"
+        ADASDF_CL_WORLD_SPARSE_COLLIDE="$<TARGET_FILE_NAME:adasdf_world_sparse_collide>"
+        ADASDF_CL_WORLD_SOLVER_CONTACTS="$<TARGET_FILE_NAME:adasdf_world_solver_contacts>")
+    endif()
     if(test_name STREQUAL "test_benchmark_sparse_query_cli")
       add_dependencies(${test_name} adasdf_build_dense_sdf)
       target_compile_definitions(${test_name} PRIVATE
@@ -965,6 +1025,20 @@ if(ADASDF_CL_BUILD_TESTS)
         add_dependencies(${test_name} adasdf_benchmark_contact_reduction)
         target_compile_definitions(${test_name} PRIVATE
           ADASDF_CL_BENCHMARK_CONTACT_REDUCTION="$<TARGET_FILE_NAME:adasdf_benchmark_contact_reduction>")
+      endif()
+    endif()
+    if(test_name STREQUAL "test_benchmark_collision_world_cli")
+      add_dependencies(${test_name} adasdf_make_demo_box)
+      target_compile_definitions(${test_name} PRIVATE
+        ADASDF_CL_MAKE_DEMO_BOX="$<TARGET_FILE_NAME:adasdf_make_demo_box>")
+      if(TARGET adasdf_benchmark_collision_world)
+        add_dependencies(${test_name}
+          adasdf_world_broadphase
+          adasdf_world_sparse_collide
+          adasdf_benchmark_collision_world)
+        target_compile_definitions(${test_name} PRIVATE
+          ADASDF_CL_WORLD_BROADPHASE="$<TARGET_FILE_NAME:adasdf_world_broadphase>"
+          ADASDF_CL_BENCHMARK_COLLISION_WORLD="$<TARGET_FILE_NAME:adasdf_benchmark_collision_world>")
       endif()
     endif()
     if(test_name STREQUAL "test_benchmark_cuda_block_cache_cli")
@@ -1070,6 +1144,18 @@ if(ADASDF_CL_BUILD_TESTS)
       set_tests_properties(${test_name} PROPERTIES
         WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_solver_contact_candidates>")
     endif()
+    if(test_name STREQUAL "test_world_broadphase_cli")
+      set_tests_properties(${test_name} PROPERTIES
+        WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_world_broadphase>")
+    endif()
+    if(test_name STREQUAL "test_world_sparse_collide_cli")
+      set_tests_properties(${test_name} PROPERTIES
+        WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_world_sparse_collide>")
+    endif()
+    if(test_name STREQUAL "test_world_solver_contacts_cli")
+      set_tests_properties(${test_name} PROPERTIES
+        WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_world_solver_contacts>")
+    endif()
     if(test_name STREQUAL "test_benchmark_sparse_query_cli")
       if(TARGET adasdf_benchmark_sparse_query)
         set_tests_properties(${test_name} PROPERTIES
@@ -1102,6 +1188,12 @@ if(ADASDF_CL_BUILD_TESTS)
       if(TARGET adasdf_benchmark_contact_reduction)
         set_tests_properties(${test_name} PROPERTIES
           WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_benchmark_contact_reduction>")
+      endif()
+    endif()
+    if(test_name STREQUAL "test_benchmark_collision_world_cli")
+      if(TARGET adasdf_benchmark_collision_world)
+        set_tests_properties(${test_name} PROPERTIES
+          WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_benchmark_collision_world>")
       endif()
     endif()
     if(test_name STREQUAL "test_benchmark_cuda_block_cache_cli")
@@ -1147,6 +1239,9 @@ set(ADASDF_CL_INSTALL_TOOL_TARGETS
   adasdf_contact_candidates
   adasdf_stabilize_contacts
   adasdf_solver_contact_candidates
+  adasdf_world_broadphase
+  adasdf_world_sparse_collide
+  adasdf_world_solver_contacts
   adasdf_select_active_blocks
   adasdf_active_block_query
   adasdf_cuda_active_block_query)
@@ -1157,6 +1252,7 @@ if(ADASDF_CL_BUILD_BENCHMARKS)
     adasdf_benchmark_block_cache
     adasdf_benchmark_builder_acceleration
     adasdf_benchmark_contact_reduction
+    adasdf_benchmark_collision_world
     adasdf_benchmark_cuda_block_cache)
 endif()
 

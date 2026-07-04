@@ -5,7 +5,7 @@
 Status: working in a core-free public build.
 
 Prints the public capability summary, current boundaries, and documentation
-links for the v1.1.1 capability exposure release.
+links for the public alpha capability set.
 In v1.7 it also reports the adaptive octree/block dense builder and
 matrix-SVD compressed adaptive block workflow.
 
@@ -232,3 +232,24 @@ Runs a two-object collision query and reports requested/returned contact counts.
 ```bash
 adasdf_collide object_a.sdfbin object_b.sdfbin --offset 0.25 0 0 --max-contacts 8
 ```
+
+## CollisionWorld tools
+
+Status: working in a core-free public build.
+
+These v1.14 tools load a simple CSV scene of SDF objects, run deterministic
+AABB broadphase, evaluate sample-based sparse SDF collision, and optionally
+export solver-ready contact candidates.
+
+```bash
+adasdf_world_broadphase scene.csv --out pairs.csv --report broadphase.md --json broadphase.json
+adasdf_world_sparse_collide scene.csv --threshold 0 --early-exit --out hits.csv --report sparse.md
+adasdf_world_solver_contacts scene.csv --threshold 1e-3 --top-k 32 --max-contacts 8 --out contacts.csv --report contacts.md
+adasdf_benchmark_collision_world scene.csv --mode sparse --repeat 10 --csv collision_world_benchmark.csv
+```
+
+`adasdf_world_sparse_collide` returns code `10` when collision is detected.
+That is a successful collision status, not a process failure.
+
+CollisionWorld narrowphase is sample-based SDF collision. It is not exact
+mesh-vs-mesh contact, not FCL fallback, not CCD, and not a contact solver.

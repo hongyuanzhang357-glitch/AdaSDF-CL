@@ -137,11 +137,11 @@ std::string csvField(const std::string& value) {
 }  // namespace
 
 CollisionSampleSetReadResult CollisionSampleSetIO::readCSV(
-    const std::string& path) {
+    const std::filesystem::path& path) {
   CollisionSampleSetReadResult result;
   std::ifstream file(path);
   if (!file) {
-    result.error_message = "failed to open sample CSV: " + path;
+    result.error_message = "failed to open sample CSV: " + path.string();
     return result;
   }
 
@@ -236,8 +236,13 @@ CollisionSampleSetReadResult CollisionSampleSetIO::readCSV(
   return result;
 }
 
+CollisionSampleSetReadResult CollisionSampleSetIO::readCSV(
+    const std::string& path) {
+  return readCSV(std::filesystem::path(path));
+}
+
 bool CollisionSampleSetIO::writeCSV(
-    const std::string& path,
+    const std::filesystem::path& path,
     const CollisionSampleSet& sample_set,
     std::string* error_message) {
   try {
@@ -248,7 +253,8 @@ bool CollisionSampleSetIO::writeCSV(
     std::ofstream file(out_path);
     if (!file) {
       if (error_message) {
-        *error_message = "failed to open sample CSV for writing: " + path;
+        *error_message =
+            "failed to open sample CSV for writing: " + path.string();
       }
       return false;
     }
@@ -272,6 +278,13 @@ bool CollisionSampleSetIO::writeCSV(
     }
     return false;
   }
+}
+
+bool CollisionSampleSetIO::writeCSV(
+    const std::string& path,
+    const CollisionSampleSet& sample_set,
+    std::string* error_message) {
+  return writeCSV(std::filesystem::path(path), sample_set, error_message);
 }
 
 }  // namespace adasdf

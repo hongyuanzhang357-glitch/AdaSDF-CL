@@ -89,6 +89,13 @@ solver_contacts = adasdf.solver_contact_candidates(
     out="solver_contacts.csv",
 )
 print(solver_contacts.solver_contact_count)
+
+world_hits = adasdf.world_sparse_collide(
+    "scene.csv",
+    threshold=0.0,
+    early_exit=True,
+)
+print(world_hits.colliding)
 ```
 
 ## Dry Run
@@ -113,6 +120,7 @@ and the command list. With the default `check=True`, non-zero CLI exits raise
 Use `check=False` to inspect failed commands manually.
 `sparse_collide()` treats return code `10` as successful collision detection,
 not as a process failure.
+`world_sparse_collide()` follows the same convention.
 
 ## API Surface
 
@@ -136,6 +144,10 @@ not as a process failure.
 - `benchmark_batch_query`
 - `benchmark_sparse_query`
 - `benchmark_contact_reduction`
+- `world_broadphase`
+- `world_sparse_collide`
+- `world_solver_contacts`
+- `benchmark_collision_world`
 - `recommend_then_build_compressed`
 - `preprocess_and_build_compressed`
 

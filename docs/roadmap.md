@@ -50,6 +50,28 @@
   and builder acceleration benchmark CLI.
 - v1.13 solver-aware contact candidate stabilization, contact patch clustering,
   solver contact export, and contact reduction benchmark CLI.
+- v1.14 CollisionWorld broadphase, simple world scene CSV, multi-object
+  sample-based SDF collision, world solver-ready contact export, and
+  CollisionWorld benchmark CLI.
+
+## v1.14.0-alpha Scope
+
+- `WorldTransform`, `CollisionGroupMask`, `WorldObject`, and `CollisionWorld`
+  for multi-object SDF world orchestration;
+- `AABBBroadphase` for deterministic AABB pair filtering with disabled-object,
+  static-static, group/mask, and overlap filtering;
+- `WorldSceneIO` for simple CSV scene files;
+- `WorldSparseCollision` for sample-based SDF narrowphase over broadphase
+  pairs;
+- `WorldSolverContacts` and `WorldReportWriter` for solver-ready world contact
+  candidate export;
+- `adasdf_world_broadphase`, `adasdf_world_sparse_collide`,
+  `adasdf_world_solver_contacts`, and `adasdf_benchmark_collision_world`;
+- Python wrapper helpers for world broadphase, world sparse collision, world
+  solver-ready contacts, and CollisionWorld benchmarking;
+- explicit boundary that world collision is sample-based SDF collision, not
+  exact mesh-vs-mesh contact, FCL fallback, CCD, a contact solver, ROS/MoveIt,
+  pybind11/native Python, or a general scene graph.
 
 ## v1.13.0-alpha Scope
 
@@ -247,13 +269,13 @@ The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`,
 `v1.1.0-alpha`, `v1.1.1-alpha`, `v1.2.0-alpha`, `v1.3.0-alpha`,
 `v1.4.0-alpha`, `v1.5.0-alpha`, `v1.6.0-alpha`, `v1.7.0-alpha`,
 `v1.8.0-alpha`, `v1.8.1-alpha`, `v1.9.0-alpha`, `v1.10.0-alpha`,
-`v1.11.0-alpha`, and `v1.12.0-alpha` tags are
-retained for traceability. The recommended public pre-release is
-`v1.13.0-alpha`.
+`v1.11.0-alpha`, `v1.12.0-alpha`, `v1.13.0-alpha`,
+`v1.13.0-alpha.1`, and `v1.13.0-alpha.2` tags are retained for traceability.
+The recommended public pre-release is `v1.14.0-alpha`.
 
 ## Future Work
 
-- CUDA active block expansion/cache after v1.10;
+- Persistent CUDA active block residency reuse and faster active block lookup;
 - Tucker/HOSVD compression;
 - trained surrogate model integration and online recommendation calibration;
 - optional hole-filling workflows with explicit user control;
@@ -264,4 +286,5 @@ retained for traceability. The recommended public pre-release is
 - full low-rank compressed SDF GPU expansion and compressed-direct CUDA query;
 - CUDA-accelerated pair collision pipeline;
 - optional real FCL adapter;
+- broadphase acceleration beyond deterministic O(N^2);
 - stricter distance and contact quality benchmarks.

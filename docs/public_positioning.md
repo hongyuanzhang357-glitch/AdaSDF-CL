@@ -27,6 +27,9 @@ replacement.
 - Top-K contact candidate reduction for hard-contact budgets.
 - Solver-aware contact candidate stabilization with deterministic patch
   clustering, contact budgets, and solver-ready CSV/Markdown/JSON-like export.
+- CollisionWorld broadphase for multiple SDF objects with simple CSV scenes,
+  deterministic AABB filtering, sample-based sparse collision, and
+  solver-ready contact candidate export.
 - Contact-aware CPU active block expansion/cache for compressed SDF runtime
   memory savings.
 - Optional CPU BVH acceleration for STL-to-SDF builder sampling.
@@ -53,6 +56,9 @@ replacement.
 - Native pybind11 binding.
 - Full contact solver.
 - Complete contact manifold from sparse candidates.
+- Exact mesh-vs-mesh CollisionWorld contact.
+- CollisionWorld as FCL fallback.
+- CollisionWorld as a scene graph.
 - GPU-native compressed direct query in v1.9.
 - CUDA active block cache in v1.10.
 - BVH acceleration as a GPU query backend.
@@ -72,8 +78,10 @@ collision, and Top-K contact candidate reduction. v1.10 adds CPU active block
 expansion/cache for local compressed SDF query working sets. v1.12 adds an
 optional CPU TriangleBVH builder acceleration path and deterministic
 multi-threaded builder sampling. v1.13 adds solver-aware contact candidate
-stabilization for external hard-contact simulation workflows. It does not fill holes, repair
-self-intersections, implement Tucker/HOSVD compression, claim a universal
-trained recommender, guarantee optimal parameters, claim GPU-native compressed
-query, provide GPU BVH, provide a full contact solver, or provide a native
-pybind11 binding.
+stabilization for external hard-contact simulation workflows. v1.14 adds
+CollisionWorld broadphase and multi-object sample-based SDF collision. It does
+not fill holes, repair self-intersections, implement Tucker/HOSVD compression,
+claim a universal trained recommender, guarantee optimal parameters, claim
+GPU-native compressed query, provide GPU BVH, provide FCL fallback, provide
+exact mesh-vs-mesh world contact, provide a full contact solver, or provide a
+native pybind11 binding.

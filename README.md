@@ -2,14 +2,21 @@
 
 Adaptive Signed Distance Field Collision Library
 
-Status: 1.13.0-alpha.2 / research preview
+Status: 1.14.0-alpha / research preview
 Build system: CMake
 License: MIT
 Tests: CTest
 
 AdaSDF-CL is an alpha collision and contact library built around signed distance fields. It provides an FCL-style API for distance, collision, and contact queries while keeping CUDA, FCL, native Python bindings, and full adaptive backend work optional or future-facing.
 
-AdaSDF-CL is an FCL-style SDF collision backend under development. It complements FCL by providing signed-distance queries, penetration depth, contact normals, batch query, expanded-SDF quality audit and CUDA query paths. It is not a drop-in FCL replacement.
+AdaSDF-CL is an FCL-style SDF collision backend under development. It complements FCL by providing signed-distance queries, penetration depth, contact normals, batch query, expanded-SDF quality audit, CUDA query paths, and a first SDF-native multi-object CollisionWorld broadphase. It is not a drop-in FCL replacement.
+
+v1.14.0-alpha adds `CollisionWorld`, deterministic AABB broadphase,
+sample-based world sparse collision, solver-ready world contact candidate
+export, simple CSV scene loading, world benchmark tooling, and Python wrapper
+helpers for the new world CLIs. It does not implement exact mesh-vs-mesh
+contact, FCL fallback, a contact solver, CCD, ROS/MoveIt, pybind11, or a
+general scene graph.
 
 v1.13.0-alpha adds solver-aware contact candidate stabilization. It clusters
 and reduces SDF contact candidates under a user-defined contact budget,
@@ -72,8 +79,9 @@ The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`, `v1.1.0-alpha`,
 `v1.1.1-alpha`, `v1.2.0-alpha`, `v1.3.0-alpha`, `v1.4.0-alpha`,
 `v1.5.0-alpha`, `v1.6.0-alpha`, `v1.7.0-alpha`, `v1.8.0-alpha`,
 `v1.8.1-alpha`, `v1.9.0-alpha`, `v1.10.0-alpha`, `v1.11.0-alpha`,
-`v1.12.0-alpha`, `v1.13.0-alpha`, and `v1.13.0-alpha.1` tags are retained for
-traceability. The recommended public pre-release is `v1.13.0-alpha.2`.
+`v1.12.0-alpha`, `v1.13.0-alpha`, `v1.13.0-alpha.1`, and
+`v1.13.0-alpha.2` tags are retained for traceability. The recommended public
+pre-release is `v1.14.0-alpha`.
 
 ## What Is AdaSDF-CL?
 
@@ -116,6 +124,9 @@ collision engine and does not yet replace FCL.
 | Solver-aware contact candidates | Implemented |
 | Contact patch clustering and budget | Implemented |
 | Solver contact CSV/Markdown/JSON-like export | Implemented |
+| CollisionWorld broadphase | Implemented |
+| Multi-object sample-based SDF collision | Implemented |
+| World solver-ready contact export | Implemented |
 | Sparse query benchmark | Implemented |
 | Contact-aware active block cache | Implemented |
 | Active block cache benchmark | Implemented |
@@ -129,7 +140,6 @@ collision engine and does not yet replace FCL.
 | GPU-native compressed query | Planned |
 | Complex mesh repair / hole filling | Planned |
 | FCL fallback backend | Planned |
-| CollisionWorld broadphase | Planned |
 | CCD | Planned |
 
 Detailed capability references:
@@ -160,6 +170,8 @@ Detailed capability references:
 - `docs/contact_budget.md`
 - `docs/contact_clustering.md`
 - `docs/solver_contact_export.md`
+- `docs/collision_world_scene_format.md`
+- `docs/collision_world_v1_14_report.md`
 - `docs/hard_contact_collision_budget.md`
 - `docs/contact_reduction_benchmarking.md`
 - `docs/sparse_query_benchmarking.md`
@@ -226,6 +238,40 @@ This exports solver-ready candidates, not solver constraints. It does not
 compute impulses or friction forces. Hard-contact solvers should keep contact
 budgets small and use `--max-contacts`, `--patch-radius`, and normal
 consistency to control solver load.
+
+## CollisionWorld Broadphase
+
+v1.14.0-alpha adds a simple multi-object SDF scene path:
+
+```bash
+adasdf_world_broadphase scene.csv \
+  --out world_pairs.csv \
+  --report world_broadphase.md
+
+adasdf_world_sparse_collide scene.csv \
+  --threshold 0 \
+  --early-exit \
+  --out world_hits.csv \
+  --report world_sparse.md
+
+adasdf_world_solver_contacts scene.csv \
+  --threshold 1e-3 \
+  --top-k 32 \
+  --max-contacts 8 \
+  --out world_solver_contacts.csv \
+  --report world_solver_contacts.md
+
+adasdf_benchmark_collision_world scene.csv \
+  --mode sparse \
+  --repeat 10 \
+  --csv collision_world_benchmark.csv
+```
+
+The scene file is CSV-based; see `docs/collision_world_scene_format.md`.
+Broadphase is deterministic AABB filtering. Narrowphase is sample-based SDF
+collision over object sample sets, not exact mesh-vs-mesh contact.
+`adasdf_world_sparse_collide` returns code `10` when collision is detected;
+that is a successful collision status.
 
 ## Active Block Expansion Cache
 
@@ -372,7 +418,7 @@ universal trained model, not fully trained, and not an optimality guarantee.
 ```bash
 git clone https://github.com/hongyuanzhang357-glitch/AdaSDF-CL.git
 cd AdaSDF-CL
-git checkout v1.10.0-alpha
+git checkout v1.14.0-alpha
 
 cmake -S . -B build -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD_TESTS=ON -DADASDF_CL_BUILD_BENCHMARKS=ON
 cmake --build build --config Release
@@ -399,6 +445,10 @@ install/bin/adasdf_collide cube_compressed.sdfbin cube_compressed.sdfbin --max-c
 install/bin/adasdf_sparse_query cube_compressed.sdfbin tests/data/samples/cube_sparse_samples.csv --threshold 0 --out sparse_results.csv
 install/bin/adasdf_sparse_collide cube_compressed.sdfbin tests/data/samples/cube_sparse_samples.csv --threshold 0 --early-exit
 install/bin/adasdf_contact_candidates cube_compressed.sdfbin tests/data/samples/cube_sparse_samples.csv --top-k 4 --threshold 1e-3 --reduction-radius 0.02 --with-normal --out contact_candidates.csv
+install/bin/adasdf_world_broadphase scene.csv --out world_pairs.csv --report world_broadphase.md
+install/bin/adasdf_world_sparse_collide scene.csv --threshold 0 --early-exit --out world_hits.csv --report world_sparse.md
+install/bin/adasdf_world_solver_contacts scene.csv --threshold 1e-3 --top-k 32 --max-contacts 8 --out world_solver_contacts.csv --report world_solver_contacts.md
+install/bin/adasdf_benchmark_collision_world scene.csv --mode sparse --repeat 10 --csv collision_world_benchmark.csv
 install/bin/adasdf_benchmark_sparse_query cube_compressed.sdfbin tests/data/samples/cube_sparse_samples.csv --repeat 10 --warmup 1 --mode phi-only --csv sparse_benchmark.csv
 install/bin/adasdf_build_adaptive_sdf_preview tests/data/mesh_diagnostics/closed_cube_ascii.stl cube_adaptive_preview.sdfbin --target-error 1e-3 --memory-mb 512 --dry-run --plan adaptive_plan.md
 install/bin/adasdf_recommend_demo --shape box --target-error 1e-3 --memory-mb 64 --block-memory-mb 16 --top-k 5
@@ -765,8 +815,9 @@ FCL-style SDF collision backend under development
 
 It complements FCL-style workflows with SDF-native signed-distance queries,
 penetration depth, contact normals, batch query, expanded-SDF quality audit, and
-optional CUDA expanded query. A true FCL fallback backend and hybrid mesh/SDF
-pipeline are planned, not implemented in v1.10.0-alpha.
+optional CUDA expanded query and an SDF-native CollisionWorld broadphase. A
+true FCL fallback backend and hybrid mesh/SDF pipeline are planned, not
+implemented in v1.14.0-alpha.
 
 See `docs/fcl_complement_strategy.md` and `docs/public_positioning.md`.
 
@@ -780,14 +831,14 @@ See `docs/fcl_complement_strategy.md` and `docs/public_positioning.md`.
   standalone adaptive octree/block dense SDF building, and matrix-SVD low-rank
   adaptive block compression, pure-Python CLI wrappers, and sparse SDF
   collision/contact candidate APIs, plus CPU contact-aware active block
-  expansion/cache.
+  expansion/cache and CollisionWorld broadphase.
 - Partial / experimental: demo surrogate, adaptive compressed builder preview,
   existing-core bridge, CUDA expanded query backend, block-expanded query,
   direct compressed sparse query for small point sets, and contact manifold
   behavior.
-- Planned: CUDA active block expansion/cache, Tucker/HOSVD compression, trained
+- Planned: persistent CUDA active block residency, Tucker/HOSVD compression, trained
   surrogate integration, complex mesh repair, hole filling, self-intersection
-  detection, FCL fallback backend, CollisionWorld broadphase, CCD, native
+  detection, FCL fallback backend, CCD, native
   Python bindings, ROS/MoveIt, robot benchmarks, and full low-rank GPU-native
   SDF query.
 
@@ -854,10 +905,12 @@ adasdf::collide(a, b, request, result);
 - Deterministic build recommendation is available in v1.8, but it is not a
   universal trained model, not fully trained, and not an optimality guarantee.
 - Pair collision is an approximate SDF-sampling narrow-phase.
+- CollisionWorld narrowphase is sample-based SDF collision, not exact mesh-vs-mesh contact.
+- CollisionWorld solver contacts are candidates, not constraints or solver impulses.
 - CUDA support is limited to optional batch signed-distance/normal queries over pre-expanded global/block dense data for analytic/demo adaptive boxes.
 - `CUDA + None` is intentionally rejected because CUDA compressed-direct query is not implemented.
 - Selected-block CUDA benchmarks are intended for local contact-region point distributions; global uniform point clouds can make selected blocks slower or less representative.
-- CUDA pair-collision acceleration, GPU-native compressed SDF query, Python bindings, and FCL ABI compatibility are not implemented.
+- CUDA pair-collision acceleration, GPU-native compressed SDF query, Python bindings, FCL fallback, and FCL ABI compatibility are not implemented.
 
 See `docs/limitations.md`.
 
@@ -874,6 +927,8 @@ See `docs/limitations.md`.
 - `docs/fcl_complement_strategy.md`
 - `docs/query_backend_matrix.md`
 - `docs/contact_output_matrix.md`
+- `docs/collision_world_scene_format.md`
+- `docs/collision_world_v1_14_report.md`
 - `docs/public_positioning.md`
 - `docs/mesh_diagnostics.md`
 - `docs/mesh_readiness.md`
@@ -885,6 +940,7 @@ See `docs/limitations.md`.
 - `docs/stl_to_compressed_sdf_workflow.md`
 - `docs/compression_quality_metrics.md`
 - `docs/adaptive_dense_vs_compressed_sdf.md`
+- `docs/github_release_draft_v1_14_0_alpha.md`
 - `docs/github_release_draft_v1_7_0_alpha.md`
 - `docs/low_rank_compression_v1_7_report.md`
 - `docs/stl_to_adaptive_sdf_workflow.md`

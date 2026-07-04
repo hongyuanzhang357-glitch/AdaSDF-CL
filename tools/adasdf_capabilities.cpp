@@ -83,6 +83,12 @@ int main(int argc, char** argv) {
         "CUDA active block cache baseline",
         "adasdf_cuda_active_block_query",
         "adasdf_benchmark_cuda_block_cache",
+        "CollisionWorld broadphase",
+        "multi-object sample-based SDF collision",
+        "adasdf_world_broadphase",
+        "adasdf_world_sparse_collide",
+        "adasdf_world_solver_contacts",
+        "adasdf_benchmark_collision_world",
         "expansion quality audit",
         "sign mismatch and near-surface mismatch metrics",
         "SVG collision view",
@@ -115,7 +121,6 @@ int main(int argc, char** argv) {
         "complex mesh repair and hole filling",
         "self-intersection detection",
         "FCL fallback backend",
-        "CollisionWorld broadphase",
         "CCD",
         "native Python / pybind11 bindings",
         "C API",
@@ -167,6 +172,8 @@ int main(int argc, char** argv) {
       std::cout << "- CPU active block expansion/cache is implemented in v1.10 for local compressed SDF runtime memory savings\n";
       std::cout << "- CUDA active block cache baseline is implemented in v1.11 by uploading CPU-expanded active dense blocks to GPU\n";
       std::cout << "- v1.11 CUDA active block query is not GPU-native compressed SVD reconstruction and not per-point low-rank factor reconstruction\n";
+      std::cout << "- CollisionWorld broadphase is implemented in v1.14 with deterministic AABB filtering and sample-based SDF narrowphase\n";
+      std::cout << "- v1.14 CollisionWorld is not FCL fallback, not exact mesh-vs-mesh contact, not CCD, and not a contact solver\n";
       std::cout << "- no hole filling, self-intersection repair, Tucker/HOSVD, trained model integration, online calibration, or GPU-native compressed query\n";
       std::cout << "\nDocumentation:\n";
       std::cout << "- docs/capability_matrix.md\n";
@@ -191,6 +198,8 @@ int main(int argc, char** argv) {
       std::cout << "- docs/block_cache_benchmarking.md\n";
       std::cout << "- docs/cuda_active_block_cache.md\n";
       std::cout << "- docs/cuda_active_block_benchmarking.md\n";
+      std::cout << "- docs/collision_world_scene_format.md\n";
+      std::cout << "- docs/collision_world_v1_14_report.md\n";
       std::cout << "- docs/implemented_vs_planned.md\n";
       std::cout << "- docs/fcl_complement_strategy.md\n";
       std::cout << "- docs/query_backend_matrix.md\n";

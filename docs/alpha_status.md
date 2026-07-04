@@ -1,14 +1,14 @@
 # Alpha Status
 
-AdaSDF-CL 1.13.0-alpha.2 is a research-preview release candidate.
+AdaSDF-CL 1.14.0-alpha is a research-preview release candidate.
 
 The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`,
 `v1.1.0-alpha`, `v1.1.1-alpha`, `v1.2.0-alpha`, `v1.3.0-alpha`,
 `v1.4.0-alpha`, `v1.5.0-alpha`, `v1.6.0-alpha`, `v1.7.0-alpha`,
 `v1.8.0-alpha`, `v1.8.1-alpha`, `v1.9.0-alpha`, `v1.10.0-alpha`,
-`v1.11.0-alpha`, `v1.12.0-alpha`, `v1.13.0-alpha`, and
-`v1.13.0-alpha.1` tags are retained for traceability. The recommended public
-pre-release is `v1.13.0-alpha.2`.
+`v1.11.0-alpha`, `v1.12.0-alpha`, `v1.13.0-alpha`,
+`v1.13.0-alpha.1`, and `v1.13.0-alpha.2` tags are retained for traceability.
+The recommended public pre-release is `v1.14.0-alpha`.
 
 ## What Works
 
@@ -98,6 +98,14 @@ pre-release is `v1.13.0-alpha.2`.
   `adasdf_benchmark_contact_reduction`.
 - Python wrapper helpers for stabilized solver contacts and contact reduction
   benchmarking.
+- `WorldTransform`, `CollisionGroupMask`, `WorldObject`, `CollisionWorld`,
+  `AABBBroadphase`, `WorldSceneIO`, `WorldSparseCollision`,
+  `WorldSolverContacts`, and `WorldReportWriter` for multi-object SDF world
+  orchestration.
+- `adasdf_world_broadphase`, `adasdf_world_sparse_collide`,
+  `adasdf_world_solver_contacts`, and `adasdf_benchmark_collision_world`.
+- Python wrapper helpers for world broadphase, world sparse collision, world
+  solver-ready contacts, and CollisionWorld benchmarking.
 - `ActiveBlockSelector` for deterministic contact-aware active block id
   selection from sparse samples or explicit block ids.
 - `ActiveExpandedBlock`, `ExpandedBlockCache`, and `BlockExpansionManager` for
@@ -233,6 +241,12 @@ v1.13.0-alpha.1 tags, and limits GitHub Actions build parallelism to reduce
 Ubuntu runner peak load when `main` and tag workflows are triggered for the
 same commit.
 
+v1.14.0-alpha is a CollisionWorld broadphase release. It adds deterministic
+AABB broadphase, simple CSV scene loading, multi-object sample-based SDF
+collision, world solver-ready contact candidate export, and world benchmark
+tooling. It is not exact mesh-vs-mesh contact, not FCL fallback, not CCD, not
+a contact solver, not ROS/MoveIt, and not pybind11/native Python bindings.
+
 Benchmark `total_ms` is a full query timing. Benchmark `kernel_ms` is CUDA
 kernel event timing. Original UI warmed kernel-average numbers should be
 compared to `--kernel-only --output phi --reuse-resident` rows.
@@ -244,8 +258,8 @@ analysis.
 
 ## Validation Snapshot
 
-- Expected tests: 153.
-- Python wrapper unittest: PASS, 39/39 with real CLI smoke enabled through
+- Expected tests: 165.
+- Python wrapper unittest: PASS, 44/44 with real CLI smoke enabled through
   `ADASDF_BIN`, `ADASDF_TEST_STL`, and `ADASDF_TEST_SAMPLES`.
 - Install validation: PASS with `ADASDF_CL_USE_EXISTING_CORE=OFF`.
 - Alpha validation: PASS.
@@ -253,13 +267,14 @@ analysis.
 - Target external collision test verdict for v0.9.0-alpha: PASS for the demo
   adaptive workflow.
 - Expected CUDA-unavailable behavior: GPU benchmark/tests SKIPPED, not FAILED.
-- Current v1.13.0-alpha.2 local CPU CTest: PASS, 153/153.
-- Current v1.13.0-alpha.2 CUDA validation is optional and should skip gracefully
+- Current v1.14.0-alpha local CPU CTest: PASS, 165/165.
+- Current v1.14.0-alpha CUDA validation is optional and should skip gracefully
   when CUDA is unavailable.
-- Current v1.13.0-alpha.2 Python wrapper unittest: PASS, 39/39.
-- Current v1.13.0-alpha.2 install validation: PASS.
-- Current v1.13.0-alpha.2 alpha validation: PASS.
-- Current v1.13.0-alpha.2 clean check: PASS.
+- Current v1.14.0-alpha Python wrapper unittest: PASS, 44/44 with one
+  environment-gated smoke test skipped when real CLI env vars are absent.
+- Current v1.14.0-alpha install validation: PASS.
+- Current v1.14.0-alpha alpha validation: PASS.
+- Current v1.14.0-alpha clean check: PASS.
 - Expected CI behavior: main/tag workflows should use the reused CI build tree
   for install validation and limit build parallelism. `v1.13.0-alpha` and
   `v1.13.0-alpha.1` remain unchanged.

@@ -15,8 +15,12 @@ is useful for robot link samples, foot contacts, grippers, tools, sampled
 geometry, and hard-contact simulations that need bounded candidate counts.
 
 v1.10 adds CPU active block expansion/cache for compressed SDF contact regions.
-It reduces runtime memory pressure for repeated local SDF queries, but it is
-still not an FCL fallback backend or full broadphase layer.
+It reduces runtime memory pressure for repeated local SDF queries.
+
+v1.14 adds a custom SDF-side `CollisionWorld` broadphase with simple CSV scene
+loading, deterministic AABB filtering, sample-based sparse SDF narrowphase, and
+solver-ready contact candidate export. It is still not FCL fallback, exact
+mesh-vs-mesh contact, CCD, or a physics solver.
 
 ## Why Not Replace FCL Immediately
 
@@ -43,13 +47,14 @@ with partial contact manifold behavior and optional CUDA query paths.
 - Sparse point collision with collision-only early exit.
 - Sample-radius proxy collision through `effective_phi = phi - radius`.
 - Deterministic Top-K contact candidate reduction for contact budgets.
+- CollisionWorld AABB broadphase and sample-based multi-object SDF collision.
 
 ## Task Comparison
 
 | Task | FCL | AdaSDF-CL current | Future hybrid |
 | --- | --- | --- | --- |
 | mesh collision | strong | existing-core/demo only | FCL mesh frontend + SDF narrowphase |
-| broadphase | strong | planned | FCL broadphase or custom CollisionWorld |
+| broadphase | strong | implemented custom CollisionWorld | optional FCL broadphase frontend |
 | distance query | strong | implemented FCL-style API | selectable backend |
 | signed distance | limited | implemented | SDF backend |
 | penetration depth | contact dependent | implemented from SDF | SDF refinement |
@@ -77,7 +82,7 @@ adasdf_collide a.sdfbin b.sdfbin --backend sdf
 adasdf_collide a.stl b.stl --backend hybrid
 ```
 
-FCL backend is planned, not implemented in v1.10.0-alpha.
+FCL backend is planned, not implemented in v1.14.0-alpha.
 
-Sparse collision in v1.9 does not add FCL fallback, broadphase, CCD,
-`CollisionWorld`, or full solver contact constraints.
+CollisionWorld in v1.14 does not add FCL fallback, CCD, exact mesh-vs-mesh
+contact, or full solver contact constraints.

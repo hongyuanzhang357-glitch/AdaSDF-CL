@@ -69,6 +69,13 @@
   and deterministic `stable_key` export.
 - `adasdf_stabilize_contacts`, `adasdf_solver_contact_candidates`, and
   `adasdf_benchmark_contact_reduction`.
+- `WorldTransform`, `CollisionGroupMask`, `WorldObject`, `CollisionWorld`,
+  `AABBBroadphase`, `WorldSceneIO`, `WorldSparseCollision`,
+  `WorldSolverContacts`, and `WorldReportWriter`.
+- `adasdf_world_broadphase`, `adasdf_world_sparse_collide`,
+  `adasdf_world_solver_contacts`, and `adasdf_benchmark_collision_world`.
+- Python wrappers for world broadphase, world sparse collision, world
+  solver-ready contacts, and CollisionWorld benchmarking.
 - Contact-aware active block selection for adaptive/compressed block SDFs.
 - CPU active expanded-block cache for local compressed SDF runtime queries.
 - `adasdf_select_active_blocks`, `adasdf_active_block_query`, and
@@ -104,6 +111,9 @@
 - Sparse contact candidates: deterministic Top-K candidates are implemented.
   v1.13 can stabilize them into solver-ready candidates, but this is still not
   a full solver, not solver constraints, and not impulses or friction.
+- CollisionWorld: deterministic AABB broadphase and sample-based SDF
+  narrowphase are implemented. This is not exact mesh-vs-mesh contact, not FCL
+  fallback, not CCD, not a scene graph, and not a physics solver.
 - Real asset bridge: existing-core fixtures and sampled expansion bridge exist
   when direct query support is available.
 - STL import audit: diagnostics, readiness suggestions, and safe cleanup are
@@ -132,7 +142,6 @@
 - Complex mesh repair and hole filling.
 - Self-intersection detection.
 - FCL fallback backend.
-- CollisionWorld broadphase.
 - CCD.
 - Temporal contact coherence and warm-start matching for solver contacts.
 - Full contact solver, friction, Jacobians, and impulses.

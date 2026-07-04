@@ -205,3 +205,50 @@ class CudaBlockCacheBenchmarkResult:
     report_path: Optional[Path] = None
     json_path: Optional[Path] = None
     csv_path: Optional[Path] = None
+
+
+@dataclass
+class WorldBroadphaseResult:
+    command_result: CommandResult
+    object_count: Optional[int] = None
+    tested_pair_count: Optional[int] = None
+    overlap_pair_count: Optional[int] = None
+    output_path: Optional[Path] = None
+    report_path: Optional[Path] = None
+    json_path: Optional[Path] = None
+
+
+@dataclass
+class WorldSparseCollisionResult:
+    command_result: CommandResult
+    colliding: Optional[bool] = None
+    broadphase_pair_count: Optional[int] = None
+    queried_pair_count: Optional[int] = None
+    queried_sample_count: Optional[int] = None
+    violation_count: Optional[int] = None
+    min_effective_phi: Optional[float] = None
+    output_path: Optional[Path] = None
+    report_path: Optional[Path] = None
+    json_path: Optional[Path] = None
+
+
+@dataclass
+class WorldSolverContactsResult:
+    command_result: CommandResult
+    raw_candidate_count: Optional[int] = None
+    reduced_candidate_count: Optional[int] = None
+    patch_count: Optional[int] = None
+    solver_contact_count: Optional[int] = None
+    max_penetration: Optional[float] = None
+    output_path: Optional[Path] = None
+    report_path: Optional[Path] = None
+    json_path: Optional[Path] = None
+
+
+@dataclass
+class CollisionWorldBenchmarkResult:
+    command_result: CommandResult
+    metrics: Dict[str, Any] = field(default_factory=dict)
+    report_path: Optional[Path] = None
+    json_path: Optional[Path] = None
+    csv_path: Optional[Path] = None

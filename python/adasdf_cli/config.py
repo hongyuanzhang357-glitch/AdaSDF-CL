@@ -35,6 +35,10 @@ SUPPORTED_TOOLS = {
     "adasdf_benchmark_block_cache",
     "adasdf_cuda_active_block_query",
     "adasdf_benchmark_cuda_block_cache",
+    "adasdf_world_broadphase",
+    "adasdf_world_sparse_collide",
+    "adasdf_world_solver_contacts",
+    "adasdf_benchmark_collision_world",
 }
 
 

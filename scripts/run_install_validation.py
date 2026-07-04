@@ -504,6 +504,19 @@ def main() -> int:
     cuda_active_query_report = build.parent / "install_validation_cuda_active_block_query.md"
     cuda_block_cache_benchmark_csv = build.parent / "install_validation_cuda_block_cache_benchmark.csv"
     cuda_block_cache_benchmark_report = build.parent / "install_validation_cuda_block_cache_benchmark.md"
+    world_scene_csv = build.parent / "install_validation_collision_world_scene.csv"
+    world_broadphase_csv = build.parent / "install_validation_world_broadphase_pairs.csv"
+    world_broadphase_report = build.parent / "install_validation_world_broadphase.md"
+    world_broadphase_json = build.parent / "install_validation_world_broadphase.json"
+    world_sparse_csv = build.parent / "install_validation_world_sparse_collisions.csv"
+    world_sparse_report = build.parent / "install_validation_world_sparse_collision.md"
+    world_sparse_json = build.parent / "install_validation_world_sparse_collision.json"
+    world_solver_csv = build.parent / "install_validation_world_solver_contacts.csv"
+    world_solver_report = build.parent / "install_validation_world_solver_contacts.md"
+    world_solver_json = build.parent / "install_validation_world_solver_contacts.json"
+    world_benchmark_csv = build.parent / "install_validation_collision_world_benchmark.csv"
+    world_benchmark_report = build.parent / "install_validation_collision_world_benchmark.md"
+    world_benchmark_json = build.parent / "install_validation_collision_world_benchmark.json"
     recommendation_md = build.parent / "install_validation_recommendation.md"
     recommendation_json = build.parent / "install_validation_recommendation.json"
     adaptive_dryrun_sdfbin = build.parent / "install_validation_adaptive_dryrun.sdfbin"
@@ -513,6 +526,14 @@ def main() -> int:
     for generated in (adaptive_preview_sdfbin, adaptive_dryrun_sdfbin):
         if generated.exists():
             generated.unlink()
+    world_scene_csv.parent.mkdir(parents=True, exist_ok=True)
+    world_scene_csv.write_text(
+        "object_id,name,model_path,samples_path,tx,ty,tz,qw,qx,qy,qz,group,mask,type,enabled\n"
+        f"0,world_box_a,{compressed_direct_sdfbin.as_posix()},{sample_fixture.as_posix()},0,0,0,1,0,0,0,0x1,0xffffffff,dynamic,true\n"
+        f"1,world_box_b,{compressed_direct_sdfbin.as_posix()},{sample_fixture.as_posix()},0,0,0,1,0,0,0,0x2,0xffffffff,dynamic,true\n"
+        f"2,world_box_far,{compressed_direct_sdfbin.as_posix()},{sample_fixture.as_posix()},4,0,0,1,0,0,0,0x4,0xffffffff,dynamic,true\n",
+        encoding="utf-8",
+    )
 
     dense_tool_names = [
         "adasdf_build_dense_sdf",
@@ -538,6 +559,10 @@ def main() -> int:
         "adasdf_benchmark_cuda_block_cache",
         "adasdf_benchmark_contact_reduction",
         "adasdf_build_adaptive_sdf_preview",
+        "adasdf_world_broadphase",
+        "adasdf_world_sparse_collide",
+        "adasdf_world_solver_contacts",
+        "adasdf_benchmark_collision_world",
     ]
     dense_tools: dict[str, Path] = {}
     for tool_name in dense_tool_names:
@@ -750,6 +775,75 @@ def main() -> int:
                 str(compressed_direct_compression_report),
                 "--quality-report",
                 str(compressed_direct_quality),
+            ],
+        ),
+        (
+            "Installed CollisionWorld Broadphase CLI",
+            [
+                str(dense_tools["adasdf_world_broadphase"]),
+                str(world_scene_csv),
+                "--out",
+                str(world_broadphase_csv),
+                "--report",
+                str(world_broadphase_report),
+                "--json",
+                str(world_broadphase_json),
+            ],
+        ),
+        (
+            "Installed CollisionWorld Sparse Collide CLI",
+            [
+                str(dense_tools["adasdf_world_sparse_collide"]),
+                str(world_scene_csv),
+                "--threshold",
+                "0",
+                "--early-exit",
+                "--out",
+                str(world_sparse_csv),
+                "--report",
+                str(world_sparse_report),
+                "--json",
+                str(world_sparse_json),
+            ],
+        ),
+        (
+            "Installed CollisionWorld Solver Contacts CLI",
+            [
+                str(dense_tools["adasdf_world_solver_contacts"]),
+                str(world_scene_csv),
+                "--threshold",
+                "1e-3",
+                "--top-k",
+                "32",
+                "--max-contacts",
+                "8",
+                "--out",
+                str(world_solver_csv),
+                "--report",
+                str(world_solver_report),
+                "--json",
+                str(world_solver_json),
+            ],
+        ),
+        (
+            "Installed CollisionWorld Benchmark CLI",
+            [
+                str(dense_tools["adasdf_benchmark_collision_world"]),
+                str(world_scene_csv),
+                "--mode",
+                "sparse",
+                "--threshold",
+                "1e-3",
+                "--repeat",
+                "2",
+                "--warmup",
+                "1",
+                "--csv",
+                str(world_benchmark_csv),
+                "--report",
+                str(world_benchmark_report),
+                "--json",
+                str(world_benchmark_json),
             ],
         ),
         (
@@ -1022,6 +1116,12 @@ def main() -> int:
                 "\nValidation note: sparse_collide returned 10, which means "
                 "collision detected and is expected for this fixture.\n"
             )
+        if name == "Installed CollisionWorld Sparse Collide CLI" and result.returncode == 10:
+            result.returncode = 0
+            result.output += (
+                "\nValidation note: world_sparse_collide returned 10, which means "
+                "collision detected and is expected for this fixture.\n"
+            )
         if name == "Installed Active Block Query CLI" and result.returncode == 10:
             result.returncode = 0
             result.output += (
@@ -1175,6 +1275,122 @@ def main() -> int:
             ):
                 result.returncode = 1
                 result.output += "\nValidation failed: installed one-step compressed SDF build output is incomplete.\n"
+        elif name == "Installed CollisionWorld Broadphase CLI":
+            csv_text = (
+                world_broadphase_csv.read_text(encoding="utf-8", errors="replace")
+                if world_broadphase_csv.exists()
+                else ""
+            )
+            report_text = (
+                world_broadphase_report.read_text(encoding="utf-8", errors="replace")
+                if world_broadphase_report.exists()
+                else ""
+            )
+            json_text = (
+                world_broadphase_json.read_text(encoding="utf-8", errors="replace")
+                if world_broadphase_json.exists()
+                else ""
+            )
+            header = csv_text.splitlines()[0] if csv_text.splitlines() else ""
+            if (
+                not world_broadphase_csv.exists()
+                or not world_broadphase_report.exists()
+                or not world_broadphase_json.exists()
+                or "Overlap pairs:" not in result.output
+                or "pair_id" not in header
+                or "CollisionWorld Broadphase Report" not in report_text
+                or "overlap_pair_count" not in json_text
+            ):
+                result.returncode = 1
+                result.output += "\nValidation failed: installed CollisionWorld broadphase output is incomplete.\n"
+        elif name == "Installed CollisionWorld Sparse Collide CLI":
+            csv_text = (
+                world_sparse_csv.read_text(encoding="utf-8", errors="replace")
+                if world_sparse_csv.exists()
+                else ""
+            )
+            report_text = (
+                world_sparse_report.read_text(encoding="utf-8", errors="replace")
+                if world_sparse_report.exists()
+                else ""
+            )
+            json_text = (
+                world_sparse_json.read_text(encoding="utf-8", errors="replace")
+                if world_sparse_json.exists()
+                else ""
+            )
+            header = csv_text.splitlines()[0] if csv_text.splitlines() else ""
+            if (
+                not world_sparse_csv.exists()
+                or not world_sparse_report.exists()
+                or not world_sparse_json.exists()
+                or "Colliding: true" not in result.output
+                or "Sample-based SDF collision" not in result.output
+                or "effective_phi" not in header
+                or "CollisionWorld Sparse Collision Report" not in report_text
+                or "violation_count" not in json_text
+            ):
+                result.returncode = 1
+                result.output += "\nValidation failed: installed CollisionWorld sparse collision output is incomplete.\n"
+        elif name == "Installed CollisionWorld Solver Contacts CLI":
+            csv_text = (
+                world_solver_csv.read_text(encoding="utf-8", errors="replace")
+                if world_solver_csv.exists()
+                else ""
+            )
+            report_text = (
+                world_solver_report.read_text(encoding="utf-8", errors="replace")
+                if world_solver_report.exists()
+                else ""
+            )
+            json_text = (
+                world_solver_json.read_text(encoding="utf-8", errors="replace")
+                if world_solver_json.exists()
+                else ""
+            )
+            header = csv_text.splitlines()[0] if csv_text.splitlines() else ""
+            match = re.search(r"Solver contacts:\s+(\d+)", result.output)
+            if (
+                not world_solver_csv.exists()
+                or not world_solver_report.exists()
+                or not world_solver_json.exists()
+                or not match
+                or int(match.group(1)) > 8
+                or "solver-ready candidates, not solver constraints" not in result.output
+                or "stable_key" not in header
+                or "CollisionWorld Solver-Ready Contacts" not in report_text
+                or "solver_contact_count" not in json_text
+            ):
+                result.returncode = 1
+                result.output += "\nValidation failed: installed CollisionWorld solver contacts output is incomplete.\n"
+        elif name == "Installed CollisionWorld Benchmark CLI":
+            csv_text = (
+                world_benchmark_csv.read_text(encoding="utf-8", errors="replace")
+                if world_benchmark_csv.exists()
+                else ""
+            )
+            report_text = (
+                world_benchmark_report.read_text(encoding="utf-8", errors="replace")
+                if world_benchmark_report.exists()
+                else ""
+            )
+            json_text = (
+                world_benchmark_json.read_text(encoding="utf-8", errors="replace")
+                if world_benchmark_json.exists()
+                else ""
+            )
+            header = csv_text.splitlines()[0] if csv_text.splitlines() else ""
+            if (
+                not world_benchmark_csv.exists()
+                or not world_benchmark_report.exists()
+                or not world_benchmark_json.exists()
+                or "avg_total_ms:" not in result.output
+                or "broadphase_pairs" not in header
+                or "CollisionWorld Benchmark" not in report_text
+                or "avg_total_ms" not in json_text
+            ):
+                result.returncode = 1
+                result.output += "\nValidation failed: installed CollisionWorld benchmark output is incomplete.\n"
         elif name == "Installed Sparse Query CLI":
             csv_text = (
                 sparse_results_csv.read_text(encoding="utf-8", errors="replace")

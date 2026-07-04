@@ -118,6 +118,33 @@ class ToolCommandBuildingTests(unittest.TestCase):
         self.assertIn("adasdf_benchmark_cuda_block_cache", stdout)
         self.assertIn("--repeat", stdout)
 
+    def test_world_broadphase_dry_run_command(self):
+        result = adasdf.world_broadphase("scene.csv", aabb_margin=0.01, dry_run=True)
+        stdout = result.command_result.stdout
+        self.assertIn("adasdf_world_broadphase", stdout)
+        self.assertIn("--aabb-margin", stdout)
+
+    def test_world_sparse_collide_dry_run_command(self):
+        result = adasdf.world_sparse_collide("scene.csv", threshold=0.001, with_normal=True, dry_run=True)
+        stdout = result.command_result.stdout
+        self.assertIn("adasdf_world_sparse_collide", stdout)
+        self.assertIn("--threshold", stdout)
+        self.assertIn("--with-normal", stdout)
+
+    def test_world_solver_contacts_dry_run_command(self):
+        result = adasdf.world_solver_contacts("scene.csv", top_k=16, max_contacts=4, dry_run=True)
+        stdout = result.command_result.stdout
+        self.assertIn("adasdf_world_solver_contacts", stdout)
+        self.assertIn("--top-k", stdout)
+        self.assertIn("--max-contacts", stdout)
+
+    def test_collision_world_benchmark_dry_run_command(self):
+        result = adasdf.benchmark_collision_world("scene.csv", mode="contacts", repeat=2, dry_run=True)
+        stdout = result.command_result.stdout
+        self.assertIn("adasdf_benchmark_collision_world", stdout)
+        self.assertIn("--mode", stdout)
+        self.assertIn("--repeat", stdout)
+
     def test_bin_dir_is_used_in_preview(self):
         result = adasdf.info("model.sdfbin", bin_dir="tools-bin", dry_run=True)
         self.assertIn("tools-bin", result.command_result.stdout)

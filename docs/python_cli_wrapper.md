@@ -51,6 +51,10 @@ python -m pip install -e python
 - `stabilize_contacts`
 - `solver_contact_candidates`
 - `benchmark_contact_reduction`
+- `world_broadphase`
+- `world_sparse_collide`
+- `world_solver_contacts`
+- `benchmark_collision_world`
 - `select_active_blocks`
 - `active_block_query`
 - `expansion_quality`
@@ -137,6 +141,13 @@ bench_contacts = adasdf.benchmark_contact_reduction(
 )
 print(bench_contacts.metrics)
 
+world_hit = adasdf.world_sparse_collide(
+    "scene.csv",
+    threshold=0.0,
+    early_exit=True,
+)
+print(world_hit.colliding)
+
 active = adasdf.active_block_query(
     "model_compressed.sdfbin",
     "samples.csv",
@@ -180,6 +191,8 @@ With `check=False`, the result is returned for manual inspection.
 
 `sparse_collide()` is special: CLI return code `10` means collision detected and
 is treated as a successful result by the wrapper.
+
+`world_sparse_collide()` follows the same convention for CollisionWorld scenes.
 
 ## Limitations
 
