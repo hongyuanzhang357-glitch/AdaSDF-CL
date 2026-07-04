@@ -55,6 +55,23 @@
   CollisionWorld benchmark CLI.
 - v1.15 strict JSON/CSV report schema, reproducibility manifests, report
   validation, run summary collection, and Python wrapper support.
+- v1.16 hierarchical adaptive block sampling with near-surface exact default,
+  quality-guarded prediction, exact fallback, speed/quality benchmark CLI, and
+  Python wrapper support.
+
+## v1.16.0-alpha Scope
+
+- `include/adasdf/sampling` and `src/sampling` for block classification,
+  sampling policy, coarse-grid prediction, quality guard, hierarchical block
+  sampling, and speed/quality reporting;
+- `--sampling exact|hierarchical` and related hierarchical sampling options on
+  adaptive and compressed builder CLIs;
+- `adasdf_benchmark_hierarchical_sampling` for exact-vs-hierarchical build
+  timing, error, sign mismatch, fallback, and quality gate reporting;
+- Python wrapper command-building and parsing support;
+- explicit boundary that exact sampling remains the default, predictions
+  require quality guard plus exact fallback, and `.sdfbin` formats do not
+  change.
 
 ## v1.15.0-alpha Scope
 
@@ -287,7 +304,7 @@ The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`,
 `v1.8.0-alpha`, `v1.8.1-alpha`, `v1.9.0-alpha`, `v1.10.0-alpha`,
 `v1.11.0-alpha`, `v1.12.0-alpha`, `v1.13.0-alpha`,
 `v1.13.0-alpha.1`, `v1.13.0-alpha.2`, and `v1.14.0-alpha` tags are retained
-for traceability. The recommended public pre-release is `v1.15.0-alpha`.
+for traceability. The recommended public pre-release is `v1.16.0-alpha`.
 
 ## Future Work
 

@@ -62,6 +62,7 @@ python -m pip install -e python
 - `benchmark_builder_acceleration`
 - `benchmark_sparse_query`
 - `benchmark_block_cache`
+- `benchmark_hierarchical_sampling`
 - `recommend_then_build_compressed`
 - `preprocess_and_build_compressed`
 

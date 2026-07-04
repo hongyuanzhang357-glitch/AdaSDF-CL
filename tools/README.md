@@ -140,10 +140,27 @@ Builds an STL directly into compressed adaptive block SDF output:
 
 ```bash
 adasdf_build_compressed_sdf model.stl model_compressed.sdfbin --target-error 1e-3 --max-level 5 --block-resolution 8 --max-rank 8 --report build_report.md --compression-report compression_report.md --quality-report quality_report.md
+adasdf_build_compressed_sdf model.stl model_compressed.sdfbin --sampling hierarchical --coarse-resolution 3 --quality-check-samples 3 --target-sampling-error 1e-3
 ```
 
 This command does not implement Tucker/HOSVD, surrogate-guided parameter
 recommendation, or GPU-native compressed query.
+
+## adasdf_benchmark_hierarchical_sampling
+
+Status: experimental speed/quality benchmark.
+
+Compares exact adaptive block sampling with hierarchical adaptive sampling.
+The benchmark reports build time, speedup, max/mean/RMS/p95 error, sign
+mismatches, exact/predicted sample counts, fallback block count, and quality
+gate status.
+
+```bash
+adasdf_benchmark_hierarchical_sampling model.stl --max-level 2 --block-resolution 5 --coarse-resolution 2 --quality-check-samples 2 --comparison-samples 3 --csv hier.csv --report hier.md --json hier.json
+```
+
+Near-surface blocks remain exact by default. Predicted transition/far-field
+blocks require the quality guard and fall back to exact sampling on rejection.
 
 ## adasdf_build_adaptive_sdf_preview
 

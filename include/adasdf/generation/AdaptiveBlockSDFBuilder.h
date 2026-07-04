@@ -10,6 +10,7 @@
 #include "adasdf/mesh/MeshDiagnostics.h"
 #include "adasdf/mesh/MeshReadiness.h"
 #include "adasdf/mesh/TriangleMesh.h"
+#include "adasdf/sampling/HierarchicalBlockSampler.h"
 
 namespace adasdf {
 
@@ -36,6 +37,8 @@ struct AdaptiveBlockSDFBuildOptions {
   SDFSamplingAcceleration acceleration = SDFSamplingAcceleration::BruteForce;
   int threads = 1;
   bool benchmark_brute_reference = false;
+
+  HierarchicalSamplingOptions hierarchical_sampling;
 
   bool verbose = true;
 };
@@ -65,6 +68,7 @@ struct AdaptiveBlockSDFBuildReport {
   bool used_bvh = false;
   int threads_used = 1;
   BuildAccelerationStats acceleration_stats;
+  HierarchicalBlockSamplingStats hierarchical_sampling;
 
   MeshDiagnosticsReport diagnostics;
   MeshReadinessReport readiness;

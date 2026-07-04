@@ -219,6 +219,7 @@ def main() -> int:
     parser.add_argument("--package-build", default="")
     parser.add_argument("--downstream-build", default="")
     parser.add_argument("--config", default="Debug")
+    parser.add_argument("--report-root", default="")
     parser.add_argument(
         "--reuse-build",
         action="store_true",
@@ -240,7 +241,12 @@ def main() -> int:
         else build.parent / f"{build.name}_ds"
     )
     config = args.config
-    report_path = source / "reports" / "install_validation_summary.md"
+    report_root = (
+        resolve_path(args.report_root, Path.cwd())
+        if args.report_root
+        else source / "reports"
+    )
+    report_path = report_root / "install_validation_summary.md"
     if report_path.exists():
         report_path.unlink()
 
@@ -482,6 +488,7 @@ def main() -> int:
     strict_sparse_query_json = build.parent / "install_strict_sparse_query.json"
     strict_solver_contacts_json = build.parent / "install_strict_solver_contacts.json"
     strict_compressed_benchmark_json = build.parent / "install_strict_compressed_benchmark.json"
+    strict_hierarchical_benchmark_json = build.parent / "install_strict_hierarchical_sampling_benchmark.json"
     strict_report_list = build.parent / "install_strict_report_inputs.txt"
     strict_summary_csv = build.parent / "install_strict_run_summary.csv"
     sample_fixture = source / "tests" / "data" / "samples" / "cube_sparse_samples.csv"
@@ -525,6 +532,9 @@ def main() -> int:
     world_benchmark_csv = build.parent / "install_validation_collision_world_benchmark.csv"
     world_benchmark_report = build.parent / "install_validation_collision_world_benchmark.md"
     world_benchmark_json = build.parent / "install_validation_collision_world_benchmark.json"
+    hierarchical_benchmark_csv = build.parent / "install_validation_hierarchical_sampling_benchmark.csv"
+    hierarchical_benchmark_report = build.parent / "install_validation_hierarchical_sampling_benchmark.md"
+    hierarchical_benchmark_json = build.parent / "install_validation_hierarchical_sampling_benchmark.json"
     recommendation_md = build.parent / "install_validation_recommendation.md"
     recommendation_json = build.parent / "install_validation_recommendation.json"
     adaptive_dryrun_sdfbin = build.parent / "install_validation_adaptive_dryrun.sdfbin"
@@ -568,6 +578,7 @@ def main() -> int:
         "adasdf_benchmark_block_cache",
         "adasdf_cuda_active_block_query",
         "adasdf_benchmark_cuda_block_cache",
+        "adasdf_benchmark_hierarchical_sampling",
         "adasdf_benchmark_contact_reduction",
         "adasdf_build_adaptive_sdf_preview",
         "adasdf_world_broadphase",
@@ -794,6 +805,35 @@ def main() -> int:
                 str(strict_compressed_direct_json),
                 "--case-id",
                 "install_compressed_direct",
+            ],
+        ),
+        (
+            "Installed Hierarchical Sampling Benchmark CLI",
+            [
+                str(dense_tools["adasdf_benchmark_hierarchical_sampling"]),
+                str(mesh_fixture),
+                "--max-level",
+                "1",
+                "--block-resolution",
+                "4",
+                "--coarse-resolution",
+                "2",
+                "--quality-check-samples",
+                "2",
+                "--comparison-samples",
+                "3",
+                "--target-sampling-error",
+                "10",
+                "--csv",
+                str(hierarchical_benchmark_csv),
+                "--report",
+                str(hierarchical_benchmark_report),
+                "--json",
+                str(hierarchical_benchmark_json),
+                "--strict-json",
+                str(strict_hierarchical_benchmark_json),
+                "--case-id",
+                "install_hierarchical_sampling_benchmark",
             ],
         ),
         (
@@ -1310,6 +1350,33 @@ def main() -> int:
             ):
                 result.returncode = 1
                 result.output += "\nValidation failed: installed one-step compressed SDF build output is incomplete.\n"
+        elif name == "Installed Hierarchical Sampling Benchmark CLI":
+            csv_text = (
+                hierarchical_benchmark_csv.read_text(encoding="utf-8", errors="replace")
+                if hierarchical_benchmark_csv.exists()
+                else ""
+            )
+            json_text = (
+                hierarchical_benchmark_json.read_text(encoding="utf-8", errors="replace")
+                if hierarchical_benchmark_json.exists()
+                else ""
+            )
+            report_text = (
+                hierarchical_benchmark_report.read_text(encoding="utf-8", errors="replace")
+                if hierarchical_benchmark_report.exists()
+                else ""
+            )
+            if (
+                not hierarchical_benchmark_csv.exists()
+                or not hierarchical_benchmark_report.exists()
+                or not hierarchical_benchmark_json.exists()
+                or "AdaSDF-CL hierarchical sampling benchmark" not in result.output
+                or "exact_build_time_ms,hierarchical_build_time_ms" not in csv_text
+                or "quality_gate_passed" not in json_text
+                or "Hierarchical Adaptive Sampling Benchmark" not in report_text
+            ):
+                result.returncode = 1
+                result.output += "\nValidation failed: installed hierarchical sampling benchmark output is incomplete.\n"
         elif name == "Installed CollisionWorld Broadphase CLI":
             csv_text = (
                 world_broadphase_csv.read_text(encoding="utf-8", errors="replace")
@@ -1736,6 +1803,7 @@ def main() -> int:
         strict_sparse_query_json,
         strict_solver_contacts_json,
         strict_compressed_benchmark_json,
+        strict_hierarchical_benchmark_json,
     ]
     for strict_report in strict_reports:
         print(f"[install-validation] Strict Report Validate {strict_report.name}", flush=True)
@@ -1750,7 +1818,7 @@ def main() -> int:
             print_failure(result, source, build, install)
             return result.returncode
     strict_report_list.write_text(
-        "\n".join(str(path) for path in strict_reports) + "\n",
+        "\n".join(path.name for path in strict_reports) + "\n",
         encoding="utf-8",
     )
     print("[install-validation] Strict Report Summary CSV", flush=True)
@@ -1763,7 +1831,7 @@ def main() -> int:
             "--out",
             str(strict_summary_csv),
         ],
-        workspace,
+        strict_report_list.parent,
     )
     results.append(result)
     if result.returncode != 0 or not strict_summary_csv.exists():

@@ -88,6 +88,32 @@ std::string AdaptiveBlockSDFBuildReportWriter::toMarkdown(
 
   out << adasdf::toMarkdown(report.acceleration_stats) << "\n\n";
 
+  out << "## Hierarchical Sampling\n\n";
+  out << "- Enabled blocks sampled: "
+      << report.hierarchical_sampling.block_count << "\n";
+  out << "- Exact blocks: "
+      << report.hierarchical_sampling.exact_block_count << "\n";
+  out << "- Predicted blocks: "
+      << report.hierarchical_sampling.predicted_block_count << "\n";
+  out << "- Accepted prediction blocks: "
+      << report.hierarchical_sampling.accepted_prediction_block_count << "\n";
+  out << "- Fallback exact blocks: "
+      << report.hierarchical_sampling.fallback_exact_block_count << "\n";
+  out << "- Exact sample count: "
+      << report.hierarchical_sampling.exact_sample_count << "\n";
+  out << "- Predicted sample count: "
+      << report.hierarchical_sampling.predicted_sample_count << "\n";
+  out << "- Quality check sample count: "
+      << report.hierarchical_sampling.quality_check_sample_count << "\n";
+  out << "- Exact sampling time ms: "
+      << report.hierarchical_sampling.exact_sampling_time_ms << "\n";
+  out << "- Prediction time ms: "
+      << report.hierarchical_sampling.prediction_time_ms << "\n";
+  out << "- Quality check time ms: "
+      << report.hierarchical_sampling.quality_check_time_ms << "\n";
+  out << "- Speedup vs exact estimate: "
+      << report.hierarchical_sampling.speedup_vs_exact_estimate << "\n\n";
+
   out << "## Warnings\n\n";
   if (report.warnings.empty()) {
     out << "- none\n\n";
@@ -139,6 +165,35 @@ std::string AdaptiveBlockSDFBuildReportWriter::toJson(
   out << "  \"build_time_ms\": " << report.build_time_ms << ",\n";
   out << "  \"acceleration\": " << adasdf::toJson(report.acceleration_stats)
       << ",\n";
+  out << "  \"hierarchical_sampling\": {\n";
+  out << "    \"block_count\": "
+      << report.hierarchical_sampling.block_count << ",\n";
+  out << "    \"exact_block_count\": "
+      << report.hierarchical_sampling.exact_block_count << ",\n";
+  out << "    \"predicted_block_count\": "
+      << report.hierarchical_sampling.predicted_block_count << ",\n";
+  out << "    \"accepted_prediction_block_count\": "
+      << report.hierarchical_sampling.accepted_prediction_block_count
+      << ",\n";
+  out << "    \"fallback_exact_block_count\": "
+      << report.hierarchical_sampling.fallback_exact_block_count << ",\n";
+  out << "    \"exact_sample_count\": "
+      << report.hierarchical_sampling.exact_sample_count << ",\n";
+  out << "    \"predicted_sample_count\": "
+      << report.hierarchical_sampling.predicted_sample_count << ",\n";
+  out << "    \"quality_check_sample_count\": "
+      << report.hierarchical_sampling.quality_check_sample_count << ",\n";
+  out << "    \"exact_sampling_time_ms\": "
+      << report.hierarchical_sampling.exact_sampling_time_ms << ",\n";
+  out << "    \"prediction_time_ms\": "
+      << report.hierarchical_sampling.prediction_time_ms << ",\n";
+  out << "    \"quality_check_time_ms\": "
+      << report.hierarchical_sampling.quality_check_time_ms << ",\n";
+  out << "    \"total_time_ms\": "
+      << report.hierarchical_sampling.total_time_ms << ",\n";
+  out << "    \"speedup_vs_exact_estimate\": "
+      << report.hierarchical_sampling.speedup_vs_exact_estimate << "\n";
+  out << "  },\n";
   out << "  \"low_rank_compression\": \"available via ADASDF_COMPRESSED_BLOCK_SDFBIN_V1\",\n";
   out << "  \"warnings\": [";
   for (std::size_t i = 0; i < report.warnings.size(); ++i) {

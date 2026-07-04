@@ -11,6 +11,7 @@
 #include "adasdf/generation/AdaptiveBlockPartitioner.h"
 #include "adasdf/mesh/MeshCleanup.h"
 #include "adasdf/mesh/STLReader.h"
+#include "adasdf/sampling/HierarchicalBlockSampler.h"
 
 namespace adasdf {
 namespace {
@@ -164,6 +165,122 @@ void sampleBlocks(
   report.acceleration_stats = stats;
 }
 
+void sampleBlocksHierarchical(
+    const TriangleMesh& mesh,
+    AdaptiveSDFBlockSet& block_set,
+    const AdaptiveBlockSDFBuildOptions& options,
+    AdaptiveBlockSDFBuildReport& report) {
+  BuildAccelerationStats stats;
+  stats.acceleration = options.acceleration;
+  stats.threads_requested = std::max(1, options.threads);
+
+  BVHSDFSamplerOptions sampler_options;
+  sampler_options.acceleration = options.acceleration;
+  sampler_options.signed_distance = options.signed_distance;
+  sampler_options.bvh_options.degenerate_area_epsilon =
+      options.degenerate_area_epsilon;
+  BVHSDFSampler sampler;
+  sampler.reset(mesh, sampler_options, &stats);
+  const bool use_bvh =
+      options.acceleration == SDFSamplingAcceleration::BVH && sampler.hasBVH();
+
+  HierarchicalSamplingOptions hierarchical_options =
+      options.hierarchical_sampling;
+  hierarchical_options.enable_hierarchical_sampling = true;
+  hierarchical_options.threads = std::max(1, options.threads);
+  if (hierarchical_options.target_max_abs_error <= 0.0) {
+    hierarchical_options.target_max_abs_error =
+        options.target_near_surface_error;
+  }
+
+  HierarchicalBlockSamplingStats sampling_stats;
+  const auto total0 = std::chrono::steady_clock::now();
+  for (AdaptiveSDFBlock& partitioned_block : block_set.blocks) {
+    HierarchicalBlockSamplingResult sampled =
+        HierarchicalBlockSampler::sampleBlock(
+            partitioned_block.bounds,
+            partitioned_block.block_id,
+            partitioned_block.octree_node_id,
+            partitioned_block.level,
+            options.block_resolution,
+            options.signed_distance,
+            partitioned_block.near_surface,
+            sampler,
+            hierarchical_options);
+    if (!sampled.success) {
+      sampled.block = HierarchicalBlockSampler::sampleBlockExact(
+          partitioned_block.bounds,
+          partitioned_block.block_id,
+          partitioned_block.octree_node_id,
+          partitioned_block.level,
+          options.block_resolution,
+          options.signed_distance,
+          partitioned_block.near_surface,
+          sampler);
+      sampled.fallback_exact = true;
+      sampled.exact_sample_count += sampled.block.phi.size();
+      sampling_stats.warnings.push_back(
+          "hierarchical sampling failed for block " +
+          std::to_string(partitioned_block.block_id) +
+          " and exact fallback was used: " + sampled.error_message);
+    }
+    partitioned_block = std::move(sampled.block);
+    ++sampling_stats.block_count;
+    sampling_stats.exact_sample_count += sampled.exact_sample_count;
+    sampling_stats.predicted_sample_count += sampled.predicted_sample_count;
+    sampling_stats.quality_check_sample_count +=
+        sampled.quality.check_sample_count;
+    sampling_stats.exact_sampling_time_ms += sampled.exact_sampling_time_ms;
+    sampling_stats.prediction_time_ms += sampled.prediction_time_ms;
+    sampling_stats.quality_check_time_ms += sampled.quality_check_time_ms;
+    if (sampled.decision.mode == BlockSamplingMode::ExactBVH) {
+      ++sampling_stats.exact_block_count;
+    } else {
+      ++sampling_stats.predicted_block_count;
+    }
+    if (sampled.used_prediction) {
+      ++sampling_stats.accepted_prediction_block_count;
+    }
+    if (sampled.fallback_exact) {
+      ++sampling_stats.fallback_exact_block_count;
+    }
+    for (const std::string& warning : sampled.quality.warnings) {
+      sampling_stats.warnings.push_back(
+          "block " + std::to_string(partitioned_block.block_id) + ": " +
+          warning);
+    }
+  }
+  const auto total1 = std::chrono::steady_clock::now();
+  sampling_stats.total_time_ms =
+      std::chrono::duration<double, std::milli>(total1 - total0).count();
+  const std::size_t exact_dense_samples = [&]() {
+    std::size_t count = 0;
+    for (const AdaptiveSDFBlock& block : block_set.blocks) {
+      count += static_cast<std::size_t>(block.nx) *
+               static_cast<std::size_t>(block.ny) *
+               static_cast<std::size_t>(block.nz);
+    }
+    return count;
+  }();
+  if (sampling_stats.exact_sample_count > 0) {
+    sampling_stats.speedup_vs_exact_estimate =
+        static_cast<double>(exact_dense_samples) /
+        static_cast<double>(sampling_stats.exact_sample_count);
+  }
+
+  stats.sample_count = sampling_stats.exact_sample_count;
+  stats.threads_used = 1;
+  stats.sampling_time_ms = sampling_stats.total_time_ms;
+
+  report.used_bvh = use_bvh;
+  report.threads_used = stats.threads_used;
+  report.acceleration_stats = stats;
+  report.hierarchical_sampling = sampling_stats;
+  for (const std::string& warning : sampling_stats.warnings) {
+    report.warnings.push_back(warning);
+  }
+}
+
 void assignReport(
     AdaptiveBlockSDFBuildReport* out,
     const AdaptiveBlockSDFBuildReport& value) {
@@ -289,7 +406,11 @@ std::shared_ptr<SDFModel> AdaptiveBlockSDFBuilder::fromMesh(
   blocks.signed_distance = options.signed_distance;
 
   const auto sample0 = std::chrono::steady_clock::now();
-  sampleBlocks(working_mesh, blocks, options, report);
+  if (options.hierarchical_sampling.enable_hierarchical_sampling) {
+    sampleBlocksHierarchical(working_mesh, blocks, options, report);
+  } else {
+    sampleBlocks(working_mesh, blocks, options, report);
+  }
   const auto sample1 = std::chrono::steady_clock::now();
   report.sampling_time_ms =
       std::chrono::duration<double, std::milli>(sample1 - sample0).count();

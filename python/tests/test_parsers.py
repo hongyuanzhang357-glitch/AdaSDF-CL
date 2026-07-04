@@ -11,6 +11,7 @@ from adasdf_cli.parsers import (
     parse_field_bool,
     parse_field_float,
     parse_field_int,
+    parse_hierarchical_sampling_benchmark_metrics,
     parse_minimum_distance,
     parse_query_normal,
     parse_query_phi,
@@ -122,6 +123,22 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(metrics["mode"], "phi-only")
         self.assertEqual(metrics["cuda_kernel_avg_ms"], "1.25")
         self.assertEqual(metrics["avg_ns_per_sample"], "12.5")
+
+    def test_parse_hierarchical_sampling_benchmark_metrics(self):
+        stdout = (
+            "AdaSDF-CL hierarchical sampling benchmark\n"
+            "Exact build time ms: 10\n"
+            "Hierarchical build time ms: 5\n"
+            "Speedup: 2\n"
+            "Max abs error: 0.001\n"
+            "Quality gate passed: yes\n"
+            "exact_build_time_ms,hierarchical_build_time_ms,speedup\n"
+            "10,5,2\n"
+        )
+        metrics = parse_hierarchical_sampling_benchmark_metrics(stdout)
+        self.assertEqual(metrics["speedup"], "2")
+        self.assertEqual(metrics["quality_gate_passed"], "yes")
+        self.assertIn("csv_header", metrics)
 
     def test_parse_collision_world_benchmark_metrics(self):
         stdout = (

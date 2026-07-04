@@ -161,13 +161,19 @@ def main() -> int:
     parser.add_argument("--build", default="../build/adasdf_cl_alpha_validation")
     parser.add_argument("--config", default="Debug")
     parser.add_argument("--include-install", action="store_true")
+    parser.add_argument("--report-root", default="")
     args = parser.parse_args()
 
     source = Path(args.source).resolve()
     build = Path(args.build).resolve()
     config = args.config
     workspace = source.parent
-    report_path = source / "reports" / "alpha_validation_summary.md"
+    report_root = (
+        Path(args.report_root).resolve()
+        if args.report_root
+        else source / "reports"
+    )
+    report_path = report_root / "alpha_validation_summary.md"
     if report_path.exists():
         report_path.unlink()
     results: list[StepResult] = []
@@ -218,6 +224,8 @@ def main() -> int:
                 "--config",
                 config,
                 "--reuse-build",
+                "--report-root",
+                str(report_root),
             ],
             workspace,
         )
@@ -272,6 +280,7 @@ def main() -> int:
     strict_sparse_query_json = build.parent / "strict_closed_cube_sparse_query.json"
     strict_solver_contacts_json = build.parent / "strict_closed_cube_solver_contacts.json"
     strict_batch_benchmark_json = build.parent / "strict_batch_query_benchmark.json"
+    strict_hierarchical_benchmark_json = build.parent / "strict_hierarchical_sampling_benchmark.json"
     strict_report_list = build.parent / "strict_report_inputs.txt"
     strict_summary_csv = build.parent / "strict_run_summary.csv"
     sample_fixture = source / "tests" / "data" / "samples" / "cube_sparse_samples.csv"
@@ -315,6 +324,9 @@ def main() -> int:
     world_benchmark_csv = build.parent / "closed_cube_collision_world_benchmark.csv"
     world_benchmark_report = build.parent / "closed_cube_collision_world_benchmark.md"
     world_benchmark_json = build.parent / "closed_cube_collision_world_benchmark.json"
+    hierarchical_benchmark_csv = build.parent / "closed_cube_hierarchical_sampling_benchmark.csv"
+    hierarchical_benchmark_report = build.parent / "closed_cube_hierarchical_sampling_benchmark.md"
+    hierarchical_benchmark_json = build.parent / "closed_cube_hierarchical_sampling_benchmark.json"
     recommendation_md = build.parent / "closed_cube_recommendation.md"
     recommendation_json = build.parent / "closed_cube_recommendation.json"
     adaptive_dryrun_sdfbin = build.parent / "closed_cube_adaptive_dryrun.sdfbin"
@@ -360,6 +372,7 @@ def main() -> int:
         "adasdf_benchmark_block_cache": find_executable(build, "adasdf_benchmark_block_cache", config),
         "adasdf_cuda_active_block_query": find_executable(build, "adasdf_cuda_active_block_query", config),
         "adasdf_benchmark_cuda_block_cache": find_executable(build, "adasdf_benchmark_cuda_block_cache", config),
+        "adasdf_benchmark_hierarchical_sampling": find_executable(build, "adasdf_benchmark_hierarchical_sampling", config),
         "adasdf_benchmark_contact_reduction": find_executable(build, "adasdf_benchmark_contact_reduction", config),
         "adasdf_collide_boxes_demo": find_executable(build, "adasdf_collide_boxes_demo", config),
         "adasdf_benchmark_batch_query": find_executable(build, "adasdf_benchmark_batch_query", config),
@@ -678,6 +691,35 @@ def main() -> int:
                 str(strict_compressed_direct_json),
                 "--case-id",
                 "alpha_compressed_direct",
+            ],
+        ),
+        (
+            "Hierarchical Sampling Benchmark",
+            [
+                str(required_demo_tools["adasdf_benchmark_hierarchical_sampling"]),
+                str(mesh_fixture),
+                "--max-level",
+                "1",
+                "--block-resolution",
+                "4",
+                "--coarse-resolution",
+                "2",
+                "--quality-check-samples",
+                "2",
+                "--comparison-samples",
+                "3",
+                "--target-sampling-error",
+                "10",
+                "--csv",
+                str(hierarchical_benchmark_csv),
+                "--report",
+                str(hierarchical_benchmark_report),
+                "--json",
+                str(hierarchical_benchmark_json),
+                "--strict-json",
+                str(strict_hierarchical_benchmark_json),
+                "--case-id",
+                "alpha_hierarchical_sampling_benchmark",
             ],
         ),
         (
@@ -1465,6 +1507,35 @@ def main() -> int:
                 result.output += "\nValidation failed: one-step compressed SDF build output is incomplete.\n"
                 write_report(report_path, results, source, build, config)
                 return result.returncode
+        if name == "Hierarchical Sampling Benchmark":
+            csv_text = (
+                hierarchical_benchmark_csv.read_text(encoding="utf-8", errors="replace")
+                if hierarchical_benchmark_csv.exists()
+                else ""
+            )
+            json_text = (
+                hierarchical_benchmark_json.read_text(encoding="utf-8", errors="replace")
+                if hierarchical_benchmark_json.exists()
+                else ""
+            )
+            report_text = (
+                hierarchical_benchmark_report.read_text(encoding="utf-8", errors="replace")
+                if hierarchical_benchmark_report.exists()
+                else ""
+            )
+            if (
+                not hierarchical_benchmark_csv.exists()
+                or not hierarchical_benchmark_report.exists()
+                or not hierarchical_benchmark_json.exists()
+                or "AdaSDF-CL hierarchical sampling benchmark" not in result.output
+                or "exact_build_time_ms,hierarchical_build_time_ms" not in csv_text
+                or "quality_gate_passed" not in json_text
+                or "Hierarchical Adaptive Sampling Benchmark" not in report_text
+            ):
+                result.returncode = 1
+                result.output += "\nValidation failed: hierarchical sampling benchmark output is incomplete.\n"
+                write_report(report_path, results, source, build, config)
+                return result.returncode
         if name == "CollisionWorld Broadphase CLI":
             csv_text = (
                 world_broadphase_csv.read_text(encoding="utf-8", errors="replace")
@@ -2039,6 +2110,7 @@ def main() -> int:
         strict_sparse_query_json,
         strict_solver_contacts_json,
         strict_batch_benchmark_json,
+        strict_hierarchical_benchmark_json,
     ]
     for strict_report in strict_reports:
         result = run_step(
@@ -2051,7 +2123,7 @@ def main() -> int:
             write_report(report_path, results, source, build, config)
             return result.returncode
     strict_report_list.write_text(
-        "\n".join(str(path) for path in strict_reports) + "\n",
+        "\n".join(path.name for path in strict_reports) + "\n",
         encoding="utf-8",
     )
     result = run_step(
@@ -2063,7 +2135,7 @@ def main() -> int:
             "--out",
             str(strict_summary_csv),
         ],
-        workspace,
+        strict_report_list.parent,
     )
     results.append(result)
     if result.returncode != 0 or not strict_summary_csv.exists():

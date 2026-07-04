@@ -1,5 +1,26 @@
 # Changelog
 
+## 1.16.0-alpha
+
+Hierarchical adaptive sampling with quality guard.
+
+### Added
+
+- `include/adasdf/sampling` and `src/sampling` for block classification,
+  sampling policy, coarse prediction, sampling quality guard, hierarchical
+  block sampling, speed/quality benchmarking, and report writing.
+- `--sampling exact|hierarchical` and related guarded sampling options on
+  adaptive and compressed builder CLIs.
+- `adasdf_benchmark_hierarchical_sampling`.
+- Python wrapper support and tests for hierarchical sampling commands.
+- Validation coverage for the hierarchical sampling benchmark.
+
+### Notes
+
+- Exact sampling remains the default.
+- Predictions require quality guard and exact fallback.
+- `.sdfbin` formats are unchanged.
+
 ## 1.15.0-alpha
 
 Strict JSON/CSV reporting and reproducibility manifests.

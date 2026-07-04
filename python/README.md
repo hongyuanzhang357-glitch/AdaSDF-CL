@@ -189,6 +189,7 @@ not as a process failure.
 - `benchmark_batch_query`
 - `benchmark_sparse_query`
 - `benchmark_contact_reduction`
+- `benchmark_hierarchical_sampling`
 - `world_broadphase`
 - `world_sparse_collide`
 - `world_solver_contacts`

@@ -2,7 +2,7 @@
 
 Adaptive Signed Distance Field Collision Library
 
-Status: 1.15.0-alpha / research preview
+Status: 1.16.0-alpha / research preview
 Build system: CMake
 License: MIT
 Tests: CTest
@@ -10,6 +10,13 @@ Tests: CTest
 AdaSDF-CL is an alpha collision and contact library built around signed distance fields. It provides an FCL-style API for distance, collision, and contact queries while keeping CUDA, FCL, native Python bindings, and full adaptive backend work optional or future-facing.
 
 AdaSDF-CL is an FCL-style SDF collision backend under development. It complements FCL by providing signed-distance queries, penetration depth, contact normals, batch query, expanded-SDF quality audit, CUDA query paths, and a first SDF-native multi-object CollisionWorld broadphase. It is not a drop-in FCL replacement.
+
+v1.16.0-alpha adds hierarchical adaptive block sampling with a quality guard
+for the adaptive and compressed builders. The default builder path remains
+exact sampling; `--sampling hierarchical` enables coarse block probes,
+near-surface exact sampling, guarded transition/far-field prediction, and
+exact fallback when the quality guard rejects a prediction. The `.sdfbin`
+formats are unchanged.
 
 v1.15.0-alpha adds strict JSON/CSV reporting and reproducibility manifests for
 automation, benchmark provenance, install validation, alpha validation, and
@@ -87,9 +94,9 @@ The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`, `v1.1.0-alpha`,
 `v1.1.1-alpha`, `v1.2.0-alpha`, `v1.3.0-alpha`, `v1.4.0-alpha`,
 `v1.5.0-alpha`, `v1.6.0-alpha`, `v1.7.0-alpha`, `v1.8.0-alpha`,
 `v1.8.1-alpha`, `v1.9.0-alpha`, `v1.10.0-alpha`, `v1.11.0-alpha`,
-`v1.12.0-alpha`, `v1.13.0-alpha`, `v1.13.0-alpha.1`, and
-`v1.13.0-alpha.2`, and `v1.14.0-alpha` tags are retained for traceability. The
-recommended public pre-release is `v1.15.0-alpha`.
+`v1.12.0-alpha`, `v1.13.0-alpha`, `v1.13.0-alpha.1`,
+`v1.13.0-alpha.2`, `v1.14.0-alpha`, and `v1.15.0-alpha` tags are retained
+for traceability. The recommended public pre-release is `v1.16.0-alpha`.
 
 ## What Is AdaSDF-CL?
 
@@ -122,6 +129,7 @@ collision engine and does not yet replace FCL.
 | Matrix-SVD block compression | Implemented |
 | Compressed adaptive block SDF model | Implemented |
 | Compressed block `.sdfbin` read/write | Implemented |
+| Hierarchical adaptive sampling quality guard | Implemented / experimental |
 | Surrogate-guided build recommendation | Implemented / experimental |
 | `adasdf_recommend_build` | Implemented |
 | Python CLI wrapper | Implemented |
@@ -431,7 +439,7 @@ universal trained model, not fully trained, and not an optimality guarantee.
 ```bash
 git clone https://github.com/hongyuanzhang357-glitch/AdaSDF-CL.git
 cd AdaSDF-CL
-git checkout v1.15.0-alpha
+git checkout v1.16.0-alpha
 
 cmake -S . -B build -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD_TESTS=ON -DADASDF_CL_BUILD_BENCHMARKS=ON
 cmake --build build --config Release

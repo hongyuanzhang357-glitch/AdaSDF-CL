@@ -16,6 +16,12 @@ void usage() {
          "[--auto-clean] [--fixed-rank N] [--min-rank N] [--max-rank N] "
          "[--keep-near-surface-dense] [--report build_report.md] "
          "[--accel brute|bvh] [--threads N] [--benchmark-brute-reference] "
+         "[--sampling exact|hierarchical] [--coarse-resolution N] "
+         "[--quality-check-samples N] [--far-field-interpolation] "
+         "[--no-far-field-interpolation] [--transition-prediction] "
+         "[--no-transition-prediction] [--near-surface-exact] "
+         "[--quality-guard] [--no-quality-guard] "
+         "[--target-sampling-error 1e-3] "
          "[--compression-report compression_report.md] "
          "[--quality-report quality_report.md] "
          "[--strict-json report.json] [--case-id case_id] "
@@ -35,6 +41,34 @@ bool parseAcceleration(
   }
   options->acceleration = acceleration;
   return true;
+}
+
+bool parseSamplingMode(
+    const std::string& value,
+    adasdf::AdaptiveBlockSDFBuildOptions* options) {
+  if (value == "exact") {
+    options->hierarchical_sampling.enable_hierarchical_sampling = false;
+    return true;
+  }
+  if (value == "hierarchical") {
+    options->hierarchical_sampling.enable_hierarchical_sampling = true;
+    return true;
+  }
+  return false;
+}
+
+void setTargetSamplingError(
+    adasdf::AdaptiveBlockSDFBuildOptions* options,
+    double value) {
+  options->hierarchical_sampling.target_max_abs_error = value;
+  options->hierarchical_sampling.target_rms_error = value;
+  options->hierarchical_sampling.target_p95_error = value;
+}
+
+const char* samplingModeName(const adasdf::AdaptiveBlockSDFBuildOptions& options) {
+  return options.hierarchical_sampling.enable_hierarchical_sampling
+             ? "hierarchical"
+             : "exact";
 }
 
 }  // namespace
@@ -124,6 +158,35 @@ int main(int argc, char** argv) {
         build_options.threads = std::stoi(argv[++i]);
       } else if (arg == "--benchmark-brute-reference") {
         build_options.benchmark_brute_reference = true;
+      } else if (arg == "--sampling" && hasValue(i, argc)) {
+        if (!parseSamplingMode(argv[++i], &build_options)) {
+          std::cerr << "Unknown sampling mode: " << argv[i] << "\n";
+          return 1;
+        }
+      } else if (arg == "--coarse-resolution" && hasValue(i, argc)) {
+        build_options.hierarchical_sampling.coarse_resolution =
+            std::stoi(argv[++i]);
+      } else if (arg == "--quality-check-samples" && hasValue(i, argc)) {
+        build_options.hierarchical_sampling.quality_check_samples_per_axis =
+            std::stoi(argv[++i]);
+      } else if (arg == "--far-field-interpolation") {
+        build_options.hierarchical_sampling.allow_far_field_interpolation =
+            true;
+      } else if (arg == "--no-far-field-interpolation") {
+        build_options.hierarchical_sampling.allow_far_field_interpolation =
+            false;
+      } else if (arg == "--transition-prediction") {
+        build_options.hierarchical_sampling.allow_transition_prediction = true;
+      } else if (arg == "--no-transition-prediction") {
+        build_options.hierarchical_sampling.allow_transition_prediction = false;
+      } else if (arg == "--near-surface-exact") {
+        build_options.hierarchical_sampling.keep_near_surface_exact = true;
+      } else if (arg == "--quality-guard") {
+        build_options.hierarchical_sampling.quality_guard = true;
+      } else if (arg == "--no-quality-guard") {
+        build_options.hierarchical_sampling.quality_guard = false;
+      } else if (arg == "--target-sampling-error" && hasValue(i, argc)) {
+        setTargetSamplingError(&build_options, std::stod(argv[++i]));
       } else if (arg == "--fixed-rank" && hasValue(i, argc)) {
         compression_options.fixed_rank = std::stoi(argv[++i]);
         compression_options.rank_selection = adasdf::RankSelectionMode::FixedRank;
@@ -278,6 +341,34 @@ int main(int argc, char** argv) {
     std::cout << "Speedup vs brute reference: "
               << build_report.acceleration_stats.speedup_vs_bruteforce
               << "\n";
+    std::cout << "Sampling mode: " << samplingModeName(build_options) << "\n";
+    if (build_options.hierarchical_sampling.enable_hierarchical_sampling) {
+      std::cout << "Hierarchical exact blocks: "
+                << build_report.hierarchical_sampling.exact_block_count
+                << "\n";
+      std::cout << "Hierarchical predicted blocks: "
+                << build_report.hierarchical_sampling.predicted_block_count
+                << "\n";
+      std::cout << "Hierarchical accepted predictions: "
+                << build_report
+                       .hierarchical_sampling.accepted_prediction_block_count
+                << "\n";
+      std::cout << "Hierarchical fallback exact blocks: "
+                << build_report.hierarchical_sampling.fallback_exact_block_count
+                << "\n";
+      std::cout << "Hierarchical exact sample count: "
+                << build_report.hierarchical_sampling.exact_sample_count
+                << "\n";
+      std::cout << "Hierarchical predicted sample count: "
+                << build_report.hierarchical_sampling.predicted_sample_count
+                << "\n";
+      std::cout << "Hierarchical quality check samples: "
+                << build_report.hierarchical_sampling.quality_check_sample_count
+                << "\n";
+      std::cout << "Hierarchical speedup estimate: "
+                << build_report.hierarchical_sampling.speedup_vs_exact_estimate
+                << "\n";
+    }
     std::cout << "Matrix-SVD blocks: "
               << compression_report.compressed_block_count << "\n";
     std::cout << "Dense fallback blocks: "
@@ -319,6 +410,17 @@ int main(int argc, char** argv) {
             {"compressed_memory_bytes",
              static_cast<double>(compression_report.compressed_memory_bytes)},
             {"compression_ratio", compression_report.compression_ratio},
+            {"hierarchical_exact_blocks",
+             static_cast<double>(
+                 build_report.hierarchical_sampling.exact_block_count)},
+            {"hierarchical_predicted_blocks",
+             static_cast<double>(
+                 build_report.hierarchical_sampling.predicted_block_count)},
+            {"hierarchical_fallback_exact_blocks",
+             static_cast<double>(
+                 build_report.hierarchical_sampling.fallback_exact_block_count)},
+            {"hierarchical_speedup_estimate",
+             build_report.hierarchical_sampling.speedup_vs_exact_estimate},
             {"max_abs_error", compression_report.global_max_abs_error},
             {"mean_abs_error", compression_report.global_mean_abs_error},
             {"rms_error", compression_report.global_rms_error},

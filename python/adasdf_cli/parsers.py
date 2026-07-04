@@ -317,6 +317,35 @@ def parse_cuda_block_cache_benchmark_metrics(stdout: str) -> Dict[str, object]:
     return metrics
 
 
+def parse_hierarchical_sampling_benchmark_metrics(stdout: str) -> Dict[str, object]:
+    metrics: Dict[str, object] = {}
+    for label, key in (
+        ("Exact build time ms", "exact_build_time_ms"),
+        ("Hierarchical build time ms", "hierarchical_build_time_ms"),
+        ("Speedup", "speedup"),
+        ("Max abs error", "max_abs_error"),
+        ("Mean abs error", "mean_abs_error"),
+        ("RMS error", "rms_error"),
+        ("P95 error", "p95_error"),
+        ("Sign mismatches", "sign_mismatch_count"),
+        ("Near-surface sign mismatches", "near_surface_sign_mismatch_count"),
+        ("Exact sample count", "exact_sample_count"),
+        ("Hierarchical exact sample count", "hierarchical_exact_sample_count"),
+        ("Predicted sample count", "predicted_sample_count"),
+        ("Fallback block count", "fallback_block_count"),
+        ("Quality gate passed", "quality_gate_passed"),
+    ):
+        match = _search(rf"^{re.escape(label)}:\s*(.+)$", stdout)
+        if match:
+            metrics[key] = match.group(1).strip()
+    for line in (stdout or "").splitlines():
+        if line.startswith("exact_build_time_ms,hierarchical_build_time_ms,"):
+            metrics["csv_header"] = line
+        elif metrics.get("csv_header") and "csv_values" not in metrics:
+            metrics["csv_values"] = line
+    return metrics
+
+
 def parse_collision_world_benchmark_metrics(stdout: str) -> Dict[str, object]:
     metrics: Dict[str, object] = {}
     for label, key in (

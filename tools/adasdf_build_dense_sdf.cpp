@@ -14,6 +14,7 @@ void usage() {
          "[--resolution 64] [--padding 0.05] [--signed|--unsigned] "
          "[--require-watertight] [--allow-open-unsigned] [--auto-clean] "
          "[--accel brute|bvh] [--threads N] [--benchmark-brute-reference] "
+         "[--sampling exact|hierarchical] "
          "[--report build_report.md] [--json build_report.json] "
          "[--strict-json report.json] [--case-id case_id] "
          "[--recommend] [--verbose]\n";
@@ -60,6 +61,7 @@ int main(int argc, char** argv) {
     std::filesystem::path strict_json_path;
     std::string case_id = "default";
     adasdf::DenseSDFBuildOptions options;
+    std::string ignored_sampling_mode;
     const auto strict_timer = adasdf::startStrictRunTimer();
     std::map<std::string, std::string> strict_parameters =
         adasdf::commandLineParameters(argc, argv);
@@ -123,6 +125,8 @@ int main(int argc, char** argv) {
         options.threads = std::stoi(argv[++i]);
       } else if (arg == "--benchmark-brute-reference") {
         options.benchmark_brute_reference = true;
+      } else if (arg == "--sampling" && hasValue(i, argc)) {
+        ignored_sampling_mode = argv[++i];
       } else if (arg == "--report" && hasValue(i, argc)) {
         report_path = argv[++i];
       } else if (arg == "--json" && hasValue(i, argc)) {
@@ -158,6 +162,12 @@ int main(int argc, char** argv) {
                 << input.string() << "\n";
       write_strict(false, "failed", "input STL does not exist");
       return 1;
+    }
+    if (!ignored_sampling_mode.empty() && ignored_sampling_mode != "exact") {
+      std::cerr
+          << "adasdf_build_dense_sdf: --sampling " << ignored_sampling_mode
+          << " is ignored; hierarchical sampling applies to adaptive block "
+             "builders only.\n";
     }
 
     adasdf::DenseSDFBuildReport report;

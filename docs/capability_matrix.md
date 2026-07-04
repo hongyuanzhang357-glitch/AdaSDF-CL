@@ -18,6 +18,7 @@ only, Planned, Not implemented.
 | Build / Input | standalone adaptive block STL builder | Implemented | v1.6 | `AdaptiveBlockSDFBuilder`, `adasdf_build_adaptive_sdf` | Core-free adaptive octree/block builder; block data remains dense. |
 | Build / Input | adaptive compressed builder interface preview | Experimental | v1.5 | `AdaptiveSDFBuilderPreview`, `adasdf_build_adaptive_sdf_preview` | Planning tool; matrix-SVD and deterministic recommendation stages are implemented, trained surrogate and GPU compressed stages remain planned. |
 | Build / Input | low-rank adaptive compressed STL builder | Implemented | v1.7 | `adasdf_build_compressed_sdf`, `adasdf_compress_adaptive_sdf` | Matrix-SVD block compression with dense fallback and quality audit. |
+| Build / Input | hierarchical adaptive block sampling with quality guard | Experimental | v1.16 | `--sampling hierarchical`, `HierarchicalBlockSampler` | Default remains exact. Near-surface blocks stay exact by default; predicted blocks require quality guard and exact fallback. No `.sdfbin` format change. |
 | Build / Input | BVH-accelerated builder sampling | Implemented | v1.12 | `--accel bvh`, `TriangleBVH` | Optional CPU acceleration for DenseSDF, AdaptiveBlockSDF, and CompressedAdaptiveBlockSDF sampling; brute remains default. |
 | Build / Input | deterministic parallel builder sampling | Implemented | v1.12 | `--threads N`, `ParallelSampling` | C++17 stdlib threads only; no OpenMP/TBB dependency. |
 | Build / Input | surrogate-guided build recommendation | Experimental | v1.8 | `BuildRecommender`, `adasdf_recommend_build` | Deterministic heuristic-calibrated recommender for DenseSDF, AdaptiveBlockSDF, and CompressedAdaptiveBlockSDF. |
@@ -124,6 +125,7 @@ only, Planned, Not implemented.
 | Benchmark | contact reduction benchmark | Implemented | v1.13 | `adasdf_benchmark_contact_reduction` | Measures sparse query plus contact stabilization overhead and candidate reduction ratio. |
 | Benchmark | CollisionWorld benchmark | Implemented | v1.14 | `adasdf_benchmark_collision_world` | Measures broadphase, sparse world collision, or world contact orchestration timing. |
 | Benchmark | CUDA active block cache benchmark | Experimental | v1.11 | `adasdf_benchmark_cuda_block_cache` | Reports CUDA total/kernel/upload/download timing and CPU/direct sparse baselines; CUDA unavailable returns code `20`. |
+| Benchmark | hierarchical sampling speed/quality benchmark | Experimental | v1.16 | `adasdf_benchmark_hierarchical_sampling` | Compares exact and hierarchical builds, reports speedup, error, sign mismatch, fallback, and guard pass/fail fields. |
 | Benchmark | CPU/GPU alignment | Implemented | v1.0 | tests | Optional CUDA skip. |
 | Benchmark | real existing-core asset benchmark | Existing-core only | v0.7 | discovered fixtures | Optional. |
 | Benchmark | FCL comparison benchmark | Planned | - | - | Not implemented. |

@@ -40,6 +40,9 @@
 - Dense fallback blocks when compression cannot satisfy error targets.
 - Compressed block `.sdfbin` read/write with `ADASDF_COMPRESSED_BLOCK_SDFBIN_V1`.
 - `adasdf_compress_adaptive_sdf` and `adasdf_build_compressed_sdf` CLIs.
+- Hierarchical adaptive block sampling for adaptive/compressed builders with
+  near-surface exact default, guarded prediction, exact fallback, and
+  `adasdf_benchmark_hierarchical_sampling`.
 - Compression quality audit for dense adaptive vs compressed models.
 - CPU TriangleBVH acceleration for DenseSDF, AdaptiveBlockSDF, and
   CompressedAdaptiveBlockSDF builder sampling.
@@ -135,6 +138,9 @@
   performs local dense-grid interpolation over uploaded active blocks.
 - BVH builder acceleration: implemented on CPU for builder sampling only; no
   GPU BVH and no FCL fallback.
+- Hierarchical sampling: experimental speed/quality path. The exact path
+  remains default, prediction is never accepted without a quality guard, and
+  `.sdfbin` storage remains unchanged.
 
 ## Planned
 

@@ -18,6 +18,7 @@ from .parsers import (
     parse_field_bool,
     parse_field_float,
     parse_field_int,
+    parse_hierarchical_sampling_benchmark_metrics,
     parse_info_format,
     parse_minimum_distance,
     parse_query_normal,
@@ -97,6 +98,18 @@ def _append_bool(command: List[str], flag: str, enabled: bool) -> None:
         command.append(flag)
 
 
+def _append_bool_switch(
+    command: List[str],
+    enabled: Optional[bool],
+    yes_flag: str,
+    no_flag: str,
+) -> None:
+    if enabled is True:
+        command.append(yes_flag)
+    elif enabled is False:
+        command.append(no_flag)
+
+
 def _append_strict(
     command: List[str],
     strict_json: Optional[PathLike],
@@ -111,6 +124,38 @@ def _append_signed(command: List[str], signed: bool, unsigned: bool) -> None:
         command.append("--unsigned")
     elif signed:
         command.append("--signed")
+
+
+def _append_sampling_options(
+    command: List[str],
+    *,
+    sampling: Optional[str],
+    coarse_resolution: Optional[int],
+    quality_check_samples: Optional[int],
+    far_field_interpolation: Optional[bool],
+    transition_prediction: Optional[bool],
+    near_surface_exact: bool,
+    quality_guard: Optional[bool],
+    target_sampling_error: Optional[float],
+) -> None:
+    _append_value(command, "--sampling", sampling)
+    _append_value(command, "--coarse-resolution", coarse_resolution)
+    _append_value(command, "--quality-check-samples", quality_check_samples)
+    _append_bool_switch(
+        command,
+        far_field_interpolation,
+        "--far-field-interpolation",
+        "--no-far-field-interpolation",
+    )
+    _append_bool_switch(
+        command,
+        transition_prediction,
+        "--transition-prediction",
+        "--no-transition-prediction",
+    )
+    _append_bool(command, "--near-surface-exact", near_surface_exact)
+    _append_bool_switch(command, quality_guard, "--quality-guard", "--no-quality-guard")
+    _append_value(command, "--target-sampling-error", target_sampling_error)
 
 
 def _run(
@@ -313,6 +358,14 @@ def build_dense_sdf(
     accel: Optional[str] = None,
     threads: Optional[int] = None,
     benchmark_brute_reference: bool = False,
+    sampling: Optional[str] = None,
+    coarse_resolution: Optional[int] = None,
+    quality_check_samples: Optional[int] = None,
+    far_field_interpolation: Optional[bool] = None,
+    transition_prediction: Optional[bool] = None,
+    near_surface_exact: bool = False,
+    quality_guard: Optional[bool] = None,
+    target_sampling_error: Optional[float] = None,
     report: Optional[PathLike] = None,
     json: Optional[PathLike] = None,
     strict_json: Optional[PathLike] = None,
@@ -329,6 +382,17 @@ def build_dense_sdf(
     _append_value(command, "--accel", accel)
     _append_value(command, "--threads", threads)
     _append_bool(command, "--benchmark-brute-reference", benchmark_brute_reference)
+    _append_sampling_options(
+        command,
+        sampling=sampling,
+        coarse_resolution=coarse_resolution,
+        quality_check_samples=quality_check_samples,
+        far_field_interpolation=far_field_interpolation,
+        transition_prediction=transition_prediction,
+        near_surface_exact=near_surface_exact,
+        quality_guard=quality_guard,
+        target_sampling_error=target_sampling_error,
+    )
     _append_value(command, "--report", _path(report) if report is not None else None)
     _append_value(command, "--json", _path(json) if json is not None else None)
     _append_strict(command, strict_json, case_id)
@@ -351,6 +415,14 @@ def build_adaptive_sdf(
     accel: Optional[str] = None,
     threads: Optional[int] = None,
     benchmark_brute_reference: bool = False,
+    sampling: Optional[str] = None,
+    coarse_resolution: Optional[int] = None,
+    quality_check_samples: Optional[int] = None,
+    far_field_interpolation: Optional[bool] = None,
+    transition_prediction: Optional[bool] = None,
+    near_surface_exact: bool = False,
+    quality_guard: Optional[bool] = None,
+    target_sampling_error: Optional[float] = None,
     report: Optional[PathLike] = None,
     json: Optional[PathLike] = None,
     strict_json: Optional[PathLike] = None,
@@ -371,6 +443,17 @@ def build_adaptive_sdf(
     _append_value(command, "--accel", accel)
     _append_value(command, "--threads", threads)
     _append_bool(command, "--benchmark-brute-reference", benchmark_brute_reference)
+    _append_sampling_options(
+        command,
+        sampling=sampling,
+        coarse_resolution=coarse_resolution,
+        quality_check_samples=quality_check_samples,
+        far_field_interpolation=far_field_interpolation,
+        transition_prediction=transition_prediction,
+        near_surface_exact=near_surface_exact,
+        quality_guard=quality_guard,
+        target_sampling_error=target_sampling_error,
+    )
     _append_value(command, "--report", _path(report) if report is not None else None)
     _append_value(command, "--json", _path(json) if json is not None else None)
     _append_strict(command, strict_json, case_id)
@@ -429,6 +512,14 @@ def build_compressed_sdf(
     accel: Optional[str] = None,
     threads: Optional[int] = None,
     benchmark_brute_reference: bool = False,
+    sampling: Optional[str] = None,
+    coarse_resolution: Optional[int] = None,
+    quality_check_samples: Optional[int] = None,
+    far_field_interpolation: Optional[bool] = None,
+    transition_prediction: Optional[bool] = None,
+    near_surface_exact: bool = False,
+    quality_guard: Optional[bool] = None,
+    target_sampling_error: Optional[float] = None,
     report: Optional[PathLike] = None,
     compression_report: Optional[PathLike] = None,
     quality_report: Optional[PathLike] = None,
@@ -449,6 +540,17 @@ def build_compressed_sdf(
     _append_value(command, "--accel", accel)
     _append_value(command, "--threads", threads)
     _append_bool(command, "--benchmark-brute-reference", benchmark_brute_reference)
+    _append_sampling_options(
+        command,
+        sampling=sampling,
+        coarse_resolution=coarse_resolution,
+        quality_check_samples=quality_check_samples,
+        far_field_interpolation=far_field_interpolation,
+        transition_prediction=transition_prediction,
+        near_surface_exact=near_surface_exact,
+        quality_guard=quality_guard,
+        target_sampling_error=target_sampling_error,
+    )
     _append_value(command, "--fixed-rank", fixed_rank)
     _append_value(command, "--max-rank", max_rank)
     _append_value(command, "--report", _path(report) if report is not None else None)
@@ -613,6 +715,70 @@ def benchmark_builder_acceleration(
     _append_bool(command, "--unsigned", unsigned)
     result = _run(command, check=check, dry_run=dry_run)
     return BenchmarkResult(result, metrics=parse_build_acceleration_stats(result.stdout))
+
+
+def benchmark_hierarchical_sampling(
+    input_stl: PathLike,
+    *,
+    min_level: Optional[int] = None,
+    max_level: Optional[int] = None,
+    block_resolution: Optional[int] = None,
+    target_error: Optional[float] = None,
+    target_sampling_error: Optional[float] = None,
+    coarse_resolution: Optional[int] = None,
+    quality_check_samples: Optional[int] = None,
+    comparison_samples: Optional[int] = None,
+    accel: Optional[str] = None,
+    threads: Optional[int] = None,
+    unsigned: bool = False,
+    far_field_interpolation: Optional[bool] = None,
+    transition_prediction: Optional[bool] = None,
+    near_surface_exact: bool = False,
+    quality_guard: Optional[bool] = None,
+    report: Optional[PathLike] = None,
+    json: Optional[PathLike] = None,
+    csv: Optional[PathLike] = None,
+    strict_json: Optional[PathLike] = None,
+    case_id: Optional[str] = None,
+    bin_dir: Optional[PathLike] = None,
+    check: bool = True,
+    dry_run: bool = False,
+) -> BenchmarkResult:
+    command = [_tool("adasdf_benchmark_hierarchical_sampling", bin_dir, dry_run), _path(input_stl)]
+    _append_value(command, "--min-level", min_level)
+    _append_value(command, "--max-level", max_level)
+    _append_value(command, "--block-resolution", block_resolution)
+    _append_value(command, "--target-error", target_error)
+    _append_value(command, "--target-sampling-error", target_sampling_error)
+    _append_value(command, "--coarse-resolution", coarse_resolution)
+    _append_value(command, "--quality-check-samples", quality_check_samples)
+    _append_value(command, "--comparison-samples", comparison_samples)
+    _append_value(command, "--accel", accel)
+    _append_value(command, "--threads", threads)
+    _append_bool(command, "--unsigned", unsigned)
+    _append_bool_switch(
+        command,
+        far_field_interpolation,
+        "--far-field-interpolation",
+        "--no-far-field-interpolation",
+    )
+    _append_bool_switch(
+        command,
+        transition_prediction,
+        "--transition-prediction",
+        "--no-transition-prediction",
+    )
+    _append_bool(command, "--near-surface-exact", near_surface_exact)
+    _append_bool_switch(command, quality_guard, "--quality-guard", "--no-quality-guard")
+    _append_value(command, "--report", _path(report) if report is not None else None)
+    _append_value(command, "--json", _path(json) if json is not None else None)
+    _append_value(command, "--csv", _path(csv) if csv is not None else None)
+    _append_strict(command, strict_json, case_id)
+    result = _run(command, check=check, dry_run=dry_run)
+    return BenchmarkResult(
+        result,
+        metrics=parse_hierarchical_sampling_benchmark_metrics(result.stdout),
+    )
 
 
 def sparse_query(

@@ -51,6 +51,14 @@ class ToolCommandBuildingTests(unittest.TestCase):
             "model.stl",
             "model.sdfbin",
             max_level=4,
+            sampling="hierarchical",
+            coarse_resolution=2,
+            quality_check_samples=2,
+            far_field_interpolation=False,
+            transition_prediction=True,
+            near_surface_exact=True,
+            quality_guard=True,
+            target_sampling_error=0.01,
             strict_json="build.strict.json",
             case_id="build_case",
             dry_run=True,
@@ -58,7 +66,29 @@ class ToolCommandBuildingTests(unittest.TestCase):
         stdout = result.command_result.stdout
         self.assertIn("adasdf_build_compressed_sdf", stdout)
         self.assertIn("--max-level", stdout)
+        self.assertIn("--sampling", stdout)
+        self.assertIn("hierarchical", stdout)
+        self.assertIn("--no-far-field-interpolation", stdout)
+        self.assertIn("--target-sampling-error", stdout)
         self.assertIn("--strict-json", stdout)
+
+    def test_build_adaptive_hierarchical_sampling_dry_run_command(self):
+        result = adasdf.build_adaptive_sdf(
+            "model.stl",
+            "model.sdfbin",
+            sampling="hierarchical",
+            coarse_resolution=3,
+            quality_check_samples=2,
+            quality_guard=False,
+            target_sampling_error=0.02,
+            dry_run=True,
+        )
+        stdout = result.command_result.stdout
+        self.assertIn("adasdf_build_adaptive_sdf", stdout)
+        self.assertIn("--sampling", stdout)
+        self.assertIn("--coarse-resolution", stdout)
+        self.assertIn("--quality-check-samples", stdout)
+        self.assertIn("--no-quality-guard", stdout)
 
     def test_query_dry_run_command(self):
         result = adasdf.query("model.sdfbin", point=[0, 0, 0], dry_run=True)
@@ -168,6 +198,27 @@ class ToolCommandBuildingTests(unittest.TestCase):
         stdout = result.command_result.stdout
         self.assertIn("adasdf_benchmark_cuda_block_cache", stdout)
         self.assertIn("--repeat", stdout)
+
+    def test_hierarchical_sampling_benchmark_dry_run_command(self):
+        result = adasdf.benchmark_hierarchical_sampling(
+            "model.stl",
+            max_level=1,
+            block_resolution=4,
+            target_sampling_error=0.01,
+            coarse_resolution=2,
+            quality_check_samples=2,
+            comparison_samples=3,
+            report="hier.md",
+            json="hier.json",
+            csv="hier.csv",
+            strict_json="hier.strict.json",
+            case_id="hier_case",
+            dry_run=True,
+        )
+        stdout = result.command_result.stdout
+        self.assertIn("adasdf_benchmark_hierarchical_sampling", stdout)
+        self.assertIn("--comparison-samples", stdout)
+        self.assertIn("--strict-json", stdout)
 
     def test_world_broadphase_dry_run_command(self):
         result = adasdf.world_broadphase("scene.csv", aabb_margin=0.01, dry_run=True)

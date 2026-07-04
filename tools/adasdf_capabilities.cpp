@@ -62,6 +62,8 @@ int main(int argc, char** argv) {
         "ADASDF_COMPRESSED_BLOCK_SDFBIN_V1 read/write",
         "adasdf_compress_adaptive_sdf",
         "adasdf_build_compressed_sdf",
+        "hierarchical adaptive sampling with quality guard",
+        "adasdf_benchmark_hierarchical_sampling",
         "surrogate-guided build recommendation",
         "deterministic build surrogate estimator",
         "mesh-feature-based parameter recommendation",
@@ -158,6 +160,7 @@ int main(int argc, char** argv) {
       std::cout << "- public uniform DenseSDF build through adasdf_build_dense_sdf\n";
       std::cout << "- public adaptive block build through adasdf_build_adaptive_sdf\n";
       std::cout << "- public compressed adaptive block build through adasdf_build_compressed_sdf\n";
+      std::cout << "- hierarchical adaptive sampling is available for adaptive/compressed builders with near-surface exact default, guarded prediction, and exact fallback\n";
       std::cout << "- matrix-SVD block compression with dense fallback in v1.7\n";
       std::cout << "- surrogate-guided build recommendation through adasdf_recommend_build in v1.8\n";
       std::cout << "- v1.8 recommendation is deterministic and experimental; it is not a universal trained model, not fully trained, and not an optimality guarantee\n";
@@ -187,6 +190,7 @@ int main(int argc, char** argv) {
       std::cout << "- docs/low_rank_block_compression.md\n";
       std::cout << "- docs/compressed_block_sdfbin_format.md\n";
       std::cout << "- docs/stl_to_compressed_sdf_workflow.md\n";
+      std::cout << "- docs/hierarchical_sampling_v1_16_report.md\n";
       std::cout << "- docs/surrogate_guided_recommendation.md\n";
       std::cout << "- docs/recommended_build_workflow.md\n";
       std::cout << "- docs/python_cli_wrapper.md\n";

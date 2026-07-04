@@ -41,6 +41,7 @@ from .tools import (
     benchmark_collision_world,
     benchmark_contact_reduction,
     benchmark_cuda_block_cache,
+    benchmark_hierarchical_sampling,
     benchmark_sparse_query,
     build_adaptive_sdf,
     build_compressed_sdf,
@@ -70,7 +71,7 @@ from .tools import (
 )
 from .workflows import preprocess_and_build_compressed, recommend_then_build_compressed
 
-__version__ = "1.15.0-alpha"
+__version__ = "1.16.0-alpha"
 
 __all__ = [
     "AdaSDFConfig",
@@ -112,6 +113,7 @@ __all__ = [
     "benchmark_collision_world",
     "benchmark_contact_reduction",
     "benchmark_cuda_block_cache",
+    "benchmark_hierarchical_sampling",
     "benchmark_sparse_query",
     "build_adaptive_sdf",
     "build_compressed_sdf",
