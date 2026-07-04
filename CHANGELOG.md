@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.16.0-alpha.1
+
+Tag/documentation hotfix for the v1.16 hierarchical adaptive sampling release.
+
+### Fixed
+
+- Added a hotfix tag that includes the final v1.16 documentation/report commit.
+- Preserved the original v1.16.0-alpha tag without moving it.
+
+### Notes
+
+- No algorithmic change intended.
+- Use v1.16.0-alpha.1 for the GitHub pre-release.
+
 ## 1.16.0-alpha
 
 Hierarchical adaptive sampling with quality guard.

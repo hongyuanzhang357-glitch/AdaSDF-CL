@@ -1,15 +1,15 @@
 # Alpha Status
 
-AdaSDF-CL 1.16.0-alpha is a research-preview release candidate.
+AdaSDF-CL 1.16.0-alpha.1 is a research-preview release candidate.
 
 The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`,
 `v1.1.0-alpha`, `v1.1.1-alpha`, `v1.2.0-alpha`, `v1.3.0-alpha`,
 `v1.4.0-alpha`, `v1.5.0-alpha`, `v1.6.0-alpha`, `v1.7.0-alpha`,
 `v1.8.0-alpha`, `v1.8.1-alpha`, `v1.9.0-alpha`, `v1.10.0-alpha`,
 `v1.11.0-alpha`, `v1.12.0-alpha`, `v1.13.0-alpha`,
-`v1.13.0-alpha.1`, `v1.13.0-alpha.2`, `v1.14.0-alpha`, and
-`v1.15.0-alpha` tags are retained for traceability. The recommended public
-pre-release is `v1.16.0-alpha`.
+`v1.13.0-alpha.1`, `v1.13.0-alpha.2`, `v1.14.0-alpha`,
+`v1.15.0-alpha`, and `v1.16.0-alpha` tags are retained for traceability. The
+recommended public pre-release is `v1.16.0-alpha.1`.
 
 ## What Works
 
@@ -260,9 +260,11 @@ JSON/CSV report schema support, reproducibility manifests, report validation,
 run summary collection, Python wrapper support, and validation coverage. It
 does not change core collision algorithms.
 
-v1.16.0-alpha is a hierarchical adaptive sampling release. It keeps exact
-sampling as the default and adds opt-in `--sampling hierarchical` for adaptive
-and compressed builders. Near-surface blocks remain exact by default,
+v1.16.0-alpha is a hierarchical adaptive sampling release. v1.16.0-alpha.1 is
+the recommended hotfix tag because it includes the final v1.16
+documentation/report commits without moving the original tag. The release keeps
+exact sampling as the default and adds opt-in `--sampling hierarchical` for
+adaptive and compressed builders. Near-surface blocks remain exact by default,
 predictions require a quality guard, rejected predictions fall back to exact
 sampling, and `.sdfbin` formats remain unchanged.
 
@@ -286,14 +288,14 @@ analysis.
 - Target external collision test verdict for v0.9.0-alpha: PASS for the demo
   adaptive workflow.
 - Expected CUDA-unavailable behavior: GPU benchmark/tests SKIPPED, not FAILED.
-- Current v1.16.0-alpha local CPU CTest target: 184 tests.
-- Current v1.16.0-alpha CUDA validation is optional and should skip gracefully
+- Current v1.16.0-alpha.1 local CPU CTest target: 184 tests.
+- Current v1.16.0-alpha.1 CUDA validation is optional and should skip gracefully
   when CUDA is unavailable.
-- Current v1.16.0-alpha Python wrapper unittest target: 53 tests with one
+- Current v1.16.0-alpha.1 Python wrapper unittest target: 53 tests with one
   environment-gated smoke test skipped when real CLI env vars are absent.
-- Current v1.16.0-alpha install validation target: PASS.
-- Current v1.16.0-alpha alpha validation target: PASS.
-- Current v1.16.0-alpha clean check target: PASS.
+- Current v1.16.0-alpha.1 install validation target: PASS.
+- Current v1.16.0-alpha.1 alpha validation target: PASS.
+- Current v1.16.0-alpha.1 clean check target: PASS.
 - Expected CI behavior: main/tag workflows should use the reused CI build tree
   for install validation and limit build parallelism. `v1.13.0-alpha` and
   `v1.13.0-alpha.1` remain unchanged.

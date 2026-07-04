@@ -221,6 +221,28 @@ continues to use exact dense sampling in v1.16.
 The speedup is informational; quality metrics determine whether a sampling
 configuration is acceptable.
 
+## Speed-Quality Benchmark Summary
+
+v1.16.0-alpha.1 added fixture-level smoke benchmark measurements for
+`closed_cube_ascii.stl`:
+
+| Case | exact_build_time_ms | hierarchical_build_time_ms | speedup | max_abs_error | rms_error | p95_error | sign_mismatch_count | near_surface_sign_mismatch_count | predicted_sample_count | fallback_block_count | quality_gate_passed |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
+| cube L4 | 908.183 | 1535.82 | 0.591335 | 0 | 0 | 0 | 0 | 0 | 233472 | 8 | true |
+| cube L5 | 6850.62 | 21061.0 | 0.325275 | 0 | 0 | 0 | 0 | 0 | 3588096 | 8 | true |
+
+These numbers are fixture-level smoke benchmark results and should not be
+presented as universal performance claims. Larger STL models are needed for
+representative speedup evaluation.
+
+这些数值只是项目自带 fixture 下的 smoke benchmark, 不能代表复杂工业 STL
+的普适加速比例。复杂模型需要单独 benchmark。
+
+The quality gate passed in both smoke cases, with zero measured phi error and
+zero sign mismatch. However, neither case showed effective construction
+speedup: hierarchical overhead exceeded exact-sampling savings for this simple
+cube fixture and current parameters.
+
 ## Validation Results
 
 - CPU-only CMake configure/build: PASS.

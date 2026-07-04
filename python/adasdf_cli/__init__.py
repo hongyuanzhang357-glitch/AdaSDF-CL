@@ -71,7 +71,7 @@ from .tools import (
 )
 from .workflows import preprocess_and_build_compressed, recommend_then_build_compressed
 
-__version__ = "1.16.0-alpha"
+__version__ = "1.16.0-alpha.1"
 
 __all__ = [
     "AdaSDFConfig",
