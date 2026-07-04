@@ -336,6 +336,8 @@ def parse_hierarchical_sampling_benchmark_metrics(stdout: str) -> Dict[str, obje
         ("Quality gate passed", "quality_gate_passed"),
         ("Effective speedup claim allowed", "effective_speedup_claim_allowed"),
         ("Far-field quality check", "far_field_quality_check"),
+        ("Far-field sign policy", "far_field_sign_policy"),
+        ("Near-surface mode", "near_surface_mode"),
         ("Total blocks", "total_block_count"),
         ("Near-surface blocks", "near_surface_block_count"),
         ("Transition blocks", "transition_block_count"),
@@ -344,6 +346,14 @@ def parse_hierarchical_sampling_benchmark_metrics(stdout: str) -> Dict[str, obje
         ("Coarse samples", "coarse_sample_count"),
         ("Reused coarse samples", "reused_coarse_sample_count"),
         ("Quality check samples", "quality_check_sample_count"),
+        ("Near-surface banded blocks", "near_surface_banded_block_count"),
+        ("Near-surface local exact nodes", "near_surface_local_exact_node_count"),
+        ("Near-surface predicted nodes", "near_surface_predicted_node_count"),
+        ("Local fallback nodes", "local_fallback_node_count"),
+        (
+            "Near-surface local prediction acceptance rate",
+            "near_surface_local_prediction_acceptance_rate",
+        ),
         ("Fallback rate", "fallback_rate"),
         ("Prediction acceptance rate", "prediction_acceptance_rate"),
         ("Classification time ms", "classification_time_ms"),
@@ -359,6 +369,38 @@ def parse_hierarchical_sampling_benchmark_metrics(stdout: str) -> Dict[str, obje
             metrics["csv_header"] = line
         elif metrics.get("csv_header") and "csv_values" not in metrics:
             metrics["csv_values"] = line
+    return metrics
+
+
+def parse_exact_hotpath_benchmark_metrics(stdout: str) -> Dict[str, object]:
+    metrics: Dict[str, object] = {}
+    for label, key in (
+        ("Case id", "case_id"),
+        ("Block count", "block_count"),
+        ("Sample count", "sample_count"),
+        ("Reference exact time ms", "reference_exact_time_ms"),
+        ("Hierarchical exact time ms", "hierarchical_exact_time_ms"),
+        (
+            "Optimized hierarchical exact time ms",
+            "optimized_hierarchical_exact_time_ms",
+        ),
+        ("Reference ns/sample", "reference_ns_per_sample"),
+        ("Hierarchical ns/sample", "hierarchical_ns_per_sample"),
+        (
+            "Optimized hierarchical ns/sample",
+            "optimized_hierarchical_ns_per_sample",
+        ),
+        ("Hierarchical overhead ratio", "hierarchical_overhead_ratio"),
+        ("Optimized overhead ratio", "optimized_overhead_ratio"),
+        ("Distance query count", "distance_query_count"),
+        ("Sign query count", "sign_query_count"),
+        ("Allocation count estimate", "allocation_count_estimate"),
+        ("Diagnostics enabled", "diagnostics_enabled"),
+        ("Counters enabled", "counters_enabled"),
+    ):
+        match = _search(rf"^{re.escape(label)}:\s*(.+)$", stdout)
+        if match:
+            metrics[key] = match.group(1).strip()
     return metrics
 
 

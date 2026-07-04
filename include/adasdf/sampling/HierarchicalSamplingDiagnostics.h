@@ -12,10 +12,29 @@ enum class FarFieldQualityCheckMode {
   Full
 };
 
+enum class NearSurfaceSamplingMode {
+  Exact,
+  Banded
+};
+
+enum class FarFieldSignPolicy {
+  Exact,
+  ReuseCoarse,
+  Constant
+};
+
 const char* toString(FarFieldQualityCheckMode mode);
 bool parseFarFieldQualityCheckMode(
     const std::string& value,
     FarFieldQualityCheckMode* mode);
+const char* toString(NearSurfaceSamplingMode mode);
+bool parseNearSurfaceSamplingMode(
+    const std::string& value,
+    NearSurfaceSamplingMode* mode);
+const char* toString(FarFieldSignPolicy policy);
+bool parseFarFieldSignPolicy(
+    const std::string& value,
+    FarFieldSignPolicy* policy);
 
 struct HierarchicalSamplingDiagnostics {
   std::size_t total_block_count = 0;
@@ -36,6 +55,11 @@ struct HierarchicalSamplingDiagnostics {
   std::size_t quality_check_sample_count = 0;
   std::size_t reused_coarse_sample_count = 0;
   std::size_t skipped_far_field_quality_check_count = 0;
+
+  std::size_t near_surface_banded_block_count = 0;
+  std::size_t near_surface_local_exact_node_count = 0;
+  std::size_t near_surface_predicted_node_count = 0;
+  std::size_t near_surface_local_fallback_node_count = 0;
 
   std::size_t distance_query_count = 0;
   std::size_t sign_query_count = 0;
@@ -62,6 +86,7 @@ struct HierarchicalSamplingDiagnostics {
   double exact_sample_reduction_ratio = 0.0;
   double prediction_acceptance_rate = 0.0;
   double fallback_rate = 0.0;
+  double near_surface_local_prediction_acceptance_rate = 0.0;
 };
 
 void finalizeHierarchicalSamplingDiagnostics(

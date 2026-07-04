@@ -17,6 +17,12 @@ void usage() {
          "[--transition-quality-check-samples N] "
          "[--far-field-quality-check none|corners|sparse|full] "
          "[--far-field-safety-factor value] "
+         "[--far-field-sign-policy exact|reuse-coarse|constant] "
+         "[--near-surface-mode exact|banded] "
+         "[--near-surface-band-factor value] "
+         "[--near-surface-check-samples N] [--halo-exact-layers N] "
+         "[--near-surface-node-fallback] "
+         "[--no-near-surface-node-fallback] "
          "[--comparison-samples N] [--accel brute|bvh] [--threads N] "
          "[--unsigned] [--far-field-interpolation] "
          "[--no-far-field-interpolation] [--transition-prediction] "
@@ -163,6 +169,38 @@ int main(int argc, char** argv) {
       } else if (arg == "--far-field-safety-factor" && hasValue(i, argc)) {
         options.build_options.hierarchical_sampling.far_field_safety_factor =
             std::stod(argv[++i]);
+      } else if (arg == "--far-field-sign-policy" && hasValue(i, argc)) {
+        adasdf::FarFieldSignPolicy policy;
+        if (!adasdf::parseFarFieldSignPolicy(argv[++i], &policy)) {
+          std::cerr << "Unknown far-field sign policy: " << argv[i] << "\n";
+          return 1;
+        }
+        options.build_options.hierarchical_sampling.far_field_sign_policy =
+            policy;
+      } else if (arg == "--near-surface-mode" && hasValue(i, argc)) {
+        adasdf::NearSurfaceSamplingMode mode;
+        if (!adasdf::parseNearSurfaceSamplingMode(argv[++i], &mode)) {
+          std::cerr << "Unknown near-surface mode: " << argv[i] << "\n";
+          return 1;
+        }
+        options.build_options.hierarchical_sampling.near_surface_mode = mode;
+      } else if (arg == "--near-surface-band-factor" &&
+                 hasValue(i, argc)) {
+        options.build_options.hierarchical_sampling.near_surface_band_factor =
+            std::stod(argv[++i]);
+      } else if (arg == "--near-surface-check-samples" &&
+                 hasValue(i, argc)) {
+        options.build_options.hierarchical_sampling
+            .near_surface_check_samples_per_axis = std::stoi(argv[++i]);
+      } else if (arg == "--halo-exact-layers" && hasValue(i, argc)) {
+        options.build_options.hierarchical_sampling.halo_exact_layers =
+            std::stoi(argv[++i]);
+      } else if (arg == "--near-surface-node-fallback") {
+        options.build_options.hierarchical_sampling
+            .near_surface_node_fallback = true;
+      } else if (arg == "--no-near-surface-node-fallback") {
+        options.build_options.hierarchical_sampling
+            .near_surface_node_fallback = false;
       } else if (arg == "--comparison-samples" && hasValue(i, argc)) {
         options.comparison_samples_per_axis = std::stoi(argv[++i]);
       } else if (arg == "--accel" && hasValue(i, argc)) {
@@ -282,6 +320,10 @@ int main(int argc, char** argv) {
               << "\n";
     std::cout << "Far-field quality check: "
               << adasdf::toString(result.far_field_quality_check) << "\n";
+    std::cout << "Far-field sign policy: "
+              << adasdf::toString(result.far_field_sign_policy) << "\n";
+    std::cout << "Near-surface mode: "
+              << adasdf::toString(result.near_surface_mode) << "\n";
     std::cout << "Total blocks: "
               << result.diagnostics.total_block_count << "\n";
     std::cout << "Near-surface blocks: "
@@ -298,6 +340,20 @@ int main(int argc, char** argv) {
               << result.diagnostics.reused_coarse_sample_count << "\n";
     std::cout << "Quality check samples: "
               << result.diagnostics.quality_check_sample_count << "\n";
+    std::cout << "Near-surface banded blocks: "
+              << result.diagnostics.near_surface_banded_block_count << "\n";
+    std::cout << "Near-surface local exact nodes: "
+              << result.diagnostics.near_surface_local_exact_node_count
+              << "\n";
+    std::cout << "Near-surface predicted nodes: "
+              << result.diagnostics.near_surface_predicted_node_count << "\n";
+    std::cout << "Local fallback nodes: "
+              << result.diagnostics.near_surface_local_fallback_node_count
+              << "\n";
+    std::cout << "Near-surface local prediction acceptance rate: "
+              << result.diagnostics
+                     .near_surface_local_prediction_acceptance_rate
+              << "\n";
     std::cout << "Fallback rate: " << result.diagnostics.fallback_rate << "\n";
     std::cout << "Prediction acceptance rate: "
               << result.diagnostics.prediction_acceptance_rate << "\n";
@@ -343,7 +399,16 @@ int main(int argc, char** argv) {
           static_cast<double>(result.diagnostics.quality_check_sample_count)},
          {"fallback_rate", result.diagnostics.fallback_rate},
          {"prediction_acceptance_rate",
-          result.diagnostics.prediction_acceptance_rate}});
+          result.diagnostics.prediction_acceptance_rate},
+         {"local_fallback_node_count",
+          static_cast<double>(
+              result.diagnostics.near_surface_local_fallback_node_count)},
+         {"near_surface_local_exact_node_count",
+          static_cast<double>(
+              result.diagnostics.near_surface_local_exact_node_count)},
+         {"near_surface_predicted_node_count",
+          static_cast<double>(
+              result.diagnostics.near_surface_predicted_node_count)}});
     return 0;
   } catch (const std::exception& exc) {
     std::cerr << "adasdf_benchmark_hierarchical_sampling failed: "

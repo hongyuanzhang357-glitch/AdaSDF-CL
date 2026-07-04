@@ -5,7 +5,9 @@
 #include <cmath>
 #include <limits>
 
+#include "adasdf/sampling/ExactBlockSamplerKernel.h"
 #include "adasdf/sampling/HierarchicalSDFPredictor.h"
+#include "adasdf/sampling/LocalFallbackMask.h"
 
 namespace adasdf {
 namespace {
@@ -132,6 +134,10 @@ SamplingQualityOptions qualityOptionsForDecision(
   } else if (decision.importance == BlockImportanceClass::Transition) {
     quality.check_samples_per_axis =
         options.transition_quality_check_samples_per_axis;
+  } else if (decision.importance == BlockImportanceClass::NearSurface &&
+             options.near_surface_mode == NearSurfaceSamplingMode::Banded) {
+    quality.check_samples_per_axis =
+        options.near_surface_check_samples_per_axis;
   } else {
     quality.check_samples_per_axis = options.quality_check_samples_per_axis;
   }
@@ -203,6 +209,46 @@ bool canSkipFarFieldQualityCheck(
              std::max(0.0, options.far_field_safety_factor) * diag;
 }
 
+double nearSurfaceBandedWidth(
+    const AABB& bounds,
+    int fine_resolution,
+    const HierarchicalSamplingOptions& options) {
+  const double cell_diag =
+      fine_resolution <= 1
+          ? 0.0
+          : diagonalLength(bounds) / static_cast<double>(fine_resolution - 1);
+  return std::max(
+      options.near_surface_band,
+      std::max(0.0, options.near_surface_band_factor) * cell_diag);
+}
+
+std::size_t applyLocalFallbackMask(
+    const AABB& bounds,
+    int fine_resolution,
+    BVHSDFSampler& exact_sampler,
+    const LocalFallbackMask& mask,
+    std::vector<double>* phi) {
+  if (phi == nullptr || !mask.valid()) {
+    return 0;
+  }
+  std::size_t exact_count = 0;
+  for (int k = 0; k < fine_resolution; ++k) {
+    for (int j = 0; j < fine_resolution; ++j) {
+      for (int i = 0; i < fine_resolution; ++i) {
+        if (!mask.isExactRequired(i, j, k)) {
+          continue;
+        }
+        const BVHSDFSampleResult sample = exact_sampler.sample(
+            gridPoint(bounds, i, j, k, fine_resolution, fine_resolution, fine_resolution));
+        (*phi)[gridIndex(i, j, k, fine_resolution, fine_resolution)] =
+            sample.success ? sample.phi : 0.0;
+        ++exact_count;
+      }
+    }
+  }
+  return exact_count;
+}
+
 }  // namespace
 
 AdaptiveSDFBlock HierarchicalBlockSampler::sampleBlockExact(
@@ -214,28 +260,17 @@ AdaptiveSDFBlock HierarchicalBlockSampler::sampleBlockExact(
     bool signed_distance,
     bool near_surface,
     BVHSDFSampler& exact_sampler) {
-  const int resolution = std::max(2, block_resolution);
-  AdaptiveSDFBlock block = makeBlockHeader(
+  ExactBlockSamplingKernelOptions kernel_options;
+  kernel_options.signed_distance = signed_distance;
+  AdaptiveSDFBlock block = ExactBlockSamplerKernel::sample(
       block_bounds,
       block_id,
       octree_node_id,
       level,
-      resolution,
-      signed_distance,
-      near_surface);
-  block.phi.resize(
-      static_cast<std::size_t>(resolution) * static_cast<std::size_t>(resolution) *
-      static_cast<std::size_t>(resolution));
-  for (int k = 0; k < resolution; ++k) {
-    for (int j = 0; j < resolution; ++j) {
-      for (int i = 0; i < resolution; ++i) {
-        const BVHSDFSampleResult sample = exact_sampler.sample(
-            gridPoint(block_bounds, i, j, k, resolution, resolution, resolution));
-        block.phi[gridIndex(i, j, k, resolution, resolution)] =
-            sample.success ? sample.phi : 0.0;
-      }
-    }
-  }
+      block_resolution,
+      exact_sampler,
+      kernel_options);
+  block.near_surface = near_surface;
   return block;
 }
 
@@ -263,7 +298,8 @@ HierarchicalBlockSamplingResult HierarchicalBlockSampler::sampleBlock(
     return result;
   }
 
-  if (near_surface && options.keep_near_surface_exact) {
+  if (near_surface && options.keep_near_surface_exact &&
+      options.near_surface_mode == NearSurfaceSamplingMode::Exact) {
     const auto class0 = std::chrono::steady_clock::now();
     BlockClassificationResult classification;
     classification.importance = BlockImportanceClass::NearSurface;
@@ -402,6 +438,41 @@ HierarchicalBlockSamplingResult HierarchicalBlockSampler::sampleBlock(
     return result;
   }
 
+  if (near_surface &&
+      options.near_surface_mode == NearSurfaceSamplingMode::Banded &&
+      options.near_surface_node_fallback) {
+    const double band =
+        nearSurfaceBandedWidth(block_bounds, fine_resolution, options);
+    const LocalFallbackMask mask = LocalFallbackMaskBuilder::build(
+        fine_resolution,
+        fine_resolution,
+        fine_resolution,
+        prediction.predicted_phi,
+        band,
+        options.halo_exact_layers);
+    const auto local_exact0 = std::chrono::steady_clock::now();
+    const std::size_t local_exact_count = applyLocalFallbackMask(
+        block_bounds,
+        fine_resolution,
+        exact_sampler,
+        mask,
+        &prediction.predicted_phi);
+    const auto local_exact1 = std::chrono::steady_clock::now();
+    result.exact_sampling_time_ms += elapsedMs(local_exact0, local_exact1);
+    const std::size_t fine_count = denseSampleCount(fine_resolution);
+    const std::size_t local_predicted_count =
+        fine_count >= local_exact_count ? fine_count - local_exact_count : 0;
+    result.predicted_sample_count = local_predicted_count;
+    result.diagnostics.predicted_sample_count = local_predicted_count;
+    result.diagnostics.near_surface_banded_block_count = 1;
+    result.diagnostics.near_surface_local_exact_node_count =
+        local_exact_count;
+    result.diagnostics.near_surface_predicted_node_count =
+        local_predicted_count;
+    result.diagnostics.near_surface_local_fallback_node_count =
+        local_exact_count;
+  }
+
   if (canSkipFarFieldQualityCheck(classification, block_bounds, options)) {
     result.block = makeBlockHeader(
         block_bounds,
@@ -453,7 +524,9 @@ HierarchicalBlockSamplingResult HierarchicalBlockSampler::sampleBlock(
     result.block.phi = std::move(prediction.predicted_phi);
     result.used_prediction = true;
     result.exact_sample_count =
-        result.coarse_sample_count + result.quality.check_sample_count;
+        result.coarse_sample_count +
+        result.diagnostics.near_surface_local_exact_node_count +
+        result.quality.check_sample_count;
     result.diagnostics.accepted_prediction_block_count = 1;
     result.diagnostics.exact_bvh_sample_count = result.exact_sample_count;
     result.success = true;
@@ -469,9 +542,10 @@ HierarchicalBlockSamplingResult HierarchicalBlockSampler::sampleBlock(
         near_surface,
         exact_sampler);
     const auto exact1 = std::chrono::steady_clock::now();
-    result.exact_sampling_time_ms = elapsedMs(exact0, exact1);
+    result.exact_sampling_time_ms += elapsedMs(exact0, exact1);
     result.exact_sample_count =
         result.coarse_sample_count + result.quality.check_sample_count +
+        result.diagnostics.near_surface_local_exact_node_count +
         result.block.phi.size();
     result.diagnostics.fallback_exact_block_count = 1;
     result.diagnostics.exact_bvh_sample_count = result.exact_sample_count;
@@ -488,7 +562,9 @@ HierarchicalBlockSamplingResult HierarchicalBlockSampler::sampleBlock(
   } else {
     result.error_message = "prediction rejected by quality guard";
     result.exact_sample_count =
-        result.coarse_sample_count + result.quality.check_sample_count;
+        result.coarse_sample_count +
+        result.diagnostics.near_surface_local_exact_node_count +
+        result.quality.check_sample_count;
     result.diagnostics.fallback_due_to_error_count = 1;
     result.diagnostics.exact_bvh_sample_count = result.exact_sample_count;
     result.success = false;

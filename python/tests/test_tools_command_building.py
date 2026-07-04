@@ -210,6 +210,12 @@ class ToolCommandBuildingTests(unittest.TestCase):
             transition_quality_check_samples=2,
             far_field_quality_check="corners",
             far_field_safety_factor=2.0,
+            far_field_sign_policy="exact",
+            near_surface_mode="banded",
+            near_surface_band_factor=1.5,
+            near_surface_check_samples=2,
+            halo_exact_layers=1,
+            near_surface_node_fallback=True,
             hierarchical_diagnostics=True,
             comparison_samples=3,
             report="hier.md",
@@ -226,8 +232,34 @@ class ToolCommandBuildingTests(unittest.TestCase):
         self.assertIn("--comparison-samples", stdout)
         self.assertIn("--transition-quality-check-samples", stdout)
         self.assertIn("--far-field-quality-check", stdout)
+        self.assertIn("--far-field-sign-policy", stdout)
+        self.assertIn("--near-surface-mode", stdout)
+        self.assertIn("--near-surface-band-factor", stdout)
+        self.assertIn("--near-surface-check-samples", stdout)
+        self.assertIn("--halo-exact-layers", stdout)
+        self.assertIn("--near-surface-node-fallback", stdout)
         self.assertIn("--diagnostics-report", stdout)
         self.assertIn("--strict-json", stdout)
+
+    def test_exact_hotpath_benchmark_dry_run_command(self):
+        result = adasdf.benchmark_exact_hotpath(
+            "model.stl",
+            max_level=4,
+            block_resolution=8,
+            threads=2,
+            csv="exact_hotpath.csv",
+            report="exact_hotpath.md",
+            case_id="exact_case",
+            dry_run=True,
+        )
+        stdout = result.command_result.stdout
+        self.assertIn("adasdf_benchmark_exact_hotpath", stdout)
+        self.assertIn("--max-level", stdout)
+        self.assertIn("--block-resolution", stdout)
+        self.assertIn("--threads", stdout)
+        self.assertIn("--csv", stdout)
+        self.assertIn("--report", stdout)
+        self.assertIn("--case-id", stdout)
 
     def test_hierarchical_sampling_sweep_dry_run_command(self):
         result = adasdf.sweep_hierarchical_sampling(

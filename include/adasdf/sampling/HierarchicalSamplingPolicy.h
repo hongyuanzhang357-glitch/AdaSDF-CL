@@ -26,6 +26,14 @@ struct HierarchicalSamplingOptions {
   FarFieldQualityCheckMode far_field_quality_check =
       FarFieldQualityCheckMode::Corners;
   double far_field_safety_factor = 2.0;
+  FarFieldSignPolicy far_field_sign_policy = FarFieldSignPolicy::Exact;
+
+  NearSurfaceSamplingMode near_surface_mode =
+      NearSurfaceSamplingMode::Exact;
+  double near_surface_band_factor = 1.5;
+  int near_surface_check_samples_per_axis = 2;
+  int halo_exact_layers = 1;
+  bool near_surface_node_fallback = true;
 
   double target_max_abs_error = 1e-3;
   double target_rms_error = 5e-4;

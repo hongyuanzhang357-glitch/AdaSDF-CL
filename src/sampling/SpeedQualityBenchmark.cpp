@@ -45,6 +45,17 @@ SpeedQualityBenchmarkResult SpeedQualityBenchmark::run(
       options.build_options.hierarchical_sampling.far_field_quality_check;
   result.far_field_safety_factor =
       options.build_options.hierarchical_sampling.far_field_safety_factor;
+  result.far_field_sign_policy =
+      options.build_options.hierarchical_sampling.far_field_sign_policy;
+  result.near_surface_mode =
+      options.build_options.hierarchical_sampling.near_surface_mode;
+  result.near_surface_band_factor =
+      options.build_options.hierarchical_sampling.near_surface_band_factor;
+  result.near_surface_check_samples =
+      options.build_options.hierarchical_sampling
+          .near_surface_check_samples_per_axis;
+  result.halo_exact_layers =
+      options.build_options.hierarchical_sampling.halo_exact_layers;
 
   AdaptiveBlockSDFBuildOptions exact_options = options.build_options;
   exact_options.hierarchical_sampling.enable_hierarchical_sampling = false;
@@ -81,6 +92,8 @@ SpeedQualityBenchmarkResult SpeedQualityBenchmark::run(
   result.fallback_block_count =
       hierarchical_report.hierarchical_sampling.fallback_exact_block_count;
   result.diagnostics = hierarchical_report.hierarchical_sampling.diagnostics;
+  result.local_fallback_node_count =
+      result.diagnostics.near_surface_local_fallback_node_count;
   result.diagnostics.exact_reference_time_ms = result.exact_build_time_ms;
   result.diagnostics.total_hierarchical_time_ms =
       result.hierarchical_build_time_ms;

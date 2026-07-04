@@ -26,6 +26,11 @@ struct SpeedQualityBenchmarkResult {
   FarFieldQualityCheckMode far_field_quality_check =
       FarFieldQualityCheckMode::Corners;
   double far_field_safety_factor = 0.0;
+  FarFieldSignPolicy far_field_sign_policy = FarFieldSignPolicy::Exact;
+  NearSurfaceSamplingMode near_surface_mode = NearSurfaceSamplingMode::Exact;
+  double near_surface_band_factor = 0.0;
+  int near_surface_check_samples = 0;
+  int halo_exact_layers = 0;
 
   double exact_build_time_ms = 0.0;
   double hierarchical_build_time_ms = 0.0;
@@ -43,6 +48,7 @@ struct SpeedQualityBenchmarkResult {
   std::size_t hierarchical_exact_sample_count = 0;
   std::size_t predicted_sample_count = 0;
   std::size_t fallback_block_count = 0;
+  std::size_t local_fallback_node_count = 0;
 
   bool quality_gate_passed = false;
   bool effective_speedup_claim_allowed = false;

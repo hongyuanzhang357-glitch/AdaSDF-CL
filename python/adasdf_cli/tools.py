@@ -18,6 +18,7 @@ from .parsers import (
     parse_field_bool,
     parse_field_float,
     parse_field_int,
+    parse_exact_hotpath_benchmark_metrics,
     parse_hierarchical_sampling_benchmark_metrics,
     parse_info_format,
     parse_minimum_distance,
@@ -730,6 +731,12 @@ def benchmark_hierarchical_sampling(
     transition_quality_check_samples: Optional[int] = None,
     far_field_quality_check: Optional[str] = None,
     far_field_safety_factor: Optional[float] = None,
+    far_field_sign_policy: Optional[str] = None,
+    near_surface_mode: Optional[str] = None,
+    near_surface_band_factor: Optional[float] = None,
+    near_surface_check_samples: Optional[int] = None,
+    halo_exact_layers: Optional[int] = None,
+    near_surface_node_fallback: Optional[bool] = None,
     comparison_samples: Optional[int] = None,
     accel: Optional[str] = None,
     threads: Optional[int] = None,
@@ -765,6 +772,17 @@ def benchmark_hierarchical_sampling(
     )
     _append_value(command, "--far-field-quality-check", far_field_quality_check)
     _append_value(command, "--far-field-safety-factor", far_field_safety_factor)
+    _append_value(command, "--far-field-sign-policy", far_field_sign_policy)
+    _append_value(command, "--near-surface-mode", near_surface_mode)
+    _append_value(command, "--near-surface-band-factor", near_surface_band_factor)
+    _append_value(command, "--near-surface-check-samples", near_surface_check_samples)
+    _append_value(command, "--halo-exact-layers", halo_exact_layers)
+    _append_bool_switch(
+        command,
+        near_surface_node_fallback,
+        "--near-surface-node-fallback",
+        "--no-near-surface-node-fallback",
+    )
     _append_value(command, "--comparison-samples", comparison_samples)
     _append_value(command, "--accel", accel)
     _append_value(command, "--threads", threads)
@@ -808,6 +826,30 @@ def benchmark_hierarchical_sampling(
         result,
         metrics=parse_hierarchical_sampling_benchmark_metrics(result.stdout),
     )
+
+
+def benchmark_exact_hotpath(
+    input_stl: PathLike,
+    *,
+    max_level: Optional[int] = None,
+    block_resolution: Optional[int] = None,
+    threads: Optional[int] = None,
+    csv: Optional[PathLike] = None,
+    report: Optional[PathLike] = None,
+    case_id: Optional[str] = None,
+    bin_dir: Optional[PathLike] = None,
+    check: bool = True,
+    dry_run: bool = False,
+) -> BenchmarkResult:
+    command = [_tool("adasdf_benchmark_exact_hotpath", bin_dir, dry_run), _path(input_stl)]
+    _append_value(command, "--max-level", max_level)
+    _append_value(command, "--block-resolution", block_resolution)
+    _append_value(command, "--threads", threads)
+    _append_value(command, "--csv", _path(csv) if csv is not None else None)
+    _append_value(command, "--report", _path(report) if report is not None else None)
+    _append_value(command, "--case-id", case_id)
+    result = _run(command, check=check, dry_run=dry_run)
+    return BenchmarkResult(result, metrics=parse_exact_hotpath_benchmark_metrics(result.stdout))
 
 
 def sweep_hierarchical_sampling(

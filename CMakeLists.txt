@@ -178,9 +178,11 @@ set(ADASDF_CL_RUNTIME_SOURCES
   src/query/QueryAPI.cpp
   src/query/SDFExpander.cpp
   src/sampling/BlockClassification.cpp
+  src/sampling/ExactBlockSamplerKernel.cpp
   src/sampling/HierarchicalSamplingDiagnostics.cpp
   src/sampling/HierarchicalSamplingPolicy.cpp
   src/sampling/HierarchicalSDFPredictor.cpp
+  src/sampling/LocalFallbackMask.cpp
   src/sampling/SamplingQualityGuard.cpp
   src/sampling/HierarchicalBlockSampler.cpp
   src/sampling/SpeedQualityBenchmark.cpp
@@ -669,6 +671,12 @@ if(ADASDF_CL_BUILD_BENCHMARKS)
   set_target_properties(adasdf_benchmark_hierarchical_sampling PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
 
+  add_executable(adasdf_benchmark_exact_hotpath
+    tools/adasdf_benchmark_exact_hotpath.cpp)
+  target_link_libraries(adasdf_benchmark_exact_hotpath PRIVATE adasdf_cl_runtime)
+  set_target_properties(adasdf_benchmark_exact_hotpath PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
+
   add_executable(adasdf_sweep_hierarchical_sampling
     tools/adasdf_sweep_hierarchical_sampling.cpp)
   target_link_libraries(adasdf_sweep_hierarchical_sampling PRIVATE adasdf_cl_runtime)
@@ -786,6 +794,11 @@ set(ADASDF_CL_TEST_SOURCES
   tests/test_hierarchical_sampling_diagnostics.cpp
   tests/test_hierarchical_sampling_far_field_quality_modes.cpp
   tests/test_hierarchical_sampling_coarse_sample_reuse.cpp
+  tests/test_exact_block_sampler_kernel.cpp
+  tests/test_hierarchical_exact_hotpath.cpp
+  tests/test_near_surface_banded_prediction.cpp
+  tests/test_local_fallback_mask.cpp
+  tests/test_far_field_sign_policy.cpp
   tests/test_sweep_hierarchical_sampling_cli.cpp
   tests/test_synthetic_complex_fixture.cpp
   tests/test_hierarchical_vs_exact_quality.cpp
@@ -1393,6 +1406,7 @@ if(ADASDF_CL_BUILD_BENCHMARKS)
     adasdf_benchmark_collision_world
     adasdf_benchmark_cuda_block_cache
     adasdf_benchmark_hierarchical_sampling
+    adasdf_benchmark_exact_hotpath
     adasdf_sweep_hierarchical_sampling)
 endif()
 

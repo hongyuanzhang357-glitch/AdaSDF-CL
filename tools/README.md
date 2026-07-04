@@ -156,11 +156,26 @@ mismatches, exact/predicted sample counts, fallback block count, and quality
 gate status.
 
 ```bash
-adasdf_benchmark_hierarchical_sampling model.stl --max-level 2 --block-resolution 5 --coarse-resolution 2 --quality-check-samples 2 --comparison-samples 3 --csv hier.csv --report hier.md --json hier.json
+adasdf_benchmark_hierarchical_sampling model.stl --max-level 2 --block-resolution 5 --coarse-resolution 2 --quality-check-samples 2 --far-field-sign-policy exact --near-surface-mode exact --near-surface-node-fallback --comparison-samples 3 --csv hier.csv --report hier.md --json hier.json
 ```
 
 Near-surface blocks remain exact by default. Predicted transition/far-field
 blocks require the quality guard and fall back to exact sampling on rejection.
+The local experimental `--near-surface-mode banded` path keeps halo and
+near-band nodes exact while allowing coarse-to-fine prediction for clearly
+farther nodes inside a near-surface block.
+
+## adasdf_benchmark_exact_hotpath
+
+Status: local performance diagnostic.
+
+Compares reference exact block sampling, the serial hierarchical exact path,
+and the optimized hierarchical exact hot path for the same STL, block set, and
+BVH sampler.
+
+```bash
+adasdf_benchmark_exact_hotpath model.stl --max-level 4 --block-resolution 8 --threads 2 --csv exact_hotpath.csv --report exact_hotpath.md
+```
 
 ## adasdf_sweep_hierarchical_sampling
 

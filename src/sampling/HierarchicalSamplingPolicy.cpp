@@ -41,9 +41,16 @@ BlockSamplingDecision HierarchicalSamplingPolicy::decide(
   if (classification.importance == BlockImportanceClass::NearSurface) {
     decision.target_error_for_block =
         options.target_max_abs_error * options.near_surface_error_factor;
-    if (options.keep_near_surface_exact) {
+    if (options.keep_near_surface_exact &&
+        options.near_surface_mode == NearSurfaceSamplingMode::Exact) {
       decision.mode = BlockSamplingMode::ExactBVH;
       decision.rationale.push_back("near-surface block kept exact");
+      return decision;
+    }
+    if (options.near_surface_mode == NearSurfaceSamplingMode::Banded) {
+      decision.mode = BlockSamplingMode::CoarsePredictThenCheck;
+      decision.rationale.push_back(
+          "near-surface block uses experimental banded local exact sampling");
       return decision;
     }
   }

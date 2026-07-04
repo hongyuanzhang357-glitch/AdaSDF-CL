@@ -4,7 +4,9 @@
 #include <atomic>
 #include <chrono>
 #include <cmath>
+#include <cstdint>
 #include <limits>
+#include <vector>
 
 #include "adasdf/acceleration/BVHSDFSampler.h"
 #include "adasdf/acceleration/ParallelSampling.h"
@@ -38,6 +40,12 @@ Vector3 gridPointFromIndex(const AdaptiveSDFBlock& block, std::size_t index) {
 struct BlockSampleLocation {
   std::size_t block_index = 0;
   std::size_t local_index = 0;
+};
+
+struct BulkExactSamplingResult {
+  std::size_t sample_count = 0;
+  double time_ms = 0.0;
+  int threads_used = 1;
 };
 
 void sampleBlocks(
@@ -167,6 +175,59 @@ void sampleBlocks(
   report.acceleration_stats = stats;
 }
 
+BulkExactSamplingResult sampleMarkedBlocksExact(
+    const TriangleMesh& mesh,
+    const BVHSDFSampler& sampler,
+    const BVHSDFSamplerOptions& sampler_options,
+    const std::vector<std::size_t>& block_indices,
+    int threads,
+    AdaptiveSDFBlockSet& block_set) {
+  std::vector<BlockSampleLocation> locations;
+  for (const std::size_t block_index : block_indices) {
+    AdaptiveSDFBlock& block = block_set.blocks[block_index];
+    block.signed_distance = sampler_options.signed_distance;
+    block.phi.resize(
+        static_cast<std::size_t>(block.nx) *
+        static_cast<std::size_t>(block.ny) *
+        static_cast<std::size_t>(block.nz));
+    for (std::size_t local = 0; local < block.phi.size(); ++local) {
+      locations.push_back({block_index, local});
+    }
+  }
+
+  ParallelSamplingOptions parallel_options;
+  parallel_options.threads = std::max(1, threads);
+  const bool use_bvh =
+      sampler_options.acceleration == SDFSamplingAcceleration::BVH &&
+      sampler.hasBVH();
+  const ParallelSamplingStats parallel_stats = parallelFor(
+      locations.size(),
+      parallel_options,
+      [&](std::size_t index) {
+        const BlockSampleLocation loc = locations[index];
+        AdaptiveSDFBlock& block = block_set.blocks[loc.block_index];
+        const Vector3 p = gridPointFromIndex(block, loc.local_index);
+        const BVHSDFSampleResult sample =
+            use_bvh
+                ? BVHSDFSampler::sampleWithBVH(
+                      mesh,
+                      sampler.bvh(),
+                      p,
+                      sampler_options)
+                : BVHSDFSampler::sampleBruteForce(
+                      mesh,
+                      p,
+                      sampler_options.signed_distance);
+        block.phi[loc.local_index] = sample.success ? sample.phi : 0.0;
+      });
+
+  BulkExactSamplingResult result;
+  result.sample_count = locations.size();
+  result.time_ms = parallel_stats.elapsed_ms;
+  result.threads_used = parallel_stats.threads_used;
+  return result;
+}
+
 void sampleBlocksHierarchical(
     const TriangleMesh& mesh,
     AdaptiveSDFBlockSet& block_set,
@@ -179,6 +240,8 @@ void sampleBlocksHierarchical(
   BVHSDFSamplerOptions sampler_options;
   sampler_options.acceleration = options.acceleration;
   sampler_options.signed_distance = options.signed_distance;
+  sampler_options.enable_counters =
+      options.hierarchical_sampling.hierarchical_diagnostics;
   sampler_options.bvh_options.degenerate_area_epsilon =
       options.degenerate_area_epsilon;
   BVHSDFSampler sampler;
@@ -198,18 +261,81 @@ void sampleBlocksHierarchical(
   HierarchicalBlockSamplingStats sampling_stats;
   sampling_stats.diagnostics.fine_sample_count = 0;
   const auto total0 = std::chrono::steady_clock::now();
-  for (AdaptiveSDFBlock& partitioned_block : block_set.blocks) {
+  std::vector<std::uint8_t> bulk_exact_done(block_set.blocks.size(), 0);
+  BulkExactSamplingResult bulk_exact;
+  if (!hierarchical_options.hierarchical_diagnostics &&
+      hierarchical_options.keep_near_surface_exact &&
+      hierarchical_options.near_surface_mode == NearSurfaceSamplingMode::Exact) {
+    std::vector<std::size_t> near_surface_indices;
+    for (std::size_t block_index = 0; block_index < block_set.blocks.size();
+         ++block_index) {
+      if (block_set.blocks[block_index].near_surface) {
+        near_surface_indices.push_back(block_index);
+        bulk_exact_done[block_index] = 1;
+      }
+    }
+    bulk_exact = sampleMarkedBlocksExact(
+        mesh,
+        sampler,
+        sampler_options,
+        near_surface_indices,
+        hierarchical_options.threads,
+        block_set);
+  }
+  std::vector<HierarchicalBlockSamplingResult> sampled_blocks(
+      block_set.blocks.size());
+  const auto sample_one = [&](std::size_t block_index) {
+    if (bulk_exact_done[block_index] != 0) {
+      return;
+    }
+    const AdaptiveSDFBlock& partitioned_block = block_set.blocks[block_index];
+    sampled_blocks[block_index] = HierarchicalBlockSampler::sampleBlock(
+        partitioned_block.bounds,
+        partitioned_block.block_id,
+        partitioned_block.octree_node_id,
+        partitioned_block.level,
+        options.block_resolution,
+        options.signed_distance,
+        partitioned_block.near_surface,
+        sampler,
+        hierarchical_options);
+  };
+  ParallelSamplingStats parallel_stats;
+  if (hierarchical_options.hierarchical_diagnostics ||
+      hierarchical_options.threads <= 1) {
+    parallel_stats.threads_used = 1;
+    const auto serial0 = std::chrono::steady_clock::now();
+    for (std::size_t block_index = 0; block_index < block_set.blocks.size();
+         ++block_index) {
+      sample_one(block_index);
+    }
+    const auto serial1 = std::chrono::steady_clock::now();
+    parallel_stats.elapsed_ms =
+        std::chrono::duration<double, std::milli>(serial1 - serial0).count();
+  } else {
+    ParallelSamplingOptions parallel_options;
+    parallel_options.threads = hierarchical_options.threads;
+    parallel_stats =
+        parallelFor(block_set.blocks.size(), parallel_options, sample_one);
+  }
+
+  for (std::size_t block_index = 0; block_index < block_set.blocks.size();
+       ++block_index) {
+    AdaptiveSDFBlock& partitioned_block = block_set.blocks[block_index];
+    if (bulk_exact_done[block_index] != 0) {
+      const std::size_t sample_count = partitioned_block.phi.size();
+      ++sampling_stats.block_count;
+      ++sampling_stats.exact_block_count;
+      sampling_stats.exact_sample_count += sample_count;
+      sampling_stats.diagnostics.total_block_count += 1;
+      sampling_stats.diagnostics.near_surface_block_count += 1;
+      sampling_stats.diagnostics.exact_block_count += 1;
+      sampling_stats.diagnostics.fine_sample_count += sample_count;
+      sampling_stats.diagnostics.exact_bvh_sample_count += sample_count;
+      continue;
+    }
     HierarchicalBlockSamplingResult sampled =
-        HierarchicalBlockSampler::sampleBlock(
-            partitioned_block.bounds,
-            partitioned_block.block_id,
-            partitioned_block.octree_node_id,
-            partitioned_block.level,
-            options.block_resolution,
-            options.signed_distance,
-            partitioned_block.near_surface,
-            sampler,
-            hierarchical_options);
+        std::move(sampled_blocks[block_index]);
     if (!sampled.success) {
       sampled.block = HierarchicalBlockSampler::sampleBlockExact(
           partitioned_block.bounds,
@@ -266,6 +392,14 @@ void sampleBlocksHierarchical(
         sampled.diagnostics.reused_coarse_sample_count;
     sampling_stats.diagnostics.skipped_far_field_quality_check_count +=
         sampled.diagnostics.skipped_far_field_quality_check_count;
+    sampling_stats.diagnostics.near_surface_banded_block_count +=
+        sampled.diagnostics.near_surface_banded_block_count;
+    sampling_stats.diagnostics.near_surface_local_exact_node_count +=
+        sampled.diagnostics.near_surface_local_exact_node_count;
+    sampling_stats.diagnostics.near_surface_predicted_node_count +=
+        sampled.diagnostics.near_surface_predicted_node_count;
+    sampling_stats.diagnostics.near_surface_local_fallback_node_count +=
+        sampled.diagnostics.near_surface_local_fallback_node_count;
     sampling_stats.diagnostics.distance_query_count +=
         sampled.diagnostics.distance_query_count;
     sampling_stats.diagnostics.sign_query_count +=
@@ -331,12 +465,15 @@ void sampleBlocksHierarchical(
   if (sampling_stats.diagnostics.fine_sample_count == 0) {
     sampling_stats.diagnostics.fine_sample_count = exact_dense_samples;
   }
+  sampling_stats.exact_sampling_time_ms += bulk_exact.time_ms;
+  sampling_stats.diagnostics.exact_sampling_time_ms += bulk_exact.time_ms;
   sampling_stats.diagnostics.total_hierarchical_time_ms =
       sampling_stats.total_time_ms;
   finalizeHierarchicalSamplingDiagnostics(&sampling_stats.diagnostics);
 
   stats.sample_count = sampling_stats.exact_sample_count;
-  stats.threads_used = 1;
+  stats.threads_used =
+      std::max(parallel_stats.threads_used, bulk_exact.threads_used);
   stats.sampling_time_ms = sampling_stats.total_time_ms;
 
   report.used_bvh = use_bvh;

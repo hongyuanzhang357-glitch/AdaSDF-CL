@@ -62,6 +62,15 @@ std::string HierarchicalSamplingReportWriter::toMarkdown(
       << toString(result.far_field_quality_check) << "\n";
   out << "- Far-field safety factor: "
       << result.far_field_safety_factor << "\n";
+  out << "- Far-field sign policy: "
+      << toString(result.far_field_sign_policy) << "\n";
+  out << "- Near-surface mode: "
+      << toString(result.near_surface_mode) << "\n";
+  out << "- Near-surface band factor: "
+      << result.near_surface_band_factor << "\n";
+  out << "- Near-surface check samples: "
+      << result.near_surface_check_samples << "\n";
+  out << "- Halo exact layers: " << result.halo_exact_layers << "\n";
   out << "- Total blocks: " << result.diagnostics.total_block_count << "\n";
   out << "- Near-surface blocks: "
       << result.diagnostics.near_surface_block_count << "\n";
@@ -77,6 +86,17 @@ std::string HierarchicalSamplingReportWriter::toMarkdown(
       << result.diagnostics.exact_bvh_sample_count << "\n";
   out << "- Quality check samples: "
       << result.diagnostics.quality_check_sample_count << "\n";
+  out << "- Near-surface banded blocks: "
+      << result.diagnostics.near_surface_banded_block_count << "\n";
+  out << "- Near-surface local exact nodes: "
+      << result.diagnostics.near_surface_local_exact_node_count << "\n";
+  out << "- Near-surface predicted nodes: "
+      << result.diagnostics.near_surface_predicted_node_count << "\n";
+  out << "- Near-surface local fallback nodes: "
+      << result.diagnostics.near_surface_local_fallback_node_count << "\n";
+  out << "- Near-surface local prediction acceptance rate: "
+      << result.diagnostics.near_surface_local_prediction_acceptance_rate
+      << "\n";
   out << "- Exact sample reduction ratio: "
       << result.diagnostics.exact_sample_reduction_ratio << "\n";
   out << "- Prediction acceptance rate: "
@@ -117,6 +137,15 @@ std::string HierarchicalSamplingReportWriter::toJson(
       << toString(result.far_field_quality_check) << "\",\n";
   out << "  \"far_field_safety_factor\": "
       << result.far_field_safety_factor << ",\n";
+  out << "  \"far_field_sign_policy\": \""
+      << toString(result.far_field_sign_policy) << "\",\n";
+  out << "  \"near_surface_mode\": \""
+      << toString(result.near_surface_mode) << "\",\n";
+  out << "  \"near_surface_band_factor\": "
+      << result.near_surface_band_factor << ",\n";
+  out << "  \"near_surface_check_samples\": "
+      << result.near_surface_check_samples << ",\n";
+  out << "  \"halo_exact_layers\": " << result.halo_exact_layers << ",\n";
   out << "  \"exact_build_time_ms\": " << result.exact_build_time_ms << ",\n";
   out << "  \"hierarchical_build_time_ms\": "
       << result.hierarchical_build_time_ms << ",\n";
@@ -171,6 +200,14 @@ std::string HierarchicalSamplingReportWriter::toJson(
       << result.diagnostics.reused_coarse_sample_count << ",\n";
   out << "    \"skipped_far_field_quality_check_count\": "
       << result.diagnostics.skipped_far_field_quality_check_count << ",\n";
+  out << "    \"near_surface_banded_block_count\": "
+      << result.diagnostics.near_surface_banded_block_count << ",\n";
+  out << "    \"near_surface_local_exact_node_count\": "
+      << result.diagnostics.near_surface_local_exact_node_count << ",\n";
+  out << "    \"near_surface_predicted_node_count\": "
+      << result.diagnostics.near_surface_predicted_node_count << ",\n";
+  out << "    \"near_surface_local_fallback_node_count\": "
+      << result.diagnostics.near_surface_local_fallback_node_count << ",\n";
   out << "    \"distance_query_count\": "
       << result.diagnostics.distance_query_count << ",\n";
   out << "    \"sign_query_count\": "
@@ -198,7 +235,10 @@ std::string HierarchicalSamplingReportWriter::toJson(
   out << "    \"prediction_acceptance_rate\": "
       << result.diagnostics.prediction_acceptance_rate << ",\n";
   out << "    \"fallback_rate\": "
-      << result.diagnostics.fallback_rate << "\n";
+      << result.diagnostics.fallback_rate << ",\n";
+  out << "    \"near_surface_local_prediction_acceptance_rate\": "
+      << result.diagnostics.near_surface_local_prediction_acceptance_rate
+      << "\n";
   out << "  }\n";
   out << "}\n";
   return out.str();
@@ -214,19 +254,27 @@ std::string HierarchicalSamplingReportWriter::csvHeader() {
          "case_id,max_level,block_resolution,coarse_resolution,"
          "quality_check_samples,transition_quality_check_samples,"
          "far_field_quality_check,far_field_safety_factor,"
+         "far_field_sign_policy,near_surface_mode,"
+         "near_surface_band_factor,near_surface_check_samples,"
+         "halo_exact_layers,"
          "total_block_count,near_surface_block_count,transition_block_count,"
          "far_field_block_count,exact_block_count,predicted_block_count,"
          "accepted_prediction_block_count,fallback_exact_block_count,"
          "exact_bvh_sample_count,diagnostic_predicted_sample_count,"
          "quality_check_sample_count,coarse_sample_count,"
          "reused_coarse_sample_count,skipped_far_field_quality_check_count,"
+         "near_surface_banded_block_count,"
+         "near_surface_local_exact_node_count,"
+         "near_surface_predicted_node_count,"
+         "near_surface_local_fallback_node_count,"
          "distance_query_count,sign_query_count,classification_time_ms,"
          "coarse_sampling_time_ms,diagnostic_prediction_time_ms,"
          "diagnostic_quality_check_time_ms,fallback_exact_time_ms,"
          "diagnostic_exact_sampling_time_ms,total_hierarchical_time_ms,"
          "exact_reference_time_ms,speedup_vs_exact,"
          "exact_sample_reduction_ratio,prediction_acceptance_rate,"
-         "fallback_rate,effective_speedup_claim_allowed";
+         "fallback_rate,near_surface_local_prediction_acceptance_rate,"
+         "effective_speedup_claim_allowed";
 }
 
 std::string HierarchicalSamplingReportWriter::csvRow(
@@ -249,6 +297,11 @@ std::string HierarchicalSamplingReportWriter::csvRow(
       << result.transition_quality_check_samples << ","
       << toString(result.far_field_quality_check) << ","
       << result.far_field_safety_factor << ","
+      << toString(result.far_field_sign_policy) << ","
+      << toString(result.near_surface_mode) << ","
+      << result.near_surface_band_factor << ","
+      << result.near_surface_check_samples << ","
+      << result.halo_exact_layers << ","
       << result.diagnostics.total_block_count << ","
       << result.diagnostics.near_surface_block_count << ","
       << result.diagnostics.transition_block_count << ","
@@ -263,6 +316,10 @@ std::string HierarchicalSamplingReportWriter::csvRow(
       << result.diagnostics.coarse_sample_count << ","
       << result.diagnostics.reused_coarse_sample_count << ","
       << result.diagnostics.skipped_far_field_quality_check_count << ","
+      << result.diagnostics.near_surface_banded_block_count << ","
+      << result.diagnostics.near_surface_local_exact_node_count << ","
+      << result.diagnostics.near_surface_predicted_node_count << ","
+      << result.diagnostics.near_surface_local_fallback_node_count << ","
       << result.diagnostics.distance_query_count << ","
       << result.diagnostics.sign_query_count << ","
       << result.diagnostics.classification_time_ms << ","
@@ -277,6 +334,7 @@ std::string HierarchicalSamplingReportWriter::csvRow(
       << result.diagnostics.exact_sample_reduction_ratio << ","
       << result.diagnostics.prediction_acceptance_rate << ","
       << result.diagnostics.fallback_rate << ","
+      << result.diagnostics.near_surface_local_prediction_acceptance_rate << ","
       << (result.effective_speedup_claim_allowed ? "true" : "false");
   return out.str();
 }

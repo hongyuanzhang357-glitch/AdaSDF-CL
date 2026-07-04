@@ -40,6 +40,60 @@ bool parseFarFieldQualityCheckMode(
   return false;
 }
 
+const char* toString(NearSurfaceSamplingMode mode) {
+  switch (mode) {
+    case NearSurfaceSamplingMode::Exact:
+      return "exact";
+    case NearSurfaceSamplingMode::Banded:
+      return "banded";
+  }
+  return "exact";
+}
+
+bool parseNearSurfaceSamplingMode(
+    const std::string& value,
+    NearSurfaceSamplingMode* mode) {
+  if (value == "exact") {
+    *mode = NearSurfaceSamplingMode::Exact;
+    return true;
+  }
+  if (value == "banded") {
+    *mode = NearSurfaceSamplingMode::Banded;
+    return true;
+  }
+  return false;
+}
+
+const char* toString(FarFieldSignPolicy policy) {
+  switch (policy) {
+    case FarFieldSignPolicy::Exact:
+      return "exact";
+    case FarFieldSignPolicy::ReuseCoarse:
+      return "reuse-coarse";
+    case FarFieldSignPolicy::Constant:
+      return "constant";
+  }
+  return "exact";
+}
+
+bool parseFarFieldSignPolicy(
+    const std::string& value,
+    FarFieldSignPolicy* policy) {
+  if (value == "exact") {
+    *policy = FarFieldSignPolicy::Exact;
+    return true;
+  }
+  if (value == "reuse-coarse") {
+    *policy = FarFieldSignPolicy::ReuseCoarse;
+    return true;
+  }
+  if (value == "constant") {
+    *policy = FarFieldSignPolicy::Constant;
+    return true;
+  }
+  return false;
+}
+
 void finalizeHierarchicalSamplingDiagnostics(
     HierarchicalSamplingDiagnostics* diagnostics) {
   if (diagnostics == nullptr) {
@@ -75,6 +129,16 @@ void finalizeHierarchicalSamplingDiagnostics(
             static_cast<double>(reference_samples);
     diagnostics->exact_sample_reduction_ratio =
         std::max(-1.0, std::min(1.0, diagnostics->exact_sample_reduction_ratio));
+  }
+  const std::size_t near_surface_predicted =
+      diagnostics->near_surface_predicted_node_count;
+  const std::size_t near_surface_total =
+      diagnostics->near_surface_local_exact_node_count +
+      near_surface_predicted;
+  if (near_surface_total > 0) {
+    diagnostics->near_surface_local_prediction_acceptance_rate =
+        static_cast<double>(near_surface_predicted) /
+        static_cast<double>(near_surface_total);
   }
 }
 
