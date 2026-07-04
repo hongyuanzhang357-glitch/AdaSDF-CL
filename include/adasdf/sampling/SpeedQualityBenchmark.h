@@ -16,6 +16,16 @@ struct SpeedQualityBenchmarkOptions {
 struct SpeedQualityBenchmarkResult {
   bool success = false;
   std::string error_message;
+  std::string case_id;
+
+  int max_level = 0;
+  int block_resolution = 0;
+  int coarse_resolution = 0;
+  int quality_check_samples = 0;
+  int transition_quality_check_samples = 0;
+  FarFieldQualityCheckMode far_field_quality_check =
+      FarFieldQualityCheckMode::Corners;
+  double far_field_safety_factor = 0.0;
 
   double exact_build_time_ms = 0.0;
   double hierarchical_build_time_ms = 0.0;
@@ -35,6 +45,8 @@ struct SpeedQualityBenchmarkResult {
   std::size_t fallback_block_count = 0;
 
   bool quality_gate_passed = false;
+  bool effective_speedup_claim_allowed = false;
+  HierarchicalSamplingDiagnostics diagnostics;
 
   std::vector<std::string> warnings;
 };

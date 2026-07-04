@@ -6,6 +6,7 @@
 
 #include "adasdf/acceleration/BVHSDFSampler.h"
 #include "adasdf/generation/AdaptiveBlock.h"
+#include "adasdf/sampling/HierarchicalSamplingDiagnostics.h"
 #include "adasdf/sampling/HierarchicalSamplingPolicy.h"
 #include "adasdf/sampling/SamplingQualityGuard.h"
 
@@ -28,6 +29,7 @@ struct HierarchicalBlockSamplingStats {
   double total_time_ms = 0.0;
 
   double speedup_vs_exact_estimate = 0.0;
+  HierarchicalSamplingDiagnostics diagnostics;
 
   std::vector<std::string> warnings;
 };
@@ -44,6 +46,8 @@ struct HierarchicalBlockSamplingResult {
   std::size_t exact_sample_count = 0;
   std::size_t predicted_sample_count = 0;
   std::size_t coarse_sample_count = 0;
+  std::size_t quality_check_sample_count = 0;
+  std::size_t reused_coarse_sample_count = 0;
 
   double exact_sampling_time_ms = 0.0;
   double prediction_time_ms = 0.0;
@@ -52,6 +56,7 @@ struct HierarchicalBlockSamplingResult {
 
   bool used_prediction = false;
   bool fallback_exact = false;
+  HierarchicalSamplingDiagnostics diagnostics;
 };
 
 class HierarchicalBlockSampler {

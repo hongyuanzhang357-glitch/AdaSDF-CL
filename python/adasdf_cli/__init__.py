@@ -63,6 +63,7 @@ from .tools import (
     sparse_collide,
     sparse_query,
     stabilize_contacts,
+    sweep_hierarchical_sampling,
     validate_report,
     write_manifest,
     world_broadphase,
@@ -71,7 +72,7 @@ from .tools import (
 )
 from .workflows import preprocess_and_build_compressed, recommend_then_build_compressed
 
-__version__ = "1.16.0-alpha.1"
+__version__ = "1.16.0-alpha.2"
 
 __all__ = [
     "AdaSDFConfig",
@@ -139,6 +140,7 @@ __all__ = [
     "sparse_collide",
     "sparse_query",
     "stabilize_contacts",
+    "sweep_hierarchical_sampling",
     "validate_report",
     "write_manifest",
     "world_broadphase",

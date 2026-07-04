@@ -207,10 +207,16 @@ class ToolCommandBuildingTests(unittest.TestCase):
             target_sampling_error=0.01,
             coarse_resolution=2,
             quality_check_samples=2,
+            transition_quality_check_samples=2,
+            far_field_quality_check="corners",
+            far_field_safety_factor=2.0,
+            hierarchical_diagnostics=True,
             comparison_samples=3,
             report="hier.md",
             json="hier.json",
             csv="hier.csv",
+            diagnostics_report="hier_diag.md",
+            diagnostics_csv="hier_diag.csv",
             strict_json="hier.strict.json",
             case_id="hier_case",
             dry_run=True,
@@ -218,7 +224,28 @@ class ToolCommandBuildingTests(unittest.TestCase):
         stdout = result.command_result.stdout
         self.assertIn("adasdf_benchmark_hierarchical_sampling", stdout)
         self.assertIn("--comparison-samples", stdout)
+        self.assertIn("--transition-quality-check-samples", stdout)
+        self.assertIn("--far-field-quality-check", stdout)
+        self.assertIn("--diagnostics-report", stdout)
         self.assertIn("--strict-json", stdout)
+
+    def test_hierarchical_sampling_sweep_dry_run_command(self):
+        result = adasdf.sweep_hierarchical_sampling(
+            "model.stl",
+            max_level="1,2",
+            block_resolution=4,
+            coarse_resolution="2,3",
+            transition_quality_check_samples="1,2",
+            far_field_quality_check="corners,sparse",
+            far_field_safety_factor="2.0,3.0",
+            csv="sweep.csv",
+            report="sweep.md",
+            dry_run=True,
+        )
+        stdout = result.command_result.stdout
+        self.assertIn("adasdf_sweep_hierarchical_sampling", stdout)
+        self.assertIn("--coarse-resolution", stdout)
+        self.assertIn("--far-field-quality-check", stdout)
 
     def test_world_broadphase_dry_run_command(self):
         result = adasdf.world_broadphase("scene.csv", aabb_margin=0.01, dry_run=True)

@@ -162,6 +162,21 @@ adasdf_benchmark_hierarchical_sampling model.stl --max-level 2 --block-resolutio
 Near-surface blocks remain exact by default. Predicted transition/far-field
 blocks require the quality guard and fall back to exact sampling on rejection.
 
+## adasdf_sweep_hierarchical_sampling
+
+Status: experimental hierarchical sampling parameter sweep.
+
+Runs `adasdf_benchmark_hierarchical_sampling`-style comparisons over a small
+parameter grid and reports whether any quality-preserving configuration can
+claim effective acceleration.
+
+```bash
+adasdf_sweep_hierarchical_sampling model.stl --max-level 4 --block-resolution 8 --coarse-resolution 2,3,4 --transition-quality-check-samples 1,2,3 --far-field-quality-check corners,sparse --far-field-safety-factor 2.0,3.0 --csv sweep.csv --report sweep.md
+```
+
+Speedup claims remain valid only when `quality_gate_passed=true` and
+`speedup > 1`.
+
 ## adasdf_build_adaptive_sdf_preview
 
 Status: dry-run planning tool.

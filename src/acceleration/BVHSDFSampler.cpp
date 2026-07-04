@@ -58,6 +58,7 @@ bool BVHSDFSampler::reset(
   mesh_ = &mesh;
   options_ = options;
   bvh_ = TriangleBVH();
+  resetCounters();
   if (stats != nullptr) {
     stats->acceleration = options.acceleration;
     stats->threads_requested = std::max(1, stats->threads_requested);
@@ -87,11 +88,24 @@ BVHSDFSampleResult BVHSDFSampler::sample(const Vector3& point) const {
   if (mesh_ == nullptr) {
     return {};
   }
+  BVHSDFSampleResult result;
   if (options_.acceleration == SDFSamplingAcceleration::BVH &&
       bvh_.isValid()) {
-    return sampleWithBVH(*mesh_, bvh_, point, options_);
+    result = sampleWithBVH(*mesh_, bvh_, point, options_);
+  } else {
+    result = sampleBruteForce(*mesh_, point, options_.signed_distance);
   }
-  return sampleBruteForce(*mesh_, point, options_.signed_distance);
+  if (options_.enable_counters) {
+    ++counters_.distance_query_count;
+    if (options_.signed_distance) {
+      ++counters_.sign_query_count;
+    }
+    counters_.triangle_distance_test_count +=
+        result.nearest.triangle_tests + result.ray.triangle_tests;
+    counters_.bvh_node_visit_count +=
+        result.nearest.node_visits + result.ray.node_visits;
+  }
+  return result;
 }
 
 BVHSDFSampleResult BVHSDFSampler::sampleBruteForce(

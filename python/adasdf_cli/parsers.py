@@ -334,6 +334,22 @@ def parse_hierarchical_sampling_benchmark_metrics(stdout: str) -> Dict[str, obje
         ("Predicted sample count", "predicted_sample_count"),
         ("Fallback block count", "fallback_block_count"),
         ("Quality gate passed", "quality_gate_passed"),
+        ("Effective speedup claim allowed", "effective_speedup_claim_allowed"),
+        ("Far-field quality check", "far_field_quality_check"),
+        ("Total blocks", "total_block_count"),
+        ("Near-surface blocks", "near_surface_block_count"),
+        ("Transition blocks", "transition_block_count"),
+        ("Far-field blocks", "far_field_block_count"),
+        ("Exact BVH samples", "exact_bvh_sample_count"),
+        ("Coarse samples", "coarse_sample_count"),
+        ("Reused coarse samples", "reused_coarse_sample_count"),
+        ("Quality check samples", "quality_check_sample_count"),
+        ("Fallback rate", "fallback_rate"),
+        ("Prediction acceptance rate", "prediction_acceptance_rate"),
+        ("Classification time ms", "classification_time_ms"),
+        ("Prediction time ms", "prediction_time_ms"),
+        ("Quality check time ms", "quality_check_time_ms"),
+        ("Fallback exact time ms", "fallback_exact_time_ms"),
     ):
         match = _search(rf"^{re.escape(label)}:\s*(.+)$", stdout)
         if match:

@@ -64,6 +64,7 @@ int main(int argc, char** argv) {
         "adasdf_build_compressed_sdf",
         "hierarchical adaptive sampling with quality guard",
         "adasdf_benchmark_hierarchical_sampling",
+        "adasdf_sweep_hierarchical_sampling",
         "surrogate-guided build recommendation",
         "deterministic build surrogate estimator",
         "mesh-feature-based parameter recommendation",

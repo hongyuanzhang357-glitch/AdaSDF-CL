@@ -39,6 +39,7 @@ SUPPORTED_TOOLS = {
     "adasdf_cuda_active_block_query",
     "adasdf_benchmark_cuda_block_cache",
     "adasdf_benchmark_hierarchical_sampling",
+    "adasdf_sweep_hierarchical_sampling",
     "adasdf_world_broadphase",
     "adasdf_world_sparse_collide",
     "adasdf_world_solver_contacts",

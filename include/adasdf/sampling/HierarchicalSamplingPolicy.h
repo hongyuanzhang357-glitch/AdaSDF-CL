@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "adasdf/sampling/BlockClassification.h"
+#include "adasdf/sampling/HierarchicalSamplingDiagnostics.h"
 
 namespace adasdf {
 
@@ -20,6 +21,11 @@ struct HierarchicalSamplingOptions {
 
   int coarse_resolution = 3;
   int quality_check_samples_per_axis = 3;
+  int transition_quality_check_samples_per_axis = 2;
+
+  FarFieldQualityCheckMode far_field_quality_check =
+      FarFieldQualityCheckMode::Corners;
+  double far_field_safety_factor = 2.0;
 
   double target_max_abs_error = 1e-3;
   double target_rms_error = 5e-4;
@@ -37,6 +43,7 @@ struct HierarchicalSamplingOptions {
   bool fallback_to_exact_on_quality_fail = true;
 
   bool keep_near_surface_exact = true;
+  bool hierarchical_diagnostics = false;
 
   int threads = 1;
 };

@@ -1,0 +1,114 @@
+solid project_generated_wavy_sphere
+  facet normal 0 0 0
+    outer loop
+      vertex 0 0 1.2
+      vertex 1.1 0 0.08
+      vertex 0.72 0.72 -0.02
+    endloop
+  endfacet
+  facet normal 0 0 0
+    outer loop
+      vertex 0 0 1.2
+      vertex 0.72 0.72 -0.02
+      vertex 0 0.9 0.06
+    endloop
+  endfacet
+  facet normal 0 0 0
+    outer loop
+      vertex 0 0 1.2
+      vertex 0 0.9 0.06
+      vertex -0.78 0.78 -0.08
+    endloop
+  endfacet
+  facet normal 0 0 0
+    outer loop
+      vertex 0 0 1.2
+      vertex -0.78 0.78 -0.08
+      vertex -1 0 0.04
+    endloop
+  endfacet
+  facet normal 0 0 0
+    outer loop
+      vertex 0 0 1.2
+      vertex -1 0 0.04
+      vertex -0.66 -0.66 -0.04
+    endloop
+  endfacet
+  facet normal 0 0 0
+    outer loop
+      vertex 0 0 1.2
+      vertex -0.66 -0.66 -0.04
+      vertex 0 -1.05 0.1
+    endloop
+  endfacet
+  facet normal 0 0 0
+    outer loop
+      vertex 0 0 1.2
+      vertex 0 -1.05 0.1
+      vertex 0.82 -0.82 -0.06
+    endloop
+  endfacet
+  facet normal 0 0 0
+    outer loop
+      vertex 0 0 1.2
+      vertex 0.82 -0.82 -0.06
+      vertex 1.1 0 0.08
+    endloop
+  endfacet
+  facet normal 0 0 0
+    outer loop
+      vertex 0 0 -1.1
+      vertex 0.72 0.72 -0.02
+      vertex 1.1 0 0.08
+    endloop
+  endfacet
+  facet normal 0 0 0
+    outer loop
+      vertex 0 0 -1.1
+      vertex 0 0.9 0.06
+      vertex 0.72 0.72 -0.02
+    endloop
+  endfacet
+  facet normal 0 0 0
+    outer loop
+      vertex 0 0 -1.1
+      vertex -0.78 0.78 -0.08
+      vertex 0 0.9 0.06
+    endloop
+  endfacet
+  facet normal 0 0 0
+    outer loop
+      vertex 0 0 -1.1
+      vertex -1 0 0.04
+      vertex -0.78 0.78 -0.08
+    endloop
+  endfacet
+  facet normal 0 0 0
+    outer loop
+      vertex 0 0 -1.1
+      vertex -0.66 -0.66 -0.04
+      vertex -1 0 0.04
+    endloop
+  endfacet
+  facet normal 0 0 0
+    outer loop
+      vertex 0 0 -1.1
+      vertex 0 -1.05 0.1
+      vertex -0.66 -0.66 -0.04
+    endloop
+  endfacet
+  facet normal 0 0 0
+    outer loop
+      vertex 0 0 -1.1
+      vertex 0.82 -0.82 -0.06
+      vertex 0 -1.05 0.1
+    endloop
+  endfacet
+  facet normal 0 0 0
+    outer loop
+      vertex 0 0 -1.1
+      vertex 1.1 0 0.08
+      vertex 0.82 -0.82 -0.06
+    endloop
+  endfacet
+endsolid project_generated_wavy_sphere

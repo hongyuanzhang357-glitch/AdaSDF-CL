@@ -66,6 +66,8 @@ void sampleBlocks(
   BVHSDFSamplerOptions sampler_options;
   sampler_options.acceleration = options.acceleration;
   sampler_options.signed_distance = options.signed_distance;
+  sampler_options.enable_counters =
+      options.hierarchical_sampling.hierarchical_diagnostics;
   sampler_options.bvh_options.degenerate_area_epsilon =
       options.degenerate_area_epsilon;
   BVHSDFSampler sampler;
@@ -194,6 +196,7 @@ void sampleBlocksHierarchical(
   }
 
   HierarchicalBlockSamplingStats sampling_stats;
+  sampling_stats.diagnostics.fine_sample_count = 0;
   const auto total0 = std::chrono::steady_clock::now();
   for (AdaptiveSDFBlock& partitioned_block : block_set.blocks) {
     HierarchicalBlockSamplingResult sampled =
@@ -233,6 +236,64 @@ void sampleBlocksHierarchical(
     sampling_stats.exact_sampling_time_ms += sampled.exact_sampling_time_ms;
     sampling_stats.prediction_time_ms += sampled.prediction_time_ms;
     sampling_stats.quality_check_time_ms += sampled.quality_check_time_ms;
+    sampling_stats.diagnostics.total_block_count +=
+        sampled.diagnostics.total_block_count;
+    sampling_stats.diagnostics.near_surface_block_count +=
+        sampled.diagnostics.near_surface_block_count;
+    sampling_stats.diagnostics.transition_block_count +=
+        sampled.diagnostics.transition_block_count;
+    sampling_stats.diagnostics.far_field_block_count +=
+        sampled.diagnostics.far_field_block_count;
+    sampling_stats.diagnostics.exact_block_count +=
+        sampled.diagnostics.exact_block_count;
+    sampling_stats.diagnostics.predicted_block_count +=
+        sampled.diagnostics.predicted_block_count;
+    sampling_stats.diagnostics.accepted_prediction_block_count +=
+        sampled.diagnostics.accepted_prediction_block_count;
+    sampling_stats.diagnostics.fallback_exact_block_count +=
+        sampled.diagnostics.fallback_exact_block_count;
+    sampling_stats.diagnostics.coarse_sample_count +=
+        sampled.diagnostics.coarse_sample_count;
+    sampling_stats.diagnostics.fine_sample_count +=
+        sampled.diagnostics.fine_sample_count;
+    sampling_stats.diagnostics.exact_bvh_sample_count +=
+        sampled.diagnostics.exact_bvh_sample_count;
+    sampling_stats.diagnostics.predicted_sample_count +=
+        sampled.diagnostics.predicted_sample_count;
+    sampling_stats.diagnostics.quality_check_sample_count +=
+        sampled.diagnostics.quality_check_sample_count;
+    sampling_stats.diagnostics.reused_coarse_sample_count +=
+        sampled.diagnostics.reused_coarse_sample_count;
+    sampling_stats.diagnostics.skipped_far_field_quality_check_count +=
+        sampled.diagnostics.skipped_far_field_quality_check_count;
+    sampling_stats.diagnostics.distance_query_count +=
+        sampled.diagnostics.distance_query_count;
+    sampling_stats.diagnostics.sign_query_count +=
+        sampled.diagnostics.sign_query_count;
+    sampling_stats.diagnostics.triangle_distance_test_count +=
+        sampled.diagnostics.triangle_distance_test_count;
+    sampling_stats.diagnostics.bvh_node_visit_count +=
+        sampled.diagnostics.bvh_node_visit_count;
+    sampling_stats.diagnostics.fallback_due_to_error_count +=
+        sampled.diagnostics.fallback_due_to_error_count;
+    sampling_stats.diagnostics.fallback_due_to_sign_count +=
+        sampled.diagnostics.fallback_due_to_sign_count;
+    sampling_stats.diagnostics.fallback_due_to_near_surface_count +=
+        sampled.diagnostics.fallback_due_to_near_surface_count;
+    sampling_stats.diagnostics.fallback_due_to_invalid_prediction_count +=
+        sampled.diagnostics.fallback_due_to_invalid_prediction_count;
+    sampling_stats.diagnostics.classification_time_ms +=
+        sampled.diagnostics.classification_time_ms;
+    sampling_stats.diagnostics.coarse_sampling_time_ms +=
+        sampled.diagnostics.coarse_sampling_time_ms;
+    sampling_stats.diagnostics.prediction_time_ms +=
+        sampled.diagnostics.prediction_time_ms;
+    sampling_stats.diagnostics.quality_check_time_ms +=
+        sampled.diagnostics.quality_check_time_ms;
+    sampling_stats.diagnostics.fallback_exact_time_ms +=
+        sampled.diagnostics.fallback_exact_time_ms;
+    sampling_stats.diagnostics.exact_sampling_time_ms +=
+        sampled.diagnostics.exact_sampling_time_ms;
     if (sampled.decision.mode == BlockSamplingMode::ExactBVH) {
       ++sampling_stats.exact_block_count;
     } else {
@@ -267,6 +328,12 @@ void sampleBlocksHierarchical(
         static_cast<double>(exact_dense_samples) /
         static_cast<double>(sampling_stats.exact_sample_count);
   }
+  if (sampling_stats.diagnostics.fine_sample_count == 0) {
+    sampling_stats.diagnostics.fine_sample_count = exact_dense_samples;
+  }
+  sampling_stats.diagnostics.total_hierarchical_time_ms =
+      sampling_stats.total_time_ms;
+  finalizeHierarchicalSamplingDiagnostics(&sampling_stats.diagnostics);
 
   stats.sample_count = sampling_stats.exact_sample_count;
   stats.threads_used = 1;

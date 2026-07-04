@@ -2,7 +2,7 @@
 
 Adaptive Signed Distance Field Collision Library
 
-Status: 1.16.0-alpha.1 / research preview
+Status: 1.16.0-alpha.2 / research preview
 Build system: CMake
 License: MIT
 Tests: CTest
@@ -11,7 +11,14 @@ AdaSDF-CL is an alpha collision and contact library built around signed distance
 
 AdaSDF-CL is an FCL-style SDF collision backend under development. It complements FCL by providing signed-distance queries, penetration depth, contact normals, batch query, expanded-SDF quality audit, CUDA query paths, and a first SDF-native multi-object CollisionWorld broadphase. It is not a drop-in FCL replacement.
 
-v1.16.0-alpha.1 is the recommended v1.16 hotfix tag. It includes the final
+v1.16.0-alpha.2 is the recommended v1.16 tag. It adds hierarchical sampling
+diagnostics, exact BVH query counters, near-surface exact fast-path behavior,
+coarse sample reuse, far-field quality-check modes, and a parameter sweep
+benchmark. The quality gates still pass on the smoke fixtures, but the measured
+alpha.2 benchmarks remain below `speedup > 1`; do not present this release as a
+proven construction-speed acceleration release.
+
+v1.16.0-alpha.1 is retained as a tag-alignment hotfix. It includes the final
 v1.16 documentation/report commits without moving the original
 `v1.16.0-alpha` tag.
 
@@ -99,9 +106,9 @@ The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`, `v1.1.0-alpha`,
 `v1.5.0-alpha`, `v1.6.0-alpha`, `v1.7.0-alpha`, `v1.8.0-alpha`,
 `v1.8.1-alpha`, `v1.9.0-alpha`, `v1.10.0-alpha`, `v1.11.0-alpha`,
 `v1.12.0-alpha`, `v1.13.0-alpha`, `v1.13.0-alpha.1`,
-`v1.13.0-alpha.2`, `v1.14.0-alpha`, `v1.15.0-alpha`, and
-`v1.16.0-alpha` tags are retained for traceability. The recommended public
-pre-release is `v1.16.0-alpha.1`.
+`v1.13.0-alpha.2`, `v1.14.0-alpha`, `v1.15.0-alpha`,
+`v1.16.0-alpha`, and `v1.16.0-alpha.1` tags are retained for traceability. The
+recommended public pre-release is `v1.16.0-alpha.2`.
 
 ## What Is AdaSDF-CL?
 

@@ -1,6 +1,6 @@
 # Alpha Status
 
-AdaSDF-CL 1.16.0-alpha.1 is a research-preview release candidate.
+AdaSDF-CL 1.16.0-alpha.2 is a research-preview release candidate.
 
 The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`,
 `v1.1.0-alpha`, `v1.1.1-alpha`, `v1.2.0-alpha`, `v1.3.0-alpha`,
@@ -8,8 +8,8 @@ The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`,
 `v1.8.0-alpha`, `v1.8.1-alpha`, `v1.9.0-alpha`, `v1.10.0-alpha`,
 `v1.11.0-alpha`, `v1.12.0-alpha`, `v1.13.0-alpha`,
 `v1.13.0-alpha.1`, `v1.13.0-alpha.2`, `v1.14.0-alpha`,
-`v1.15.0-alpha`, and `v1.16.0-alpha` tags are retained for traceability. The
-recommended public pre-release is `v1.16.0-alpha.1`.
+`v1.15.0-alpha`, `v1.16.0-alpha`, and `v1.16.0-alpha.1` tags are retained for
+traceability. The recommended public pre-release is `v1.16.0-alpha.2`.
 
 ## What Works
 
@@ -70,6 +70,9 @@ recommended public pre-release is `v1.16.0-alpha.1`.
 - Hierarchical adaptive block sampling with near-surface exact default,
   quality-guarded prediction, exact fallback, and unchanged `.sdfbin` formats.
 - `adasdf_benchmark_hierarchical_sampling`.
+- Hierarchical sampling diagnostics, far-field quality-check modes,
+  transition-specific quality-check sample counts, coarse sample reuse metrics,
+  exact BVH query counters, and `adasdf_sweep_hierarchical_sampling`.
 - `MeshFeatureExtractor`, `BuildSurrogateEstimator`, `SurrogateProfile`,
   `BuildRecommender`, and `BuildRecommendationWriter` for deterministic build
   recommendation.
@@ -261,12 +264,15 @@ run summary collection, Python wrapper support, and validation coverage. It
 does not change core collision algorithms.
 
 v1.16.0-alpha is a hierarchical adaptive sampling release. v1.16.0-alpha.1 is
-the recommended hotfix tag because it includes the final v1.16
-documentation/report commits without moving the original tag. The release keeps
-exact sampling as the default and adds opt-in `--sampling hierarchical` for
-adaptive and compressed builders. Near-surface blocks remain exact by default,
-predictions require a quality guard, rejected predictions fall back to exact
-sampling, and `.sdfbin` formats remain unchanged.
+retained as a tag-alignment hotfix. v1.16.0-alpha.2 is the recommended v1.16
+tag because it adds diagnostics and reduces obvious hierarchical sampling
+overhead without moving older tags. The release keeps exact sampling as the
+default and adds opt-in `--sampling hierarchical` for adaptive and compressed
+builders. Near-surface blocks remain exact by default, predictions require a
+quality guard, rejected predictions fall back to exact sampling, and `.sdfbin`
+formats remain unchanged. Effective speedup claims require both `speedup > 1`
+and `quality_gate_passed=true`; the alpha.2 smoke benchmarks do not yet meet
+that claim boundary.
 
 Benchmark `total_ms` is a full query timing. Benchmark `kernel_ms` is CUDA
 kernel event timing. Original UI warmed kernel-average numbers should be
@@ -279,8 +285,8 @@ analysis.
 
 ## Validation Snapshot
 
-- Expected tests: 184.
-- Python wrapper unittest: PASS target, 53 tests with real CLI smoke enabled through
+- Expected tests: 189.
+- Python wrapper unittest: PASS target, 54 tests with real CLI smoke enabled through
   `ADASDF_BIN`, `ADASDF_TEST_STL`, and `ADASDF_TEST_SAMPLES`.
 - Install validation: PASS with `ADASDF_CL_USE_EXISTING_CORE=OFF`.
 - Alpha validation: PASS.
@@ -288,14 +294,14 @@ analysis.
 - Target external collision test verdict for v0.9.0-alpha: PASS for the demo
   adaptive workflow.
 - Expected CUDA-unavailable behavior: GPU benchmark/tests SKIPPED, not FAILED.
-- Current v1.16.0-alpha.1 local CPU CTest target: 184 tests.
-- Current v1.16.0-alpha.1 CUDA validation is optional and should skip gracefully
+- Current v1.16.0-alpha.2 local CPU CTest target: 189 tests.
+- Current v1.16.0-alpha.2 CUDA validation is optional and should skip gracefully
   when CUDA is unavailable.
-- Current v1.16.0-alpha.1 Python wrapper unittest target: 53 tests with one
+- Current v1.16.0-alpha.2 Python wrapper unittest target: 54 tests with one
   environment-gated smoke test skipped when real CLI env vars are absent.
-- Current v1.16.0-alpha.1 install validation target: PASS.
-- Current v1.16.0-alpha.1 alpha validation target: PASS.
-- Current v1.16.0-alpha.1 clean check target: PASS.
+- Current v1.16.0-alpha.2 install validation target: PASS.
+- Current v1.16.0-alpha.2 alpha validation target: PASS.
+- Current v1.16.0-alpha.2 clean check target: PASS.
 - Expected CI behavior: main/tag workflows should use the reused CI build tree
   for install validation and limit build parallelism. `v1.13.0-alpha` and
   `v1.13.0-alpha.1` remain unchanged.

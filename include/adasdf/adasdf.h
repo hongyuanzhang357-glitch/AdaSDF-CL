@@ -51,6 +51,7 @@
 #include "adasdf/recommendation/BuildRecommender.h"
 #include "adasdf/recommendation/BuildRecommendationWriter.h"
 #include "adasdf/sampling/BlockClassification.h"
+#include "adasdf/sampling/HierarchicalSamplingDiagnostics.h"
 #include "adasdf/sampling/HierarchicalSamplingPolicy.h"
 #include "adasdf/sampling/HierarchicalSDFPredictor.h"
 #include "adasdf/sampling/SamplingQualityGuard.h"

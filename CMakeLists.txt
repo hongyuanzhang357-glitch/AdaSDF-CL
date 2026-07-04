@@ -178,6 +178,7 @@ set(ADASDF_CL_RUNTIME_SOURCES
   src/query/QueryAPI.cpp
   src/query/SDFExpander.cpp
   src/sampling/BlockClassification.cpp
+  src/sampling/HierarchicalSamplingDiagnostics.cpp
   src/sampling/HierarchicalSamplingPolicy.cpp
   src/sampling/HierarchicalSDFPredictor.cpp
   src/sampling/SamplingQualityGuard.cpp
@@ -667,6 +668,12 @@ if(ADASDF_CL_BUILD_BENCHMARKS)
   target_link_libraries(adasdf_benchmark_hierarchical_sampling PRIVATE adasdf_cl_runtime)
   set_target_properties(adasdf_benchmark_hierarchical_sampling PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
+
+  add_executable(adasdf_sweep_hierarchical_sampling
+    tools/adasdf_sweep_hierarchical_sampling.cpp)
+  target_link_libraries(adasdf_sweep_hierarchical_sampling PRIVATE adasdf_cl_runtime)
+  set_target_properties(adasdf_sweep_hierarchical_sampling PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
 endif()
 
 set(ADASDF_CL_TEST_SOURCES
@@ -776,6 +783,11 @@ set(ADASDF_CL_TEST_SOURCES
   tests/test_compressed_sdf_builder_bvh_cli.cpp
   tests/test_compressed_builder_hierarchical_sampling_cli.cpp
   tests/test_benchmark_hierarchical_sampling_cli.cpp
+  tests/test_hierarchical_sampling_diagnostics.cpp
+  tests/test_hierarchical_sampling_far_field_quality_modes.cpp
+  tests/test_hierarchical_sampling_coarse_sample_reuse.cpp
+  tests/test_sweep_hierarchical_sampling_cli.cpp
+  tests/test_synthetic_complex_fixture.cpp
   tests/test_hierarchical_vs_exact_quality.cpp
   tests/test_compressed_sdf_collision.cpp
   tests/test_compressed_vs_adaptive_consistency.cpp
@@ -1146,6 +1158,13 @@ if(ADASDF_CL_BUILD_TESTS)
           ADASDF_CL_BENCHMARK_HIERARCHICAL_SAMPLING="$<TARGET_FILE_NAME:adasdf_benchmark_hierarchical_sampling>")
       endif()
     endif()
+    if(test_name STREQUAL "test_sweep_hierarchical_sampling_cli")
+      if(TARGET adasdf_sweep_hierarchical_sampling)
+        add_dependencies(${test_name} adasdf_sweep_hierarchical_sampling)
+        target_compile_definitions(${test_name} PRIVATE
+          ADASDF_CL_SWEEP_HIERARCHICAL_SAMPLING="$<TARGET_FILE_NAME:adasdf_sweep_hierarchical_sampling>")
+      endif()
+    endif()
     add_test(NAME ${test_name} COMMAND ${test_name})
     if(test_name STREQUAL "test_make_demo_box_cli")
       set_tests_properties(${test_name} PROPERTIES
@@ -1312,6 +1331,12 @@ if(ADASDF_CL_BUILD_TESTS)
           WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_benchmark_hierarchical_sampling>")
       endif()
     endif()
+    if(test_name STREQUAL "test_sweep_hierarchical_sampling_cli")
+      if(TARGET adasdf_sweep_hierarchical_sampling)
+        set_tests_properties(${test_name} PROPERTIES
+          WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_sweep_hierarchical_sampling>")
+      endif()
+    endif()
   endforeach()
 endif()
 
@@ -1367,7 +1392,8 @@ if(ADASDF_CL_BUILD_BENCHMARKS)
     adasdf_benchmark_contact_reduction
     adasdf_benchmark_collision_world
     adasdf_benchmark_cuda_block_cache
-    adasdf_benchmark_hierarchical_sampling)
+    adasdf_benchmark_hierarchical_sampling
+    adasdf_sweep_hierarchical_sampling)
 endif()
 
 install(TARGETS ${ADASDF_CL_INSTALL_TARGETS}

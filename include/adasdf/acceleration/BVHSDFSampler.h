@@ -8,11 +8,19 @@
 
 namespace adasdf {
 
+struct SDFSamplerCounters {
+  std::size_t distance_query_count = 0;
+  std::size_t sign_query_count = 0;
+  std::size_t triangle_distance_test_count = 0;
+  std::size_t bvh_node_visit_count = 0;
+};
+
 struct BVHSDFSamplerOptions {
   SDFSamplingAcceleration acceleration = SDFSamplingAcceleration::BruteForce;
   bool signed_distance = true;
   bool fallback_to_bruteforce_sign = true;
   double surface_epsilon = 1e-12;
+  bool enable_counters = false;
   TriangleBVHBuildOptions bvh_options;
 };
 
@@ -39,6 +47,8 @@ class BVHSDFSampler {
   const TriangleMesh* mesh() const { return mesh_; }
   const BVHSDFSamplerOptions& options() const { return options_; }
   bool hasBVH() const { return bvh_.isValid(); }
+  void resetCounters() const { counters_ = {}; }
+  SDFSamplerCounters counters() const { return counters_; }
 
   static BVHSDFSampleResult sampleBruteForce(
       const TriangleMesh& mesh,
@@ -55,6 +65,7 @@ class BVHSDFSampler {
   const TriangleMesh* mesh_ = nullptr;
   BVHSDFSamplerOptions options_;
   TriangleBVH bvh_;
+  mutable SDFSamplerCounters counters_;
 };
 
 }  // namespace adasdf

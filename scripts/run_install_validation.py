@@ -579,6 +579,7 @@ def main() -> int:
         "adasdf_cuda_active_block_query",
         "adasdf_benchmark_cuda_block_cache",
         "adasdf_benchmark_hierarchical_sampling",
+        "adasdf_sweep_hierarchical_sampling",
         "adasdf_benchmark_contact_reduction",
         "adasdf_build_adaptive_sdf_preview",
         "adasdf_world_broadphase",

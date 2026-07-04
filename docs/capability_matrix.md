@@ -125,7 +125,8 @@ only, Planned, Not implemented.
 | Benchmark | contact reduction benchmark | Implemented | v1.13 | `adasdf_benchmark_contact_reduction` | Measures sparse query plus contact stabilization overhead and candidate reduction ratio. |
 | Benchmark | CollisionWorld benchmark | Implemented | v1.14 | `adasdf_benchmark_collision_world` | Measures broadphase, sparse world collision, or world contact orchestration timing. |
 | Benchmark | CUDA active block cache benchmark | Experimental | v1.11 | `adasdf_benchmark_cuda_block_cache` | Reports CUDA total/kernel/upload/download timing and CPU/direct sparse baselines; CUDA unavailable returns code `20`. |
-| Benchmark | hierarchical sampling speed/quality benchmark | Experimental | v1.16 | `adasdf_benchmark_hierarchical_sampling` | Compares exact and hierarchical builds, reports speedup, error, sign mismatch, fallback, and guard pass/fail fields. |
+| Benchmark | hierarchical sampling speed/quality benchmark | Experimental | v1.16 | `adasdf_benchmark_hierarchical_sampling` | Compares exact and hierarchical builds, reports speedup, error, sign mismatch, fallback, guard pass/fail, and alpha.2 diagnostics fields. |
+| Benchmark | hierarchical sampling parameter sweep | Experimental | v1.16.0-alpha.2 | `adasdf_sweep_hierarchical_sampling` | Sweeps coarse resolution, transition guard samples, and far-field quality modes; only marks effective acceleration when quality passes and speedup is greater than 1. |
 | Benchmark | CPU/GPU alignment | Implemented | v1.0 | tests | Optional CUDA skip. |
 | Benchmark | real existing-core asset benchmark | Existing-core only | v0.7 | discovered fixtures | Optional. |
 | Benchmark | FCL comparison benchmark | Planned | - | - | Not implemented. |

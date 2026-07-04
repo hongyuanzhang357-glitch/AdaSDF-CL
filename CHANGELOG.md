@@ -1,5 +1,40 @@
 # Changelog
 
+## 1.16.0-alpha.2
+
+Hierarchical sampling diagnostics and overhead reduction.
+
+### Added
+
+- Detailed hierarchical sampling diagnostics for block classes, accepted
+  predictions, fallbacks, exact BVH samples, quality-check samples, coarse
+  sample reuse, sampler counters, timing buckets, and speedup claim gating.
+- `--far-field-quality-check none|corners|sparse|full`,
+  `--far-field-safety-factor`,
+  `--transition-quality-check-samples`,
+  `--hierarchical-diagnostics`, and `--no-hierarchical-diagnostics` on
+  `adasdf_benchmark_hierarchical_sampling`.
+- `--diagnostics-report` and `--diagnostics-csv` benchmark outputs.
+- `adasdf_sweep_hierarchical_sampling` for quality-preserving parameter
+  sweeps.
+- Project-generated `wavy_sphere_ascii.stl` synthetic fixture.
+
+### Improved
+
+- Near-surface exact blocks now skip the unnecessary coarse probe path.
+- Non-near blocks reuse one coarse sample grid for classification and
+  prediction.
+- Far-field blocks default to corner quality checks instead of dense checks.
+- Effective acceleration claims are gated on both `speedup > 1` and
+  `quality_gate_passed=true`.
+
+### Notes
+
+- Quality gates remain mandatory.
+- Near-surface blocks remain exact by default.
+- The measured alpha.2 smoke benchmarks improve over alpha.1 but still do not
+  demonstrate effective construction-speed acceleration.
+
 ## 1.16.0-alpha.1
 
 Tag/documentation hotfix for the v1.16 hierarchical adaptive sampling release.

@@ -235,20 +235,31 @@ These numbers are fixture-level smoke benchmark results and should not be
 presented as universal performance claims. Larger STL models are needed for
 representative speedup evaluation.
 
-这些数值只是项目自带 fixture 下的 smoke benchmark, 不能代表复杂工业 STL
-的普适加速比例。复杂模型需要单独 benchmark。
-
 The quality gate passed in both smoke cases, with zero measured phi error and
 zero sign mismatch. However, neither case showed effective construction
 speedup: hierarchical overhead exceeded exact-sampling savings for this simple
 cube fixture and current parameters.
 
+v1.16.0-alpha.2 adds diagnostics and overhead reductions. It improves over the
+alpha.1 cube L5 result but still does not cross the effective speedup boundary:
+
+| Case | exact_build_time_ms | hierarchical_build_time_ms | speedup | exact_sample_reduction_ratio | prediction_acceptance_rate | fallback_rate | quality_gate_passed | effective_speedup_claim_allowed |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
+| cube L4 | 984.452 | 1506.14 | 0.654 | 0.105 | 1.000 | 0.000 | true | false |
+| cube L5 | 7234.26 | 10476.2 | 0.691 | 0.224 | 1.000 | 0.000 | true | false |
+| wavy sphere L4 | 958.770 | 1289.72 | 0.743 | 0.252 | 1.000 | 0.000 | true | false |
+
+The alpha.2 wavy sphere sweep tested 36 combinations. The best quality-pass
+case reached speedup 0.823, so no measured case can be described as effective
+construction-speed acceleration. The quality gates pass, but
+`effective_speedup_claim_allowed` remains false because `speedup <= 1`.
+
 ## Validation Results
 
 - CPU-only CMake configure/build: PASS.
-- Full CPU CTest: PASS, 184/184 tests.
+- Full CPU CTest: PASS, 189/189 tests.
 - Targeted v1.16 CTest subset: PASS, 9/9 tests.
-- Python unittest: PASS, 53 tests, 1 skipped.
+- Python unittest: PASS, 54 tests, 1 skipped.
 - Install validation: PASS.
 - Alpha validation with install validation: PASS.
 - `python scripts/check_repo_clean.py .`: PASS.
@@ -281,5 +292,5 @@ were committed.
   performance claims.
 - Explore parallel hierarchical block sampling after the single-threaded
   reference path is stable.
-- v1.17: Persistent Active Block Cache and Fast Block Lookup.
-- v1.18: Dynamic AABB Tree and Incremental CollisionWorld.
+- Target the near-surface exact-dominated bottleneck before claiming
+  construction-speed acceleration.

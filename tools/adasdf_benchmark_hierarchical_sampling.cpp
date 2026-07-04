@@ -14,12 +14,17 @@ void usage() {
          "[--min-level N] [--max-level N] [--block-resolution N] "
          "[--target-error 1e-3] [--target-sampling-error 1e-3] "
          "[--coarse-resolution N] [--quality-check-samples N] "
+         "[--transition-quality-check-samples N] "
+         "[--far-field-quality-check none|corners|sparse|full] "
+         "[--far-field-safety-factor value] "
          "[--comparison-samples N] [--accel brute|bvh] [--threads N] "
          "[--unsigned] [--far-field-interpolation] "
          "[--no-far-field-interpolation] [--transition-prediction] "
          "[--no-transition-prediction] [--near-surface-exact] "
+         "[--hierarchical-diagnostics] [--no-hierarchical-diagnostics] "
          "[--quality-guard] [--no-quality-guard] "
          "[--report report.md] [--json report.json] [--csv report.csv] "
+         "[--diagnostics-report report.md] [--diagnostics-csv report.csv] "
          "[--strict-json report.json] [--case-id case_id]\n";
 }
 
@@ -77,6 +82,8 @@ int main(int argc, char** argv) {
     std::filesystem::path report_path;
     std::filesystem::path json_path;
     std::filesystem::path csv_path;
+    std::filesystem::path diagnostics_report_path;
+    std::filesystem::path diagnostics_csv_path;
     std::filesystem::path strict_json_path;
     std::string case_id = "default";
     adasdf::SpeedQualityBenchmarkOptions options;
@@ -85,6 +92,7 @@ int main(int argc, char** argv) {
     options.build_options.acceleration = adasdf::SDFSamplingAcceleration::BVH;
     options.build_options.hierarchical_sampling.enable_hierarchical_sampling =
         true;
+    options.build_options.hierarchical_sampling.hierarchical_diagnostics = true;
     const auto strict_timer = adasdf::startStrictRunTimer();
     std::map<std::string, std::string> strict_parameters =
         adasdf::commandLineParameters(argc, argv);
@@ -139,6 +147,22 @@ int main(int argc, char** argv) {
       } else if (arg == "--quality-check-samples" && hasValue(i, argc)) {
         options.build_options.hierarchical_sampling
             .quality_check_samples_per_axis = std::stoi(argv[++i]);
+      } else if (arg == "--transition-quality-check-samples" &&
+                 hasValue(i, argc)) {
+        options.build_options.hierarchical_sampling
+            .transition_quality_check_samples_per_axis = std::stoi(argv[++i]);
+      } else if (arg == "--far-field-quality-check" && hasValue(i, argc)) {
+        adasdf::FarFieldQualityCheckMode mode;
+        if (!adasdf::parseFarFieldQualityCheckMode(argv[++i], &mode)) {
+          std::cerr << "Unknown far-field quality check mode: " << argv[i]
+                    << "\n";
+          return 1;
+        }
+        options.build_options.hierarchical_sampling.far_field_quality_check =
+            mode;
+      } else if (arg == "--far-field-safety-factor" && hasValue(i, argc)) {
+        options.build_options.hierarchical_sampling.far_field_safety_factor =
+            std::stod(argv[++i]);
       } else if (arg == "--comparison-samples" && hasValue(i, argc)) {
         options.comparison_samples_per_axis = std::stoi(argv[++i]);
       } else if (arg == "--accel" && hasValue(i, argc)) {
@@ -166,6 +190,12 @@ int main(int argc, char** argv) {
       } else if (arg == "--near-surface-exact") {
         options.build_options.hierarchical_sampling.keep_near_surface_exact =
             true;
+      } else if (arg == "--hierarchical-diagnostics") {
+        options.build_options.hierarchical_sampling.hierarchical_diagnostics =
+            true;
+      } else if (arg == "--no-hierarchical-diagnostics") {
+        options.build_options.hierarchical_sampling.hierarchical_diagnostics =
+            false;
       } else if (arg == "--quality-guard") {
         options.build_options.hierarchical_sampling.quality_guard = true;
       } else if (arg == "--no-quality-guard") {
@@ -176,6 +206,10 @@ int main(int argc, char** argv) {
         json_path = argv[++i];
       } else if (arg == "--csv" && hasValue(i, argc)) {
         csv_path = argv[++i];
+      } else if (arg == "--diagnostics-report" && hasValue(i, argc)) {
+        diagnostics_report_path = argv[++i];
+      } else if (arg == "--diagnostics-csv" && hasValue(i, argc)) {
+        diagnostics_csv_path = argv[++i];
       } else if (arg == "--strict-json" && hasValue(i, argc)) {
         strict_json_path = argv[++i];
       } else if (arg == "--case-id" && hasValue(i, argc)) {
@@ -209,7 +243,9 @@ int main(int argc, char** argv) {
 
     adasdf::SpeedQualityBenchmarkResult result =
         adasdf::SpeedQualityBenchmark::runSTL(input.string(), options);
+    result.case_id = case_id;
     writeReports(result, report_path, json_path, csv_path);
+    writeReports(result, diagnostics_report_path, {}, diagnostics_csv_path);
     if (!result.success) {
       std::cerr << "adasdf_benchmark_hierarchical_sampling: benchmark failed: "
                 << result.error_message << "\n";
@@ -241,6 +277,38 @@ int main(int argc, char** argv) {
               << "\n";
     std::cout << "Quality gate passed: "
               << (result.quality_gate_passed ? "yes" : "no") << "\n";
+    std::cout << "Effective speedup claim allowed: "
+              << (result.effective_speedup_claim_allowed ? "yes" : "no")
+              << "\n";
+    std::cout << "Far-field quality check: "
+              << adasdf::toString(result.far_field_quality_check) << "\n";
+    std::cout << "Total blocks: "
+              << result.diagnostics.total_block_count << "\n";
+    std::cout << "Near-surface blocks: "
+              << result.diagnostics.near_surface_block_count << "\n";
+    std::cout << "Transition blocks: "
+              << result.diagnostics.transition_block_count << "\n";
+    std::cout << "Far-field blocks: "
+              << result.diagnostics.far_field_block_count << "\n";
+    std::cout << "Exact BVH samples: "
+              << result.diagnostics.exact_bvh_sample_count << "\n";
+    std::cout << "Coarse samples: "
+              << result.diagnostics.coarse_sample_count << "\n";
+    std::cout << "Reused coarse samples: "
+              << result.diagnostics.reused_coarse_sample_count << "\n";
+    std::cout << "Quality check samples: "
+              << result.diagnostics.quality_check_sample_count << "\n";
+    std::cout << "Fallback rate: " << result.diagnostics.fallback_rate << "\n";
+    std::cout << "Prediction acceptance rate: "
+              << result.diagnostics.prediction_acceptance_rate << "\n";
+    std::cout << "Classification time ms: "
+              << result.diagnostics.classification_time_ms << "\n";
+    std::cout << "Prediction time ms: "
+              << result.diagnostics.prediction_time_ms << "\n";
+    std::cout << "Quality check time ms: "
+              << result.diagnostics.quality_check_time_ms << "\n";
+    std::cout << "Fallback exact time ms: "
+              << result.diagnostics.fallback_exact_time_ms << "\n";
     std::cout
         << adasdf::HierarchicalSamplingReportWriter::csvHeader() << "\n"
         << adasdf::HierarchicalSamplingReportWriter::csvRow(result) << "\n";
@@ -266,7 +334,16 @@ int main(int argc, char** argv) {
          {"predicted_sample_count",
           static_cast<double>(result.predicted_sample_count)},
          {"fallback_block_count",
-          static_cast<double>(result.fallback_block_count)}});
+          static_cast<double>(result.fallback_block_count)},
+         {"effective_speedup_claim_allowed",
+          result.effective_speedup_claim_allowed ? 1.0 : 0.0},
+         {"exact_bvh_sample_count",
+          static_cast<double>(result.diagnostics.exact_bvh_sample_count)},
+         {"quality_check_sample_count",
+          static_cast<double>(result.diagnostics.quality_check_sample_count)},
+         {"fallback_rate", result.diagnostics.fallback_rate},
+         {"prediction_acceptance_rate",
+          result.diagnostics.prediction_acceptance_rate}});
     return 0;
   } catch (const std::exception& exc) {
     std::cerr << "adasdf_benchmark_hierarchical_sampling failed: "

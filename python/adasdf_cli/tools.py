@@ -727,6 +727,9 @@ def benchmark_hierarchical_sampling(
     target_sampling_error: Optional[float] = None,
     coarse_resolution: Optional[int] = None,
     quality_check_samples: Optional[int] = None,
+    transition_quality_check_samples: Optional[int] = None,
+    far_field_quality_check: Optional[str] = None,
+    far_field_safety_factor: Optional[float] = None,
     comparison_samples: Optional[int] = None,
     accel: Optional[str] = None,
     threads: Optional[int] = None,
@@ -734,10 +737,13 @@ def benchmark_hierarchical_sampling(
     far_field_interpolation: Optional[bool] = None,
     transition_prediction: Optional[bool] = None,
     near_surface_exact: bool = False,
+    hierarchical_diagnostics: Optional[bool] = None,
     quality_guard: Optional[bool] = None,
     report: Optional[PathLike] = None,
     json: Optional[PathLike] = None,
     csv: Optional[PathLike] = None,
+    diagnostics_report: Optional[PathLike] = None,
+    diagnostics_csv: Optional[PathLike] = None,
     strict_json: Optional[PathLike] = None,
     case_id: Optional[str] = None,
     bin_dir: Optional[PathLike] = None,
@@ -752,6 +758,13 @@ def benchmark_hierarchical_sampling(
     _append_value(command, "--target-sampling-error", target_sampling_error)
     _append_value(command, "--coarse-resolution", coarse_resolution)
     _append_value(command, "--quality-check-samples", quality_check_samples)
+    _append_value(
+        command,
+        "--transition-quality-check-samples",
+        transition_quality_check_samples,
+    )
+    _append_value(command, "--far-field-quality-check", far_field_quality_check)
+    _append_value(command, "--far-field-safety-factor", far_field_safety_factor)
     _append_value(command, "--comparison-samples", comparison_samples)
     _append_value(command, "--accel", accel)
     _append_value(command, "--threads", threads)
@@ -769,16 +782,78 @@ def benchmark_hierarchical_sampling(
         "--no-transition-prediction",
     )
     _append_bool(command, "--near-surface-exact", near_surface_exact)
+    _append_bool_switch(
+        command,
+        hierarchical_diagnostics,
+        "--hierarchical-diagnostics",
+        "--no-hierarchical-diagnostics",
+    )
     _append_bool_switch(command, quality_guard, "--quality-guard", "--no-quality-guard")
     _append_value(command, "--report", _path(report) if report is not None else None)
     _append_value(command, "--json", _path(json) if json is not None else None)
     _append_value(command, "--csv", _path(csv) if csv is not None else None)
+    _append_value(
+        command,
+        "--diagnostics-report",
+        _path(diagnostics_report) if diagnostics_report is not None else None,
+    )
+    _append_value(
+        command,
+        "--diagnostics-csv",
+        _path(diagnostics_csv) if diagnostics_csv is not None else None,
+    )
     _append_strict(command, strict_json, case_id)
     result = _run(command, check=check, dry_run=dry_run)
     return BenchmarkResult(
         result,
         metrics=parse_hierarchical_sampling_benchmark_metrics(result.stdout),
     )
+
+
+def sweep_hierarchical_sampling(
+    input_stl: PathLike,
+    *,
+    max_level: Optional[str] = None,
+    block_resolution: Optional[int] = None,
+    target_error: Optional[float] = None,
+    target_sampling_error: Optional[float] = None,
+    coarse_resolution: Optional[str] = None,
+    transition_quality_check_samples: Optional[str] = None,
+    far_field_quality_check: Optional[str] = None,
+    far_field_safety_factor: Optional[str] = None,
+    quality_check_samples: Optional[int] = None,
+    comparison_samples: Optional[int] = None,
+    accel: Optional[str] = None,
+    threads: Optional[int] = None,
+    unsigned: bool = False,
+    csv: Optional[PathLike] = None,
+    report: Optional[PathLike] = None,
+    bin_dir: Optional[PathLike] = None,
+    check: bool = True,
+    dry_run: bool = False,
+) -> BenchmarkResult:
+    command = [_tool("adasdf_sweep_hierarchical_sampling", bin_dir, dry_run), _path(input_stl)]
+    _append_value(command, "--max-level", max_level)
+    _append_value(command, "--block-resolution", block_resolution)
+    _append_value(command, "--target-error", target_error)
+    _append_value(command, "--target-sampling-error", target_sampling_error)
+    _append_value(command, "--coarse-resolution", coarse_resolution)
+    _append_value(
+        command,
+        "--transition-quality-check-samples",
+        transition_quality_check_samples,
+    )
+    _append_value(command, "--far-field-quality-check", far_field_quality_check)
+    _append_value(command, "--far-field-safety-factor", far_field_safety_factor)
+    _append_value(command, "--quality-check-samples", quality_check_samples)
+    _append_value(command, "--comparison-samples", comparison_samples)
+    _append_value(command, "--accel", accel)
+    _append_value(command, "--threads", threads)
+    _append_bool(command, "--unsigned", unsigned)
+    _append_value(command, "--csv", _path(csv) if csv is not None else None)
+    _append_value(command, "--report", _path(report) if report is not None else None)
+    result = _run(command, check=check, dry_run=dry_run)
+    return BenchmarkResult(result, metrics=parse_hierarchical_sampling_benchmark_metrics(result.stdout))
 
 
 def sparse_query(

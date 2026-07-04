@@ -373,6 +373,7 @@ def main() -> int:
         "adasdf_cuda_active_block_query": find_executable(build, "adasdf_cuda_active_block_query", config),
         "adasdf_benchmark_cuda_block_cache": find_executable(build, "adasdf_benchmark_cuda_block_cache", config),
         "adasdf_benchmark_hierarchical_sampling": find_executable(build, "adasdf_benchmark_hierarchical_sampling", config),
+        "adasdf_sweep_hierarchical_sampling": find_executable(build, "adasdf_sweep_hierarchical_sampling", config),
         "adasdf_benchmark_contact_reduction": find_executable(build, "adasdf_benchmark_contact_reduction", config),
         "adasdf_collide_boxes_demo": find_executable(build, "adasdf_collide_boxes_demo", config),
         "adasdf_benchmark_batch_query": find_executable(build, "adasdf_benchmark_batch_query", config),

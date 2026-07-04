@@ -32,6 +32,20 @@ SpeedQualityBenchmarkResult SpeedQualityBenchmark::run(
     const TriangleMesh& mesh,
     const SpeedQualityBenchmarkOptions& options) {
   SpeedQualityBenchmarkResult result;
+  result.max_level = options.build_options.max_octree_level;
+  result.block_resolution = options.build_options.block_resolution;
+  result.coarse_resolution =
+      options.build_options.hierarchical_sampling.coarse_resolution;
+  result.quality_check_samples =
+      options.build_options.hierarchical_sampling.quality_check_samples_per_axis;
+  result.transition_quality_check_samples =
+      options.build_options.hierarchical_sampling
+          .transition_quality_check_samples_per_axis;
+  result.far_field_quality_check =
+      options.build_options.hierarchical_sampling.far_field_quality_check;
+  result.far_field_safety_factor =
+      options.build_options.hierarchical_sampling.far_field_safety_factor;
+
   AdaptiveBlockSDFBuildOptions exact_options = options.build_options;
   exact_options.hierarchical_sampling.enable_hierarchical_sampling = false;
   AdaptiveBlockSDFBuildReport exact_report;
@@ -66,6 +80,11 @@ SpeedQualityBenchmarkResult SpeedQualityBenchmark::run(
       hierarchical_report.hierarchical_sampling.predicted_sample_count;
   result.fallback_block_count =
       hierarchical_report.hierarchical_sampling.fallback_exact_block_count;
+  result.diagnostics = hierarchical_report.hierarchical_sampling.diagnostics;
+  result.diagnostics.exact_reference_time_ms = result.exact_build_time_ms;
+  result.diagnostics.total_hierarchical_time_ms =
+      result.hierarchical_build_time_ms;
+  finalizeHierarchicalSamplingDiagnostics(&result.diagnostics);
 
   const AABB bounds = exact_model->boundingBox();
   const int samples = std::max(2, options.comparison_samples_per_axis);
@@ -122,6 +141,8 @@ SpeedQualityBenchmarkResult SpeedQualityBenchmark::run(
           options.build_options.hierarchical_sampling.target_p95_error &&
       result.sign_mismatch_count == 0 &&
       result.near_surface_sign_mismatch_count == 0;
+  result.effective_speedup_claim_allowed =
+      result.speedup > 1.0 && result.quality_gate_passed;
   result.success = true;
   return result;
 }
