@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <map>
 #include <string>
 
 namespace {
@@ -18,7 +19,8 @@ void usage() {
          "[--normal-cos value] [--min-penetration value] [--with-normal] "
          "[--no-radius] [--out solver_contacts.csv] "
          "[--candidates-out raw_candidates.csv] [--json solver_contacts.json] "
-         "[--report solver_contacts.md]\n";
+         "[--report solver_contacts.md] [--strict-json report.json] "
+         "[--case-id case_id]\n";
 }
 
 bool hasValue(int index, int argc) {
@@ -78,6 +80,38 @@ int main(int argc, char** argv) {
     std::filesystem::path raw_candidates_path;
     std::filesystem::path json_path;
     std::filesystem::path report_path;
+    std::filesystem::path strict_json_path;
+    std::string case_id = "default";
+    const auto strict_timer = adasdf::startStrictRunTimer();
+    std::map<std::string, std::string> strict_parameters =
+        adasdf::commandLineParameters(argc, argv);
+    auto write_strict =
+        [&](bool success,
+            const std::string& status,
+            const std::string& failure_reason,
+            const std::map<std::string, double>& metrics = {}) {
+          if (strict_json_path.empty()) {
+            return;
+          }
+          std::string strict_error;
+          if (!adasdf::writeStrictRunReport(
+                  strict_json_path,
+                  "adasdf_solver_contact_candidates",
+                  case_id,
+                  samples_path,
+                  out_path,
+                  strict_parameters,
+                  metrics,
+                  success,
+                  status,
+                  failure_reason,
+                  strict_timer,
+                  &strict_error)) {
+            std::cerr << "adasdf_solver_contact_candidates: failed to write "
+                         "strict JSON: "
+                      << strict_error << "\n";
+          }
+        };
 
     for (int i = 3; i < argc; ++i) {
       const std::string arg = argv[i];
@@ -119,6 +153,10 @@ int main(int argc, char** argv) {
         json_path = argv[++i];
       } else if (arg == "--report" && hasValue(i, argc)) {
         report_path = argv[++i];
+      } else if (arg == "--strict-json" && hasValue(i, argc)) {
+        strict_json_path = argv[++i];
+      } else if (arg == "--case-id" && hasValue(i, argc)) {
+        case_id = argv[++i];
       } else if (arg == "--help" || arg == "-h") {
         usage();
         return 0;
@@ -132,12 +170,14 @@ int main(int argc, char** argv) {
     const auto model = adasdf::SDFBinReader::read(model_path);
     if (!model || !model->isValid() || !model->queryBackendAvailable()) {
       std::cerr << "adasdf_solver_contact_candidates: failed to load queryable model\n";
+      write_strict(false, "failed", "failed to load queryable model");
       return 1;
     }
     const auto samples = adasdf::CollisionSampleSetIO::readCSV(samples_path.string());
     if (!samples.success) {
       std::cerr << "adasdf_solver_contact_candidates: failed to read samples: "
                 << samples.error_message << "\n";
+      write_strict(false, "failed", samples.error_message);
       return 1;
     }
 
@@ -146,6 +186,7 @@ int main(int argc, char** argv) {
     if (!query.success) {
       std::cerr << "adasdf_solver_contact_candidates: sparse query failed: "
                 << query.error_message << "\n";
+      write_strict(false, "failed", query.error_message);
       return 2;
     }
     const adasdf::ContactCandidateReductionResult reduced =
@@ -157,6 +198,7 @@ int main(int argc, char** argv) {
     if (!stabilized.success) {
       std::cerr << "adasdf_solver_contact_candidates: stabilization failed: "
                 << stabilized.error_message << "\n";
+      write_strict(false, "failed", stabilized.error_message);
       return 3;
     }
     const adasdf::SolverContactSet contacts =
@@ -202,6 +244,13 @@ int main(int argc, char** argv) {
       std::cerr << "adasdf_solver_contact_candidates: failed to write report\n";
       return 3;
     }
+    write_strict(
+        true,
+        "ok",
+        "",
+        {{"query_time_ms", query.stats.elapsed_ms},
+         {"contact_count", static_cast<double>(reduced.reduced_count)},
+         {"solver_contact_count", static_cast<double>(contacts.size())}});
     return 0;
   } catch (const std::exception& exc) {
     std::cerr << "adasdf_solver_contact_candidates failed: "

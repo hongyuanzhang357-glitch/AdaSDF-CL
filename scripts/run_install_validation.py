@@ -476,6 +476,14 @@ def main() -> int:
     compressed_direct_report = build.parent / "install_validation_compressed_direct_report.md"
     compressed_direct_compression_report = build.parent / "install_validation_compressed_direct_compression_report.md"
     compressed_direct_quality = build.parent / "install_validation_compressed_direct_quality.md"
+    strict_compressed_direct_json = build.parent / "install_strict_compressed_direct.json"
+    strict_world_sparse_json = build.parent / "install_strict_world_sparse_collision.json"
+    strict_world_benchmark_json = build.parent / "install_strict_collision_world_benchmark.json"
+    strict_sparse_query_json = build.parent / "install_strict_sparse_query.json"
+    strict_solver_contacts_json = build.parent / "install_strict_solver_contacts.json"
+    strict_compressed_benchmark_json = build.parent / "install_strict_compressed_benchmark.json"
+    strict_report_list = build.parent / "install_strict_report_inputs.txt"
+    strict_summary_csv = build.parent / "install_strict_run_summary.csv"
     sample_fixture = source / "tests" / "data" / "samples" / "cube_sparse_samples.csv"
     sparse_results_csv = build.parent / "install_validation_sparse_results.csv"
     sparse_report = build.parent / "install_validation_sparse_report.md"
@@ -540,6 +548,9 @@ def main() -> int:
         "adasdf_build_adaptive_sdf",
         "adasdf_compress_adaptive_sdf",
         "adasdf_build_compressed_sdf",
+        "adasdf_write_manifest",
+        "adasdf_validate_report",
+        "adasdf_collect_run_summary",
         "adasdf_recommend_build",
         "adasdf_info",
         "adasdf_query",
@@ -753,6 +764,10 @@ def main() -> int:
                 "none",
                 "--out",
                 str(compressed_benchmark_csv),
+                "--strict-json",
+                str(strict_compressed_benchmark_json),
+                "--case-id",
+                "install_compressed_benchmark",
             ],
         ),
         (
@@ -775,6 +790,10 @@ def main() -> int:
                 str(compressed_direct_compression_report),
                 "--quality-report",
                 str(compressed_direct_quality),
+                "--strict-json",
+                str(strict_compressed_direct_json),
+                "--case-id",
+                "install_compressed_direct",
             ],
         ),
         (
@@ -804,6 +823,10 @@ def main() -> int:
                 str(world_sparse_report),
                 "--json",
                 str(world_sparse_json),
+                "--strict-json",
+                str(strict_world_sparse_json),
+                "--case-id",
+                "install_world_sparse",
             ],
         ),
         (
@@ -844,6 +867,10 @@ def main() -> int:
                 str(world_benchmark_report),
                 "--json",
                 str(world_benchmark_json),
+                "--strict-json",
+                str(strict_world_benchmark_json),
+                "--case-id",
+                "install_world_benchmark",
             ],
         ),
         (
@@ -858,6 +885,10 @@ def main() -> int:
                 str(sparse_results_csv),
                 "--report",
                 str(sparse_report),
+                "--strict-json",
+                str(strict_sparse_query_json),
+                "--case-id",
+                "install_sparse_query",
             ],
         ),
         (
@@ -932,6 +963,10 @@ def main() -> int:
                 str(solver_contacts_json),
                 "--report",
                 str(solver_contacts_report),
+                "--strict-json",
+                str(strict_solver_contacts_json),
+                "--case-id",
+                "install_solver_contacts",
             ],
         ),
         (
@@ -1693,6 +1728,51 @@ def main() -> int:
             write_report(report_path, results, source, build, install, config)
             print_failure(result, source, build, install)
             return result.returncode
+
+    strict_reports = [
+        strict_compressed_direct_json,
+        strict_world_sparse_json,
+        strict_world_benchmark_json,
+        strict_sparse_query_json,
+        strict_solver_contacts_json,
+        strict_compressed_benchmark_json,
+    ]
+    for strict_report in strict_reports:
+        print(f"[install-validation] Strict Report Validate {strict_report.name}", flush=True)
+        result = run_step(
+            f"Strict Report Validate {strict_report.name}",
+            [str(dense_tools["adasdf_validate_report"]), str(strict_report)],
+            workspace,
+        )
+        results.append(result)
+        if result.returncode != 0:
+            write_report(report_path, results, source, build, install, config)
+            print_failure(result, source, build, install)
+            return result.returncode
+    strict_report_list.write_text(
+        "\n".join(str(path) for path in strict_reports) + "\n",
+        encoding="utf-8",
+    )
+    print("[install-validation] Strict Report Summary CSV", flush=True)
+    result = run_step(
+        "Strict Report Summary CSV",
+        [
+            str(dense_tools["adasdf_collect_run_summary"]),
+            "--inputs",
+            str(strict_report_list),
+            "--out",
+            str(strict_summary_csv),
+        ],
+        workspace,
+    )
+    results.append(result)
+    if result.returncode != 0 or not strict_summary_csv.exists():
+        if result.returncode == 0:
+            result.returncode = 1
+            result.output += "\nValidation failed: strict summary CSV was not created.\n"
+        write_report(report_path, results, source, build, install, config)
+        print_failure(result, source, build, install)
+        return result.returncode
 
     try:
         package_exe = find_executable(package_build, "test_find_package", config)

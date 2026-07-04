@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.15.0-alpha
+
+Strict JSON/CSV reporting and reproducibility manifests.
+
+### Added
+
+- `include/adasdf/report` and `src/report` with strict schema, run/case
+  manifest, strict JSON writer, strict CSV writer, report validator, and run
+  summary collector.
+- CLIs: `adasdf_write_manifest`, `adasdf_validate_report`, and
+  `adasdf_collect_run_summary`.
+- `--strict-json` and `--case-id` support on selected build, query, benchmark,
+  and world CLIs.
+- Python wrapper helpers for manifest write, report validation, run summary
+  collection, and strict report argument forwarding.
+- Strict report docs, release draft, alpha validation coverage, and install
+  validation coverage.
+
+### Notes
+
+- Report code is dependency-free and does not require nlohmann_json, Python,
+  FCL, CUDA, or the existing research core.
+- Core collision algorithms are unchanged.
+
 ## 1.14.0-alpha
 
 CollisionWorld broadphase and multi-object sample-based SDF collision.

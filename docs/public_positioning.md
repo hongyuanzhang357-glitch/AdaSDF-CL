@@ -30,6 +30,8 @@ replacement.
 - CollisionWorld broadphase for multiple SDF objects with simple CSV scenes,
   deterministic AABB filtering, sample-based sparse collision, and
   solver-ready contact candidate export.
+- Strict JSON/CSV reproducibility reports for build, query, benchmark, and
+  validation automation.
 - Contact-aware CPU active block expansion/cache for compressed SDF runtime
   memory savings.
 - Optional CPU BVH acceleration for STL-to-SDF builder sampling.
@@ -59,6 +61,7 @@ replacement.
 - Exact mesh-vs-mesh CollisionWorld contact.
 - CollisionWorld as FCL fallback.
 - CollisionWorld as a scene graph.
+- Strict reports as solver constraints or mesh certification.
 - GPU-native compressed direct query in v1.9.
 - CUDA active block cache in v1.10.
 - BVH acceleration as a GPU query backend.
@@ -79,8 +82,9 @@ expansion/cache for local compressed SDF query working sets. v1.12 adds an
 optional CPU TriangleBVH builder acceleration path and deterministic
 multi-threaded builder sampling. v1.13 adds solver-aware contact candidate
 stabilization for external hard-contact simulation workflows. v1.14 adds
-CollisionWorld broadphase and multi-object sample-based SDF collision. It does
-not fill holes, repair self-intersections, implement Tucker/HOSVD compression,
+CollisionWorld broadphase and multi-object sample-based SDF collision. v1.15
+adds strict JSON/CSV reproducibility reports for automation. It does not
+fill holes, repair self-intersections, implement Tucker/HOSVD compression,
 claim a universal trained recommender, guarantee optimal parameters, claim
 GPU-native compressed query, provide GPU BVH, provide FCL fallback, provide
 exact mesh-vs-mesh world contact, provide a full contact solver, or provide a

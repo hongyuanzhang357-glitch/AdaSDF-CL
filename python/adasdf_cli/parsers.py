@@ -236,6 +236,24 @@ def parse_sparse_benchmark_metrics(stdout: str) -> Dict[str, object]:
     return metrics
 
 
+def parse_strict_report_valid(stdout: str) -> Optional[bool]:
+    if _search(r"^Strict report valid:\s*.+$", stdout):
+        return True
+    if _search(r"^Strict report invalid:\s*.+$", stdout):
+        return False
+    return None
+
+
+def parse_strict_report_path(stdout: str) -> Optional[str]:
+    match = _search(r"^Strict report valid:\s*(.+)$", stdout)
+    return match.group(1).strip() if match else None
+
+
+def parse_run_summary_csv_path(stdout: str) -> Optional[str]:
+    match = _search(r"^Run summary CSV:\s*(.+)$", stdout)
+    return match.group(1).strip() if match else None
+
+
 def parse_contact_reduction_benchmark_metrics(stdout: str) -> Dict[str, object]:
     metrics: Dict[str, object] = {}
     for label, key in (

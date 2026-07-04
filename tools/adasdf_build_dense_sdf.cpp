@@ -3,6 +3,7 @@
 #include <exception>
 #include <filesystem>
 #include <iostream>
+#include <map>
 #include <string>
 
 namespace {
@@ -14,6 +15,7 @@ void usage() {
          "[--require-watertight] [--allow-open-unsigned] [--auto-clean] "
          "[--accel brute|bvh] [--threads N] [--benchmark-brute-reference] "
          "[--report build_report.md] [--json build_report.json] "
+         "[--strict-json report.json] [--case-id case_id] "
          "[--recommend] [--verbose]\n";
 }
 
@@ -55,7 +57,38 @@ int main(int argc, char** argv) {
     std::filesystem::path output;
     std::filesystem::path report_path;
     std::filesystem::path json_path;
+    std::filesystem::path strict_json_path;
+    std::string case_id = "default";
     adasdf::DenseSDFBuildOptions options;
+    const auto strict_timer = adasdf::startStrictRunTimer();
+    std::map<std::string, std::string> strict_parameters =
+        adasdf::commandLineParameters(argc, argv);
+    auto write_strict =
+        [&](bool success,
+            const std::string& status,
+            const std::string& failure_reason,
+            const std::map<std::string, double>& metrics = {}) {
+          if (strict_json_path.empty()) {
+            return;
+          }
+          std::string strict_error;
+          if (!adasdf::writeStrictRunReport(
+                  strict_json_path,
+                  "adasdf_build_dense_sdf",
+                  case_id,
+                  input,
+                  output,
+                  strict_parameters,
+                  metrics,
+                  success,
+                  status,
+                  failure_reason,
+                  strict_timer,
+                  &strict_error)) {
+            std::cerr << "adasdf_build_dense_sdf: failed to write strict JSON: "
+                      << strict_error << "\n";
+          }
+        };
 
     for (int i = 1; i < argc; ++i) {
       const std::string arg = argv[i];
@@ -94,6 +127,10 @@ int main(int argc, char** argv) {
         report_path = argv[++i];
       } else if (arg == "--json" && hasValue(i, argc)) {
         json_path = argv[++i];
+      } else if (arg == "--strict-json" && hasValue(i, argc)) {
+        strict_json_path = argv[++i];
+      } else if (arg == "--case-id" && hasValue(i, argc)) {
+        case_id = argv[++i];
       } else if (arg == "--verbose") {
         options.verbose = true;
       } else if (!arg.empty() && arg[0] == '-') {
@@ -113,11 +150,13 @@ int main(int argc, char** argv) {
 
     if (input.empty() || output.empty()) {
       usage();
+      write_strict(false, "failed", "missing input or output path");
       return 1;
     }
     if (!std::filesystem::exists(input)) {
       std::cerr << "adasdf_build_dense_sdf: input STL does not exist: "
                 << input.string() << "\n";
+      write_strict(false, "failed", "input STL does not exist");
       return 1;
     }
 
@@ -130,6 +169,7 @@ int main(int argc, char** argv) {
     if (!model) {
       std::cerr << "adasdf_build_dense_sdf: build failed: "
                 << report.error_message << "\n";
+      write_strict(false, "failed", report.error_message);
       if (options.signed_distance && options.require_watertight_for_signed &&
           !report.watertight) {
         return 2;
@@ -149,6 +189,7 @@ int main(int argc, char** argv) {
     } catch (const std::exception& exc) {
       std::cerr << "adasdf_build_dense_sdf: write/reload validation failed: "
                 << exc.what() << "\n";
+      write_strict(false, "failed", exc.what());
       return 4;
     }
 
@@ -188,6 +229,13 @@ int main(int argc, char** argv) {
     if (!json_path.empty()) {
       std::cout << "JSON report: " << json_path.string() << "\n";
     }
+    write_strict(
+        true,
+        "ok",
+        "",
+        {{"triangle_count", static_cast<double>(report.triangle_count)},
+         {"build_time_ms", report.build_time_ms},
+         {"memory_bytes", static_cast<double>(report.memory_bytes)}});
     return 0;
   } catch (const std::exception& exc) {
     std::cerr << "adasdf_build_dense_sdf failed: " << exc.what() << "\n";

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Iterable, List, Optional, Sequence, Union
+from typing import Iterable, List, Mapping, Optional, Sequence, Union
 
 from .config import AdaSDFConfig, find_tool, preview_tool
 from .parsers import (
@@ -25,9 +25,12 @@ from .parsers import (
     parse_recommended_command,
     parse_recommended_path,
     parse_raw_candidate_count,
+    parse_run_summary_csv_path,
     parse_patch_count,
     parse_solver_contact_count,
     parse_sparse_benchmark_metrics,
+    parse_strict_report_path,
+    parse_strict_report_valid,
 )
 from .results import (
     BenchmarkResult,
@@ -47,10 +50,13 @@ from .results import (
     MeshCheckResult,
     QueryResult,
     RecommendationResult,
+    RunSummaryResult,
     SolverContactsResult,
     SparseBenchmarkResult,
     SparseCollisionResult,
     SparseQueryResult,
+    StrictManifestResult,
+    StrictReportValidationResult,
     WorldBroadphaseResult,
     WorldSolverContactsResult,
     WorldSparseCollisionResult,
@@ -91,6 +97,15 @@ def _append_bool(command: List[str], flag: str, enabled: bool) -> None:
         command.append(flag)
 
 
+def _append_strict(
+    command: List[str],
+    strict_json: Optional[PathLike],
+    case_id: Optional[str],
+) -> None:
+    _append_value(command, "--strict-json", _path(strict_json) if strict_json is not None else None)
+    _append_value(command, "--case-id", case_id)
+
+
 def _append_signed(command: List[str], signed: bool, unsigned: bool) -> None:
     if unsigned:
         command.append("--unsigned")
@@ -112,11 +127,80 @@ def capabilities(*, bin_dir: Optional[PathLike] = None, check: bool = True, dry_
     return _run(command, check=check, dry_run=dry_run)
 
 
+def write_manifest(
+    *,
+    out: PathLike,
+    case_id: str = "default",
+    tool: str = "python",
+    input_path: Optional[PathLike] = None,
+    output_path: Optional[PathLike] = None,
+    params: Optional[Mapping[str, object]] = None,
+    bin_dir: Optional[PathLike] = None,
+    check: bool = True,
+    dry_run: bool = False,
+) -> StrictManifestResult:
+    command = [
+        _tool("adasdf_write_manifest", bin_dir, dry_run),
+        "--case-id",
+        case_id,
+        "--tool",
+        tool,
+        "--out",
+        _path(out),
+    ]
+    _append_value(command, "--input", _path(input_path) if input_path is not None else None)
+    _append_value(command, "--output", _path(output_path) if output_path is not None else None)
+    for key, value in (params or {}).items():
+        command.extend(["--param", f"{key}={value}"])
+    result = _run(command, check=check, dry_run=dry_run)
+    return StrictManifestResult(result, report_path=Path(out))
+
+
+def validate_report(
+    report_json: PathLike,
+    *,
+    bin_dir: Optional[PathLike] = None,
+    check: bool = True,
+    dry_run: bool = False,
+) -> StrictReportValidationResult:
+    command = [_tool("adasdf_validate_report", bin_dir, dry_run), _path(report_json)]
+    result = _run(command, check=check, dry_run=dry_run)
+    parsed_path = parse_strict_report_path(result.stdout)
+    parsed_valid = parse_strict_report_valid(result.stdout)
+    return StrictReportValidationResult(
+        result,
+        report_path=Path(parsed_path) if parsed_path else Path(report_json),
+        valid=None if dry_run else (parsed_valid if parsed_valid is not None else result.returncode == 0),
+    )
+
+
+def collect_run_summary(
+    inputs: PathLike,
+    out: PathLike,
+    *,
+    bin_dir: Optional[PathLike] = None,
+    check: bool = True,
+    dry_run: bool = False,
+) -> RunSummaryResult:
+    command = [
+        _tool("adasdf_collect_run_summary", bin_dir, dry_run),
+        "--inputs",
+        _path(inputs),
+        "--out",
+        _path(out),
+    ]
+    result = _run(command, check=check, dry_run=dry_run)
+    parsed_path = parse_run_summary_csv_path(result.stdout)
+    return RunSummaryResult(result, inputs_path=Path(inputs), csv_path=Path(parsed_path) if parsed_path else Path(out))
+
+
 def mesh_check(
     input_stl: PathLike,
     *,
     out: Optional[PathLike] = None,
     json: Optional[PathLike] = None,
+    strict_json: Optional[PathLike] = None,
+    case_id: Optional[str] = None,
     readiness: bool = False,
     strict: bool = False,
     lenient: bool = False,
@@ -129,6 +213,7 @@ def mesh_check(
     command = [_tool("adasdf_mesh_check", bin_dir, dry_run), _path(input_stl)]
     _append_value(command, "--out", _path(out) if out is not None else None)
     _append_value(command, "--json", _path(json) if json is not None else None)
+    _append_strict(command, strict_json, case_id)
     _append_bool(command, "--readiness", readiness)
     _append_bool(command, "--strict", strict)
     _append_bool(command, "--lenient", lenient)
@@ -230,6 +315,8 @@ def build_dense_sdf(
     benchmark_brute_reference: bool = False,
     report: Optional[PathLike] = None,
     json: Optional[PathLike] = None,
+    strict_json: Optional[PathLike] = None,
+    case_id: Optional[str] = None,
     bin_dir: Optional[PathLike] = None,
     check: bool = True,
     dry_run: bool = False,
@@ -244,6 +331,7 @@ def build_dense_sdf(
     _append_bool(command, "--benchmark-brute-reference", benchmark_brute_reference)
     _append_value(command, "--report", _path(report) if report is not None else None)
     _append_value(command, "--json", _path(json) if json is not None else None)
+    _append_strict(command, strict_json, case_id)
     result = _run(command, check=check, dry_run=dry_run)
     return BuildResult(result, Path(output_sdfbin), Path(report) if report is not None else None, Path(json) if json is not None else None)
 
@@ -265,6 +353,8 @@ def build_adaptive_sdf(
     benchmark_brute_reference: bool = False,
     report: Optional[PathLike] = None,
     json: Optional[PathLike] = None,
+    strict_json: Optional[PathLike] = None,
+    case_id: Optional[str] = None,
     dry_run_builder: bool = False,
     bin_dir: Optional[PathLike] = None,
     check: bool = True,
@@ -283,6 +373,7 @@ def build_adaptive_sdf(
     _append_bool(command, "--benchmark-brute-reference", benchmark_brute_reference)
     _append_value(command, "--report", _path(report) if report is not None else None)
     _append_value(command, "--json", _path(json) if json is not None else None)
+    _append_strict(command, strict_json, case_id)
     _append_bool(command, "--dry-run", dry_run_builder)
     result = _run(command, check=check, dry_run=dry_run)
     output_path = None if dry_run_builder else Path(output_sdfbin)
@@ -299,6 +390,8 @@ def compress_adaptive_sdf(
     report: Optional[PathLike] = None,
     json: Optional[PathLike] = None,
     quality_report: Optional[PathLike] = None,
+    strict_json: Optional[PathLike] = None,
+    case_id: Optional[str] = None,
     bin_dir: Optional[PathLike] = None,
     check: bool = True,
     dry_run: bool = False,
@@ -314,6 +407,7 @@ def compress_adaptive_sdf(
     _append_value(command, "--report", _path(report) if report is not None else None)
     _append_value(command, "--json", _path(json) if json is not None else None)
     _append_value(command, "--quality-report", _path(quality_report) if quality_report is not None else None)
+    _append_strict(command, strict_json, case_id)
     result = _run(command, check=check, dry_run=dry_run)
     return BuildResult(result, Path(output_compressed_sdfbin), Path(report) if report is not None else None, Path(json) if json is not None else None)
 
@@ -338,6 +432,8 @@ def build_compressed_sdf(
     report: Optional[PathLike] = None,
     compression_report: Optional[PathLike] = None,
     quality_report: Optional[PathLike] = None,
+    strict_json: Optional[PathLike] = None,
+    case_id: Optional[str] = None,
     bin_dir: Optional[PathLike] = None,
     check: bool = True,
     dry_run: bool = False,
@@ -358,6 +454,7 @@ def build_compressed_sdf(
     _append_value(command, "--report", _path(report) if report is not None else None)
     _append_value(command, "--compression-report", _path(compression_report) if compression_report is not None else None)
     _append_value(command, "--quality-report", _path(quality_report) if quality_report is not None else None)
+    _append_strict(command, strict_json, case_id)
     result = _run(command, check=check, dry_run=dry_run)
     return BuildResult(result, Path(output_sdfbin), Path(report) if report is not None else None)
 
@@ -434,6 +531,8 @@ def expansion_quality(
     resolution: Optional[int] = None,
     out: Optional[PathLike] = None,
     json: Optional[PathLike] = None,
+    strict_json: Optional[PathLike] = None,
+    case_id: Optional[str] = None,
     bin_dir: Optional[PathLike] = None,
     check: bool = True,
     dry_run: bool = False,
@@ -442,6 +541,7 @@ def expansion_quality(
     command = [_tool("adasdf_expansion_quality", bin_dir, dry_run), _path(sdfbin), "--expansion", "global"]
     _append_value(command, "--global-resolution", resolution)
     _append_value(command, "--out", _path(out) if out is not None else None)
+    _append_strict(command, strict_json, case_id)
     return _run(command, check=check, dry_run=dry_run)
 
 
@@ -454,6 +554,9 @@ def benchmark_batch_query(
     output: str = "phi",
     warmup: Optional[int] = None,
     repeat: Optional[int] = None,
+    out: Optional[PathLike] = None,
+    strict_json: Optional[PathLike] = None,
+    case_id: Optional[str] = None,
     bin_dir: Optional[PathLike] = None,
     check: bool = True,
     dry_run: bool = False,
@@ -472,6 +575,8 @@ def benchmark_batch_query(
     _append_value(command, "--output", output)
     _append_value(command, "--warmup", warmup)
     _append_value(command, "--repeat", repeat)
+    _append_value(command, "--out", _path(out) if out is not None else None)
+    _append_strict(command, strict_json, case_id)
     result = _run(command, check=check, dry_run=dry_run)
     return BenchmarkResult(result, metrics=parse_benchmark_metrics(result.stdout))
 
@@ -522,6 +627,8 @@ def sparse_query(
     out: Optional[PathLike] = None,
     report: Optional[PathLike] = None,
     json: Optional[PathLike] = None,
+    strict_json: Optional[PathLike] = None,
+    case_id: Optional[str] = None,
     bin_dir: Optional[PathLike] = None,
     check: bool = True,
     dry_run: bool = False,
@@ -535,6 +642,7 @@ def sparse_query(
     _append_value(command, "--out", _path(out) if out is not None else None)
     _append_value(command, "--report", _path(report) if report is not None else None)
     _append_value(command, "--json", _path(json) if json is not None else None)
+    _append_strict(command, strict_json, case_id)
     result = _run(command, check=check, dry_run=dry_run)
     return SparseQueryResult(
         command_result=result,
@@ -687,6 +795,8 @@ def solver_contact_candidates(
     candidates_out: Optional[PathLike] = None,
     json: Optional[PathLike] = None,
     report: Optional[PathLike] = None,
+    strict_json: Optional[PathLike] = None,
+    case_id: Optional[str] = None,
     bin_dir: Optional[PathLike] = None,
     check: bool = True,
     dry_run: bool = False,
@@ -707,6 +817,7 @@ def solver_contact_candidates(
     _append_value(command, "--candidates-out", _path(candidates_out) if candidates_out is not None else None)
     _append_value(command, "--json", _path(json) if json is not None else None)
     _append_value(command, "--report", _path(report) if report is not None else None)
+    _append_strict(command, strict_json, case_id)
     result = _run(command, check=check, dry_run=dry_run)
     return SolverContactsResult(
         command_result=result,
@@ -1105,6 +1216,8 @@ def world_sparse_collide(
     out: Optional[PathLike] = None,
     report: Optional[PathLike] = None,
     json: Optional[PathLike] = None,
+    strict_json: Optional[PathLike] = None,
+    case_id: Optional[str] = None,
     bin_dir: Optional[PathLike] = None,
     check: bool = True,
     dry_run: bool = False,
@@ -1122,6 +1235,7 @@ def world_sparse_collide(
     _append_value(command, "--out", _path(out) if out is not None else None)
     _append_value(command, "--report", _path(report) if report is not None else None)
     _append_value(command, "--json", _path(json) if json is not None else None)
+    _append_strict(command, strict_json, case_id)
     result = run_command(command, check=False, dry_run=dry_run)
     if check and result.returncode not in (0, 10):
         raise AdaSDFCommandError(result.command, result.returncode, result.stdout, result.stderr)
@@ -1191,6 +1305,8 @@ def benchmark_collision_world(
     report: Optional[PathLike] = None,
     json: Optional[PathLike] = None,
     csv: Optional[PathLike] = None,
+    strict_json: Optional[PathLike] = None,
+    case_id: Optional[str] = None,
     bin_dir: Optional[PathLike] = None,
     check: bool = True,
     dry_run: bool = False,
@@ -1203,6 +1319,7 @@ def benchmark_collision_world(
     _append_value(command, "--report", _path(report) if report is not None else None)
     _append_value(command, "--json", _path(json) if json is not None else None)
     _append_value(command, "--csv", _path(csv) if csv is not None else None)
+    _append_strict(command, strict_json, case_id)
     result = _run(command, check=check, dry_run=dry_run)
     return CollisionWorldBenchmarkResult(
         command_result=result,

@@ -3,6 +3,7 @@
 #include <exception>
 #include <filesystem>
 #include <iostream>
+#include <map>
 #include <string>
 
 namespace {
@@ -14,7 +15,8 @@ void usage() {
          "[--threshold value] [--one-way] [--bidirectional] "
          "[--early-exit] [--no-early-exit] [--with-normal] [--no-radius] "
          "[--include-static-static] [--no-group-mask] [--out hits.csv] "
-         "[--report report.md] [--json report.json]\n"
+         "[--report report.md] [--json report.json] "
+         "[--strict-json report.json] [--case-id case_id]\n"
       << "Return code 10 means success with collision detected.\n";
 }
 
@@ -35,7 +37,39 @@ int main(int argc, char** argv) {
     std::filesystem::path out_path;
     std::filesystem::path report_path;
     std::filesystem::path json_path;
+    std::filesystem::path strict_json_path;
+    std::string case_id = "default";
     bool early_exit_explicit = false;
+    const auto strict_timer = adasdf::startStrictRunTimer();
+    std::map<std::string, std::string> strict_parameters =
+        adasdf::commandLineParameters(argc, argv);
+    auto write_strict =
+        [&](bool success,
+            const std::string& status,
+            const std::string& failure_reason,
+            const std::map<std::string, double>& metrics = {}) {
+          if (strict_json_path.empty()) {
+            return;
+          }
+          std::string strict_error;
+          if (!adasdf::writeStrictRunReport(
+                  strict_json_path,
+                  "adasdf_world_sparse_collide",
+                  case_id,
+                  scene_path,
+                  out_path,
+                  strict_parameters,
+                  metrics,
+                  success,
+                  status,
+                  failure_reason,
+                  strict_timer,
+                  &strict_error)) {
+            std::cerr << "adasdf_world_sparse_collide: failed to write "
+                         "strict JSON: "
+                      << strict_error << "\n";
+          }
+        };
 
     for (int i = 2; i < argc; ++i) {
       const std::string arg = argv[i];
@@ -67,6 +101,10 @@ int main(int argc, char** argv) {
         report_path = argv[++i];
       } else if (arg == "--json" && hasValue(i, argc)) {
         json_path = argv[++i];
+      } else if (arg == "--strict-json" && hasValue(i, argc)) {
+        strict_json_path = argv[++i];
+      } else if (arg == "--case-id" && hasValue(i, argc)) {
+        case_id = argv[++i];
       } else if (arg == "--help" || arg == "-h") {
         usage();
         return 0;
@@ -88,6 +126,7 @@ int main(int argc, char** argv) {
     if (!scene.success) {
       std::cerr << "adasdf_world_sparse_collide: failed to read scene: "
                 << scene.error_message << "\n";
+      write_strict(false, "failed", scene.error_message);
       return 1;
     }
 
@@ -96,6 +135,7 @@ int main(int argc, char** argv) {
     if (!result.success) {
       std::cerr << "adasdf_world_sparse_collide: query failed: "
                 << result.error_message << "\n";
+      write_strict(false, "failed", result.error_message);
       return 2;
     }
 
@@ -138,6 +178,13 @@ int main(int argc, char** argv) {
                 << error << "\n";
       return 3;
     }
+    write_strict(
+        true,
+        "ok",
+        "",
+        {{"contact_count", static_cast<double>(result.stats.violation_count)},
+         {"broadphase_pair_count",
+          static_cast<double>(result.stats.broadphase_pair_count)}});
     return (options.mode == adasdf::SparseCollisionMode::CollisionOnly &&
             result.colliding)
                ? 10

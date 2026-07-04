@@ -3,6 +3,7 @@
 #include <exception>
 #include <filesystem>
 #include <iostream>
+#include <map>
 #include <string>
 
 namespace {
@@ -16,7 +17,9 @@ void usage() {
          "[--keep-near-surface-dense] [--report build_report.md] "
          "[--accel brute|bvh] [--threads N] [--benchmark-brute-reference] "
          "[--compression-report compression_report.md] "
-         "[--quality-report quality_report.md] [--recommend] [--verbose]\n";
+         "[--quality-report quality_report.md] "
+         "[--strict-json report.json] [--case-id case_id] "
+         "[--recommend] [--verbose]\n";
 }
 
 bool hasValue(int index, int argc) {
@@ -48,8 +51,40 @@ int main(int argc, char** argv) {
     std::filesystem::path build_report_path;
     std::filesystem::path compression_report_path;
     std::filesystem::path quality_report_path;
+    std::filesystem::path strict_json_path;
+    std::string case_id = "default";
     adasdf::AdaptiveBlockSDFBuildOptions build_options;
     adasdf::BlockLowRankCompressionOptions compression_options;
+    const auto strict_timer = adasdf::startStrictRunTimer();
+    std::map<std::string, std::string> strict_parameters =
+        adasdf::commandLineParameters(argc, argv);
+    auto write_strict =
+        [&](bool success,
+            const std::string& status,
+            const std::string& failure_reason,
+            const std::map<std::string, double>& metrics = {}) {
+          if (strict_json_path.empty()) {
+            return;
+          }
+          std::string strict_error;
+          if (!adasdf::writeStrictRunReport(
+                  strict_json_path,
+                  "adasdf_build_compressed_sdf",
+                  case_id,
+                  input,
+                  output,
+                  strict_parameters,
+                  metrics,
+                  success,
+                  status,
+                  failure_reason,
+                  strict_timer,
+                  &strict_error)) {
+            std::cerr << "adasdf_build_compressed_sdf: failed to write "
+                         "strict JSON: "
+                      << strict_error << "\n";
+          }
+        };
 
     for (int i = 1; i < argc; ++i) {
       const std::string arg = argv[i];
@@ -104,6 +139,10 @@ int main(int argc, char** argv) {
         compression_report_path = argv[++i];
       } else if (arg == "--quality-report" && hasValue(i, argc)) {
         quality_report_path = argv[++i];
+      } else if (arg == "--strict-json" && hasValue(i, argc)) {
+        strict_json_path = argv[++i];
+      } else if (arg == "--case-id" && hasValue(i, argc)) {
+        case_id = argv[++i];
       } else if (arg == "--verbose") {
         build_options.verbose = true;
         compression_options.verbose = true;
@@ -124,11 +163,13 @@ int main(int argc, char** argv) {
 
     if (input.empty() || output.empty()) {
       usage();
+      write_strict(false, "failed", "missing input or output path");
       return 1;
     }
     if (!std::filesystem::exists(input)) {
       std::cerr << "adasdf_build_compressed_sdf: input STL does not exist: "
                 << input.string() << "\n";
+      write_strict(false, "failed", "input STL does not exist");
       return 1;
     }
 
@@ -145,6 +186,7 @@ int main(int argc, char** argv) {
     if (!dense_model) {
       std::cerr << "adasdf_build_compressed_sdf: adaptive build failed: "
                 << build_report.error_message << "\n";
+      write_strict(false, "failed", build_report.error_message);
       return build_options.signed_distance &&
                      build_options.require_watertight_for_signed &&
                      !build_report.watertight
@@ -157,6 +199,7 @@ int main(int argc, char** argv) {
     if (!adaptive) {
       std::cerr << "adasdf_build_compressed_sdf: adaptive builder returned "
                    "unexpected model type.\n";
+      write_strict(false, "failed", "adaptive builder returned unexpected model type");
       return 3;
     }
 
@@ -174,6 +217,7 @@ int main(int argc, char** argv) {
     if (!compression_report.success) {
       std::cerr << "adasdf_build_compressed_sdf: compression failed: "
                 << compression_report.error_message << "\n";
+      write_strict(false, "failed", compression_report.error_message);
       return 3;
     }
 
@@ -196,12 +240,14 @@ int main(int argc, char** argv) {
       std::cerr
           << "adasdf_build_compressed_sdf: write/reload validation failed: "
           << exc.what() << "\n";
+      write_strict(false, "failed", exc.what());
       return 4;
     }
 
     if (!quality_report.success) {
       std::cerr << "adasdf_build_compressed_sdf: quality check failed: "
                 << quality_report.error_message << "\n";
+      write_strict(false, "failed", quality_report.error_message);
       return 5;
     }
 
@@ -257,6 +303,31 @@ int main(int argc, char** argv) {
     if (!quality_report_path.empty()) {
       std::cout << "Quality report: " << quality_report_path.string() << "\n";
     }
+    write_strict(
+        true,
+        "ok",
+        "",
+        {
+            {"triangle_count",
+             static_cast<double>(build_report.diagnostics.triangle_count)},
+            {"vertex_count",
+             static_cast<double>(build_report.diagnostics.vertex_count)},
+            {"readiness_score",
+             static_cast<double>(build_report.readiness.score)},
+            {"build_time_ms", build_report.build_time_ms},
+            {"memory_bytes", static_cast<double>(build_report.memory_bytes)},
+            {"compressed_memory_bytes",
+             static_cast<double>(compression_report.compressed_memory_bytes)},
+            {"compression_ratio", compression_report.compression_ratio},
+            {"max_abs_error", compression_report.global_max_abs_error},
+            {"mean_abs_error", compression_report.global_mean_abs_error},
+            {"rms_error", compression_report.global_rms_error},
+            {"p95_error", compression_report.global_p95_abs_error},
+            {"sign_mismatch_count",
+             static_cast<double>(compression_report.sign_mismatch_count)},
+            {"near_surface_sign_mismatch_count",
+             static_cast<double>(
+                 compression_report.near_surface_sign_mismatch_count)}});
     return 0;
   } catch (const std::exception& exc) {
     std::cerr << "adasdf_build_compressed_sdf failed: " << exc.what() << "\n";

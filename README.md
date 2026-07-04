@@ -2,7 +2,7 @@
 
 Adaptive Signed Distance Field Collision Library
 
-Status: 1.14.0-alpha / research preview
+Status: 1.15.0-alpha / research preview
 Build system: CMake
 License: MIT
 Tests: CTest
@@ -10,6 +10,14 @@ Tests: CTest
 AdaSDF-CL is an alpha collision and contact library built around signed distance fields. It provides an FCL-style API for distance, collision, and contact queries while keeping CUDA, FCL, native Python bindings, and full adaptive backend work optional or future-facing.
 
 AdaSDF-CL is an FCL-style SDF collision backend under development. It complements FCL by providing signed-distance queries, penetration depth, contact normals, batch query, expanded-SDF quality audit, CUDA query paths, and a first SDF-native multi-object CollisionWorld broadphase. It is not a drop-in FCL replacement.
+
+v1.15.0-alpha adds strict JSON/CSV reporting and reproducibility manifests for
+automation, benchmark provenance, install validation, alpha validation, and
+external regression tracking. It introduces dependency-free report writers,
+validators, collectors, manifest CLIs, Python wrapper support, and
+`--strict-json` / `--case-id` on selected core CLIs. It does not change the core
+collision algorithms or introduce nlohmann_json, Python, FCL, or existing-core
+dependencies into the report module.
 
 v1.14.0-alpha adds `CollisionWorld`, deterministic AABB broadphase,
 sample-based world sparse collision, solver-ready world contact candidate
@@ -80,8 +88,8 @@ The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`, `v1.1.0-alpha`,
 `v1.5.0-alpha`, `v1.6.0-alpha`, `v1.7.0-alpha`, `v1.8.0-alpha`,
 `v1.8.1-alpha`, `v1.9.0-alpha`, `v1.10.0-alpha`, `v1.11.0-alpha`,
 `v1.12.0-alpha`, `v1.13.0-alpha`, `v1.13.0-alpha.1`, and
-`v1.13.0-alpha.2` tags are retained for traceability. The recommended public
-pre-release is `v1.14.0-alpha`.
+`v1.13.0-alpha.2`, and `v1.14.0-alpha` tags are retained for traceability. The
+recommended public pre-release is `v1.15.0-alpha`.
 
 ## What Is AdaSDF-CL?
 
@@ -127,6 +135,8 @@ collision engine and does not yet replace FCL.
 | CollisionWorld broadphase | Implemented |
 | Multi-object sample-based SDF collision | Implemented |
 | World solver-ready contact export | Implemented |
+| Strict JSON reproducibility reports | Implemented |
+| Strict report validation and run summary CSV | Implemented |
 | Sparse query benchmark | Implemented |
 | Contact-aware active block cache | Implemented |
 | Active block cache benchmark | Implemented |
@@ -172,6 +182,9 @@ Detailed capability references:
 - `docs/solver_contact_export.md`
 - `docs/collision_world_scene_format.md`
 - `docs/collision_world_v1_14_report.md`
+- `docs/strict_report_schema.md`
+- `docs/reproducibility_manifest.md`
+- `docs/run_summary_csv.md`
 - `docs/hard_contact_collision_budget.md`
 - `docs/contact_reduction_benchmarking.md`
 - `docs/sparse_query_benchmarking.md`
@@ -418,7 +431,7 @@ universal trained model, not fully trained, and not an optimality guarantee.
 ```bash
 git clone https://github.com/hongyuanzhang357-glitch/AdaSDF-CL.git
 cd AdaSDF-CL
-git checkout v1.14.0-alpha
+git checkout v1.15.0-alpha
 
 cmake -S . -B build -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD_TESTS=ON -DADASDF_CL_BUILD_BENCHMARKS=ON
 cmake --build build --config Release

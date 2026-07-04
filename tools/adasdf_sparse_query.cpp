@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <map>
 #include <string>
 
 namespace {
@@ -13,7 +14,9 @@ void usage() {
       << "Usage: adasdf_sparse_query model.sdfbin samples.csv [--threshold value] "
          "[--phi-only] [--with-normal] [--early-exit] [--no-radius] "
          "[--include-non-colliding] [--colliding-only] [--sort] "
-         "[--out results.csv] [--report sparse_report.md] [--json sparse_report.json]\n";
+         "[--out results.csv] [--report sparse_report.md] "
+         "[--json sparse_report.json] [--strict-json report.json] "
+         "[--case-id case_id]\n";
 }
 
 bool hasValue(int index, int argc) {
@@ -51,6 +54,37 @@ int main(int argc, char** argv) {
     std::filesystem::path out_path;
     std::filesystem::path report_path;
     std::filesystem::path json_path;
+    std::filesystem::path strict_json_path;
+    std::string case_id = "default";
+    const auto strict_timer = adasdf::startStrictRunTimer();
+    std::map<std::string, std::string> strict_parameters =
+        adasdf::commandLineParameters(argc, argv);
+    auto write_strict =
+        [&](bool success,
+            const std::string& status,
+            const std::string& failure_reason,
+            const std::map<std::string, double>& metrics = {}) {
+          if (strict_json_path.empty()) {
+            return;
+          }
+          std::string strict_error;
+          if (!adasdf::writeStrictRunReport(
+                  strict_json_path,
+                  "adasdf_sparse_query",
+                  case_id,
+                  samples_path,
+                  out_path,
+                  strict_parameters,
+                  metrics,
+                  success,
+                  status,
+                  failure_reason,
+                  strict_timer,
+                  &strict_error)) {
+            std::cerr << "adasdf_sparse_query: failed to write strict JSON: "
+                      << strict_error << "\n";
+          }
+        };
 
     for (int i = 3; i < argc; ++i) {
       const std::string arg = argv[i];
@@ -78,6 +112,10 @@ int main(int argc, char** argv) {
         report_path = argv[++i];
       } else if (arg == "--json" && hasValue(i, argc)) {
         json_path = argv[++i];
+      } else if (arg == "--strict-json" && hasValue(i, argc)) {
+        strict_json_path = argv[++i];
+      } else if (arg == "--case-id" && hasValue(i, argc)) {
+        case_id = argv[++i];
       } else if (arg == "--help" || arg == "-h") {
         usage();
         return 0;
@@ -92,12 +130,14 @@ int main(int argc, char** argv) {
     if (!model || !model->isValid() || !model->queryBackendAvailable()) {
       std::cerr << "adasdf_sparse_query: failed to load queryable model: "
                 << model_path.string() << "\n";
+      write_strict(false, "failed", "failed to load queryable model");
       return 1;
     }
     const auto samples = adasdf::CollisionSampleSetIO::readCSV(samples_path.string());
     if (!samples.success) {
       std::cerr << "adasdf_sparse_query: failed to read samples: "
                 << samples.error_message << "\n";
+      write_strict(false, "failed", samples.error_message);
       return 1;
     }
 
@@ -106,6 +146,7 @@ int main(int argc, char** argv) {
     if (!result.success) {
       std::cerr << "adasdf_sparse_query: query failed: "
                 << result.error_message << "\n";
+      write_strict(false, "failed", result.error_message);
       return 2;
     }
 
@@ -140,6 +181,12 @@ int main(int argc, char** argv) {
       std::cerr << "adasdf_sparse_query: failed to write JSON report\n";
       return 2;
     }
+    write_strict(
+        true,
+        "ok",
+        "",
+        {{"query_time_ms", result.stats.elapsed_ms},
+         {"contact_count", static_cast<double>(result.stats.result_count)}});
     return 0;
   } catch (const std::exception& exc) {
     std::cerr << "adasdf_sparse_query failed: " << exc.what() << "\n";

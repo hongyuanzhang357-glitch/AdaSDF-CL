@@ -53,6 +53,22 @@
 - v1.14 CollisionWorld broadphase, simple world scene CSV, multi-object
   sample-based SDF collision, world solver-ready contact export, and
   CollisionWorld benchmark CLI.
+- v1.15 strict JSON/CSV report schema, reproducibility manifests, report
+  validation, run summary collection, and Python wrapper support.
+
+## v1.15.0-alpha Scope
+
+- dependency-free report schema, run manifest, case manifest, strict JSON
+  writer, strict CSV writer, validator, and collector;
+- `adasdf_write_manifest`, `adasdf_validate_report`, and
+  `adasdf_collect_run_summary`;
+- `--strict-json` and `--case-id` support on selected build, query, benchmark,
+  and world CLIs;
+- Python wrapper support for strict reports;
+- alpha/install validation coverage for strict report generation, validation,
+  and summary CSV collection;
+- explicit boundary that this is reproducibility/provenance reporting, not a
+  solver constraint format and not a core collision algorithm change.
 
 ## v1.14.0-alpha Scope
 
@@ -270,8 +286,8 @@ The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`,
 `v1.4.0-alpha`, `v1.5.0-alpha`, `v1.6.0-alpha`, `v1.7.0-alpha`,
 `v1.8.0-alpha`, `v1.8.1-alpha`, `v1.9.0-alpha`, `v1.10.0-alpha`,
 `v1.11.0-alpha`, `v1.12.0-alpha`, `v1.13.0-alpha`,
-`v1.13.0-alpha.1`, and `v1.13.0-alpha.2` tags are retained for traceability.
-The recommended public pre-release is `v1.14.0-alpha`.
+`v1.13.0-alpha.1`, `v1.13.0-alpha.2`, and `v1.14.0-alpha` tags are retained
+for traceability. The recommended public pre-release is `v1.15.0-alpha`.
 
 ## Future Work
 

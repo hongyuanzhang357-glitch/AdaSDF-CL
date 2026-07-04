@@ -76,6 +76,10 @@
   `adasdf_world_solver_contacts`, and `adasdf_benchmark_collision_world`.
 - Python wrappers for world broadphase, world sparse collision, world
   solver-ready contacts, and CollisionWorld benchmarking.
+- Strict JSON/CSV reproducibility reports, report validation, and run summary
+  collection.
+- `adasdf_write_manifest`, `adasdf_validate_report`, and
+  `adasdf_collect_run_summary`.
 - Contact-aware active block selection for adaptive/compressed block SDFs.
 - CPU active expanded-block cache for local compressed SDF runtime queries.
 - `adasdf_select_active_blocks`, `adasdf_active_block_query`, and

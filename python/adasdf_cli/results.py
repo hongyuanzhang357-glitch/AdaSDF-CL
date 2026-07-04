@@ -68,6 +68,26 @@ class BenchmarkResult:
 
 
 @dataclass
+class StrictManifestResult:
+    command_result: CommandResult
+    report_path: Optional[Path] = None
+
+
+@dataclass
+class StrictReportValidationResult:
+    command_result: CommandResult
+    report_path: Optional[Path] = None
+    valid: Optional[bool] = None
+
+
+@dataclass
+class RunSummaryResult:
+    command_result: CommandResult
+    inputs_path: Optional[Path] = None
+    csv_path: Optional[Path] = None
+
+
+@dataclass
 class SparseQueryResult:
     command_result: CommandResult
     colliding: Optional[bool] = None

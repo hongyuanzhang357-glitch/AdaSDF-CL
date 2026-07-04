@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <map>
 #include <string>
 
 namespace {
@@ -15,6 +16,7 @@ void usage() {
          "[--no-duplicate-check] [--no-components] [--readiness] "
          "[--require-watertight] [--allow-open] [--strict] [--lenient] "
          "[--clean-out cleaned.stl] [--clean-report cleanup_report.md] "
+         "[--strict-json report.json] [--case-id case_id] "
          "[--merge-tolerance 1e-12] [--no-merge-vertices] "
          "[--no-remove-degenerate] [--no-remove-duplicates] "
          "[--no-remove-unused] "
@@ -145,8 +147,48 @@ int main(int argc, char** argv) {
     std::filesystem::path json_output;
     std::filesystem::path clean_output;
     std::filesystem::path clean_report_output;
+    std::filesystem::path strict_json_path;
+    std::string case_id = "default";
     bool verbose = false;
     bool readiness_requested = false;
+    const auto strict_timer = adasdf::startStrictRunTimer();
+    std::map<std::string, std::string> strict_parameters =
+        adasdf::commandLineParameters(argc, argv);
+    auto strict_output_path = [&]() -> std::filesystem::path {
+      if (!clean_output.empty()) {
+        return clean_output;
+      }
+      if (!json_output.empty()) {
+        return json_output;
+      }
+      return markdown_output;
+    };
+    auto write_strict =
+        [&](bool success,
+            const std::string& status,
+            const std::string& failure_reason,
+            const std::map<std::string, double>& metrics = {}) {
+          if (strict_json_path.empty()) {
+            return;
+          }
+          std::string strict_error;
+          if (!adasdf::writeStrictRunReport(
+                  strict_json_path,
+                  "adasdf_mesh_check",
+                  case_id,
+                  input,
+                  strict_output_path(),
+                  strict_parameters,
+                  metrics,
+                  success,
+                  status,
+                  failure_reason,
+                  strict_timer,
+                  &strict_error)) {
+            std::cerr << "adasdf_mesh_check: failed to write strict JSON: "
+                      << strict_error << "\n";
+          }
+        };
 
     adasdf::STLReadOptions read_options;
     adasdf::MeshDiagnosticsOptions diagnostics_options;
@@ -180,6 +222,10 @@ int main(int argc, char** argv) {
       } else if (arg == "--clean-report" && hasValue(i, argc)) {
         clean_report_output = argv[++i];
         readiness_requested = true;
+      } else if (arg == "--strict-json" && hasValue(i, argc)) {
+        strict_json_path = argv[++i];
+      } else if (arg == "--case-id" && hasValue(i, argc)) {
+        case_id = argv[++i];
       } else if (arg == "--no-merge-vertices") {
         cleanup_options.merge_near_duplicate_vertices = false;
       } else if (arg == "--no-remove-degenerate") {
@@ -232,6 +278,7 @@ int main(int argc, char** argv) {
 
     if (input.empty()) {
       usage();
+      write_strict(false, "failed", "missing input path");
       return 1;
     }
 
@@ -240,6 +287,7 @@ int main(int argc, char** argv) {
     if (!read.success) {
       std::cerr << "adasdf_mesh_check: failed to read STL: "
                 << read.error_message << "\n";
+      write_strict(false, "failed", read.error_message);
       return 1;
     }
 
@@ -264,6 +312,7 @@ int main(int argc, char** argv) {
             std::filesystem::absolute(clean_output).lexically_normal();
         if (input_abs == output_abs) {
           std::cerr << "adasdf_mesh_check: refusing to overwrite input STL\n";
+          write_strict(false, "failed", "refusing to overwrite input STL");
           return 1;
         }
       }
@@ -273,6 +322,7 @@ int main(int argc, char** argv) {
       if (!cleanup.success) {
         std::cerr << "adasdf_mesh_check: cleanup failed: "
                   << cleanup.error_message << "\n";
+        write_strict(false, "failed", cleanup.error_message);
         return 1;
       }
       printCleanup(cleanup.stats);
@@ -288,6 +338,7 @@ int main(int argc, char** argv) {
                 &write_error)) {
           std::cerr << "adasdf_mesh_check: failed to write cleaned STL: "
                     << write_error << "\n";
+          write_strict(false, "failed", write_error);
           return 1;
         }
         std::cout << "Output: " << clean_output.string() << "\n";
@@ -317,11 +368,20 @@ int main(int argc, char** argv) {
         std::cout << "Report: " << clean_report_output.string() << "\n";
       }
 
-      return (after_readiness.level == adasdf::MeshReadinessLevel::Ready ||
-              after_readiness.level ==
-                  adasdf::MeshReadinessLevel::UsableWithWarnings)
+      const int code =
+          (after_readiness.level == adasdf::MeshReadinessLevel::Ready ||
+           after_readiness.level ==
+               adasdf::MeshReadinessLevel::UsableWithWarnings)
           ? 0
           : 2;
+      write_strict(
+          code == 0,
+          code == 0 ? "ok" : "failed",
+          code == 0 ? "" : "mesh not ready after cleanup",
+          {{"triangle_count", static_cast<double>(after_report.triangle_count)},
+           {"vertex_count", static_cast<double>(after_report.vertex_count)},
+           {"readiness_score", static_cast<double>(after_readiness.score)}});
+      return code;
     }
 
     if (!markdown_output.empty()) {
@@ -350,18 +410,33 @@ int main(int argc, char** argv) {
     }
 
     if (readiness_requested) {
-      return (readiness.level == adasdf::MeshReadinessLevel::Ready ||
-              readiness.level ==
-                  adasdf::MeshReadinessLevel::UsableWithWarnings)
+      const int code =
+          (readiness.level == adasdf::MeshReadinessLevel::Ready ||
+           readiness.level == adasdf::MeshReadinessLevel::UsableWithWarnings)
           ? 0
           : 2;
+      write_strict(
+          code == 0,
+          code == 0 ? "ok" : "failed",
+          code == 0 ? "" : "mesh readiness failed",
+          {{"triangle_count", static_cast<double>(report.triangle_count)},
+           {"vertex_count", static_cast<double>(report.vertex_count)},
+           {"readiness_score", static_cast<double>(readiness.score)}});
+      return code;
     }
 
     const bool critical =
         !report.errors.empty() || report.boundary_edge_count > 0 ||
         report.non_manifold_edge_count > 0 ||
         report.degenerate_triangle_count > 0;
-    return critical ? 2 : 0;
+    const int code = critical ? 2 : 0;
+    write_strict(
+        code == 0,
+        code == 0 ? "ok" : "failed",
+        code == 0 ? "" : "mesh diagnostics found critical issues",
+        {{"triangle_count", static_cast<double>(report.triangle_count)},
+         {"vertex_count", static_cast<double>(report.vertex_count)}});
+    return code;
   } catch (const std::exception& exc) {
     std::cerr << "adasdf_mesh_check failed: " << exc.what() << "\n";
     return 1;

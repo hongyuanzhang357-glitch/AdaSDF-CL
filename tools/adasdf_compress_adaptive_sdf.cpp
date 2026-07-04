@@ -3,6 +3,7 @@
 #include <exception>
 #include <filesystem>
 #include <iostream>
+#include <map>
 #include <string>
 
 namespace {
@@ -15,6 +16,7 @@ void usage() {
          "[--max-rank N] [--memory-mb value] [--no-dense-fallback] "
          "[--keep-near-surface-dense] [--report compression_report.md] "
          "[--json compression_report.json] [--quality-report quality.md] "
+         "[--strict-json report.json] [--case-id case_id] "
          "[--verbose]\n";
 }
 
@@ -59,7 +61,39 @@ int main(int argc, char** argv) {
     std::filesystem::path report_path;
     std::filesystem::path json_path;
     std::filesystem::path quality_report_path;
+    std::filesystem::path strict_json_path;
+    std::string case_id = "default";
     adasdf::BlockLowRankCompressionOptions options;
+    const auto strict_timer = adasdf::startStrictRunTimer();
+    std::map<std::string, std::string> strict_parameters =
+        adasdf::commandLineParameters(argc, argv);
+    auto write_strict =
+        [&](bool success,
+            const std::string& status,
+            const std::string& failure_reason,
+            const std::map<std::string, double>& metrics = {}) {
+          if (strict_json_path.empty()) {
+            return;
+          }
+          std::string strict_error;
+          if (!adasdf::writeStrictRunReport(
+                  strict_json_path,
+                  "adasdf_compress_adaptive_sdf",
+                  case_id,
+                  input,
+                  output,
+                  strict_parameters,
+                  metrics,
+                  success,
+                  status,
+                  failure_reason,
+                  strict_timer,
+                  &strict_error)) {
+            std::cerr << "adasdf_compress_adaptive_sdf: failed to write "
+                         "strict JSON: "
+                      << strict_error << "\n";
+          }
+        };
 
     for (int i = 1; i < argc; ++i) {
       const std::string arg = argv[i];
@@ -92,6 +126,10 @@ int main(int argc, char** argv) {
         json_path = argv[++i];
       } else if (arg == "--quality-report" && hasValue(i, argc)) {
         quality_report_path = argv[++i];
+      } else if (arg == "--strict-json" && hasValue(i, argc)) {
+        strict_json_path = argv[++i];
+      } else if (arg == "--case-id" && hasValue(i, argc)) {
+        case_id = argv[++i];
       } else if (arg == "--verbose") {
         options.verbose = true;
       } else if (!arg.empty() && arg[0] == '-') {
@@ -111,11 +149,13 @@ int main(int argc, char** argv) {
 
     if (input.empty() || output.empty()) {
       usage();
+      write_strict(false, "failed", "missing input or output path");
       return 1;
     }
     if (!std::filesystem::exists(input)) {
       std::cerr << "adasdf_compress_adaptive_sdf: input does not exist: "
                 << input.string() << "\n";
+      write_strict(false, "failed", "input does not exist");
       return 1;
     }
 
@@ -125,6 +165,7 @@ int main(int argc, char** argv) {
       std::cerr
           << "adasdf_compress_adaptive_sdf: input must be "
              "ADASDF_ADAPTIVE_BLOCK_SDFBIN_V1 adaptive block SDF.\n";
+      write_strict(false, "failed", "input must be adaptive block SDF");
       return 2;
     }
 
@@ -137,12 +178,14 @@ int main(int argc, char** argv) {
     if (!compression_report.success) {
       std::cerr << "adasdf_compress_adaptive_sdf: compression failed: "
                 << compression_report.error_message << "\n";
+      write_strict(false, "failed", compression_report.error_message);
       return 3;
     }
 
     adasdf::CompressedAdaptiveBlockSDFModel compressed_model(std::move(compressed));
     if (!compressed_model.isValid()) {
       std::cerr << "adasdf_compress_adaptive_sdf: compressed model is invalid.\n";
+      write_strict(false, "failed", "compressed model is invalid");
       return 3;
     }
 
@@ -165,12 +208,14 @@ int main(int argc, char** argv) {
       std::cerr
           << "adasdf_compress_adaptive_sdf: write/reload validation failed: "
           << exc.what() << "\n";
+      write_strict(false, "failed", exc.what());
       return 4;
     }
 
     if (!quality_report.success) {
       std::cerr << "adasdf_compress_adaptive_sdf: quality check failed: "
                 << quality_report.error_message << "\n";
+      write_strict(false, "failed", quality_report.error_message);
       return 5;
     }
 
@@ -206,6 +251,24 @@ int main(int argc, char** argv) {
     if (!quality_report_path.empty()) {
       std::cout << "Quality report: " << quality_report_path.string() << "\n";
     }
+    write_strict(
+        true,
+        "ok",
+        "",
+        {{"memory_bytes",
+          static_cast<double>(compression_report.original_memory_bytes)},
+         {"compressed_memory_bytes",
+          static_cast<double>(compression_report.compressed_memory_bytes)},
+         {"compression_ratio", compression_report.compression_ratio},
+         {"max_abs_error", compression_report.global_max_abs_error},
+         {"mean_abs_error", compression_report.global_mean_abs_error},
+         {"rms_error", compression_report.global_rms_error},
+         {"p95_error", compression_report.global_p95_abs_error},
+         {"sign_mismatch_count",
+          static_cast<double>(compression_report.sign_mismatch_count)},
+         {"near_surface_sign_mismatch_count",
+          static_cast<double>(
+              compression_report.near_surface_sign_mismatch_count)}});
     return 0;
   } catch (const std::exception& exc) {
     std::cerr << "adasdf_compress_adaptive_sdf failed: " << exc.what() << "\n";

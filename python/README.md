@@ -57,7 +57,11 @@ adasdf.build_compressed_sdf(
     max_level=4,
     block_resolution=8,
     max_rank=8,
+    strict_json="build_report.json",
+    case_id="case001",
 )
+
+adasdf.validate_report("build_report.json")
 
 q = adasdf.query("model_compressed.sdfbin", point=[0, 0, 0])
 print(q.phi)
@@ -94,8 +98,49 @@ world_hits = adasdf.world_sparse_collide(
     "scene.csv",
     threshold=0.0,
     early_exit=True,
+    strict_json="world_report.json",
+    case_id="case001_world",
 )
 print(world_hits.colliding)
+```
+
+## Strict Reports
+
+v1.15.0-alpha adds strict JSON reports and fixed-header CSV summaries for
+batch experiments, surrogate training data, and reproducibility manifests.
+Core helpers that support the underlying CLI options accept `strict_json=` and
+`case_id=` without changing their legacy Markdown, JSON-like, CSV, or stdout
+outputs.
+
+```python
+import adasdf_cli as adasdf
+
+adasdf.build_compressed_sdf(
+    "model.stl",
+    "model.sdfbin",
+    target_error=1e-3,
+    max_level=4,
+    block_resolution=8,
+    max_rank=8,
+    strict_json="reports/build_case001.json",
+    case_id="case001",
+)
+
+validation = adasdf.validate_report("reports/build_case001.json")
+print(validation.valid)
+
+manifest = adasdf.write_manifest(
+    out="reports/manifest_case001.json",
+    case_id="case001",
+    tool="build_compressed_sdf",
+    input_path="model.stl",
+    output_path="model.sdfbin",
+    params={"target_error": 1e-3, "max_rank": 8},
+)
+print(manifest.report_path)
+
+summary = adasdf.collect_run_summary("reports/report_list.txt", "reports/summary.csv")
+print(summary.csv_path)
 ```
 
 ## Dry Run
@@ -148,6 +193,9 @@ not as a process failure.
 - `world_sparse_collide`
 - `world_solver_contacts`
 - `benchmark_collision_world`
+- `write_manifest`
+- `validate_report`
+- `collect_run_summary`
 - `recommend_then_build_compressed`
 - `preprocess_and_build_compressed`
 

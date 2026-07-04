@@ -10,6 +10,21 @@ project(AdaSDFCL
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
+find_package(Git QUIET)
+set(ADASDF_CL_GIT_COMMIT "unknown")
+if(Git_FOUND)
+  execute_process(
+    COMMAND "${GIT_EXECUTABLE}" rev-parse HEAD
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    RESULT_VARIABLE _adasdf_git_result
+    OUTPUT_VARIABLE _adasdf_git_commit
+    ERROR_QUIET
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+  if(_adasdf_git_result EQUAL 0 AND _adasdf_git_commit)
+    set(ADASDF_CL_GIT_COMMIT "${_adasdf_git_commit}")
+  endif()
+endif()
+
 option(ADASDF_CL_BUILD_EXAMPLES "Expose AdaSDF-CL example source targets" OFF)
 option(ADASDF_CL_BUILD_TESTS "Expose AdaSDF-CL interface test source targets" OFF)
 option(ADASDF_CL_BUILD_BENCHMARKS "Build AdaSDF-CL benchmark tools" ON)
@@ -49,6 +64,7 @@ target_compile_definitions(adasdf_cl INTERFACE
   ADASDF_CL_VERSION_MINOR=${PROJECT_VERSION_MINOR}
   ADASDF_CL_VERSION_PATCH=${PROJECT_VERSION_PATCH}
   ADASDF_CL_VERSION_SUFFIX="${ADASDF_CL_VERSION_SUFFIX}"
+  ADASDF_CL_GIT_COMMIT="${ADASDF_CL_GIT_COMMIT}"
   ADASDF_CL_ENABLE_CUDA=$<BOOL:${ADASDF_CL_ENABLE_CUDA}>)
 
 set(ADASDF_CL_HAS_CUDA_BACKEND OFF)
@@ -176,6 +192,13 @@ set(ADASDF_CL_RUNTIME_SOURCES
   src/world/WorldSparseCollision.cpp
   src/world/WorldSolverContacts.cpp
   src/world/WorldReportWriter.cpp
+  src/report/RunManifest.cpp
+  src/report/CaseManifest.cpp
+  src/report/StrictReportSchema.cpp
+  src/report/StrictJsonWriter.cpp
+  src/report/StrictCsvWriter.cpp
+  src/report/ReportValidator.cpp
+  src/report/ReportCollector.cpp
   src/runtime/ActiveBlockSelector.cpp
   src/runtime/ExpandedBlock.cpp
   src/runtime/ExpandedBlockCache.cpp
@@ -478,6 +501,22 @@ target_link_libraries(adasdf_capabilities PRIVATE adasdf_cl_runtime)
 set_target_properties(adasdf_capabilities PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
 
+add_executable(adasdf_write_manifest tools/adasdf_write_manifest.cpp)
+target_link_libraries(adasdf_write_manifest PRIVATE adasdf_cl_runtime)
+set_target_properties(adasdf_write_manifest PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
+
+add_executable(adasdf_validate_report tools/adasdf_validate_report.cpp)
+target_link_libraries(adasdf_validate_report PRIVATE adasdf_cl_runtime)
+set_target_properties(adasdf_validate_report PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
+
+add_executable(adasdf_collect_run_summary
+  tools/adasdf_collect_run_summary.cpp)
+target_link_libraries(adasdf_collect_run_summary PRIVATE adasdf_cl_runtime)
+set_target_properties(adasdf_collect_run_summary PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
+
 add_executable(adasdf_mesh_check tools/adasdf_mesh_check.cpp)
 target_link_libraries(adasdf_mesh_check PRIVATE adasdf_cl_runtime)
 set_target_properties(adasdf_mesh_check PROPERTIES
@@ -764,6 +803,16 @@ set(ADASDF_CL_TEST_SOURCES
   tests/test_world_sparse_collide_cli.cpp
   tests/test_world_solver_contacts_cli.cpp
   tests/test_benchmark_collision_world_cli.cpp
+  tests/test_strict_json_writer.cpp
+  tests/test_strict_csv_writer.cpp
+  tests/test_run_manifest.cpp
+  tests/test_case_manifest.cpp
+  tests/test_report_validator.cpp
+  tests/test_report_collector.cpp
+  tests/test_write_manifest_cli.cpp
+  tests/test_validate_report_cli.cpp
+  tests/test_collect_run_summary_cli.cpp
+  tests/test_strict_json_core_cli.cpp
   tests/test_active_block_selector.cpp
   tests/test_expanded_block.cpp
   tests/test_expanded_block_cache.cpp
@@ -834,6 +883,21 @@ if(ADASDF_CL_BUILD_TESTS)
       add_dependencies(${test_name} adasdf_capabilities)
       target_compile_definitions(${test_name} PRIVATE
         ADASDF_CL_CAPABILITIES="$<TARGET_FILE_NAME:adasdf_capabilities>")
+    endif()
+    if(test_name STREQUAL "test_write_manifest_cli" OR
+        test_name STREQUAL "test_validate_report_cli" OR
+        test_name STREQUAL "test_collect_run_summary_cli" OR
+        test_name STREQUAL "test_strict_json_core_cli")
+      add_dependencies(${test_name}
+        adasdf_write_manifest
+        adasdf_validate_report
+        adasdf_collect_run_summary
+        adasdf_build_compressed_sdf)
+      target_compile_definitions(${test_name} PRIVATE
+        ADASDF_CL_WRITE_MANIFEST="$<TARGET_FILE_NAME:adasdf_write_manifest>"
+        ADASDF_CL_VALIDATE_REPORT="$<TARGET_FILE_NAME:adasdf_validate_report>"
+        ADASDF_CL_COLLECT_RUN_SUMMARY="$<TARGET_FILE_NAME:adasdf_collect_run_summary>"
+        ADASDF_CL_BUILD_COMPRESSED_SDF="$<TARGET_FILE_NAME:adasdf_build_compressed_sdf>")
     endif()
     if(test_name STREQUAL "test_mesh_check_cli" OR
         test_name STREQUAL "test_mesh_check_readiness_cli")
@@ -1068,6 +1132,13 @@ if(ADASDF_CL_BUILD_TESTS)
       set_tests_properties(${test_name} PROPERTIES
         WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_capabilities>")
     endif()
+    if(test_name STREQUAL "test_write_manifest_cli" OR
+        test_name STREQUAL "test_validate_report_cli" OR
+        test_name STREQUAL "test_collect_run_summary_cli" OR
+        test_name STREQUAL "test_strict_json_core_cli")
+      set_tests_properties(${test_name} PROPERTIES
+        WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_write_manifest>")
+    endif()
     if(test_name STREQUAL "test_mesh_check_cli" OR
         test_name STREQUAL "test_mesh_check_readiness_cli")
       set_tests_properties(${test_name} PROPERTIES
@@ -1227,6 +1298,9 @@ set(ADASDF_CL_INSTALL_TOOL_TARGETS
   adasdf_query_mode_demo
   adasdf_expansion_quality
   adasdf_capabilities
+  adasdf_write_manifest
+  adasdf_validate_report
+  adasdf_collect_run_summary
   adasdf_mesh_check
   adasdf_mesh_clean
   adasdf_build_dense_sdf

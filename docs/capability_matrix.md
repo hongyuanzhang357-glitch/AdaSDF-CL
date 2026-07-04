@@ -94,6 +94,9 @@ only, Planned, Not implemented.
 | Accuracy / Reliability | compression quality audit | Implemented | v1.7 | `CompressionQuality`, compression CLIs | Dense-adaptive vs compressed comparison with error and sign metrics. |
 | Accuracy / Reliability | build recommendation confidence scoring | Experimental | v1.8 | `RecommendationConfidence` | Low/medium/high heuristic confidence; not a certification. |
 | Accuracy / Reliability | memory/error build estimates | Experimental | v1.8 | `BuildSurrogateEstimator` | Deterministic estimates with safety factors; validate final SDF reports. |
+| Accuracy / Reliability | strict JSON reproducibility report | Implemented | v1.15 | `StrictJsonWriter`, `--strict-json` | Dependency-free schema for selected build/query/benchmark/world CLIs. |
+| Accuracy / Reliability | strict report validation | Implemented | v1.15 | `adasdf_validate_report` | Validates required fields and optional numeric metrics. |
+| Accuracy / Reliability | run summary CSV collection | Implemented | v1.15 | `adasdf_collect_run_summary` | Collects strict reports into a fixed-column CSV. |
 | Accuracy / Reliability | mesh AABB / scale report | Implemented | v1.2 | `MeshDiagnosticsReport` | Prompts users to confirm units. |
 | Accuracy / Reliability | boundary / non-manifold edge report | Implemented | v1.2 | `MeshDiagnosticsReport` | Topology-level preflight. |
 | Accuracy / Reliability | mesh issue severity classification | Implemented | v1.3 | `MeshIssueSeverity` | Info, warning, and critical. |

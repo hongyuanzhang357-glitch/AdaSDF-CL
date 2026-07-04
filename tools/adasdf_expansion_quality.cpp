@@ -5,6 +5,7 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <map>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -16,7 +17,8 @@ void usage() {
       << "Usage: adasdf_expansion_quality model.sdfbin --expansion global|block "
          "[--global-resolution 64] [--block-resolution 32] [--blocks all|0,1,2] "
          "[--samples 10000] [--near-surface-band 1e-3] [--sign-epsilon 1e-9] "
-         "[--padding value] [--out quality.csv]\n";
+         "[--padding value] [--out quality.csv] "
+         "[--strict-json report.json] [--case-id case_id]\n";
 }
 
 bool hasValue(int index, int argc) {
@@ -135,6 +137,37 @@ int main(int argc, char** argv) {
     double sign_epsilon = 1e-9;
     double padding = 0.0;
     std::filesystem::path output_path;
+    std::filesystem::path strict_json_path;
+    std::string case_id = "default";
+    const auto strict_timer = adasdf::startStrictRunTimer();
+    std::map<std::string, std::string> strict_parameters =
+        adasdf::commandLineParameters(argc, argv);
+    auto write_strict =
+        [&](bool success,
+            const std::string& status,
+            const std::string& failure_reason,
+            const std::map<std::string, double>& metrics = {}) {
+          if (strict_json_path.empty()) {
+            return;
+          }
+          std::string strict_error;
+          if (!adasdf::writeStrictRunReport(
+                  strict_json_path,
+                  "adasdf_expansion_quality",
+                  case_id,
+                  model_path,
+                  output_path,
+                  strict_parameters,
+                  metrics,
+                  success,
+                  status,
+                  failure_reason,
+                  strict_timer,
+                  &strict_error)) {
+            std::cerr << "adasdf_expansion_quality: failed to write strict JSON: "
+                      << strict_error << "\n";
+          }
+        };
 
     for (int i = 2; i < argc; ++i) {
       const std::string arg = argv[i];
@@ -156,6 +189,10 @@ int main(int argc, char** argv) {
         padding = std::stod(argv[++i]);
       } else if (arg == "--out" && hasValue(i, argc)) {
         output_path = argv[++i];
+      } else if (arg == "--strict-json" && hasValue(i, argc)) {
+        strict_json_path = argv[++i];
+      } else if (arg == "--case-id" && hasValue(i, argc)) {
+        case_id = argv[++i];
       } else if (arg == "--help" || arg == "-h") {
         usage();
         return 0;
@@ -169,18 +206,21 @@ int main(int argc, char** argv) {
     if (!std::filesystem::exists(model_path)) {
       std::cerr << "adasdf_expansion_quality: file does not exist: "
                 << model_path.string() << "\n";
+      write_strict(false, "failed", "model file does not exist");
       return 2;
     }
 
     const auto model = adasdf::SDFBinReader::read(model_path);
     if (!model || !model->isValid()) {
       std::cerr << "adasdf_expansion_quality: model is invalid\n";
+      write_strict(false, "failed", "model is invalid");
       return 1;
     }
     if (!model->queryBackendAvailable()) {
       std::cerr
           << "adasdf_expansion_quality: model loaded but no direct query backend "
           << "is available. Rebuild with the demo or existing-core query bridge.\n";
+      write_strict(false, "failed", "model has no direct query backend");
       return 1;
     }
 
@@ -254,6 +294,18 @@ int main(int argc, char** argv) {
       writeCsv(file, model_path, expansion, blocks, resolution, report);
     }
 
+    write_strict(
+        true,
+        "ok",
+        "",
+        {{"max_abs_error", report.max_abs_error},
+         {"mean_abs_error", report.mean_abs_error},
+         {"rms_error", report.rms_error},
+         {"p95_error", report.p95_abs_error},
+         {"sign_mismatch_count",
+          static_cast<double>(report.sign_mismatch_count)},
+         {"near_surface_sign_mismatch_count",
+          static_cast<double>(report.near_surface_sign_mismatch_count)}});
     return 0;
   } catch (const std::exception& exc) {
     std::cerr << "adasdf_expansion_quality failed: " << exc.what() << "\n";

@@ -8,6 +8,7 @@
 #include <iomanip>
 #include <iostream>
 #include <limits>
+#include <map>
 #include <memory>
 #include <numeric>
 #include <sstream>
@@ -624,6 +625,37 @@ int main(int argc, char** argv) {
     int repeat = 1;
     std::filesystem::path model_path;
     std::filesystem::path output_path;
+    std::filesystem::path strict_json_path;
+    std::string case_id = "default";
+    const auto strict_timer = adasdf::startStrictRunTimer();
+    const std::map<std::string, std::string> strict_parameters =
+        adasdf::commandLineParameters(argc, argv);
+    auto write_strict = [&](
+                            bool success,
+                            const std::string& status,
+                            const std::string& failure_reason,
+                            const std::map<std::string, double>& metrics) {
+      if (strict_json_path.empty()) {
+        return;
+      }
+      std::string strict_error;
+      if (!adasdf::writeStrictRunReport(
+              strict_json_path,
+              "adasdf_benchmark_batch_query",
+              case_id,
+              model_path,
+              output_path,
+              strict_parameters,
+              metrics,
+              success,
+              status,
+              failure_reason,
+              strict_timer,
+              &strict_error)) {
+        std::cerr << "failed to write strict JSON report: " << strict_error
+                  << "\n";
+      }
+    };
 
     for (int i = 1; i < argc; ++i) {
       const std::string arg = argv[i];
@@ -665,6 +697,10 @@ int main(int argc, char** argv) {
         model_path = argv[++i];
       } else if (arg == "--out" && i + 1 < argc) {
         output_path = argv[++i];
+      } else if (arg == "--strict-json" && i + 1 < argc) {
+        strict_json_path = argv[++i];
+      } else if (arg == "--case-id" && i + 1 < argc) {
+        case_id = argv[++i];
       } else if (arg == "--help" || arg == "-h") {
         std::cout
             << "Usage: adasdf_benchmark_batch_query --points 10000,1000000 "
@@ -675,7 +711,8 @@ int main(int argc, char** argv) {
                "[--output phi|phi,normal] [--phi-only] [--device-only] "
                "[--model model.sdfbin] "
                "[--near-surface-band 1e-3] [--sign-epsilon 1e-9] "
-               "[--keep-resident] [--out benchmark.csv]\n";
+               "[--keep-resident] [--out benchmark.csv] "
+               "[--strict-json report.json] [--case-id case_id]\n";
         return 0;
       } else {
         throw std::runtime_error("unknown or incomplete argument: " + arg);
@@ -998,6 +1035,45 @@ int main(int argc, char** argv) {
         rows.begin(),
         rows.end(),
         [](const BenchmarkRow& row) { return row.status == "failed"; });
+    const BenchmarkRow* representative = nullptr;
+    for (const BenchmarkRow& row : rows) {
+      if (row.status == "ok") {
+        representative = &row;
+      }
+    }
+    if (representative == nullptr && !rows.empty()) {
+      representative = &rows.back();
+    }
+    std::map<std::string, double> strict_metrics;
+    if (representative != nullptr) {
+      strict_metrics["benchmark_ns_per_query"] = representative->ns_per_query;
+      strict_metrics["query_time_ms"] = representative->query_total_ms;
+      strict_metrics["memory_bytes"] =
+          representative->expanded_memory_mb * 1024.0 * 1024.0;
+      strict_metrics["max_abs_error"] = representative->max_abs_error;
+      strict_metrics["mean_abs_error"] = representative->mean_abs_error;
+      strict_metrics["rms_error"] = representative->rms_error;
+      strict_metrics["p95_error"] = representative->p95_abs_error;
+      strict_metrics["sign_mismatch_count"] =
+          static_cast<double>(representative->sign_mismatch_count);
+      strict_metrics["near_surface_sign_mismatch_count"] =
+          static_cast<double>(
+              representative->near_surface_sign_mismatch_count);
+    }
+    std::string failure_reason;
+    if (any_failed) {
+      for (const BenchmarkRow& row : rows) {
+        if (row.status == "failed") {
+          failure_reason = row.error_message;
+          break;
+        }
+      }
+    }
+    write_strict(
+        !any_failed,
+        any_failed ? "failed" : "ok",
+        failure_reason,
+        strict_metrics);
     return any_failed ? 1 : 0;
   } catch (const std::exception& error) {
     std::cerr << "adasdf_benchmark_batch_query failed: " << error.what()
