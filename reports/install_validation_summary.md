@@ -24,46 +24,53 @@ cmake --install '<build>' --config Release --prefix '<install>'
 ```
 
 ```text
--- Up-to-date: <install>/lib/adasdf_cl_runtime.lib
--- Up-to-date: <install>/bin/adasdf_build.exe
--- Up-to-date: <install>/bin/adasdf_info.exe
--- Up-to-date: <install>/bin/adasdf_query.exe
--- Up-to-date: <install>/bin/adasdf_collide.exe
--- Up-to-date: <install>/bin/adasdf_make_demo_box.exe
--- Up-to-date: <install>/bin/adasdf_recommend_demo.exe
--- Up-to-date: <install>/bin/adasdf_recommend_build.exe
--- Up-to-date: <install>/bin/adasdf_build_demo_adaptive.exe
--- Up-to-date: <install>/bin/adasdf_collide_boxes_demo.exe
--- Up-to-date: <install>/bin/adasdf_query_mode_demo.exe
--- Up-to-date: <install>/bin/adasdf_expansion_quality.exe
--- Up-to-date: <install>/bin/adasdf_capabilities.exe
--- Up-to-date: <install>/bin/adasdf_mesh_check.exe
--- Up-to-date: <install>/bin/adasdf_mesh_clean.exe
--- Up-to-date: <install>/bin/adasdf_build_dense_sdf.exe
--- Up-to-date: <install>/bin/adasdf_build_adaptive_sdf.exe
--- Up-to-date: <install>/bin/adasdf_compress_adaptive_sdf.exe
--- Up-to-date: <install>/bin/adasdf_build_compressed_sdf.exe
--- Up-to-date: <install>/bin/adasdf_build_adaptive_sdf_preview.exe
+-- Installing: <install>/lib/adasdf_cl_runtime.lib
+-- Installing: <install>/bin/adasdf_build.exe
+-- Installing: <install>/bin/adasdf_info.exe
+-- Installing: <install>/bin/adasdf_query.exe
+-- Installing: <install>/bin/adasdf_collide.exe
+-- Installing: <install>/bin/adasdf_make_demo_box.exe
+-- Installing: <install>/bin/adasdf_recommend_demo.exe
+-- Installing: <install>/bin/adasdf_recommend_build.exe
+-- Installing: <install>/bin/adasdf_build_demo_adaptive.exe
+-- Installing: <install>/bin/adasdf_collide_boxes_demo.exe
+-- Installing: <install>/bin/adasdf_query_mode_demo.exe
+-- Installing: <install>/bin/adasdf_expansion_quality.exe
+-- Installing: <install>/bin/adasdf_capabilities.exe
+-- Installing: <install>/bin/adasdf_mesh_check.exe
+-- Installing: <install>/bin/adasdf_mesh_clean.exe
+-- Installing: <install>/bin/adasdf_build_dense_sdf.exe
+-- Installing: <install>/bin/adasdf_build_adaptive_sdf.exe
+-- Installing: <install>/bin/adasdf_compress_adaptive_sdf.exe
+-- Installing: <install>/bin/adasdf_build_compressed_sdf.exe
+-- Installing: <install>/bin/adasdf_build_adaptive_sdf_preview.exe
 ...
 ```
 
 ### Package Configure: PASS
 
 ```bash
-cmake -S '<source>/tests/package' -B '<workspace>/build/adasdf_cl-v1_13_ci_hotfix_alpha_validation_reuse_pkg' '-DCMAKE_PREFIX_PATH=<install>'
+cmake -S '<source>/tests/package' -B '<workspace>/build/adasdf_cl-v1_13_alpha2_alpha_validation_pkg' '-DCMAKE_PREFIX_PATH=<install>'
 ```
 
 ```text
+-- Building for: Visual Studio 17 2022
 -- Selecting Windows SDK version 10.0.22621.0 to target Windows 10.0.26200.
--- Configuring done (0.0s)
--- Generating done (0.0s)
+-- The CXX compiler identification is MSVC 19.42.34444.0
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.42.34433/bin/Hostx64/x64/cl.exe - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Configuring done (1.6s)
+-- Generating done (0.1s)
 -- Build files have been written to: <build>_pkg
 ```
 
 ### Package Build: PASS
 
 ```bash
-cmake --build '<workspace>/build/adasdf_cl-v1_13_ci_hotfix_alpha_validation_reuse_pkg' --config Release --parallel -- /nodeReuse:false
+cmake --build '<workspace>/build/adasdf_cl-v1_13_alpha2_alpha_validation_pkg' --config Release --parallel -- /nodeReuse:false
 ```
 
 ```text
@@ -71,6 +78,7 @@ cmake --build '<workspace>/build/adasdf_cl-v1_13_ci_hotfix_alpha_validation_reus
 
   1>Checking Build System
   Building Custom Rule <source>/tests/package/CMakeLists.txt
+  test_find_package.cpp
   test_find_package.vcxproj -> <build>_pkg\Release\test_find_package.exe
   Building Custom Rule <source>/tests/package/CMakeLists.txt
 ```
@@ -84,7 +92,7 @@ cmake --build '<workspace>/build/adasdf_cl-v1_13_ci_hotfix_alpha_validation_reus
 ```text
 .......................................
 ----------------------------------------------------------------------
-Ran 39 tests in 0.302s
+Ran 39 tests in 0.438s
 
 OK
 ```
@@ -96,7 +104,7 @@ OK
 ```
 
 ```text
-AdaSDF-CL version: 1.13.0-alpha.1
+AdaSDF-CL version: 1.13.0-alpha.2
 Position: FCL-style SDF collision backend under development.
 Boundary: complementary SDF backend, not a drop-in FCL replacement.
 
@@ -219,12 +227,12 @@ Used BVH: no
 Threads requested: 1
 Threads used: 1
 BVH build time ms: 0
-Sampling time ms: 21.5094
+Sampling time ms: 22.987
 BVH nodes: 0
 BVH leaves: 0
 Brute reference time ms: 0
 Speedup vs brute reference: 0
-Build time ms: 21.5911
+Build time ms: 23.0994
 Memory bytes: 111128
 Reload validation: success
 ...
@@ -238,7 +246,7 @@ Reload validation: success
 
 ```text
 AdaSDF-CL info
-Library version: 1.13.0-alpha.1
+Library version: 1.13.0-alpha.2
 Path: <local-path>
 Model name: uniform dense SDF
 Valid: yes
@@ -344,7 +352,7 @@ BVH leaves: 0
 
 ```text
 AdaSDF-CL info
-Library version: 1.13.0-alpha.1
+Library version: 1.13.0-alpha.2
 Path: <local-path>
 Model name: adaptive block dense SDF
 Valid: yes
@@ -448,7 +456,7 @@ Quality report: <local-path>
 
 ```text
 AdaSDF-CL info
-Library version: 1.13.0-alpha.1
+Library version: 1.13.0-alpha.2
 Path: <local-path>
 Model name: compressed adaptive block SDF
 Valid: yes
@@ -554,9 +562,9 @@ Fallback rate: 0
 
 ```text
 query_backend,expansion_mode,selected_blocks,num_points,expanded_memory_mb,gpu_resident_memory_mb,setup_ms,expand_ms,upload_sdf_ms,allocation_ms,h2d_points_ms,kernel_ms,sync_ms,d2h_results_ms,postprocess_ms,free_ms,total_ms,query_kernel_ms,query_total_ms,ns_per_query,queries_per_second,fallback_count,max_abs_phi_error,max_normal_error,cuda_available,max_abs_error,mean_abs_error,rms_error,p95_abs_error,sign_mismatch_count,sign_mismatch_rate,ambiguous_sign_count,ambiguous_sign_rate,near_surface_sign_mismatch_count,near_surface_sign_mismatch_rate,fallback_rate,warmup,repeat,kernel_min_ms,kernel_mean_ms,kernel_max_ms,kernel_std_ms,total_min_ms,total_mean_ms,total_max_ms,total_std_ms,output_mode,phi_only,reuse_resident,kernel_only,workspace_reused,allocation_count,workspace_capacity,workspace_device_memory_mb,block_lookup_count,block_scan_count,center_block_hit_rate,neighbor_same_block_rate,download_results,correctness_checked,host_memory,layout,status,error_message
-cpu,none,all,1000,0,0,0,0,0,0.0155,0,NA,NA,0,0,0,1.9271,NA,1.9271,1927.1,518914.431,0,0,0,false,0,0,0,0,0,0,0,0,0,0,0,0,1,NA,NA,NA,NA,1.9271,1.9271,1.9271,0,"phi,normal",false,false,false,false,0,0,0,0,0,0,0,true,true,paged,aos,ok,
+cpu,none,all,1000,0,0,0,0,0,0.0158,0,NA,NA,0,0,0,2.007,NA,2.007,2007,498256.1036,0,0,0,false,0,0,0,0,0,0,0,0,0,0,0,0,1,NA,NA,NA,NA,2.007,2.007,2.007,0,"phi,normal",false,false,false,false,0,0,0,0,0,0,0,true,true,paged,aos,ok,
 backend | expansion | output | blocks | points | setup ms | total mean ms | kernel mean ms | ns/query | max phi error | max normal error | status
-cpu | none | phi,normal | all | 1000 | 0 | 1.9271 | NA | 1927.1 | 0 | 0 | ok
+cpu | none | phi,normal | all | 1000 | 0 | 2.007 | NA | 2007 | 0 | 0 | ok
 ```
 
 ### Installed CompressedSDF One-Step Build CLI: PASS
@@ -576,7 +584,7 @@ Used BVH: no
 Threads requested: 1
 Threads used: 1
 BVH build time ms: 0
-Sampling time ms: 12.6746
+Sampling time ms: 13.299
 BVH nodes: 0
 BVH leaves: 0
 Brute reference time ms: 0
@@ -604,7 +612,7 @@ Colliding: true
 Min phi: -0.5
 Min effective phi: -0.5
 Early exit: false
-Elapsed ms: 0.0071
+Elapsed ms: 0.0068
 Output mode: phi-only
 Status: ok
 ```
@@ -625,7 +633,7 @@ First hit sample id: 0
 Sample count: 6
 Queried samples: 1
 Early exit: true
-Elapsed ms: 0.0027
+Elapsed ms: 0.0026
 Return code note: 10 means collision detected, not failure
 Status: ok
 
@@ -699,9 +707,9 @@ raw_candidate_count: 2
 patch_count: 2
 solver_contact_count: 2
 candidate_reduction_ratio: 1
-avg_query_ms: 0.0158
-avg_reduction_ms: 0.00555
-avg_total_ms: 0.02135
+avg_query_ms: 0.01515
+avg_reduction_ms: 0.00455
+avg_total_ms: 0.0197
 max_contacts: 8
 patch_radius: 0.02
 repeat: 2
@@ -717,9 +725,9 @@ Status: ok
 
 ```text
 sample_count,repeat,warmup,total_ms,avg_ms,avg_us,avg_ns_per_sample,queried_samples_avg,early_exit_rate,mode,with_normal,threshold,top_k,status
-6,2,1,0.0082,0.0041,4.1,683.333,6,0,phi-only,false,0,8,ok
+6,2,1,0.008,0.004,4,666.667,6,0,phi-only,false,0,8,ok
 Sparse benchmark mode: phi-only
-Average ns per sample: 683.333
+Average ns per sample: 666.667
 Status: ok
 ```
 
@@ -757,7 +765,7 @@ Resident blocks: 64
 Resident memory bytes: 74752
 Colliding: true
 Min effective phi: -0.5
-Query time ms: 0.1209
+Query time ms: 0.1182
 Status: ok
 
 Validation note: active_block_query returned 10, which means collision detected and is expected for this fixture.
@@ -771,9 +779,9 @@ Validation note: active_block_query returned 10, which means collision detected 
 
 ```text
 sample_count,repeat,warmup,active_block_count,expanded_block_count,cache_memory_bytes,cache_hit_rate,fallback_query_count,active_block_avg_ms,active_block_ns_per_sample,direct_avg_ms,direct_ns_per_sample,mode,threshold,selection_band,status
-6,2,1,45,45,52560,1.000000,4,0.015050,2508.333333,0.003750,625.000000,phi-only,1.000000,0.100000,ok
+6,2,1,45,45,52560,1.000000,4,0.014600,2433.333333,0.003700,616.666667,phi-only,1.000000,0.100000,ok
 Active block cache benchmark mode: phi-only
-Average ns per sample: 2508.33
+Average ns per sample: 2433.33
 Status: ok
 ```
 
@@ -881,12 +889,12 @@ Plan: <local-path>
 ### Package Run: PASS
 
 ```bash
-'<workspace>/build/adasdf_cl-v1_13_ci_hotfix_alpha_validation_reuse_pkg/Release/test_find_package.exe'
+'<workspace>/build/adasdf_cl-v1_13_alpha2_alpha_validation_pkg/Release/test_find_package.exe'
 ```
 
 ```text
 AdaSDF-CL package consumer
-Version: 1.13.0-alpha.1
+Version: 1.13.0-alpha.2
 Point: 1 2 3
 Demo signed distance at origin: -0.5
 Demo adaptive blocks: 7
@@ -898,12 +906,19 @@ CPU backend available: true
 ### Downstream Configure: PASS
 
 ```bash
-cmake -S '<source>/examples/downstream_cmake_project' -B '<workspace>/build/adasdf_cl-v1_13_ci_hotfix_alpha_validation_reuse_ds' '-DCMAKE_PREFIX_PATH=<install>'
+cmake -S '<source>/examples/downstream_cmake_project' -B '<workspace>/build/adasdf_cl-v1_13_alpha2_alpha_validation_ds' '-DCMAKE_PREFIX_PATH=<install>'
 ```
 
 ```text
+-- Building for: Visual Studio 17 2022
 -- Selecting Windows SDK version 10.0.22621.0 to target Windows 10.0.26200.
--- Configuring done (0.0s)
+-- The CXX compiler identification is MSVC 19.42.34444.0
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.42.34433/bin/Hostx64/x64/cl.exe - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Configuring done (1.6s)
 -- Generating done (0.0s)
 -- Build files have been written to: <build>_ds
 ```
@@ -911,7 +926,7 @@ cmake -S '<source>/examples/downstream_cmake_project' -B '<workspace>/build/adas
 ### Downstream Build: PASS
 
 ```bash
-cmake --build '<workspace>/build/adasdf_cl-v1_13_ci_hotfix_alpha_validation_reuse_ds' --config Release --parallel -- /nodeReuse:false
+cmake --build '<workspace>/build/adasdf_cl-v1_13_alpha2_alpha_validation_ds' --config Release --parallel -- /nodeReuse:false
 ```
 
 ```text
@@ -919,6 +934,7 @@ cmake --build '<workspace>/build/adasdf_cl-v1_13_ci_hotfix_alpha_validation_reus
 
   1>Checking Build System
   Building Custom Rule <source>/examples/downstream_cmake_project/CMakeLists.txt
+  main.cpp
   adasdf_downstream.vcxproj -> <build>_ds\Release\adasdf_downstream.exe
   Building Custom Rule <source>/examples/downstream_cmake_project/CMakeLists.txt
 ```
@@ -926,12 +942,12 @@ cmake --build '<workspace>/build/adasdf_cl-v1_13_ci_hotfix_alpha_validation_reus
 ### Downstream Run: PASS
 
 ```bash
-'<workspace>/build/adasdf_cl-v1_13_ci_hotfix_alpha_validation_reuse_ds/Release/adasdf_downstream.exe'
+'<workspace>/build/adasdf_cl-v1_13_alpha2_alpha_validation_ds/Release/adasdf_downstream.exe'
 ```
 
 ```text
 AdaSDF-CL downstream example
-Version: 1.13.0-alpha.1
+Version: 1.13.0-alpha.2
 CPU backend: available
 No .sdfbin supplied; running core-free demo adaptive path.
 Demo signed distance at origin: -0.5

@@ -1,14 +1,14 @@
 # Alpha Status
 
-AdaSDF-CL 1.13.0-alpha.1 is a research-preview release candidate.
+AdaSDF-CL 1.13.0-alpha.2 is a research-preview release candidate.
 
 The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`,
 `v1.1.0-alpha`, `v1.1.1-alpha`, `v1.2.0-alpha`, `v1.3.0-alpha`,
 `v1.4.0-alpha`, `v1.5.0-alpha`, `v1.6.0-alpha`, `v1.7.0-alpha`,
 `v1.8.0-alpha`, `v1.8.1-alpha`, `v1.9.0-alpha`, `v1.10.0-alpha`,
-`v1.11.0-alpha`, `v1.12.0-alpha`, and `v1.13.0-alpha` tags are
-retained for traceability. The recommended public pre-release is
-`v1.13.0-alpha.1`.
+`v1.11.0-alpha`, `v1.12.0-alpha`, `v1.13.0-alpha`, and
+`v1.13.0-alpha.1` tags are retained for traceability. The recommended public
+pre-release is `v1.13.0-alpha.2`.
 
 ## What Works
 
@@ -227,6 +227,12 @@ candidate APIs unchanged and updates GitHub Actions to reuse the already-built
 CI tree during install validation so Ubuntu does not rebuild the full project
 twice.
 
+v1.13.0-alpha.2 is a CI hotfix release for the v1.13 tag workflow. It keeps the
+v1.13 solver-aware contact APIs unchanged, preserves the v1.13.0-alpha and
+v1.13.0-alpha.1 tags, and limits GitHub Actions build parallelism to reduce
+Ubuntu runner peak load when `main` and tag workflows are triggered for the
+same commit.
+
 Benchmark `total_ms` is a full query timing. Benchmark `kernel_ms` is CUDA
 kernel event timing. Original UI warmed kernel-average numbers should be
 compared to `--kernel-only --output phi --reuse-resident` rows.
@@ -247,13 +253,13 @@ analysis.
 - Target external collision test verdict for v0.9.0-alpha: PASS for the demo
   adaptive workflow.
 - Expected CUDA-unavailable behavior: GPU benchmark/tests SKIPPED, not FAILED.
-- Current v1.13.0-alpha.1 local CPU CTest: PASS, 153/153.
-- Current v1.13.0-alpha.1 CUDA validation is optional and should skip gracefully
+- Current v1.13.0-alpha.2 local CPU CTest: PASS, 153/153.
+- Current v1.13.0-alpha.2 CUDA validation is optional and should skip gracefully
   when CUDA is unavailable.
-- Current v1.13.0-alpha.1 Python wrapper unittest: PASS, 39/39.
-- Current v1.13.0-alpha.1 install validation: PASS.
-- Current v1.13.0-alpha.1 alpha validation: PASS.
-- Current v1.13.0-alpha.1 clean check: PASS.
-- Expected CI behavior: main/tag workflows should use
-  the reused CI build tree for install validation. `v1.13.0-alpha` remains
-  unchanged.
+- Current v1.13.0-alpha.2 Python wrapper unittest: PASS, 39/39.
+- Current v1.13.0-alpha.2 install validation: PASS.
+- Current v1.13.0-alpha.2 alpha validation: PASS.
+- Current v1.13.0-alpha.2 clean check: PASS.
+- Expected CI behavior: main/tag workflows should use the reused CI build tree
+  for install validation and limit build parallelism. `v1.13.0-alpha` and
+  `v1.13.0-alpha.1` remain unchanged.

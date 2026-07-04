@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.13.0-alpha.2
+
+CI hotfix release for the v1.13 tag workflow.
+
+### Fixed
+
+- Limited GitHub Actions build parallelism to reduce Ubuntu runner peak load
+  when `main` and tag workflows are triggered for the same commit.
+- Preserved the `v1.13.0-alpha` and `v1.13.0-alpha.1` tags without moving
+  either tag.
+
+### Notes
+
+- No algorithmic changes intended.
+- `v1.13.0-alpha.1` passed on `main` but its tag workflow was cancelled during
+  the Ubuntu build step.
+- Use `v1.13.0-alpha.2` for the green CI pre-release.
+
 ## 1.13.0-alpha.1
 
 CI hotfix release.
@@ -17,7 +35,8 @@ CI hotfix release.
 
 - No algorithmic changes intended.
 - `v1.13.0-alpha` remains unchanged.
-- Use `v1.13.0-alpha.1` for the green CI pre-release.
+- Superseded by `v1.13.0-alpha.2` after the `v1.13.0-alpha.1` tag workflow
+  was cancelled during the Ubuntu build step.
 
 ## 1.13.0-alpha
 

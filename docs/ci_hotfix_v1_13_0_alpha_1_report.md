@@ -1,5 +1,8 @@
 # AdaSDF-CL v1.13.0-alpha.1 CI Hotfix Report
 
+Note: `v1.13.0-alpha.1` was superseded by `v1.13.0-alpha.2` after the
+`v1.13.0-alpha.1` tag workflow was cancelled during the Ubuntu build step.
+
 ## GitHub Actions Failure Summary
 
 `v1.13.0-alpha` pushed successfully, but both push-triggered CI runs failed on
@@ -83,9 +86,9 @@ The original `v1.13.0-alpha` tag remains unchanged for traceability.
 
 ## New Tag Recommendation
 
-Use `v1.13.0-alpha.1` for the green CI pre-release.
+Use `v1.13.0-alpha.2` for the green CI pre-release.
 
 ## Release Recommendation
 
-Create the GitHub pre-release from `v1.13.0-alpha.1` after GitHub Actions pass
+Create the GitHub pre-release from `v1.13.0-alpha.2` after GitHub Actions pass
 on both `main` and the new tag.

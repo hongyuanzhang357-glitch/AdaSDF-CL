@@ -2,7 +2,7 @@
 
 Adaptive Signed Distance Field Collision Library
 
-Status: 1.13.0-alpha.1 / research preview
+Status: 1.13.0-alpha.2 / research preview
 Build system: CMake
 License: MIT
 Tests: CTest
@@ -20,6 +20,11 @@ not implement a contact solver, impulses, friction, or solver constraints.
 v1.13.0-alpha.1 is a CI hotfix for the v1.13 contact stabilization release. It
 keeps the solver-aware contact APIs unchanged and updates GitHub Actions to
 reuse the already-built CI tree during install validation.
+
+v1.13.0-alpha.2 is a CI hotfix for the v1.13 tag workflow. It keeps the
+solver-aware contact APIs unchanged and limits GitHub Actions build parallelism
+to reduce Ubuntu runner peak load when `main` and tag workflows are triggered
+for the same commit.
 
 v1.12.0-alpha adds optional CPU TriangleBVH acceleration for DenseSDF,
 AdaptiveBlockSDF, and CompressedAdaptiveBlockSDF builder sampling. The default
@@ -67,8 +72,8 @@ The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`, `v1.1.0-alpha`,
 `v1.1.1-alpha`, `v1.2.0-alpha`, `v1.3.0-alpha`, `v1.4.0-alpha`,
 `v1.5.0-alpha`, `v1.6.0-alpha`, `v1.7.0-alpha`, `v1.8.0-alpha`,
 `v1.8.1-alpha`, `v1.9.0-alpha`, `v1.10.0-alpha`, `v1.11.0-alpha`,
-`v1.12.0-alpha`, and `v1.13.0-alpha` tags are retained for traceability. The
-recommended public pre-release is `v1.13.0-alpha.1`.
+`v1.12.0-alpha`, `v1.13.0-alpha`, and `v1.13.0-alpha.1` tags are retained for
+traceability. The recommended public pre-release is `v1.13.0-alpha.2`.
 
 ## What Is AdaSDF-CL?
 
