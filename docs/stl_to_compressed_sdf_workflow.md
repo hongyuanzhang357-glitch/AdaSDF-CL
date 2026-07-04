@@ -41,3 +41,15 @@ surrogate integration, and GPU-native compressed query remain planned work.
 v1.12 adds optional CPU BVH builder sampling for the adaptive build stage of
 the compressed workflow. It does not change Matrix-SVD compression math and is
 not GPU-native compressed query.
+
+v1.16 adds opt-in hierarchical adaptive sampling for the adaptive build stage:
+
+```bash
+adasdf_build_compressed_sdf model_clean.stl model_compressed.sdfbin \
+  --accel bvh --sampling hierarchical --quality-guard \
+  --coarse-resolution 3 --quality-check-samples 3
+```
+
+Near-surface blocks remain exact by default. Prediction is guarded by sampled
+quality checks and falls back to exact sampling on failure. Compression and
+SDFBin formats are unchanged.

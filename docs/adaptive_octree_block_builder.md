@@ -14,6 +14,8 @@ Implemented in v1.6.0-alpha:
 - `ADASDF_ADAPTIVE_BLOCK_SDFBIN_V1` read/write support.
 - `adasdf_build_adaptive_sdf`.
 - Optional CPU BVH-accelerated block sampling in v1.12.0-alpha.
+- Optional hierarchical adaptive block sampling with quality guard in
+  v1.16.0-alpha.
 
 Not implemented in v1.6.0-alpha:
 
@@ -70,3 +72,14 @@ adasdf_build_adaptive_sdf model.stl model_adaptive.sdfbin --accel bvh --threads 
 
 The BVH path accelerates CPU sampling inside adaptive dense blocks. The octree
 refinement policy and block storage format remain unchanged.
+
+v1.16.0-alpha adds opt-in hierarchical sampling:
+
+```bash
+adasdf_build_adaptive_sdf model.stl model_adaptive.sdfbin \
+  --accel bvh --sampling hierarchical --quality-guard
+```
+
+Near-surface blocks remain exact by default. Transition and far-field blocks may
+use coarse prediction only when deterministic quality checks pass; otherwise the
+builder falls back to exact sampling. The SDFBin format is unchanged.

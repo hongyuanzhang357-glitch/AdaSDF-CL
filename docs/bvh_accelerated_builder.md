@@ -13,6 +13,8 @@ Implemented:
   use the BVH sampler.
 - `--threads N` enables deterministic stdlib-based parallel sampling.
 - `--benchmark-brute-reference` reports brute-reference time and speedup.
+- v1.16 hierarchical sampling can use the BVH sampler as its exact reference
+  and fallback path.
 
 Not implemented:
 
@@ -52,3 +54,10 @@ The BVH builder uses stable sorting by centroid and triangle id. Parallel
 sampling uses fixed contiguous chunks. Output values are written back to fixed
 indices, so result grids are deterministic for a given input, option set, and
 compiler floating-point mode.
+
+## v1.16 Hierarchical Sampling
+
+The hierarchical sampling path is separate from BVH acceleration. BVH controls
+how exact distance samples are evaluated; hierarchical sampling controls how
+many exact samples are needed for each adaptive block. Quality failures fall
+back to exact BVH sampling.

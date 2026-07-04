@@ -36,6 +36,8 @@ replacement.
   memory savings.
 - Optional CPU BVH acceleration for STL-to-SDF builder sampling.
 - Deterministic multi-threaded builder sampling.
+- Experimental hierarchical adaptive sampling with quality guard for adaptive
+  and compressed SDF construction.
 - Adaptive builder preview for future Tucker/trained-surrogate/GPU compressed
   stages.
 
@@ -83,7 +85,9 @@ optional CPU TriangleBVH builder acceleration path and deterministic
 multi-threaded builder sampling. v1.13 adds solver-aware contact candidate
 stabilization for external hard-contact simulation workflows. v1.14 adds
 CollisionWorld broadphase and multi-object sample-based SDF collision. v1.15
-adds strict JSON/CSV reproducibility reports for automation. It does not
+adds strict JSON/CSV reproducibility reports for automation. v1.16 adds
+experimental hierarchical adaptive sampling with near-surface exact sampling,
+guarded transition/far-field prediction, and exact fallback. It does not
 fill holes, repair self-intersections, implement Tucker/HOSVD compression,
 claim a universal trained recommender, guarantee optimal parameters, claim
 GPU-native compressed query, provide GPU BVH, provide FCL fallback, provide

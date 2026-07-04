@@ -49,6 +49,10 @@ The schema is produced by `adasdf_write_manifest` and by selected core CLIs via
 `adasdf_validate_report report.json` and summarized with
 `adasdf_collect_run_summary --inputs reports.txt --out summary.csv`.
 
+v1.16 extends strict report coverage to
+`adasdf_benchmark_hierarchical_sampling`, including speed-quality metrics and
+quality gate status for hierarchical sampling comparisons.
+
 ## Boundary
 
 The strict JSON report is a reproducibility and automation manifest. It is not
