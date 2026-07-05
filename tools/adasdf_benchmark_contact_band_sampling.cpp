@@ -4,6 +4,7 @@
 #include <chrono>
 #include <exception>
 #include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -20,7 +21,9 @@ struct Options {
   bool signed_distance = true;
   std::filesystem::path csv;
   std::filesystem::path report;
+  std::filesystem::path marker_debug_csv;
   std::string case_id = "contact_band";
+  bool marker_cost_audit = false;
   adasdf::ContactBandSamplingOptions contact;
 };
 
@@ -41,6 +44,8 @@ void usage() {
          "[--marker-min-band value] [--marker-max-band value] "
          "[--disable-global-halo] [--local-halo-only] "
          "[--reuse-far-field-sign] [--no-reuse-far-field-sign] "
+         "[--coverage-audit] [--coverage-samples-per-axis N] "
+         "[--marker-cost-audit] [--save-marker-debug-csv out.csv] "
          "[--normal-audit] [--normal-error-limit-deg value] "
          "[--threads N] [--csv out.csv] [--report out.md] "
          "[--case-id id]\n";
@@ -138,6 +143,38 @@ double sampleReferenceExact(
   return stats.elapsed_ms;
 }
 
+void writeMarkerDebugCsv(
+    const std::filesystem::path& path,
+    const std::vector<adasdf::ContactBandBlockSamplingResult>& sampled) {
+  if (path.empty()) {
+    return;
+  }
+  if (!path.parent_path().empty()) {
+    std::filesystem::create_directories(path.parent_path());
+  }
+  std::ofstream out(path);
+  out
+      << "block_id,has_contact_band,candidate_cell_count,"
+         "candidate_triangle_count,refined_candidate_count,"
+         "rejected_candidate_count,accepted_contact_cell_count,"
+         "marked_node_count,exact_node_count,marker_time_ms,"
+         "triangle_bvh_query_time_ms,box_triangle_distance_time_ms,"
+         "marker_false_positive_proxy\n";
+  for (const auto& block : sampled) {
+    const auto& d = block.diagnostics;
+    out << block.block.block_id << ","
+        << (block.has_contact_band ? "true" : "false") << ","
+        << d.candidate_cell_count << "," << d.candidate_triangle_count
+        << "," << d.refined_candidate_count << ","
+        << d.rejected_candidate_count << ","
+        << d.accepted_contact_cell_count << ","
+        << d.marked_node_count << "," << d.exact_node_count << ","
+        << d.marker_time_ms << "," << d.triangle_bvh_query_time_ms << ","
+        << d.box_triangle_distance_time_ms << ","
+        << d.marker_false_positive_proxy << "\n";
+  }
+}
+
 adasdf::ContactBandBenchmarkResult runBenchmark(
     const adasdf::TriangleMesh& mesh,
     const Options& options) {
@@ -219,6 +256,16 @@ adasdf::ContactBandBenchmarkResult runBenchmark(
     diagnostics.sign_query_count += block_result.diagnostics.sign_query_count;
     diagnostics.candidate_triangle_aabb_overlap_count +=
         block_result.diagnostics.candidate_triangle_aabb_overlap_count;
+    diagnostics.candidate_cell_count +=
+        block_result.diagnostics.candidate_cell_count;
+    diagnostics.candidate_triangle_count +=
+        block_result.diagnostics.candidate_triangle_count;
+    diagnostics.refined_candidate_count +=
+        block_result.diagnostics.refined_candidate_count;
+    diagnostics.rejected_candidate_count +=
+        block_result.diagnostics.rejected_candidate_count;
+    diagnostics.accepted_contact_cell_count +=
+        block_result.diagnostics.accepted_contact_cell_count;
     diagnostics.distance_refined_cell_count +=
         block_result.diagnostics.distance_refined_cell_count;
     diagnostics.distance_rejected_cell_count +=
@@ -241,6 +288,12 @@ adasdf::ContactBandBenchmarkResult runBenchmark(
     diagnostics.marker_time_ms += block_result.diagnostics.marker_time_ms;
     diagnostics.distance_refinement_time_ms +=
         block_result.diagnostics.distance_refinement_time_ms;
+    diagnostics.marker_refinement_time_ms +=
+        block_result.diagnostics.marker_refinement_time_ms;
+    diagnostics.box_triangle_distance_time_ms +=
+        block_result.diagnostics.box_triangle_distance_time_ms;
+    diagnostics.triangle_bvh_query_time_ms +=
+        block_result.diagnostics.triangle_bvh_query_time_ms;
     quality = adasdf::ContactBandQualityAudit::merge(
         quality,
         adasdf::ContactBandQualityAudit::auditBlock(
@@ -249,14 +302,31 @@ adasdf::ContactBandBenchmarkResult runBenchmark(
             block_result.mask,
             options.contact));
   }
+  const double accumulated_block_time_ms = diagnostics.total_time_ms;
   diagnostics.total_time_ms = result.contact_band_time_ms;
   adasdf::finalizeContactBandDiagnostics(&diagnostics);
+  if (accumulated_block_time_ms > 0.0) {
+    diagnostics.marker_time_fraction =
+        diagnostics.marker_time_ms / accumulated_block_time_ms;
+  }
   adasdf::ContactBandQualityAudit::finalize(&quality, options.contact);
+  if (options.marker_cost_audit || !options.marker_debug_csv.empty()) {
+    writeMarkerDebugCsv(options.marker_debug_csv, sampled);
+  }
   result.diagnostics = diagnostics;
   result.quality = quality;
   result.speedup =
       result.contact_band_time_ms > 0.0
           ? result.exact_reference_time_ms / result.contact_band_time_ms
+          : 0.0;
+  result.effective_speedup_including_marker = result.speedup;
+  const double marker_fraction =
+      std::max(0.0, std::min(1.0, result.diagnostics.marker_time_fraction));
+  const double no_marker_time =
+      result.contact_band_time_ms * (1.0 - marker_fraction);
+  result.effective_speedup_excluding_marker =
+      no_marker_time > 0.0
+          ? result.exact_reference_time_ms / no_marker_time
           : 0.0;
   result.effective_speedup_claim_allowed =
       result.speedup > 1.0 && result.quality.contact_band_quality_passed;
@@ -326,6 +396,14 @@ int main(int argc, char** argv) {
         options.contact.reuse_far_field_sign = true;
       } else if (arg == "--no-reuse-far-field-sign") {
         options.contact.reuse_far_field_sign = false;
+      } else if (arg == "--coverage-audit") {
+        options.contact.coverage_audit = true;
+      } else if (arg == "--coverage-samples-per-axis" && hasValue(i, argc)) {
+        options.contact.coverage_samples_per_axis = std::stoi(argv[++i]);
+      } else if (arg == "--marker-cost-audit") {
+        options.marker_cost_audit = true;
+      } else if (arg == "--save-marker-debug-csv" && hasValue(i, argc)) {
+        options.marker_debug_csv = argv[++i];
       } else if (arg == "--normal-audit" ||
                  arg == "--contact-band-normal-audit") {
         options.contact.normal_audit = true;
@@ -392,6 +470,10 @@ int main(int argc, char** argv) {
     std::cout << "Contact-band time ms: " << result.contact_band_time_ms
               << "\n";
     std::cout << "Speedup: " << result.speedup << "\n";
+    std::cout << "Effective speedup including marker: "
+              << result.effective_speedup_including_marker << "\n";
+    std::cout << "Effective speedup excluding marker: "
+              << result.effective_speedup_excluding_marker << "\n";
     std::cout << "Marker mode: " << result.diagnostics.marker_mode << "\n";
     std::cout << "Total blocks: "
               << result.diagnostics.total_block_count << "\n";
@@ -426,6 +508,18 @@ int main(int argc, char** argv) {
     std::cout << "Candidate triangle AABB overlaps: "
               << result.diagnostics.candidate_triangle_aabb_overlap_count
               << "\n";
+    std::cout << "Candidate cells: "
+              << result.diagnostics.candidate_cell_count << "\n";
+    std::cout << "Candidate triangles: "
+              << result.diagnostics.candidate_triangle_count << "\n";
+    std::cout << "Refined candidates: "
+              << result.diagnostics.refined_candidate_count << "\n";
+    std::cout << "Rejected candidates: "
+              << result.diagnostics.rejected_candidate_count << "\n";
+    std::cout << "Accepted contact cells: "
+              << result.diagnostics.accepted_contact_cell_count << "\n";
+    std::cout << "Marker false-positive proxy: "
+              << result.diagnostics.marker_false_positive_proxy << "\n";
     std::cout << "Distance-refined cells: "
               << result.diagnostics.distance_refined_cell_count << "\n";
     std::cout << "Distance-rejected cells: "
@@ -442,6 +536,14 @@ int main(int argc, char** argv) {
               << result.diagnostics.overmark_ratio_estimate << "\n";
     std::cout << "Marker time ms: "
               << result.diagnostics.marker_time_ms << "\n";
+    std::cout << "Marker time fraction: "
+              << result.diagnostics.marker_time_fraction << "\n";
+    std::cout << "Triangle BVH query time ms: "
+              << result.diagnostics.triangle_bvh_query_time_ms << "\n";
+    std::cout << "Box-triangle distance time ms: "
+              << result.diagnostics.box_triangle_distance_time_ms << "\n";
+    std::cout << "Marker refinement time ms: "
+              << result.diagnostics.marker_refinement_time_ms << "\n";
     std::cout << "Distance refinement time ms: "
               << result.diagnostics.distance_refinement_time_ms << "\n";
     std::cout << "Contact-band max abs error: "
@@ -463,6 +565,14 @@ int main(int argc, char** argv) {
     std::cout << "Normal flips: " << result.quality.normal_flip_count << "\n";
     std::cout << "Near-surface normal flips: "
               << result.quality.near_surface_normal_flip_count << "\n";
+    std::cout << "Coverage passed: "
+              << (result.quality.coverage_passed ? "yes" : "no") << "\n";
+    std::cout << "Coverage check count: "
+              << result.quality.contact_band_coverage_check_count << "\n";
+    std::cout << "Missed contact-band points: "
+              << result.quality.missed_contact_band_point_count << "\n";
+    std::cout << "Missed contact-band cells: "
+              << result.quality.missed_contact_band_cell_count << "\n";
     std::cout << "Contact-band quality passed: "
               << (result.quality.contact_band_quality_passed ? "yes" : "no")
               << "\n";

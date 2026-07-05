@@ -30,12 +30,23 @@ struct ContactBandDiagnostics {
   std::size_t global_halo_node_count = 0;
   double overmark_ratio_estimate = 0.0;
 
+  std::size_t candidate_cell_count = 0;
+  std::size_t candidate_triangle_count = 0;
+  std::size_t refined_candidate_count = 0;
+  std::size_t rejected_candidate_count = 0;
+  std::size_t accepted_contact_cell_count = 0;
+  double marker_false_positive_proxy = 0.0;
+
   double exact_sampling_time_ms = 0.0;
   double coarse_sampling_time_ms = 0.0;
   double interpolation_time_ms = 0.0;
   double total_time_ms = 0.0;
   double marker_time_ms = 0.0;
   double distance_refinement_time_ms = 0.0;
+  double marker_refinement_time_ms = 0.0;
+  double box_triangle_distance_time_ms = 0.0;
+  double triangle_bvh_query_time_ms = 0.0;
+  double marker_time_fraction = 0.0;
 
   double exact_node_ratio = 0.0;
   double predicted_node_ratio = 0.0;

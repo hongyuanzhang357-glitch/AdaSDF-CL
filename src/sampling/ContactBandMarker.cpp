@@ -107,6 +107,8 @@ struct CellMarkResult {
   std::size_t refined = 0;
   std::size_t rejected = 0;
   double refinement_time_ms = 0.0;
+  double box_triangle_distance_time_ms = 0.0;
+  double triangle_bvh_query_time_ms = 0.0;
 };
 
 bool distanceAccepts(
@@ -132,8 +134,16 @@ CellMarkResult markCellWithBVH(
     const AABB& cell,
     const ContactBandOptions& options) {
   CellMarkResult result;
-  if (!bvh.isValid() || bvh.empty() || bvh.mesh() == nullptr) {
+  const auto query0 = std::chrono::steady_clock::now();
+  const auto finish = [&]() {
+    const auto query1 = std::chrono::steady_clock::now();
+    result.triangle_bvh_query_time_ms =
+        std::max(0.0, elapsedMs(query0, query1) -
+                          result.box_triangle_distance_time_ms);
     return result;
+  };
+  if (!bvh.isValid() || bvh.empty() || bvh.mesh() == nullptr) {
+    return finish();
   }
   const TriangleMesh& mesh = *bvh.mesh();
   const double band =
@@ -180,26 +190,28 @@ CellMarkResult markCellWithBVH(
       ++result.candidates;
       if (options.marker_mode == ContactBandMarkerMode::ConservativeAABB) {
         result.mark = true;
-        return result;
+        return finish();
       }
       ++result.refined;
       const auto refine0 = std::chrono::steady_clock::now();
       const BoxTriangleDistanceResult distance =
           BoxTriangleDistance::estimate(cell, mesh, triangle);
       const auto refine1 = std::chrono::steady_clock::now();
-      result.refinement_time_ms += elapsedMs(refine0, refine1);
+      const double distance_time = elapsedMs(refine0, refine1);
+      result.refinement_time_ms += distance_time;
+      result.box_triangle_distance_time_ms += distance_time;
       const double uncertainty =
           options.marker_mode == ContactBandMarkerMode::Hybrid
               ? 0.25 * cellDiagonal(cell)
               : 0.0;
       if (distanceAccepts(distance, band, uncertainty, options.marker_mode)) {
         result.mark = true;
-        return result;
+        return finish();
       }
       ++result.rejected;
     }
   }
-  return result;
+  return finish();
 }
 
 void markNode(std::vector<std::uint8_t>* values, std::size_t index) {
@@ -224,10 +236,17 @@ void recount(ContactBandMask* mask) {
     }
   }
   mask->marked_node_count = mask->contact_band_node_count;
+  mask->candidate_triangle_count =
+      mask->candidate_triangle_aabb_overlap_count;
+  mask->refined_candidate_count = mask->distance_refined_cell_count;
+  mask->rejected_candidate_count = mask->distance_rejected_cell_count;
+  mask->accepted_contact_cell_count = mask->marked_cell_count;
+  mask->marker_refinement_time_ms = mask->distance_refinement_time_ms;
   if (mask->candidate_triangle_aabb_overlap_count > 0) {
     mask->overmark_ratio_estimate =
         static_cast<double>(mask->distance_rejected_cell_count) /
         static_cast<double>(mask->candidate_triangle_aabb_overlap_count);
+    mask->marker_false_positive_proxy = mask->overmark_ratio_estimate;
   }
 }
 
@@ -368,14 +387,26 @@ ContactBandMask ContactBandMarker::markBlock(
               markCellWithBVH(triangle_bvh, cell, options);
           mask.candidate_triangle_aabb_overlap_count +=
               cell_result.candidates;
+          mask.candidate_triangle_count += cell_result.candidates;
+          if (cell_result.candidates > 0) {
+            ++mask.candidate_cell_count;
+          }
           mask.distance_refined_cell_count += cell_result.refined;
+          mask.refined_candidate_count += cell_result.refined;
           mask.distance_rejected_cell_count += cell_result.rejected;
+          mask.rejected_candidate_count += cell_result.rejected;
           mask.distance_refinement_time_ms +=
               cell_result.refinement_time_ms;
+          mask.marker_refinement_time_ms += cell_result.refinement_time_ms;
+          mask.box_triangle_distance_time_ms +=
+              cell_result.box_triangle_distance_time_ms;
+          mask.triangle_bvh_query_time_ms +=
+              cell_result.triangle_bvh_query_time_ms;
           if (!cell_result.mark) {
             continue;
           }
           ++mask.marked_cell_count;
+          ++mask.accepted_contact_cell_count;
           for (int dz = 0; dz <= 1; ++dz) {
             for (int dy = 0; dy <= 1; ++dy) {
               for (int dx = 0; dx <= 1; ++dx) {

@@ -50,6 +50,8 @@ struct ContactBandSamplingOptions {
   bool exact_halo_nodes = true;
 
   bool normal_audit = false;
+  bool coverage_audit = false;
+  int coverage_samples_per_axis = 0;
   double contact_band_phi_error_limit = 1e-3;
   double contact_band_normal_error_limit_deg = 5.0;
 

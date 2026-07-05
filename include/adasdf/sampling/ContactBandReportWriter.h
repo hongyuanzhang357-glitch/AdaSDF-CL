@@ -16,6 +16,8 @@ struct ContactBandBenchmarkResult {
   double exact_reference_time_ms = 0.0;
   double contact_band_time_ms = 0.0;
   double speedup = 0.0;
+  double effective_speedup_including_marker = 0.0;
+  double effective_speedup_excluding_marker = 0.0;
 
   ContactBandDiagnostics diagnostics;
   ContactBandQualityMetrics quality;

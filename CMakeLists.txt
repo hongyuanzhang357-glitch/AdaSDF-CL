@@ -544,6 +544,11 @@ target_link_libraries(adasdf_mesh_clean PRIVATE adasdf_cl_runtime)
 set_target_properties(adasdf_mesh_clean PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
 
+add_executable(adasdf_generate_synthetic_fixture
+  tools/adasdf_generate_synthetic_fixture.cpp)
+set_target_properties(adasdf_generate_synthetic_fixture PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
+
 add_executable(adasdf_build_dense_sdf tools/adasdf_build_dense_sdf.cpp)
 target_link_libraries(adasdf_build_dense_sdf PRIVATE adasdf_cl_runtime)
 set_target_properties(adasdf_build_dense_sdf PROPERTIES
@@ -827,6 +832,10 @@ set(ADASDF_CL_TEST_SOURCES
   tests/test_contact_band_quality_audit.cpp
   tests/test_contact_band_benchmark_cli.cpp
   tests/test_contact_band_marker_sweep_cli.cpp
+  tests/test_contact_band_coverage_audit.cpp
+  tests/test_contact_band_marker_cost_diagnostics.cpp
+  tests/test_thin_gap_fixture.cpp
+  tests/test_robot_like_fixture.cpp
   tests/test_sweep_hierarchical_sampling_cli.cpp
   tests/test_synthetic_complex_fixture.cpp
   tests/test_hierarchical_vs_exact_quality.cpp
@@ -1434,6 +1443,7 @@ set(ADASDF_CL_INSTALL_TOOL_TARGETS
   adasdf_collect_run_summary
   adasdf_mesh_check
   adasdf_mesh_clean
+  adasdf_generate_synthetic_fixture
   adasdf_build_dense_sdf
   adasdf_build_adaptive_sdf
   adasdf_compress_adaptive_sdf

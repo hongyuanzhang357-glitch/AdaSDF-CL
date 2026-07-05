@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <vector>
 
 namespace adasdf {
@@ -91,6 +92,34 @@ bool exactStencilAvailable(
   return true;
 }
 
+int sampledIndex(int sample, int sample_count, int n) {
+  if (n <= 1 || sample_count <= 1) {
+    return 0;
+  }
+  const double t =
+      static_cast<double>(sample) / static_cast<double>(sample_count - 1);
+  return std::max(
+      0,
+      std::min(n - 1, static_cast<int>(std::round(t * (n - 1)))));
+}
+
+std::size_t cellIndexForNode(
+    int i,
+    int j,
+    int k,
+    int nx,
+    int ny,
+    int nz) {
+  const int cx = std::max(0, std::min(nx - 2, i));
+  const int cy = std::max(0, std::min(ny - 2, j));
+  const int cz = std::max(0, std::min(nz - 2, k));
+  return static_cast<std::size_t>(cx) +
+         static_cast<std::size_t>(std::max(1, nx - 1)) *
+             (static_cast<std::size_t>(cy) +
+              static_cast<std::size_t>(std::max(1, ny - 1)) *
+                  static_cast<std::size_t>(cz));
+}
+
 }  // namespace
 
 ContactBandQualityMetrics ContactBandQualityAudit::auditBlock(
@@ -106,6 +135,11 @@ ContactBandQualityMetrics ContactBandQualityAudit::auditBlock(
 
   std::vector<double> abs_errors;
   std::vector<double> normal_errors;
+  std::vector<std::uint8_t> missed_cells(
+      static_cast<std::size_t>(std::max(1, candidate.nx - 1)) *
+          static_cast<std::size_t>(std::max(1, candidate.ny - 1)) *
+          static_cast<std::size_t>(std::max(1, candidate.nz - 1)),
+      0);
   double abs_sum = 0.0;
   double sq_sum = 0.0;
   for (int k = 0; k < candidate.nz; ++k) {
@@ -147,6 +181,47 @@ ContactBandQualityMetrics ContactBandQualityAudit::auditBlock(
     }
   }
 
+  if (options.coverage_audit) {
+    const int sx =
+        options.coverage_samples_per_axis > 0
+            ? std::min(candidate.nx, options.coverage_samples_per_axis)
+            : candidate.nx;
+    const int sy =
+        options.coverage_samples_per_axis > 0
+            ? std::min(candidate.ny, options.coverage_samples_per_axis)
+            : candidate.ny;
+    const int sz =
+        options.coverage_samples_per_axis > 0
+            ? std::min(candidate.nz, options.coverage_samples_per_axis)
+            : candidate.nz;
+    const double band = std::max(0.0, options.contact_band_width);
+    for (int kk = 0; kk < sz; ++kk) {
+      const int k = sampledIndex(kk, sz, candidate.nz);
+      for (int jj = 0; jj < sy; ++jj) {
+        const int j = sampledIndex(jj, sy, candidate.ny);
+        for (int ii = 0; ii < sx; ++ii) {
+          const int i = sampledIndex(ii, sx, candidate.nx);
+          const std::size_t index =
+              gridIndex(i, j, k, candidate.nx, candidate.ny);
+          if (std::abs(exact_reference.phi[index]) > band) {
+            continue;
+          }
+          ++metrics.contact_band_coverage_check_count;
+          if (index >= mask.exact_required.size() ||
+              mask.exact_required[index] == 0) {
+            ++metrics.missed_contact_band_point_count;
+            const std::size_t cell =
+                cellIndexForNode(i, j, k, candidate.nx, candidate.ny, candidate.nz);
+            if (cell < missed_cells.size() && missed_cells[cell] == 0) {
+              missed_cells[cell] = 1;
+              ++metrics.missed_contact_band_cell_count;
+            }
+          }
+        }
+      }
+    }
+  }
+
   metrics.contact_band_check_count = abs_errors.size();
   if (!abs_errors.empty()) {
     metrics.contact_band_max_abs_error =
@@ -175,29 +250,35 @@ ContactBandQualityMetrics ContactBandQualityAudit::auditBlock(
 ContactBandQualityMetrics ContactBandQualityAudit::merge(
     const ContactBandQualityMetrics& lhs,
     const ContactBandQualityMetrics& rhs) {
-  if (lhs.contact_band_check_count == 0) {
-    return rhs;
-  }
-  if (rhs.contact_band_check_count == 0) {
-    return lhs;
-  }
   ContactBandQualityMetrics out;
   const double lc = static_cast<double>(lhs.contact_band_check_count);
   const double rc = static_cast<double>(rhs.contact_band_check_count);
   const double total = lc + rc;
   out.contact_band_check_count =
       lhs.contact_band_check_count + rhs.contact_band_check_count;
+  out.contact_band_coverage_check_count =
+      lhs.contact_band_coverage_check_count +
+      rhs.contact_band_coverage_check_count;
+  out.missed_contact_band_point_count =
+      lhs.missed_contact_band_point_count +
+      rhs.missed_contact_band_point_count;
+  out.missed_contact_band_cell_count =
+      lhs.missed_contact_band_cell_count +
+      rhs.missed_contact_band_cell_count;
+  out.coverage_passed = lhs.coverage_passed && rhs.coverage_passed;
   out.contact_band_max_abs_error =
       std::max(lhs.contact_band_max_abs_error, rhs.contact_band_max_abs_error);
-  out.contact_band_mean_abs_error =
-      (lhs.contact_band_mean_abs_error * lc +
-       rhs.contact_band_mean_abs_error * rc) /
-      total;
-  out.contact_band_rms_error =
-      std::sqrt(
-          (lhs.contact_band_rms_error * lhs.contact_band_rms_error * lc +
-           rhs.contact_band_rms_error * rhs.contact_band_rms_error * rc) /
-          total);
+  if (total > 0.0) {
+    out.contact_band_mean_abs_error =
+        (lhs.contact_band_mean_abs_error * lc +
+         rhs.contact_band_mean_abs_error * rc) /
+        total;
+    out.contact_band_rms_error =
+        std::sqrt(
+            (lhs.contact_band_rms_error * lhs.contact_band_rms_error * lc +
+             rhs.contact_band_rms_error * rhs.contact_band_rms_error * rc) /
+            total);
+  }
   out.contact_band_p95_error =
       std::max(lhs.contact_band_p95_error, rhs.contact_band_p95_error);
   out.contact_band_sign_mismatch_count =
@@ -206,10 +287,12 @@ ContactBandQualityMetrics ContactBandQualityAudit::merge(
   out.near_surface_sign_mismatch_count =
       lhs.near_surface_sign_mismatch_count +
       rhs.near_surface_sign_mismatch_count;
-  out.mean_normal_angle_error_deg =
-      (lhs.mean_normal_angle_error_deg * lc +
-       rhs.mean_normal_angle_error_deg * rc) /
-      total;
+  if (total > 0.0) {
+    out.mean_normal_angle_error_deg =
+        (lhs.mean_normal_angle_error_deg * lc +
+         rhs.mean_normal_angle_error_deg * rc) /
+        total;
+  }
   out.p95_normal_angle_error_deg =
       std::max(lhs.p95_normal_angle_error_deg, rhs.p95_normal_angle_error_deg);
   out.max_normal_angle_error_deg =
@@ -234,7 +317,13 @@ void ContactBandQualityAudit::finalize(
       metrics->near_surface_sign_mismatch_count == 0 &&
       metrics->p95_normal_angle_error_deg <=
           options.contact_band_normal_error_limit_deg &&
-      metrics->near_surface_normal_flip_count == 0;
+      metrics->near_surface_normal_flip_count == 0 &&
+      metrics->coverage_passed;
+  metrics->coverage_passed =
+      !options.coverage_audit ||
+      metrics->missed_contact_band_point_count == 0;
+  metrics->contact_band_quality_passed =
+      metrics->contact_band_quality_passed && metrics->coverage_passed;
 }
 
 }  // namespace adasdf

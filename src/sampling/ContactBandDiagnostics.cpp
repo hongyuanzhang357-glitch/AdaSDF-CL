@@ -31,6 +31,39 @@ void finalizeContactBandDiagnostics(ContactBandDiagnostics* diagnostics) {
         static_cast<double>(diagnostics->distance_rejected_cell_count) /
         static_cast<double>(diagnostics->candidate_triangle_aabb_overlap_count);
   }
+  if (diagnostics->candidate_triangle_count == 0) {
+    diagnostics->candidate_triangle_count =
+        diagnostics->candidate_triangle_aabb_overlap_count;
+  }
+  if (diagnostics->refined_candidate_count == 0) {
+    diagnostics->refined_candidate_count =
+        diagnostics->distance_refined_cell_count;
+  }
+  if (diagnostics->rejected_candidate_count == 0) {
+    diagnostics->rejected_candidate_count =
+        diagnostics->distance_rejected_cell_count;
+  }
+  if (diagnostics->accepted_contact_cell_count == 0) {
+    diagnostics->accepted_contact_cell_count =
+        diagnostics->marked_cell_count;
+  }
+  if (diagnostics->candidate_triangle_count > 0) {
+    diagnostics->marker_false_positive_proxy =
+        static_cast<double>(diagnostics->rejected_candidate_count) /
+        static_cast<double>(diagnostics->candidate_triangle_count);
+  }
+  if (diagnostics->marker_refinement_time_ms == 0.0) {
+    diagnostics->marker_refinement_time_ms =
+        diagnostics->distance_refinement_time_ms;
+  }
+  if (diagnostics->box_triangle_distance_time_ms == 0.0) {
+    diagnostics->box_triangle_distance_time_ms =
+        diagnostics->distance_refinement_time_ms;
+  }
+  if (diagnostics->total_time_ms > 0.0) {
+    diagnostics->marker_time_fraction =
+        diagnostics->marker_time_ms / diagnostics->total_time_ms;
+  }
 }
 
 }  // namespace adasdf

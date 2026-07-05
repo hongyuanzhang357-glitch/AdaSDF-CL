@@ -10,8 +10,12 @@ namespace adasdf {
 
 struct ContactBandQualityMetrics {
   bool contact_band_quality_passed = false;
+  bool coverage_passed = true;
 
   std::size_t contact_band_check_count = 0;
+  std::size_t contact_band_coverage_check_count = 0;
+  std::size_t missed_contact_band_point_count = 0;
+  std::size_t missed_contact_band_cell_count = 0;
 
   double contact_band_max_abs_error = 0.0;
   double contact_band_mean_abs_error = 0.0;

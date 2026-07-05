@@ -285,6 +285,16 @@ adasdf::ContactBandBenchmarkResult runCase(
     diagnostics.sign_query_count += block_result.diagnostics.sign_query_count;
     diagnostics.candidate_triangle_aabb_overlap_count +=
         block_result.diagnostics.candidate_triangle_aabb_overlap_count;
+    diagnostics.candidate_cell_count +=
+        block_result.diagnostics.candidate_cell_count;
+    diagnostics.candidate_triangle_count +=
+        block_result.diagnostics.candidate_triangle_count;
+    diagnostics.refined_candidate_count +=
+        block_result.diagnostics.refined_candidate_count;
+    diagnostics.rejected_candidate_count +=
+        block_result.diagnostics.rejected_candidate_count;
+    diagnostics.accepted_contact_cell_count +=
+        block_result.diagnostics.accepted_contact_cell_count;
     diagnostics.distance_refined_cell_count +=
         block_result.diagnostics.distance_refined_cell_count;
     diagnostics.distance_rejected_cell_count +=
@@ -304,6 +314,12 @@ adasdf::ContactBandBenchmarkResult runCase(
     diagnostics.marker_time_ms += block_result.diagnostics.marker_time_ms;
     diagnostics.distance_refinement_time_ms +=
         block_result.diagnostics.distance_refinement_time_ms;
+    diagnostics.marker_refinement_time_ms +=
+        block_result.diagnostics.marker_refinement_time_ms;
+    diagnostics.box_triangle_distance_time_ms +=
+        block_result.diagnostics.box_triangle_distance_time_ms;
+    diagnostics.triangle_bvh_query_time_ms +=
+        block_result.diagnostics.triangle_bvh_query_time_ms;
     quality = adasdf::ContactBandQualityAudit::merge(
         quality,
         adasdf::ContactBandQualityAudit::auditBlock(
@@ -312,14 +328,28 @@ adasdf::ContactBandBenchmarkResult runCase(
             block_result.mask,
             contact));
   }
+  const double accumulated_block_time_ms = diagnostics.total_time_ms;
   diagnostics.total_time_ms = result.contact_band_time_ms;
   adasdf::finalizeContactBandDiagnostics(&diagnostics);
+  if (accumulated_block_time_ms > 0.0) {
+    diagnostics.marker_time_fraction =
+        diagnostics.marker_time_ms / accumulated_block_time_ms;
+  }
   adasdf::ContactBandQualityAudit::finalize(&quality, contact);
   result.diagnostics = diagnostics;
   result.quality = quality;
   result.speedup =
       result.contact_band_time_ms > 0.0
           ? result.exact_reference_time_ms / result.contact_band_time_ms
+          : 0.0;
+  result.effective_speedup_including_marker = result.speedup;
+  const double marker_fraction =
+      std::max(0.0, std::min(1.0, result.diagnostics.marker_time_fraction));
+  const double no_marker_time =
+      result.contact_band_time_ms * (1.0 - marker_fraction);
+  result.effective_speedup_excluding_marker =
+      no_marker_time > 0.0
+          ? result.exact_reference_time_ms / no_marker_time
           : 0.0;
   result.effective_speedup_claim_allowed =
       result.speedup > 1.0 && result.quality.contact_band_quality_passed;

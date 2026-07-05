@@ -12,6 +12,7 @@ from .parsers import (
     parse_block_cache_benchmark_metrics,
     parse_collision_world_benchmark_metrics,
     parse_collision_colliding,
+    parse_contact_band_sampling_benchmark_metrics,
     parse_contact_count,
     parse_contact_reduction_benchmark_metrics,
     parse_cuda_block_cache_benchmark_metrics,
@@ -43,6 +44,7 @@ from .results import (
     CollisionResult,
     CollisionWorldBenchmarkResult,
     CommandResult,
+    ContactBandBenchmarkResult,
     ContactCandidatesResult,
     ContactReductionBenchmarkResult,
     ContactStabilizationResult,
@@ -850,6 +852,79 @@ def benchmark_exact_hotpath(
     _append_value(command, "--case-id", case_id)
     result = _run(command, check=check, dry_run=dry_run)
     return BenchmarkResult(result, metrics=parse_exact_hotpath_benchmark_metrics(result.stdout))
+
+
+def benchmark_contact_band_sampling(
+    input_stl: PathLike,
+    *,
+    max_level: Optional[int] = None,
+    min_level: Optional[int] = None,
+    block_resolution: Optional[int] = None,
+    target_error: Optional[float] = None,
+    contact_band_width: Optional[float] = None,
+    contact_band_layers: Optional[int] = None,
+    halo_exact_layers: Optional[int] = None,
+    contact_band_marker: Optional[str] = None,
+    marker_cell_size_factor: Optional[float] = None,
+    marker_safety_factor: Optional[float] = None,
+    local_halo_only: bool = False,
+    far_field_resolution: Optional[int] = None,
+    far_field_mode: Optional[str] = None,
+    reuse_far_field_sign: Optional[bool] = None,
+    normal_audit: bool = False,
+    coverage_audit: bool = False,
+    coverage_samples_per_axis: Optional[int] = None,
+    marker_cost_audit: bool = False,
+    save_marker_debug_csv: Optional[PathLike] = None,
+    threads: Optional[int] = None,
+    csv: Optional[PathLike] = None,
+    report: Optional[PathLike] = None,
+    case_id: Optional[str] = None,
+    bin_dir: Optional[PathLike] = None,
+    check: bool = True,
+    dry_run: bool = False,
+) -> ContactBandBenchmarkResult:
+    command = [_tool("adasdf_benchmark_contact_band_sampling", bin_dir, dry_run), _path(input_stl)]
+    _append_value(command, "--max-level", max_level)
+    _append_value(command, "--min-level", min_level)
+    _append_value(command, "--block-resolution", block_resolution)
+    _append_value(command, "--target-error", target_error)
+    _append_value(command, "--contact-band-width", contact_band_width)
+    _append_value(command, "--contact-band-layers", contact_band_layers)
+    _append_value(command, "--halo-exact-layers", halo_exact_layers)
+    _append_value(command, "--contact-band-marker", contact_band_marker)
+    _append_value(command, "--marker-cell-size-factor", marker_cell_size_factor)
+    _append_value(command, "--marker-safety-factor", marker_safety_factor)
+    _append_bool(command, "--local-halo-only", local_halo_only)
+    _append_value(command, "--far-field-resolution", far_field_resolution)
+    _append_value(command, "--far-field-mode", far_field_mode)
+    _append_bool_switch(
+        command,
+        reuse_far_field_sign,
+        "--reuse-far-field-sign",
+        "--no-reuse-far-field-sign",
+    )
+    _append_bool(command, "--normal-audit", normal_audit)
+    _append_bool(command, "--coverage-audit", coverage_audit)
+    _append_value(command, "--coverage-samples-per-axis", coverage_samples_per_axis)
+    _append_bool(command, "--marker-cost-audit", marker_cost_audit)
+    _append_value(
+        command,
+        "--save-marker-debug-csv",
+        _path(save_marker_debug_csv) if save_marker_debug_csv is not None else None,
+    )
+    _append_value(command, "--threads", threads)
+    _append_value(command, "--csv", _path(csv) if csv is not None else None)
+    _append_value(command, "--report", _path(report) if report is not None else None)
+    _append_value(command, "--case-id", case_id)
+    result = _run(command, check=check, dry_run=dry_run)
+    return ContactBandBenchmarkResult(
+        command_result=result,
+        metrics=parse_contact_band_sampling_benchmark_metrics(result.stdout),
+        report_path=Path(report) if report is not None else None,
+        csv_path=Path(csv) if csv is not None else None,
+        marker_debug_csv_path=Path(save_marker_debug_csv) if save_marker_debug_csv is not None else None,
+    )
 
 
 def sweep_hierarchical_sampling(

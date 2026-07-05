@@ -266,11 +266,21 @@ ContactBandBlockSamplingResult ContactBandBlockSampler::sampleBlock(
       signed_distance ? result.diagnostics.distance_query_count : 0;
   result.diagnostics.candidate_triangle_aabb_overlap_count =
       result.mask.candidate_triangle_aabb_overlap_count;
+  result.diagnostics.candidate_cell_count =
+      result.mask.candidate_cell_count;
+  result.diagnostics.candidate_triangle_count =
+      result.mask.candidate_triangle_count;
   result.diagnostics.distance_refined_cell_count =
       result.mask.distance_refined_cell_count;
+  result.diagnostics.refined_candidate_count =
+      result.mask.refined_candidate_count;
   result.diagnostics.distance_rejected_cell_count =
       result.mask.distance_rejected_cell_count;
+  result.diagnostics.rejected_candidate_count =
+      result.mask.rejected_candidate_count;
   result.diagnostics.marked_cell_count = result.mask.marked_cell_count;
+  result.diagnostics.accepted_contact_cell_count =
+      result.mask.accepted_contact_cell_count;
   result.diagnostics.marked_node_count = result.mask.marked_node_count;
   result.diagnostics.local_halo_node_count =
       result.mask.local_halo_node_count;
@@ -285,6 +295,12 @@ ContactBandBlockSamplingResult ContactBandBlockSampler::sampleBlock(
   result.diagnostics.marker_time_ms = result.mask.marker_time_ms;
   result.diagnostics.distance_refinement_time_ms =
       result.mask.distance_refinement_time_ms;
+  result.diagnostics.marker_refinement_time_ms =
+      result.mask.marker_refinement_time_ms;
+  result.diagnostics.box_triangle_distance_time_ms =
+      result.mask.box_triangle_distance_time_ms;
+  result.diagnostics.triangle_bvh_query_time_ms =
+      result.mask.triangle_bvh_query_time_ms;
   finalizeContactBandDiagnostics(&result.diagnostics);
   return result;
 }

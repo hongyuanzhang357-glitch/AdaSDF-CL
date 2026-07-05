@@ -102,6 +102,20 @@ world_hits = adasdf.world_sparse_collide(
     case_id="case001_world",
 )
 print(world_hits.colliding)
+
+contact_bench = adasdf.benchmark_contact_band_sampling(
+    "model.stl",
+    max_level=4,
+    block_resolution=8,
+    contact_band_width=5e-4,
+    contact_band_marker="distance-aware",
+    local_halo_only=True,
+    normal_audit=True,
+    coverage_audit=True,
+    report="contact_band.md",
+    csv="contact_band.csv",
+)
+print(contact_bench.metrics.get("speedup"))
 ```
 
 ## Strict Reports
@@ -189,6 +203,7 @@ not as a process failure.
 - `benchmark_batch_query`
 - `benchmark_sparse_query`
 - `benchmark_contact_reduction`
+- `benchmark_contact_band_sampling`
 - `benchmark_hierarchical_sampling`
 - `benchmark_exact_hotpath`
 - `sweep_hierarchical_sampling`

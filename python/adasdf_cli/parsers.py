@@ -372,6 +372,51 @@ def parse_hierarchical_sampling_benchmark_metrics(stdout: str) -> Dict[str, obje
     return metrics
 
 
+def parse_contact_band_sampling_benchmark_metrics(stdout: str) -> Dict[str, object]:
+    metrics: Dict[str, object] = {}
+    for label, key in (
+        ("Case id", "case_id"),
+        ("Exact reference time ms", "exact_reference_time_ms"),
+        ("Contact-band time ms", "contact_band_time_ms"),
+        ("Speedup", "speedup"),
+        ("Effective speedup including marker", "effective_speedup_including_marker"),
+        ("Effective speedup excluding marker", "effective_speedup_excluding_marker"),
+        ("Marker mode", "marker_mode"),
+        ("Contact-band blocks", "contact_band_block_count"),
+        ("Far-field blocks", "far_field_block_count"),
+        ("Exact node ratio", "exact_node_ratio"),
+        ("Candidate cells", "candidate_cell_count"),
+        ("Candidate triangles", "candidate_triangle_count"),
+        ("Refined candidates", "refined_candidate_count"),
+        ("Rejected candidates", "rejected_candidate_count"),
+        ("Accepted contact cells", "accepted_contact_cell_count"),
+        ("Marker false-positive proxy", "marker_false_positive_proxy"),
+        ("Marker time ms", "marker_time_ms"),
+        ("Marker time fraction", "marker_time_fraction"),
+        ("Triangle BVH query time ms", "triangle_bvh_query_time_ms"),
+        ("Box-triangle distance time ms", "box_triangle_distance_time_ms"),
+        ("Marker refinement time ms", "marker_refinement_time_ms"),
+        ("Contact-band sign mismatches", "contact_band_sign_mismatch_count"),
+        ("Near-surface sign mismatches", "near_surface_sign_mismatch_count"),
+        ("P95 normal angle error deg", "p95_normal_angle_error_deg"),
+        ("Coverage passed", "coverage_passed"),
+        ("Coverage check count", "contact_band_coverage_check_count"),
+        ("Missed contact-band points", "missed_contact_band_point_count"),
+        ("Missed contact-band cells", "missed_contact_band_cell_count"),
+        ("Contact-band quality passed", "contact_band_quality_passed"),
+        ("Effective speedup claim allowed", "effective_speedup_claim_allowed"),
+    ):
+        match = _search(rf"^{re.escape(label)}:\s*(.+)$", stdout)
+        if match:
+            metrics[key] = match.group(1).strip()
+    for line in (stdout or "").splitlines():
+        if line.startswith("case_id,exact_reference_time_ms,contact_band_time_ms,"):
+            metrics["csv_header"] = line
+        elif metrics.get("csv_header") and "csv_values" not in metrics:
+            metrics["csv_values"] = line
+    return metrics
+
+
 def parse_exact_hotpath_benchmark_metrics(stdout: str) -> Dict[str, object]:
     metrics: Dict[str, object] = {}
     for label, key in (

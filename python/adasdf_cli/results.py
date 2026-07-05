@@ -68,6 +68,15 @@ class BenchmarkResult:
 
 
 @dataclass
+class ContactBandBenchmarkResult:
+    command_result: CommandResult
+    metrics: Dict[str, Any] = field(default_factory=dict)
+    report_path: Optional[Path] = None
+    csv_path: Optional[Path] = None
+    marker_debug_csv_path: Optional[Path] = None
+
+
+@dataclass
 class StrictManifestResult:
     command_result: CommandResult
     report_path: Optional[Path] = None
