@@ -114,6 +114,26 @@ std::string AdaptiveBlockSDFBuildReportWriter::toMarkdown(
   out << "- Speedup vs exact estimate: "
       << report.hierarchical_sampling.speedup_vs_exact_estimate << "\n\n";
 
+  out << "## Contact-Band Sampling\n\n";
+  out << "- Total blocks: "
+      << report.contact_band_sampling.total_block_count << "\n";
+  out << "- Contact-band blocks: "
+      << report.contact_band_sampling.contact_band_block_count << "\n";
+  out << "- Far-field blocks: "
+      << report.contact_band_sampling.far_field_block_count << "\n";
+  out << "- Exact nodes: "
+      << report.contact_band_sampling.exact_node_count << "\n";
+  out << "- Predicted nodes: "
+      << report.contact_band_sampling.predicted_node_count << "\n";
+  out << "- Coarse samples: "
+      << report.contact_band_sampling.coarse_sample_count << "\n";
+  out << "- Exact node ratio: "
+      << report.contact_band_sampling.exact_node_ratio << "\n";
+  out << "- Exact sample reduction ratio: "
+      << report.contact_band_sampling.exact_sample_reduction_ratio << "\n";
+  out << "- Sign query reduction ratio: "
+      << report.contact_band_sampling.sign_query_reduction_ratio << "\n\n";
+
   out << "## Warnings\n\n";
   if (report.warnings.empty()) {
     out << "- none\n\n";
@@ -193,6 +213,34 @@ std::string AdaptiveBlockSDFBuildReportWriter::toJson(
       << report.hierarchical_sampling.total_time_ms << ",\n";
   out << "    \"speedup_vs_exact_estimate\": "
       << report.hierarchical_sampling.speedup_vs_exact_estimate << "\n";
+  out << "  },\n";
+  out << "  \"contact_band_sampling\": {\n";
+  out << "    \"total_block_count\": "
+      << report.contact_band_sampling.total_block_count << ",\n";
+  out << "    \"contact_band_block_count\": "
+      << report.contact_band_sampling.contact_band_block_count << ",\n";
+  out << "    \"far_field_block_count\": "
+      << report.contact_band_sampling.far_field_block_count << ",\n";
+  out << "    \"total_node_count\": "
+      << report.contact_band_sampling.total_node_count << ",\n";
+  out << "    \"exact_node_count\": "
+      << report.contact_band_sampling.exact_node_count << ",\n";
+  out << "    \"predicted_node_count\": "
+      << report.contact_band_sampling.predicted_node_count << ",\n";
+  out << "    \"far_field_node_count\": "
+      << report.contact_band_sampling.far_field_node_count << ",\n";
+  out << "    \"coarse_sample_count\": "
+      << report.contact_band_sampling.coarse_sample_count << ",\n";
+  out << "    \"exact_node_ratio\": "
+      << report.contact_band_sampling.exact_node_ratio << ",\n";
+  out << "    \"exact_sample_reduction_ratio\": "
+      << report.contact_band_sampling.exact_sample_reduction_ratio << ",\n";
+  out << "    \"distance_query_count\": "
+      << report.contact_band_sampling.distance_query_count << ",\n";
+  out << "    \"sign_query_count\": "
+      << report.contact_band_sampling.sign_query_count << ",\n";
+  out << "    \"sign_query_reduction_ratio\": "
+      << report.contact_band_sampling.sign_query_reduction_ratio << "\n";
   out << "  },\n";
   out << "  \"low_rank_compression\": \"available via ADASDF_COMPRESSED_BLOCK_SDFBIN_V1\",\n";
   out << "  \"warnings\": [";

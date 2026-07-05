@@ -13,6 +13,7 @@
 #include "adasdf/generation/AdaptiveBlockPartitioner.h"
 #include "adasdf/mesh/MeshCleanup.h"
 #include "adasdf/mesh/STLReader.h"
+#include "adasdf/sampling/ContactBandBlockSampler.h"
 #include "adasdf/sampling/HierarchicalBlockSampler.h"
 
 namespace adasdf {
@@ -485,6 +486,111 @@ void sampleBlocksHierarchical(
   }
 }
 
+void sampleBlocksContactBand(
+    const TriangleMesh& mesh,
+    AdaptiveSDFBlockSet& block_set,
+    const AdaptiveBlockSDFBuildOptions& options,
+    AdaptiveBlockSDFBuildReport& report) {
+  BuildAccelerationStats stats;
+  stats.acceleration = options.acceleration;
+  stats.threads_requested = std::max(1, options.threads);
+
+  BVHSDFSamplerOptions sampler_options;
+  sampler_options.acceleration = options.acceleration;
+  sampler_options.signed_distance = options.signed_distance;
+  sampler_options.enable_counters = false;
+  sampler_options.bvh_options.degenerate_area_epsilon =
+      options.degenerate_area_epsilon;
+  BVHSDFSampler sampler;
+  sampler.reset(mesh, sampler_options, &stats);
+  const bool use_bvh =
+      options.acceleration == SDFSamplingAcceleration::BVH && sampler.hasBVH();
+
+  ContactBandDiagnostics diagnostics;
+  const auto total0 = std::chrono::steady_clock::now();
+  std::vector<ContactBandBlockSamplingResult> sampled_blocks(
+      block_set.blocks.size());
+  const auto sample_one = [&](std::size_t block_index) {
+    const AdaptiveSDFBlock& partitioned_block = block_set.blocks[block_index];
+    sampled_blocks[block_index] = ContactBandBlockSampler::sampleBlock(
+        partitioned_block.bounds,
+        partitioned_block.block_id,
+        partitioned_block.octree_node_id,
+        partitioned_block.level,
+        options.block_resolution,
+        options.signed_distance,
+        sampler,
+        sampler.bvh(),
+        options.contact_band_sampling);
+  };
+  ParallelSamplingStats parallel_stats;
+  if (options.threads <= 1) {
+    parallel_stats.threads_used = 1;
+    const auto serial0 = std::chrono::steady_clock::now();
+    for (std::size_t block_index = 0; block_index < block_set.blocks.size();
+         ++block_index) {
+      sample_one(block_index);
+    }
+    const auto serial1 = std::chrono::steady_clock::now();
+    parallel_stats.elapsed_ms =
+        std::chrono::duration<double, std::milli>(serial1 - serial0).count();
+  } else {
+    ParallelSamplingOptions parallel_options;
+    parallel_options.threads = std::max(1, options.threads);
+    parallel_stats =
+        parallelFor(block_set.blocks.size(), parallel_options, sample_one);
+  }
+
+  for (std::size_t block_index = 0; block_index < block_set.blocks.size();
+       ++block_index) {
+    ContactBandBlockSamplingResult sampled =
+        std::move(sampled_blocks[block_index]);
+    if (!sampled.success) {
+      report.warnings.push_back(
+          "contact-band sampling failed for block " +
+          std::to_string(block_set.blocks[block_index].block_id) +
+          ": " + sampled.error_message);
+      continue;
+    }
+    block_set.blocks[block_index] = std::move(sampled.block);
+    diagnostics.total_block_count += sampled.diagnostics.total_block_count;
+    diagnostics.contact_band_block_count +=
+        sampled.diagnostics.contact_band_block_count;
+    diagnostics.far_field_block_count +=
+        sampled.diagnostics.far_field_block_count;
+    diagnostics.total_node_count += sampled.diagnostics.total_node_count;
+    diagnostics.exact_node_count += sampled.diagnostics.exact_node_count;
+    diagnostics.predicted_node_count +=
+        sampled.diagnostics.predicted_node_count;
+    diagnostics.far_field_node_count +=
+        sampled.diagnostics.far_field_node_count;
+    diagnostics.coarse_sample_count += sampled.diagnostics.coarse_sample_count;
+    diagnostics.distance_query_count +=
+        sampled.diagnostics.distance_query_count;
+    diagnostics.sign_query_count += sampled.diagnostics.sign_query_count;
+    diagnostics.exact_sampling_time_ms +=
+        sampled.diagnostics.exact_sampling_time_ms;
+    diagnostics.coarse_sampling_time_ms +=
+        sampled.diagnostics.coarse_sampling_time_ms;
+    diagnostics.interpolation_time_ms +=
+        sampled.diagnostics.interpolation_time_ms;
+    diagnostics.total_time_ms += sampled.diagnostics.total_time_ms;
+  }
+  const auto total1 = std::chrono::steady_clock::now();
+  diagnostics.total_time_ms =
+      std::chrono::duration<double, std::milli>(total1 - total0).count();
+  finalizeContactBandDiagnostics(&diagnostics);
+
+  stats.sample_count =
+      diagnostics.exact_node_count + diagnostics.coarse_sample_count;
+  stats.threads_used = parallel_stats.threads_used;
+  stats.sampling_time_ms = diagnostics.total_time_ms;
+  report.used_bvh = use_bvh;
+  report.threads_used = stats.threads_used;
+  report.acceleration_stats = stats;
+  report.contact_band_sampling = diagnostics;
+}
+
 void assignReport(
     AdaptiveBlockSDFBuildReport* out,
     const AdaptiveBlockSDFBuildReport& value) {
@@ -610,7 +716,9 @@ std::shared_ptr<SDFModel> AdaptiveBlockSDFBuilder::fromMesh(
   blocks.signed_distance = options.signed_distance;
 
   const auto sample0 = std::chrono::steady_clock::now();
-  if (options.hierarchical_sampling.enable_hierarchical_sampling) {
+  if (options.contact_band_sampling.enable_contact_band_sampling) {
+    sampleBlocksContactBand(working_mesh, blocks, options, report);
+  } else if (options.hierarchical_sampling.enable_hierarchical_sampling) {
     sampleBlocksHierarchical(working_mesh, blocks, options, report);
   } else {
     sampleBlocks(working_mesh, blocks, options, report);

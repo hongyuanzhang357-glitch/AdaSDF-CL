@@ -178,6 +178,12 @@ set(ADASDF_CL_RUNTIME_SOURCES
   src/query/QueryAPI.cpp
   src/query/SDFExpander.cpp
   src/sampling/BlockClassification.cpp
+  src/sampling/ContactBandBlockSampler.cpp
+  src/sampling/ContactBandDiagnostics.cpp
+  src/sampling/ContactBandMarker.cpp
+  src/sampling/ContactBandQualityAudit.cpp
+  src/sampling/ContactBandReportWriter.cpp
+  src/sampling/ContactBandSamplingPolicy.cpp
   src/sampling/ExactBlockSamplerKernel.cpp
   src/sampling/HierarchicalSamplingDiagnostics.cpp
   src/sampling/HierarchicalSamplingPolicy.cpp
@@ -677,6 +683,12 @@ if(ADASDF_CL_BUILD_BENCHMARKS)
   set_target_properties(adasdf_benchmark_exact_hotpath PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
 
+  add_executable(adasdf_benchmark_contact_band_sampling
+    tools/adasdf_benchmark_contact_band_sampling.cpp)
+  target_link_libraries(adasdf_benchmark_contact_band_sampling PRIVATE adasdf_cl_runtime)
+  set_target_properties(adasdf_benchmark_contact_band_sampling PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
+
   add_executable(adasdf_sweep_hierarchical_sampling
     tools/adasdf_sweep_hierarchical_sampling.cpp)
   target_link_libraries(adasdf_sweep_hierarchical_sampling PRIVATE adasdf_cl_runtime)
@@ -799,6 +811,11 @@ set(ADASDF_CL_TEST_SOURCES
   tests/test_near_surface_banded_prediction.cpp
   tests/test_local_fallback_mask.cpp
   tests/test_far_field_sign_policy.cpp
+  tests/test_contact_band_marker.cpp
+  tests/test_contact_band_sampling_policy.cpp
+  tests/test_contact_band_block_sampler.cpp
+  tests/test_contact_band_quality_audit.cpp
+  tests/test_contact_band_benchmark_cli.cpp
   tests/test_sweep_hierarchical_sampling_cli.cpp
   tests/test_synthetic_complex_fixture.cpp
   tests/test_hierarchical_vs_exact_quality.cpp
@@ -1171,6 +1188,13 @@ if(ADASDF_CL_BUILD_TESTS)
           ADASDF_CL_BENCHMARK_HIERARCHICAL_SAMPLING="$<TARGET_FILE_NAME:adasdf_benchmark_hierarchical_sampling>")
       endif()
     endif()
+    if(test_name STREQUAL "test_contact_band_benchmark_cli")
+      if(TARGET adasdf_benchmark_contact_band_sampling)
+        add_dependencies(${test_name} adasdf_benchmark_contact_band_sampling)
+        target_compile_definitions(${test_name} PRIVATE
+          ADASDF_CL_BENCHMARK_CONTACT_BAND_SAMPLING="$<TARGET_FILE_NAME:adasdf_benchmark_contact_band_sampling>")
+      endif()
+    endif()
     if(test_name STREQUAL "test_sweep_hierarchical_sampling_cli")
       if(TARGET adasdf_sweep_hierarchical_sampling)
         add_dependencies(${test_name} adasdf_sweep_hierarchical_sampling)
@@ -1344,6 +1368,12 @@ if(ADASDF_CL_BUILD_TESTS)
           WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_benchmark_hierarchical_sampling>")
       endif()
     endif()
+    if(test_name STREQUAL "test_contact_band_benchmark_cli")
+      if(TARGET adasdf_benchmark_contact_band_sampling)
+        set_tests_properties(${test_name} PROPERTIES
+          WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_benchmark_contact_band_sampling>")
+      endif()
+    endif()
     if(test_name STREQUAL "test_sweep_hierarchical_sampling_cli")
       if(TARGET adasdf_sweep_hierarchical_sampling)
         set_tests_properties(${test_name} PROPERTIES
@@ -1407,6 +1437,7 @@ if(ADASDF_CL_BUILD_BENCHMARKS)
     adasdf_benchmark_cuda_block_cache
     adasdf_benchmark_hierarchical_sampling
     adasdf_benchmark_exact_hotpath
+    adasdf_benchmark_contact_band_sampling
     adasdf_sweep_hierarchical_sampling)
 endif()
 

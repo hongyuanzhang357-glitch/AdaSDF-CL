@@ -16,11 +16,17 @@ void usage() {
          "[--auto-clean] [--fixed-rank N] [--min-rank N] [--max-rank N] "
          "[--keep-near-surface-dense] [--report build_report.md] "
          "[--accel brute|bvh] [--threads N] [--benchmark-brute-reference] "
-         "[--sampling exact|hierarchical] [--coarse-resolution N] "
+         "[--sampling exact|hierarchical|contact-band] [--coarse-resolution N] "
          "[--quality-check-samples N] [--far-field-interpolation] "
          "[--no-far-field-interpolation] [--transition-prediction] "
          "[--no-transition-prediction] [--near-surface-exact] "
          "[--quality-guard] [--no-quality-guard] "
+         "[--contact-band-width value] [--contact-band-layers N] "
+         "[--halo-exact-layers N] [--far-field-resolution N] "
+         "[--far-field-mode coarse-interpolate|constant-sign|clamped-distance] "
+         "[--reuse-far-field-sign] [--no-reuse-far-field-sign] "
+         "[--audit contact-band|global] [--contact-band-normal-audit] "
+         "[--contact-band-normal-error-limit-deg value] "
          "[--target-sampling-error 1e-3] "
          "[--compression-report compression_report.md] "
          "[--quality-report quality_report.md] "
@@ -48,10 +54,17 @@ bool parseSamplingMode(
     adasdf::AdaptiveBlockSDFBuildOptions* options) {
   if (value == "exact") {
     options->hierarchical_sampling.enable_hierarchical_sampling = false;
+    options->contact_band_sampling.enable_contact_band_sampling = false;
     return true;
   }
   if (value == "hierarchical") {
     options->hierarchical_sampling.enable_hierarchical_sampling = true;
+    options->contact_band_sampling.enable_contact_band_sampling = false;
+    return true;
+  }
+  if (value == "contact-band") {
+    options->hierarchical_sampling.enable_hierarchical_sampling = false;
+    options->contact_band_sampling.enable_contact_band_sampling = true;
     return true;
   }
   return false;
@@ -66,6 +79,9 @@ void setTargetSamplingError(
 }
 
 const char* samplingModeName(const adasdf::AdaptiveBlockSDFBuildOptions& options) {
+  if (options.contact_band_sampling.enable_contact_band_sampling) {
+    return "contact-band";
+  }
   return options.hierarchical_sampling.enable_hierarchical_sampling
              ? "hierarchical"
              : "exact";
@@ -185,6 +201,48 @@ int main(int argc, char** argv) {
         build_options.hierarchical_sampling.quality_guard = true;
       } else if (arg == "--no-quality-guard") {
         build_options.hierarchical_sampling.quality_guard = false;
+      } else if (arg == "--contact-band-width" && hasValue(i, argc)) {
+        build_options.contact_band_sampling.contact_band_width =
+            std::stod(argv[++i]);
+      } else if (arg == "--contact-band-layers" && hasValue(i, argc)) {
+        build_options.contact_band_sampling.contact_band_layers =
+            std::stoi(argv[++i]);
+      } else if (arg == "--halo-exact-layers" && hasValue(i, argc)) {
+        build_options.contact_band_sampling.halo_exact_layers =
+            std::stoi(argv[++i]);
+      } else if (arg == "--far-field-resolution" && hasValue(i, argc)) {
+        build_options.contact_band_sampling.far_field_resolution =
+            std::stoi(argv[++i]);
+      } else if (arg == "--far-field-mode" && hasValue(i, argc)) {
+        adasdf::ContactBandFarFieldMode mode;
+        if (!adasdf::parseContactBandFarFieldMode(argv[++i], &mode)) {
+          std::cerr << "Unknown contact-band far-field mode: " << argv[i]
+                    << "\n";
+          return 1;
+        }
+        build_options.contact_band_sampling.far_field_mode = mode;
+      } else if (arg == "--reuse-far-field-sign") {
+        build_options.contact_band_sampling.reuse_far_field_sign = true;
+      } else if (arg == "--no-reuse-far-field-sign") {
+        build_options.contact_band_sampling.reuse_far_field_sign = false;
+      } else if (arg == "--audit" && hasValue(i, argc)) {
+        const std::string audit = argv[++i];
+        if (audit == "contact-band") {
+          build_options.contact_band_sampling.audit_contact_band_only = true;
+          build_options.contact_band_sampling.global_quality_gate = false;
+        } else if (audit == "global") {
+          build_options.contact_band_sampling.audit_contact_band_only = false;
+          build_options.contact_band_sampling.global_quality_gate = true;
+        } else {
+          std::cerr << "Unknown audit mode: " << audit << "\n";
+          return 1;
+        }
+      } else if (arg == "--contact-band-normal-audit") {
+        build_options.contact_band_sampling.normal_audit = true;
+      } else if (arg == "--contact-band-normal-error-limit-deg" &&
+                 hasValue(i, argc)) {
+        build_options.contact_band_sampling.contact_band_normal_error_limit_deg =
+            std::stod(argv[++i]);
       } else if (arg == "--target-sampling-error" && hasValue(i, argc)) {
         setTargetSamplingError(&build_options, std::stod(argv[++i]));
       } else if (arg == "--fixed-rank" && hasValue(i, argc)) {
@@ -369,6 +427,24 @@ int main(int argc, char** argv) {
                 << build_report.hierarchical_sampling.speedup_vs_exact_estimate
                 << "\n";
     }
+    if (build_options.contact_band_sampling.enable_contact_band_sampling) {
+      std::cout << "Contact-band blocks: "
+                << build_report.contact_band_sampling.contact_band_block_count
+                << "\n";
+      std::cout << "Contact-band far-field blocks: "
+                << build_report.contact_band_sampling.far_field_block_count
+                << "\n";
+      std::cout << "Contact-band exact nodes: "
+                << build_report.contact_band_sampling.exact_node_count << "\n";
+      std::cout << "Contact-band predicted nodes: "
+                << build_report.contact_band_sampling.predicted_node_count
+                << "\n";
+      std::cout << "Contact-band exact node ratio: "
+                << build_report.contact_band_sampling.exact_node_ratio << "\n";
+      std::cout << "Contact-band sign query reduction ratio: "
+                << build_report.contact_band_sampling.sign_query_reduction_ratio
+                << "\n";
+    }
     std::cout << "Matrix-SVD blocks: "
               << compression_report.compressed_block_count << "\n";
     std::cout << "Dense fallback blocks: "
@@ -421,6 +497,19 @@ int main(int argc, char** argv) {
                  build_report.hierarchical_sampling.fallback_exact_block_count)},
             {"hierarchical_speedup_estimate",
              build_report.hierarchical_sampling.speedup_vs_exact_estimate},
+            {"contact_band_blocks",
+             static_cast<double>(
+                 build_report.contact_band_sampling.contact_band_block_count)},
+            {"contact_band_exact_nodes",
+             static_cast<double>(
+                 build_report.contact_band_sampling.exact_node_count)},
+            {"contact_band_predicted_nodes",
+             static_cast<double>(
+                 build_report.contact_band_sampling.predicted_node_count)},
+            {"contact_band_exact_node_ratio",
+             build_report.contact_band_sampling.exact_node_ratio},
+            {"contact_band_sign_query_reduction_ratio",
+             build_report.contact_band_sampling.sign_query_reduction_ratio},
             {"max_abs_error", compression_report.global_max_abs_error},
             {"mean_abs_error", compression_report.global_mean_abs_error},
             {"rms_error", compression_report.global_rms_error},
