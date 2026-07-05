@@ -21,7 +21,13 @@ const char* yesNo(bool value) {
 
 std::string ContactBandReportWriter::csvHeader() {
   return "case_id,exact_reference_time_ms,contact_band_time_ms,speedup,"
+         "marker_mode,candidate_triangle_aabb_overlap_count,"
+         "distance_refined_cell_count,distance_rejected_cell_count,"
+         "marked_cell_count,marked_node_count,local_halo_node_count,"
+         "global_halo_node_count,overmark_ratio_estimate,"
+         "marker_time_ms,distance_refinement_time_ms,"
          "total_block_count,contact_band_block_count,far_field_block_count,"
+         "contact_band_block_ratio,"
          "total_node_count,exact_node_count,predicted_node_count,"
          "far_field_node_count,coarse_sample_count,exact_node_ratio,"
          "predicted_node_ratio,exact_sample_reduction_ratio,"
@@ -41,8 +47,16 @@ std::string ContactBandReportWriter::csvRow(
   const ContactBandQualityMetrics& q = result.quality;
   out << result.case_id << "," << result.exact_reference_time_ms << ","
       << result.contact_band_time_ms << "," << result.speedup << ","
+      << d.marker_mode << ","
+      << d.candidate_triangle_aabb_overlap_count << ","
+      << d.distance_refined_cell_count << ","
+      << d.distance_rejected_cell_count << "," << d.marked_cell_count << ","
+      << d.marked_node_count << "," << d.local_halo_node_count << ","
+      << d.global_halo_node_count << "," << d.overmark_ratio_estimate << ","
+      << d.marker_time_ms << "," << d.distance_refinement_time_ms << ","
       << d.total_block_count << "," << d.contact_band_block_count << ","
-      << d.far_field_block_count << "," << d.total_node_count << ","
+      << d.far_field_block_count << "," << d.contact_band_block_ratio << ","
+      << d.total_node_count << ","
       << d.exact_node_count << "," << d.predicted_node_count << ","
       << d.far_field_node_count << "," << d.coarse_sample_count << ","
       << d.exact_node_ratio << "," << d.predicted_node_ratio << ","
@@ -75,12 +89,14 @@ std::string ContactBandReportWriter::toMarkdown(
   out << "- Exact reference time ms: " << result.exact_reference_time_ms << "\n";
   out << "- Contact-band time ms: " << result.contact_band_time_ms << "\n";
   out << "- Speedup: " << result.speedup << "\n";
+  out << "- Marker mode: " << d.marker_mode << "\n";
   out << "- Effective speedup claim allowed: "
       << yesNo(result.effective_speedup_claim_allowed) << "\n\n";
   out << "## Sampling\n\n";
   out << "- Total blocks: " << d.total_block_count << "\n";
   out << "- Contact-band blocks: " << d.contact_band_block_count << "\n";
   out << "- Far-field blocks: " << d.far_field_block_count << "\n";
+  out << "- Contact-band block ratio: " << d.contact_band_block_ratio << "\n";
   out << "- Total nodes: " << d.total_node_count << "\n";
   out << "- Exact nodes: " << d.exact_node_count << "\n";
   out << "- Predicted nodes: " << d.predicted_node_count << "\n";
@@ -93,6 +109,22 @@ std::string ContactBandReportWriter::toMarkdown(
   out << "- Sign query count: " << d.sign_query_count << "\n";
   out << "- Sign query reduction ratio: "
       << d.sign_query_reduction_ratio << "\n\n";
+  out << "## Marker Diagnostics\n\n";
+  out << "- Candidate triangle AABB overlaps: "
+      << d.candidate_triangle_aabb_overlap_count << "\n";
+  out << "- Distance-refined cells: "
+      << d.distance_refined_cell_count << "\n";
+  out << "- Distance-rejected cells: "
+      << d.distance_rejected_cell_count << "\n";
+  out << "- Marked cells: " << d.marked_cell_count << "\n";
+  out << "- Marked nodes: " << d.marked_node_count << "\n";
+  out << "- Local halo nodes: " << d.local_halo_node_count << "\n";
+  out << "- Global halo nodes: " << d.global_halo_node_count << "\n";
+  out << "- Overmark ratio estimate: "
+      << d.overmark_ratio_estimate << "\n";
+  out << "- Marker time ms: " << d.marker_time_ms << "\n";
+  out << "- Distance refinement time ms: "
+      << d.distance_refinement_time_ms << "\n\n";
   out << "## Contact-Band Quality\n\n";
   out << "- Contact-band check count: " << q.contact_band_check_count << "\n";
   out << "- Contact-band max abs error: "

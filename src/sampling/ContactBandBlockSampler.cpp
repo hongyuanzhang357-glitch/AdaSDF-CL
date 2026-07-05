@@ -251,6 +251,7 @@ ContactBandBlockSamplingResult ContactBandBlockSampler::sampleBlock(
   const auto total1 = std::chrono::steady_clock::now();
   result.total_time_ms = elapsedMs(total0, total1);
   result.success = true;
+  result.diagnostics.marker_mode = result.mask.marker_mode;
   result.diagnostics.total_block_count = 1;
   result.diagnostics.contact_band_block_count = result.has_contact_band ? 1 : 0;
   result.diagnostics.far_field_block_count = result.has_contact_band ? 0 : 1;
@@ -263,10 +264,27 @@ ContactBandBlockSamplingResult ContactBandBlockSampler::sampleBlock(
       result.exact_node_count + result.coarse_sample_count;
   result.diagnostics.sign_query_count =
       signed_distance ? result.diagnostics.distance_query_count : 0;
+  result.diagnostics.candidate_triangle_aabb_overlap_count =
+      result.mask.candidate_triangle_aabb_overlap_count;
+  result.diagnostics.distance_refined_cell_count =
+      result.mask.distance_refined_cell_count;
+  result.diagnostics.distance_rejected_cell_count =
+      result.mask.distance_rejected_cell_count;
+  result.diagnostics.marked_cell_count = result.mask.marked_cell_count;
+  result.diagnostics.marked_node_count = result.mask.marked_node_count;
+  result.diagnostics.local_halo_node_count =
+      result.mask.local_halo_node_count;
+  result.diagnostics.global_halo_node_count =
+      result.mask.global_halo_node_count;
+  result.diagnostics.overmark_ratio_estimate =
+      result.mask.overmark_ratio_estimate;
   result.diagnostics.exact_sampling_time_ms = result.exact_sampling_time_ms;
   result.diagnostics.coarse_sampling_time_ms = result.coarse_sampling_time_ms;
   result.diagnostics.interpolation_time_ms = result.interpolation_time_ms;
   result.diagnostics.total_time_ms = result.total_time_ms;
+  result.diagnostics.marker_time_ms = result.mask.marker_time_ms;
+  result.diagnostics.distance_refinement_time_ms =
+      result.mask.distance_refinement_time_ms;
   finalizeContactBandDiagnostics(&result.diagnostics);
   return result;
 }

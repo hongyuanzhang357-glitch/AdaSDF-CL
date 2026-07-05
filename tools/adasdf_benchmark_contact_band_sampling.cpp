@@ -36,6 +36,10 @@ void usage() {
          "[--contact-band-width value] [--contact-band-layers N] "
          "[--halo-exact-layers N] [--far-field-resolution N] "
          "[--far-field-mode coarse-interpolate|constant-sign|clamped-distance] "
+         "[--contact-band-marker conservative-aabb|distance-aware|hybrid] "
+         "[--marker-safety-factor value] [--marker-cell-size-factor value] "
+         "[--marker-min-band value] [--marker-max-band value] "
+         "[--disable-global-halo] [--local-halo-only] "
          "[--reuse-far-field-sign] [--no-reuse-far-field-sign] "
          "[--normal-audit] [--normal-error-limit-deg value] "
          "[--threads N] [--csv out.csv] [--report out.md] "
@@ -187,6 +191,7 @@ adasdf::ContactBandBenchmarkResult runBenchmark(
       std::chrono::duration<double, std::milli>(total1 - total0).count();
 
   adasdf::ContactBandDiagnostics diagnostics;
+  diagnostics.marker_mode = adasdf::toString(options.contact.marker_mode);
   adasdf::ContactBandQualityMetrics quality;
   for (std::size_t block_index = 0; block_index < sampled.size(); ++block_index) {
     const adasdf::ContactBandBlockSamplingResult& block_result =
@@ -212,6 +217,20 @@ adasdf::ContactBandBenchmarkResult runBenchmark(
     diagnostics.distance_query_count +=
         block_result.diagnostics.distance_query_count;
     diagnostics.sign_query_count += block_result.diagnostics.sign_query_count;
+    diagnostics.candidate_triangle_aabb_overlap_count +=
+        block_result.diagnostics.candidate_triangle_aabb_overlap_count;
+    diagnostics.distance_refined_cell_count +=
+        block_result.diagnostics.distance_refined_cell_count;
+    diagnostics.distance_rejected_cell_count +=
+        block_result.diagnostics.distance_rejected_cell_count;
+    diagnostics.marked_cell_count +=
+        block_result.diagnostics.marked_cell_count;
+    diagnostics.marked_node_count +=
+        block_result.diagnostics.marked_node_count;
+    diagnostics.local_halo_node_count +=
+        block_result.diagnostics.local_halo_node_count;
+    diagnostics.global_halo_node_count +=
+        block_result.diagnostics.global_halo_node_count;
     diagnostics.exact_sampling_time_ms +=
         block_result.diagnostics.exact_sampling_time_ms;
     diagnostics.coarse_sampling_time_ms +=
@@ -219,6 +238,9 @@ adasdf::ContactBandBenchmarkResult runBenchmark(
     diagnostics.interpolation_time_ms +=
         block_result.diagnostics.interpolation_time_ms;
     diagnostics.total_time_ms += block_result.diagnostics.total_time_ms;
+    diagnostics.marker_time_ms += block_result.diagnostics.marker_time_ms;
+    diagnostics.distance_refinement_time_ms +=
+        block_result.diagnostics.distance_refinement_time_ms;
     quality = adasdf::ContactBandQualityAudit::merge(
         quality,
         adasdf::ContactBandQualityAudit::auditBlock(
@@ -281,6 +303,25 @@ int main(int argc, char** argv) {
           return 1;
         }
         options.contact.far_field_mode = mode;
+      } else if (arg == "--contact-band-marker" && hasValue(i, argc)) {
+        adasdf::ContactBandMarkerMode mode;
+        if (!adasdf::parseContactBandMarkerMode(argv[++i], &mode)) {
+          std::cerr << "Unknown contact-band marker: " << argv[i] << "\n";
+          return 1;
+        }
+        options.contact.marker_mode = mode;
+      } else if (arg == "--marker-safety-factor" && hasValue(i, argc)) {
+        options.contact.marker_safety_factor = std::stod(argv[++i]);
+      } else if (arg == "--marker-cell-size-factor" && hasValue(i, argc)) {
+        options.contact.marker_cell_size_factor = std::stod(argv[++i]);
+      } else if (arg == "--marker-min-band" && hasValue(i, argc)) {
+        options.contact.marker_min_band = std::stod(argv[++i]);
+      } else if (arg == "--marker-max-band" && hasValue(i, argc)) {
+        options.contact.marker_max_band = std::stod(argv[++i]);
+      } else if (arg == "--disable-global-halo") {
+        options.contact.disable_global_halo = true;
+      } else if (arg == "--local-halo-only") {
+        options.contact.local_halo_only = true;
       } else if (arg == "--reuse-far-field-sign") {
         options.contact.reuse_far_field_sign = true;
       } else if (arg == "--no-reuse-far-field-sign") {
@@ -351,12 +392,15 @@ int main(int argc, char** argv) {
     std::cout << "Contact-band time ms: " << result.contact_band_time_ms
               << "\n";
     std::cout << "Speedup: " << result.speedup << "\n";
+    std::cout << "Marker mode: " << result.diagnostics.marker_mode << "\n";
     std::cout << "Total blocks: "
               << result.diagnostics.total_block_count << "\n";
     std::cout << "Contact-band blocks: "
               << result.diagnostics.contact_band_block_count << "\n";
     std::cout << "Far-field blocks: "
               << result.diagnostics.far_field_block_count << "\n";
+    std::cout << "Contact-band block ratio: "
+              << result.diagnostics.contact_band_block_ratio << "\n";
     std::cout << "Total nodes: " << result.diagnostics.total_node_count
               << "\n";
     std::cout << "Exact nodes: " << result.diagnostics.exact_node_count
@@ -379,6 +423,27 @@ int main(int argc, char** argv) {
               << result.diagnostics.sign_query_count << "\n";
     std::cout << "Sign query reduction ratio: "
               << result.diagnostics.sign_query_reduction_ratio << "\n";
+    std::cout << "Candidate triangle AABB overlaps: "
+              << result.diagnostics.candidate_triangle_aabb_overlap_count
+              << "\n";
+    std::cout << "Distance-refined cells: "
+              << result.diagnostics.distance_refined_cell_count << "\n";
+    std::cout << "Distance-rejected cells: "
+              << result.diagnostics.distance_rejected_cell_count << "\n";
+    std::cout << "Marked cells: "
+              << result.diagnostics.marked_cell_count << "\n";
+    std::cout << "Marked nodes: "
+              << result.diagnostics.marked_node_count << "\n";
+    std::cout << "Local halo nodes: "
+              << result.diagnostics.local_halo_node_count << "\n";
+    std::cout << "Global halo nodes: "
+              << result.diagnostics.global_halo_node_count << "\n";
+    std::cout << "Overmark ratio estimate: "
+              << result.diagnostics.overmark_ratio_estimate << "\n";
+    std::cout << "Marker time ms: "
+              << result.diagnostics.marker_time_ms << "\n";
+    std::cout << "Distance refinement time ms: "
+              << result.diagnostics.distance_refinement_time_ms << "\n";
     std::cout << "Contact-band max abs error: "
               << result.quality.contact_band_max_abs_error << "\n";
     std::cout << "Contact-band RMS error: "

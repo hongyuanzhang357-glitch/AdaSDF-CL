@@ -115,12 +115,16 @@ std::string AdaptiveBlockSDFBuildReportWriter::toMarkdown(
       << report.hierarchical_sampling.speedup_vs_exact_estimate << "\n\n";
 
   out << "## Contact-Band Sampling\n\n";
+  out << "- Marker mode: "
+      << report.contact_band_sampling.marker_mode << "\n";
   out << "- Total blocks: "
       << report.contact_band_sampling.total_block_count << "\n";
   out << "- Contact-band blocks: "
       << report.contact_band_sampling.contact_band_block_count << "\n";
   out << "- Far-field blocks: "
       << report.contact_band_sampling.far_field_block_count << "\n";
+  out << "- Contact-band block ratio: "
+      << report.contact_band_sampling.contact_band_block_ratio << "\n";
   out << "- Exact nodes: "
       << report.contact_band_sampling.exact_node_count << "\n";
   out << "- Predicted nodes: "
@@ -133,6 +137,16 @@ std::string AdaptiveBlockSDFBuildReportWriter::toMarkdown(
       << report.contact_band_sampling.exact_sample_reduction_ratio << "\n";
   out << "- Sign query reduction ratio: "
       << report.contact_band_sampling.sign_query_reduction_ratio << "\n\n";
+  out << "- Distance-rejected cells: "
+      << report.contact_band_sampling.distance_rejected_cell_count << "\n";
+  out << "- Local halo nodes: "
+      << report.contact_band_sampling.local_halo_node_count << "\n";
+  out << "- Global halo nodes: "
+      << report.contact_band_sampling.global_halo_node_count << "\n";
+  out << "- Marker time ms: "
+      << report.contact_band_sampling.marker_time_ms << "\n";
+  out << "- Distance refinement time ms: "
+      << report.contact_band_sampling.distance_refinement_time_ms << "\n\n";
 
   out << "## Warnings\n\n";
   if (report.warnings.empty()) {
@@ -215,12 +229,16 @@ std::string AdaptiveBlockSDFBuildReportWriter::toJson(
       << report.hierarchical_sampling.speedup_vs_exact_estimate << "\n";
   out << "  },\n";
   out << "  \"contact_band_sampling\": {\n";
+  out << "    \"marker_mode\": \""
+      << escaped(report.contact_band_sampling.marker_mode) << "\",\n";
   out << "    \"total_block_count\": "
       << report.contact_band_sampling.total_block_count << ",\n";
   out << "    \"contact_band_block_count\": "
       << report.contact_band_sampling.contact_band_block_count << ",\n";
   out << "    \"far_field_block_count\": "
       << report.contact_band_sampling.far_field_block_count << ",\n";
+  out << "    \"contact_band_block_ratio\": "
+      << report.contact_band_sampling.contact_band_block_ratio << ",\n";
   out << "    \"total_node_count\": "
       << report.contact_band_sampling.total_node_count << ",\n";
   out << "    \"exact_node_count\": "
@@ -240,7 +258,28 @@ std::string AdaptiveBlockSDFBuildReportWriter::toJson(
   out << "    \"sign_query_count\": "
       << report.contact_band_sampling.sign_query_count << ",\n";
   out << "    \"sign_query_reduction_ratio\": "
-      << report.contact_band_sampling.sign_query_reduction_ratio << "\n";
+      << report.contact_band_sampling.sign_query_reduction_ratio << ",\n";
+  out << "    \"candidate_triangle_aabb_overlap_count\": "
+      << report.contact_band_sampling.candidate_triangle_aabb_overlap_count
+      << ",\n";
+  out << "    \"distance_refined_cell_count\": "
+      << report.contact_band_sampling.distance_refined_cell_count << ",\n";
+  out << "    \"distance_rejected_cell_count\": "
+      << report.contact_band_sampling.distance_rejected_cell_count << ",\n";
+  out << "    \"marked_cell_count\": "
+      << report.contact_band_sampling.marked_cell_count << ",\n";
+  out << "    \"marked_node_count\": "
+      << report.contact_band_sampling.marked_node_count << ",\n";
+  out << "    \"local_halo_node_count\": "
+      << report.contact_band_sampling.local_halo_node_count << ",\n";
+  out << "    \"global_halo_node_count\": "
+      << report.contact_band_sampling.global_halo_node_count << ",\n";
+  out << "    \"overmark_ratio_estimate\": "
+      << report.contact_band_sampling.overmark_ratio_estimate << ",\n";
+  out << "    \"marker_time_ms\": "
+      << report.contact_band_sampling.marker_time_ms << ",\n";
+  out << "    \"distance_refinement_time_ms\": "
+      << report.contact_band_sampling.distance_refinement_time_ms << "\n";
   out << "  },\n";
   out << "  \"low_rank_compression\": \"available via ADASDF_COMPRESSED_BLOCK_SDFBIN_V1\",\n";
   out << "  \"warnings\": [";

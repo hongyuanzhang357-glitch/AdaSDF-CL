@@ -507,6 +507,8 @@ void sampleBlocksContactBand(
       options.acceleration == SDFSamplingAcceleration::BVH && sampler.hasBVH();
 
   ContactBandDiagnostics diagnostics;
+  diagnostics.marker_mode =
+      toString(options.contact_band_sampling.marker_mode);
   const auto total0 = std::chrono::steady_clock::now();
   std::vector<ContactBandBlockSamplingResult> sampled_blocks(
       block_set.blocks.size());
@@ -568,6 +570,18 @@ void sampleBlocksContactBand(
     diagnostics.distance_query_count +=
         sampled.diagnostics.distance_query_count;
     diagnostics.sign_query_count += sampled.diagnostics.sign_query_count;
+    diagnostics.candidate_triangle_aabb_overlap_count +=
+        sampled.diagnostics.candidate_triangle_aabb_overlap_count;
+    diagnostics.distance_refined_cell_count +=
+        sampled.diagnostics.distance_refined_cell_count;
+    diagnostics.distance_rejected_cell_count +=
+        sampled.diagnostics.distance_rejected_cell_count;
+    diagnostics.marked_cell_count += sampled.diagnostics.marked_cell_count;
+    diagnostics.marked_node_count += sampled.diagnostics.marked_node_count;
+    diagnostics.local_halo_node_count +=
+        sampled.diagnostics.local_halo_node_count;
+    diagnostics.global_halo_node_count +=
+        sampled.diagnostics.global_halo_node_count;
     diagnostics.exact_sampling_time_ms +=
         sampled.diagnostics.exact_sampling_time_ms;
     diagnostics.coarse_sampling_time_ms +=
@@ -575,6 +589,9 @@ void sampleBlocksContactBand(
     diagnostics.interpolation_time_ms +=
         sampled.diagnostics.interpolation_time_ms;
     diagnostics.total_time_ms += sampled.diagnostics.total_time_ms;
+    diagnostics.marker_time_ms += sampled.diagnostics.marker_time_ms;
+    diagnostics.distance_refinement_time_ms +=
+        sampled.diagnostics.distance_refinement_time_ms;
   }
   const auto total1 = std::chrono::steady_clock::now();
   diagnostics.total_time_ms =

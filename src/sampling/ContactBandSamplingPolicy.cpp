@@ -40,6 +40,15 @@ ContactBandOptions ContactBandSamplingOptions::markerOptions() const {
   options.contact_band_layers = contact_band_layers;
   options.halo_exact_layers = halo_exact_layers;
   options.mark_halo_layers_exact = exact_halo_nodes;
+  options.marker_mode = marker_mode;
+  options.conservative_marking =
+      marker_mode == ContactBandMarkerMode::ConservativeAABB;
+  options.marker_safety_factor = marker_safety_factor;
+  options.marker_cell_size_factor = marker_cell_size_factor;
+  options.marker_min_band = marker_min_band;
+  options.marker_max_band = marker_max_band;
+  options.disable_global_halo = disable_global_halo;
+  options.local_halo_only = local_halo_only;
   return options;
 }
 

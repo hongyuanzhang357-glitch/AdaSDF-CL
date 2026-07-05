@@ -30,6 +30,14 @@ struct ContactBandSamplingOptions {
   int contact_band_layers = 1;
   int halo_exact_layers = 1;
 
+  ContactBandMarkerMode marker_mode = ContactBandMarkerMode::ConservativeAABB;
+  double marker_safety_factor = 1.0;
+  double marker_cell_size_factor = 0.75;
+  double marker_min_band = 0.0;
+  double marker_max_band = 0.0;
+  bool disable_global_halo = false;
+  bool local_halo_only = false;
+
   int far_field_resolution = 3;
   ContactBandFarFieldMode far_field_mode =
       ContactBandFarFieldMode::CoarseInterpolate;

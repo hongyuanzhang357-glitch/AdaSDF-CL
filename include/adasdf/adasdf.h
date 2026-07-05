@@ -4,6 +4,7 @@
 #include "adasdf/config.h"
 #include "adasdf/geometry/Transform.h"
 #include "adasdf/geometry/CollisionGeometry.h"
+#include "adasdf/geometry/BoxTriangleDistance.h"
 #include "adasdf/geometry/MeshModel.h"
 #include "adasdf/geometry/SDFModel.h"
 #include "adasdf/geometry/AnalyticSDFModel.h"
