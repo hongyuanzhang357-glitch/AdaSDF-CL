@@ -42,11 +42,20 @@ struct ContactBandDiagnostics {
   double interpolation_time_ms = 0.0;
   double total_time_ms = 0.0;
   double marker_time_ms = 0.0;
+  double contact_band_marker_time_ms = 0.0;
+  double contact_band_sampling_time_ms = 0.0;
+  double contact_band_interpolation_time_ms = 0.0;
+  double contact_band_audit_time_ms = 0.0;
+  double contact_band_report_time_ms = 0.0;
+  double contact_band_diagnostics_time_ms = 0.0;
   double distance_refinement_time_ms = 0.0;
   double marker_refinement_time_ms = 0.0;
   double box_triangle_distance_time_ms = 0.0;
   double triangle_bvh_query_time_ms = 0.0;
   double marker_time_fraction = 0.0;
+  double marker_time_fraction_of_wall = 0.0;
+  double audit_time_fraction_of_wall = 0.0;
+  double diagnostics_time_fraction_of_wall = 0.0;
 
   double exact_node_ratio = 0.0;
   double predicted_node_ratio = 0.0;

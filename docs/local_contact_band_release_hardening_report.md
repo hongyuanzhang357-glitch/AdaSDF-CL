@@ -68,6 +68,11 @@ The marker now reports candidate and refinement costs:
 
 `marker_time_ms` is accumulated per block, while `contact_band_time_ms` remains the reliable wall-clock end-to-end total. `marker_time_fraction` is normalized against accumulated block work, not wall-clock time. `effective_speedup_including_marker` is the reliable end-to-end speedup. `effective_speedup_excluding_marker` is a diagnostic estimate that removes the marker fraction from the wall-clock total and should not be used as a release headline metric.
 
+Sprint 6 formalizes this wording in `docs/contact_band_timing_semantics.md`.
+The release-facing metric is now named `speedup_end_to_end`, while
+`speedup_excluding_marker`, `speedup_excluding_audit`, and
+`speedup_excluding_diagnostics` are diagnostic-only views.
+
 ## Failed Cases
 
 No benchmark case failed the local release-hardening gate. All required cases passed quality, coverage, normal audit, and contact-band sign checks.

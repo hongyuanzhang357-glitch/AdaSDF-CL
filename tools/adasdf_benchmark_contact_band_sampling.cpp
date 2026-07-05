@@ -24,6 +24,11 @@ struct Options {
   std::filesystem::path marker_debug_csv;
   std::string case_id = "contact_band";
   bool marker_cost_audit = false;
+  std::string timing_mode = "end-to-end";
+  bool include_audit_in_wall_time = true;
+  bool exclude_audit_from_speedup = false;
+  bool include_marker_in_speedup = true;
+  bool exclude_marker_from_speedup = false;
   adasdf::ContactBandSamplingOptions contact;
 };
 
@@ -31,6 +36,16 @@ struct Location {
   std::size_t block_index = 0;
   std::size_t local_index = 0;
 };
+
+double elapsedMs(
+    const std::chrono::steady_clock::time_point& begin,
+    const std::chrono::steady_clock::time_point& end) {
+  return std::chrono::duration<double, std::milli>(end - begin).count();
+}
+
+bool validTimingMode(const std::string& mode) {
+  return mode == "end-to-end" || mode == "core" || mode == "diagnostic";
+}
 
 void usage() {
   std::cout
@@ -46,6 +61,9 @@ void usage() {
          "[--reuse-far-field-sign] [--no-reuse-far-field-sign] "
          "[--coverage-audit] [--coverage-samples-per-axis N] "
          "[--marker-cost-audit] [--save-marker-debug-csv out.csv] "
+         "[--timing-mode end-to-end|core|diagnostic] "
+         "[--include-audit-in-wall-time] [--exclude-audit-from-speedup] "
+         "[--include-marker-in-speedup] [--exclude-marker-from-speedup] "
          "[--normal-audit] [--normal-error-limit-deg value] "
          "[--threads N] [--csv out.csv] [--report out.md] "
          "[--case-id id]\n";
@@ -180,6 +198,11 @@ adasdf::ContactBandBenchmarkResult runBenchmark(
     const Options& options) {
   adasdf::ContactBandBenchmarkResult result;
   result.case_id = options.case_id;
+  result.timing_mode = options.timing_mode;
+  result.include_audit_in_wall_time = options.include_audit_in_wall_time;
+  result.include_marker_in_speedup = options.include_marker_in_speedup;
+  result.exclude_audit_from_speedup = options.exclude_audit_from_speedup;
+  result.exclude_marker_from_speedup = options.exclude_marker_from_speedup;
 
   std::vector<adasdf::AdaptiveSDFBlock> reference_blocks =
       makeBlocks(mesh, options);
@@ -201,10 +224,13 @@ adasdf::ContactBandBenchmarkResult runBenchmark(
           sampler_options,
           options.threads,
           &reference_blocks);
+  result.exact_reference_wall_time_ms = result.exact_reference_time_ms;
+  result.exact_reference_core_build_time_ms =
+      result.exact_reference_time_ms;
 
   std::vector<adasdf::ContactBandBlockSamplingResult> sampled(
       contact_blocks.size());
-  const auto total0 = std::chrono::steady_clock::now();
+  const auto core0 = std::chrono::steady_clock::now();
   adasdf::ParallelSamplingOptions parallel_options;
   parallel_options.threads = std::max(1, options.threads);
   adasdf::parallelFor(
@@ -223,13 +249,12 @@ adasdf::ContactBandBenchmarkResult runBenchmark(
             sampler.bvh(),
             options.contact);
       });
-  const auto total1 = std::chrono::steady_clock::now();
-  result.contact_band_time_ms =
-      std::chrono::duration<double, std::milli>(total1 - total0).count();
+  const auto core1 = std::chrono::steady_clock::now();
+  result.contact_band_core_build_time_ms = elapsedMs(core0, core1);
 
   adasdf::ContactBandDiagnostics diagnostics;
   diagnostics.marker_mode = adasdf::toString(options.contact.marker_mode);
-  adasdf::ContactBandQualityMetrics quality;
+  const auto diagnostics0 = std::chrono::steady_clock::now();
   for (std::size_t block_index = 0; block_index < sampled.size(); ++block_index) {
     const adasdf::ContactBandBlockSamplingResult& block_result =
         sampled[block_index];
@@ -294,6 +319,16 @@ adasdf::ContactBandBenchmarkResult runBenchmark(
         block_result.diagnostics.box_triangle_distance_time_ms;
     diagnostics.triangle_bvh_query_time_ms +=
         block_result.diagnostics.triangle_bvh_query_time_ms;
+  }
+  const auto diagnostics1 = std::chrono::steady_clock::now();
+  diagnostics.contact_band_diagnostics_time_ms =
+      elapsedMs(diagnostics0, diagnostics1);
+
+  adasdf::ContactBandQualityMetrics quality;
+  const auto audit0 = std::chrono::steady_clock::now();
+  for (std::size_t block_index = 0; block_index < sampled.size(); ++block_index) {
+    const adasdf::ContactBandBlockSamplingResult& block_result =
+        sampled[block_index];
     quality = adasdf::ContactBandQualityAudit::merge(
         quality,
         adasdf::ContactBandQualityAudit::auditBlock(
@@ -302,34 +337,115 @@ adasdf::ContactBandBenchmarkResult runBenchmark(
             block_result.mask,
             options.contact));
   }
+  adasdf::ContactBandQualityAudit::finalize(&quality, options.contact);
+  const auto audit1 = std::chrono::steady_clock::now();
+  diagnostics.contact_band_audit_time_ms = elapsedMs(audit0, audit1);
+
   const double accumulated_block_time_ms = diagnostics.total_time_ms;
-  diagnostics.total_time_ms = result.contact_band_time_ms;
+  if (accumulated_block_time_ms > 0.0) {
+    const double marker_fraction =
+        std::max(0.0, std::min(1.0, diagnostics.marker_time_ms /
+                                        accumulated_block_time_ms));
+    const double sampling_work_time_ms =
+        diagnostics.exact_sampling_time_ms + diagnostics.coarse_sampling_time_ms;
+    const double sampling_fraction =
+        std::max(0.0, std::min(1.0, sampling_work_time_ms /
+                                        accumulated_block_time_ms));
+    const double interpolation_fraction =
+        std::max(0.0, std::min(1.0, diagnostics.interpolation_time_ms /
+                                        accumulated_block_time_ms));
+    diagnostics.contact_band_marker_time_ms =
+        result.contact_band_core_build_time_ms * marker_fraction;
+    diagnostics.contact_band_sampling_time_ms =
+        result.contact_band_core_build_time_ms * sampling_fraction;
+    diagnostics.contact_band_interpolation_time_ms =
+        result.contact_band_core_build_time_ms * interpolation_fraction;
+  } else {
+    diagnostics.contact_band_marker_time_ms = diagnostics.marker_time_ms;
+    diagnostics.contact_band_sampling_time_ms =
+        diagnostics.exact_sampling_time_ms + diagnostics.coarse_sampling_time_ms;
+    diagnostics.contact_band_interpolation_time_ms =
+        diagnostics.interpolation_time_ms;
+  }
+  result.contact_band_wall_time_ms =
+      result.contact_band_core_build_time_ms +
+      (options.include_audit_in_wall_time
+           ? diagnostics.contact_band_audit_time_ms
+           : 0.0);
+  result.contact_band_time_ms = result.contact_band_wall_time_ms;
+  diagnostics.total_time_ms = result.contact_band_wall_time_ms;
   adasdf::finalizeContactBandDiagnostics(&diagnostics);
   if (accumulated_block_time_ms > 0.0) {
     diagnostics.marker_time_fraction =
         diagnostics.marker_time_ms / accumulated_block_time_ms;
   }
-  adasdf::ContactBandQualityAudit::finalize(&quality, options.contact);
   if (options.marker_cost_audit || !options.marker_debug_csv.empty()) {
     writeMarkerDebugCsv(options.marker_debug_csv, sampled);
   }
   result.diagnostics = diagnostics;
   result.quality = quality;
-  result.speedup =
-      result.contact_band_time_ms > 0.0
-          ? result.exact_reference_time_ms / result.contact_band_time_ms
+  result.speedup_end_to_end =
+      result.contact_band_wall_time_ms > 0.0
+          ? result.exact_reference_wall_time_ms / result.contact_band_wall_time_ms
           : 0.0;
-  result.effective_speedup_including_marker = result.speedup;
-  const double marker_fraction =
-      std::max(0.0, std::min(1.0, result.diagnostics.marker_time_fraction));
+  result.speedup = result.speedup_end_to_end;
+  result.speedup_core_build =
+      result.contact_band_core_build_time_ms > 0.0
+          ? result.exact_reference_core_build_time_ms /
+                result.contact_band_core_build_time_ms
+          : 0.0;
+  result.effective_speedup_including_marker = result.speedup_end_to_end;
+  result.speedup_excluding_audit =
+      result.contact_band_core_build_time_ms > 0.0
+          ? result.exact_reference_wall_time_ms /
+                result.contact_band_core_build_time_ms
+          : 0.0;
+  result.speedup_excluding_diagnostics = result.speedup_end_to_end;
   const double no_marker_time =
-      result.contact_band_time_ms * (1.0 - marker_fraction);
-  result.effective_speedup_excluding_marker =
+      result.contact_band_wall_time_ms -
+      result.diagnostics.contact_band_marker_time_ms;
+  result.speedup_excluding_marker =
       no_marker_time > 0.0
-          ? result.exact_reference_time_ms / no_marker_time
+          ? result.exact_reference_wall_time_ms / no_marker_time
           : 0.0;
+  result.effective_speedup_excluding_marker =
+      result.speedup_excluding_marker;
+  result.marker_time_fraction_of_wall =
+      result.contact_band_wall_time_ms > 0.0
+          ? result.diagnostics.contact_band_marker_time_ms /
+                result.contact_band_wall_time_ms
+          : 0.0;
+  result.audit_time_fraction_of_wall =
+      result.contact_band_wall_time_ms > 0.0
+          ? result.diagnostics.contact_band_audit_time_ms /
+                result.contact_band_wall_time_ms
+          : 0.0;
+  result.diagnostics_time_fraction_of_wall =
+      result.contact_band_wall_time_ms > 0.0
+          ? result.diagnostics.contact_band_diagnostics_time_ms /
+                result.contact_band_wall_time_ms
+          : 0.0;
+  result.diagnostics.marker_time_fraction_of_wall =
+      result.marker_time_fraction_of_wall;
+  result.diagnostics.audit_time_fraction_of_wall =
+      result.audit_time_fraction_of_wall;
+  result.diagnostics.diagnostics_time_fraction_of_wall =
+      result.diagnostics_time_fraction_of_wall;
+  result.performance_claim_allowed =
+      result.timing_mode == "end-to-end" &&
+      result.include_audit_in_wall_time &&
+      result.include_marker_in_speedup &&
+      !result.exclude_audit_from_speedup &&
+      !result.exclude_marker_from_speedup &&
+      result.speedup_end_to_end > 1.0 &&
+      result.quality.contact_band_quality_passed &&
+      result.quality.coverage_passed &&
+      result.quality.contact_band_sign_mismatch_count == 0 &&
+      result.quality.near_surface_sign_mismatch_count == 0 &&
+      result.quality.normal_flip_count == 0 &&
+      result.quality.near_surface_normal_flip_count == 0;
   result.effective_speedup_claim_allowed =
-      result.speedup > 1.0 && result.quality.contact_band_quality_passed;
+      result.performance_claim_allowed;
   result.success = true;
   return result;
 }
@@ -404,6 +520,22 @@ int main(int argc, char** argv) {
         options.marker_cost_audit = true;
       } else if (arg == "--save-marker-debug-csv" && hasValue(i, argc)) {
         options.marker_debug_csv = argv[++i];
+      } else if (arg == "--timing-mode" && hasValue(i, argc)) {
+        options.timing_mode = argv[++i];
+        if (!validTimingMode(options.timing_mode)) {
+          std::cerr << "Unknown timing mode: " << options.timing_mode << "\n";
+          return 1;
+        }
+      } else if (arg == "--include-audit-in-wall-time") {
+        options.include_audit_in_wall_time = true;
+      } else if (arg == "--exclude-audit-from-speedup") {
+        options.exclude_audit_from_speedup = true;
+      } else if (arg == "--include-marker-in-speedup") {
+        options.include_marker_in_speedup = true;
+        options.exclude_marker_from_speedup = false;
+      } else if (arg == "--exclude-marker-from-speedup") {
+        options.include_marker_in_speedup = false;
+        options.exclude_marker_from_speedup = true;
       } else if (arg == "--normal-audit" ||
                  arg == "--contact-band-normal-audit") {
         options.contact.normal_audit = true;
@@ -465,15 +597,42 @@ int main(int argc, char** argv) {
 
     std::cout << "AdaSDF-CL contact-band sampling benchmark\n";
     std::cout << "Case id: " << result.case_id << "\n";
+    std::cout << "Timing mode: " << result.timing_mode << "\n";
+    std::cout << "Include audit in wall time: "
+              << (result.include_audit_in_wall_time ? "yes" : "no") << "\n";
+    std::cout << "Include marker in speedup: "
+              << (result.include_marker_in_speedup ? "yes" : "no") << "\n";
+    std::cout << "Exclude audit from speedup: "
+              << (result.exclude_audit_from_speedup ? "yes" : "no") << "\n";
+    std::cout << "Exclude marker from speedup: "
+              << (result.exclude_marker_from_speedup ? "yes" : "no") << "\n";
     std::cout << "Exact reference time ms: "
               << result.exact_reference_time_ms << "\n";
     std::cout << "Contact-band time ms: " << result.contact_band_time_ms
               << "\n";
     std::cout << "Speedup: " << result.speedup << "\n";
+    std::cout << "Exact reference wall time ms: "
+              << result.exact_reference_wall_time_ms << "\n";
+    std::cout << "Contact-band wall time ms: "
+              << result.contact_band_wall_time_ms << "\n";
+    std::cout << "Speedup end-to-end: "
+              << result.speedup_end_to_end << "\n";
+    std::cout << "Exact reference core build time ms: "
+              << result.exact_reference_core_build_time_ms << "\n";
+    std::cout << "Contact-band core build time ms: "
+              << result.contact_band_core_build_time_ms << "\n";
+    std::cout << "Speedup core build: "
+              << result.speedup_core_build << "\n";
     std::cout << "Effective speedup including marker: "
               << result.effective_speedup_including_marker << "\n";
     std::cout << "Effective speedup excluding marker: "
               << result.effective_speedup_excluding_marker << "\n";
+    std::cout << "Speedup excluding audit: "
+              << result.speedup_excluding_audit << "\n";
+    std::cout << "Speedup excluding diagnostics: "
+              << result.speedup_excluding_diagnostics << "\n";
+    std::cout << "Speedup excluding marker: "
+              << result.speedup_excluding_marker << "\n";
     std::cout << "Marker mode: " << result.diagnostics.marker_mode << "\n";
     std::cout << "Total blocks: "
               << result.diagnostics.total_block_count << "\n";
@@ -536,8 +695,26 @@ int main(int argc, char** argv) {
               << result.diagnostics.overmark_ratio_estimate << "\n";
     std::cout << "Marker time ms: "
               << result.diagnostics.marker_time_ms << "\n";
+    std::cout << "Contact-band marker time ms: "
+              << result.diagnostics.contact_band_marker_time_ms << "\n";
+    std::cout << "Contact-band sampling time ms: "
+              << result.diagnostics.contact_band_sampling_time_ms << "\n";
+    std::cout << "Contact-band interpolation time ms: "
+              << result.diagnostics.contact_band_interpolation_time_ms << "\n";
+    std::cout << "Contact-band audit time ms: "
+              << result.diagnostics.contact_band_audit_time_ms << "\n";
+    std::cout << "Contact-band report time ms: "
+              << result.diagnostics.contact_band_report_time_ms << "\n";
+    std::cout << "Contact-band diagnostics time ms: "
+              << result.diagnostics.contact_band_diagnostics_time_ms << "\n";
     std::cout << "Marker time fraction: "
               << result.diagnostics.marker_time_fraction << "\n";
+    std::cout << "Marker time fraction of wall: "
+              << result.marker_time_fraction_of_wall << "\n";
+    std::cout << "Audit time fraction of wall: "
+              << result.audit_time_fraction_of_wall << "\n";
+    std::cout << "Diagnostics time fraction of wall: "
+              << result.diagnostics_time_fraction_of_wall << "\n";
     std::cout << "Triangle BVH query time ms: "
               << result.diagnostics.triangle_bvh_query_time_ms << "\n";
     std::cout << "Box-triangle distance time ms: "
@@ -578,6 +755,9 @@ int main(int argc, char** argv) {
               << "\n";
     std::cout << "Effective speedup claim allowed: "
               << (result.effective_speedup_claim_allowed ? "yes" : "no")
+              << "\n";
+    std::cout << "Performance claim allowed: "
+              << (result.performance_claim_allowed ? "yes" : "no")
               << "\n";
     std::cout << adasdf::ContactBandReportWriter::csvHeader() << "\n"
               << adasdf::ContactBandReportWriter::csvRow(result) << "\n";

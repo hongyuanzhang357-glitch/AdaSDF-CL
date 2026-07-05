@@ -834,6 +834,7 @@ set(ADASDF_CL_TEST_SOURCES
   tests/test_contact_band_marker_sweep_cli.cpp
   tests/test_contact_band_coverage_audit.cpp
   tests/test_contact_band_marker_cost_diagnostics.cpp
+  tests/test_contact_band_timing_semantics.cpp
   tests/test_thin_gap_fixture.cpp
   tests/test_robot_like_fixture.cpp
   tests/test_sweep_hierarchical_sampling_cli.cpp

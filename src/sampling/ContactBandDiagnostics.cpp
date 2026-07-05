@@ -60,9 +60,29 @@ void finalizeContactBandDiagnostics(ContactBandDiagnostics* diagnostics) {
     diagnostics->box_triangle_distance_time_ms =
         diagnostics->distance_refinement_time_ms;
   }
+  if (diagnostics->contact_band_marker_time_ms == 0.0) {
+    diagnostics->contact_band_marker_time_ms =
+        diagnostics->marker_time_ms;
+  }
+  if (diagnostics->contact_band_sampling_time_ms == 0.0) {
+    diagnostics->contact_band_sampling_time_ms =
+        diagnostics->exact_sampling_time_ms +
+        diagnostics->coarse_sampling_time_ms;
+  }
+  if (diagnostics->contact_band_interpolation_time_ms == 0.0) {
+    diagnostics->contact_band_interpolation_time_ms =
+        diagnostics->interpolation_time_ms;
+  }
   if (diagnostics->total_time_ms > 0.0) {
     diagnostics->marker_time_fraction =
         diagnostics->marker_time_ms / diagnostics->total_time_ms;
+    diagnostics->marker_time_fraction_of_wall =
+        diagnostics->contact_band_marker_time_ms / diagnostics->total_time_ms;
+    diagnostics->audit_time_fraction_of_wall =
+        diagnostics->contact_band_audit_time_ms / diagnostics->total_time_ms;
+    diagnostics->diagnostics_time_fraction_of_wall =
+        diagnostics->contact_band_diagnostics_time_ms /
+        diagnostics->total_time_ms;
   }
 }
 

@@ -112,10 +112,13 @@ contact_bench = adasdf.benchmark_contact_band_sampling(
     local_halo_only=True,
     normal_audit=True,
     coverage_audit=True,
+    timing_mode="end-to-end",
+    include_audit_in_wall_time=True,
+    include_marker_in_speedup=True,
     report="contact_band.md",
     csv="contact_band.csv",
 )
-print(contact_bench.metrics.get("speedup"))
+print(contact_bench.metrics.get("speedup_end_to_end"))
 ```
 
 ## Strict Reports

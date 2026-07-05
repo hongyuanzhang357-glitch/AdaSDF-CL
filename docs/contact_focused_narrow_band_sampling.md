@@ -118,22 +118,36 @@ The default remains `--sampling exact`.
 
 `adasdf_benchmark_contact_band_sampling` reports:
 
-- exact reference time;
-- contact-band build time;
-- speedup;
+- `exact_reference_wall_time_ms`;
+- `contact_band_wall_time_ms`;
+- `speedup_end_to_end`;
+- `speedup_core_build`;
+- diagnostic speedups such as `speedup_excluding_marker`;
 - block counts;
 - exact, predicted, far-field, and coarse sample counts;
 - exact-node and sample-reduction ratios;
 - distance and sign query counts;
 - contact-band phi/sign/normal errors;
 - `contact_band_quality_passed`;
-- `effective_speedup_claim_allowed`.
+- `coverage_passed`;
+- `performance_claim_allowed`.
 
-An effective speedup claim is allowed only when:
+The default benchmark timing mode is `end-to-end`: marker and required audit
+work are included in the contact-band wall time. `speedup_excluding_marker` is
+diagnostic only and must not be used as a release headline metric.
+
+An external performance claim is allowed only when:
 
 ```text
-speedup > 1 && contact_band_quality_passed == true
+speedup_end_to_end > 1
+&& contact_band_quality_passed == true
+&& coverage_passed == true
+&& contact_band_sign_mismatch_count == 0
+&& near_surface_sign_mismatch_count == 0
+&& marker is included in speedup
 ```
+
+See `docs/contact_band_timing_semantics.md` for the full timing vocabulary.
 
 ## Current Limitations
 
@@ -145,3 +159,5 @@ speedup > 1 && contact_band_quality_passed == true
   high-accuracy SDF reconstruction.
 - Conservative triangle-AABB marking can over-mark complex surfaces, which
   reduces speedup when most blocks become contact-band blocks.
+- External wording should describe collision-oriented/contact-band construction
+  acceleration, not global SDF reconstruction acceleration.

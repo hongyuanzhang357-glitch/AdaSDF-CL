@@ -876,6 +876,11 @@ def benchmark_contact_band_sampling(
     coverage_samples_per_axis: Optional[int] = None,
     marker_cost_audit: bool = False,
     save_marker_debug_csv: Optional[PathLike] = None,
+    timing_mode: Optional[str] = None,
+    include_audit_in_wall_time: bool = False,
+    exclude_audit_from_speedup: bool = False,
+    include_marker_in_speedup: bool = False,
+    exclude_marker_from_speedup: bool = False,
     threads: Optional[int] = None,
     csv: Optional[PathLike] = None,
     report: Optional[PathLike] = None,
@@ -913,6 +918,11 @@ def benchmark_contact_band_sampling(
         "--save-marker-debug-csv",
         _path(save_marker_debug_csv) if save_marker_debug_csv is not None else None,
     )
+    _append_value(command, "--timing-mode", timing_mode)
+    _append_bool(command, "--include-audit-in-wall-time", include_audit_in_wall_time)
+    _append_bool(command, "--exclude-audit-from-speedup", exclude_audit_from_speedup)
+    _append_bool(command, "--include-marker-in-speedup", include_marker_in_speedup)
+    _append_bool(command, "--exclude-marker-from-speedup", exclude_marker_from_speedup)
     _append_value(command, "--threads", threads)
     _append_value(command, "--csv", _path(csv) if csv is not None else None)
     _append_value(command, "--report", _path(report) if report is not None else None)

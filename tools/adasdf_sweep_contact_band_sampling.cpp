@@ -51,6 +51,12 @@ struct Location {
   std::size_t local_index = 0;
 };
 
+double elapsedMs(
+    const std::chrono::steady_clock::time_point& begin,
+    const std::chrono::steady_clock::time_point& end) {
+  return std::chrono::duration<double, std::milli>(end - begin).count();
+}
+
 std::vector<std::string> splitComma(const std::string& value) {
   std::vector<std::string> out;
   std::stringstream stream(value);
@@ -229,7 +235,12 @@ adasdf::ContactBandBenchmarkResult runCase(
     const std::string& case_id) {
   adasdf::ContactBandBenchmarkResult result;
   result.case_id = case_id;
+  result.timing_mode = "end-to-end";
+  result.include_audit_in_wall_time = true;
+  result.include_marker_in_speedup = true;
   result.exact_reference_time_ms = exact_reference_time_ms;
+  result.exact_reference_wall_time_ms = exact_reference_time_ms;
+  result.exact_reference_core_build_time_ms = exact_reference_time_ms;
   std::vector<adasdf::AdaptiveSDFBlock> contact_blocks = reference_blocks;
   std::vector<adasdf::ContactBandBlockSamplingResult> sampled(
       contact_blocks.size());
@@ -253,12 +264,11 @@ adasdf::ContactBandBenchmarkResult runCase(
             contact);
       });
   const auto total1 = std::chrono::steady_clock::now();
-  result.contact_band_time_ms =
-      std::chrono::duration<double, std::milli>(total1 - total0).count();
+  result.contact_band_core_build_time_ms = elapsedMs(total0, total1);
 
   adasdf::ContactBandDiagnostics diagnostics;
   diagnostics.marker_mode = adasdf::toString(contact.marker_mode);
-  adasdf::ContactBandQualityMetrics quality;
+  const auto diagnostics0 = std::chrono::steady_clock::now();
   for (std::size_t block_index = 0; block_index < sampled.size(); ++block_index) {
     const adasdf::ContactBandBlockSamplingResult& block_result =
         sampled[block_index];
@@ -311,6 +321,7 @@ adasdf::ContactBandBenchmarkResult runCase(
         block_result.diagnostics.coarse_sampling_time_ms;
     diagnostics.interpolation_time_ms +=
         block_result.diagnostics.interpolation_time_ms;
+    diagnostics.total_time_ms += block_result.diagnostics.total_time_ms;
     diagnostics.marker_time_ms += block_result.diagnostics.marker_time_ms;
     diagnostics.distance_refinement_time_ms +=
         block_result.diagnostics.distance_refinement_time_ms;
@@ -320,6 +331,16 @@ adasdf::ContactBandBenchmarkResult runCase(
         block_result.diagnostics.box_triangle_distance_time_ms;
     diagnostics.triangle_bvh_query_time_ms +=
         block_result.diagnostics.triangle_bvh_query_time_ms;
+  }
+  const auto diagnostics1 = std::chrono::steady_clock::now();
+  diagnostics.contact_band_diagnostics_time_ms =
+      elapsedMs(diagnostics0, diagnostics1);
+
+  adasdf::ContactBandQualityMetrics quality;
+  const auto audit0 = std::chrono::steady_clock::now();
+  for (std::size_t block_index = 0; block_index < sampled.size(); ++block_index) {
+    const adasdf::ContactBandBlockSamplingResult& block_result =
+        sampled[block_index];
     quality = adasdf::ContactBandQualityAudit::merge(
         quality,
         adasdf::ContactBandQualityAudit::auditBlock(
@@ -328,31 +349,99 @@ adasdf::ContactBandBenchmarkResult runCase(
             block_result.mask,
             contact));
   }
+  adasdf::ContactBandQualityAudit::finalize(&quality, contact);
+  const auto audit1 = std::chrono::steady_clock::now();
+  diagnostics.contact_band_audit_time_ms = elapsedMs(audit0, audit1);
+
   const double accumulated_block_time_ms = diagnostics.total_time_ms;
-  diagnostics.total_time_ms = result.contact_band_time_ms;
+  if (accumulated_block_time_ms > 0.0) {
+    const double marker_fraction =
+        std::max(0.0, std::min(1.0, diagnostics.marker_time_ms /
+                                        accumulated_block_time_ms));
+    const double sampling_work_time_ms =
+        diagnostics.exact_sampling_time_ms + diagnostics.coarse_sampling_time_ms;
+    const double sampling_fraction =
+        std::max(0.0, std::min(1.0, sampling_work_time_ms /
+                                        accumulated_block_time_ms));
+    const double interpolation_fraction =
+        std::max(0.0, std::min(1.0, diagnostics.interpolation_time_ms /
+                                        accumulated_block_time_ms));
+    diagnostics.contact_band_marker_time_ms =
+        result.contact_band_core_build_time_ms * marker_fraction;
+    diagnostics.contact_band_sampling_time_ms =
+        result.contact_band_core_build_time_ms * sampling_fraction;
+    diagnostics.contact_band_interpolation_time_ms =
+        result.contact_band_core_build_time_ms * interpolation_fraction;
+  }
+  result.contact_band_wall_time_ms =
+      result.contact_band_core_build_time_ms +
+      diagnostics.contact_band_audit_time_ms;
+  result.contact_band_time_ms = result.contact_band_wall_time_ms;
+  diagnostics.total_time_ms = result.contact_band_wall_time_ms;
   adasdf::finalizeContactBandDiagnostics(&diagnostics);
   if (accumulated_block_time_ms > 0.0) {
     diagnostics.marker_time_fraction =
         diagnostics.marker_time_ms / accumulated_block_time_ms;
   }
-  adasdf::ContactBandQualityAudit::finalize(&quality, contact);
   result.diagnostics = diagnostics;
   result.quality = quality;
-  result.speedup =
-      result.contact_band_time_ms > 0.0
-          ? result.exact_reference_time_ms / result.contact_band_time_ms
+  result.speedup_end_to_end =
+      result.contact_band_wall_time_ms > 0.0
+          ? result.exact_reference_wall_time_ms / result.contact_band_wall_time_ms
           : 0.0;
-  result.effective_speedup_including_marker = result.speedup;
-  const double marker_fraction =
-      std::max(0.0, std::min(1.0, result.diagnostics.marker_time_fraction));
+  result.speedup = result.speedup_end_to_end;
+  result.speedup_core_build =
+      result.contact_band_core_build_time_ms > 0.0
+          ? result.exact_reference_core_build_time_ms /
+                result.contact_band_core_build_time_ms
+          : 0.0;
+  result.effective_speedup_including_marker = result.speedup_end_to_end;
+  result.speedup_excluding_audit =
+      result.contact_band_core_build_time_ms > 0.0
+          ? result.exact_reference_wall_time_ms /
+                result.contact_band_core_build_time_ms
+          : 0.0;
+  result.speedup_excluding_diagnostics = result.speedup_end_to_end;
   const double no_marker_time =
-      result.contact_band_time_ms * (1.0 - marker_fraction);
-  result.effective_speedup_excluding_marker =
+      result.contact_band_wall_time_ms -
+      result.diagnostics.contact_band_marker_time_ms;
+  result.speedup_excluding_marker =
       no_marker_time > 0.0
-          ? result.exact_reference_time_ms / no_marker_time
+          ? result.exact_reference_wall_time_ms / no_marker_time
           : 0.0;
+  result.effective_speedup_excluding_marker =
+      result.speedup_excluding_marker;
+  result.marker_time_fraction_of_wall =
+      result.contact_band_wall_time_ms > 0.0
+          ? result.diagnostics.contact_band_marker_time_ms /
+                result.contact_band_wall_time_ms
+          : 0.0;
+  result.audit_time_fraction_of_wall =
+      result.contact_band_wall_time_ms > 0.0
+          ? result.diagnostics.contact_band_audit_time_ms /
+                result.contact_band_wall_time_ms
+          : 0.0;
+  result.diagnostics_time_fraction_of_wall =
+      result.contact_band_wall_time_ms > 0.0
+          ? result.diagnostics.contact_band_diagnostics_time_ms /
+                result.contact_band_wall_time_ms
+          : 0.0;
+  result.diagnostics.marker_time_fraction_of_wall =
+      result.marker_time_fraction_of_wall;
+  result.diagnostics.audit_time_fraction_of_wall =
+      result.audit_time_fraction_of_wall;
+  result.diagnostics.diagnostics_time_fraction_of_wall =
+      result.diagnostics_time_fraction_of_wall;
+  result.performance_claim_allowed =
+      result.speedup_end_to_end > 1.0 &&
+      result.quality.contact_band_quality_passed &&
+      result.quality.coverage_passed &&
+      result.quality.contact_band_sign_mismatch_count == 0 &&
+      result.quality.near_surface_sign_mismatch_count == 0 &&
+      result.quality.normal_flip_count == 0 &&
+      result.quality.near_surface_normal_flip_count == 0;
   result.effective_speedup_claim_allowed =
-      result.speedup > 1.0 && result.quality.contact_band_quality_passed;
+      result.performance_claim_allowed;
   result.success = true;
   return result;
 }
