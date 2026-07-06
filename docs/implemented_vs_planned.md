@@ -43,6 +43,12 @@
 - Hierarchical adaptive block sampling for adaptive/compressed builders with
   near-surface exact default, guarded prediction, exact fallback, and
   `adasdf_benchmark_hierarchical_sampling`.
+- Contact-focused narrow-band SDF construction for collision-oriented use
+  cases with opt-in `--sampling contact-band`.
+- `ContactBandMarker`, `ContactBandBlockSampler`, contact-band phi/sign/normal
+  quality audit, coverage audit, marker cost audit, end-to-end timing fields,
+  `adasdf_benchmark_contact_band_sampling`, and
+  `adasdf_sweep_contact_band_sampling`.
 - Compression quality audit for dense adaptive vs compressed models.
 - CPU TriangleBVH acceleration for DenseSDF, AdaptiveBlockSDF, and
   CompressedAdaptiveBlockSDF builder sampling.
@@ -141,6 +147,9 @@
 - Hierarchical sampling: experimental speed/quality path. The exact path
   remains default, prediction is never accepted without a quality guard, and
   `.sdfbin` storage remains unchanged.
+- Contact-focused narrow-band sampling: alpha collision-oriented construction
+  path. It protects the contact band and relaxes far-field phi; it should not
+  be described as global full-field SDF reconstruction acceleration.
 
 ## Planned
 

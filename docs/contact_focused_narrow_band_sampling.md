@@ -1,11 +1,10 @@
 # Contact-Focused Narrow-Band SDF Sampling
 
-Local build id: `contact-focused-narrow-band-local`
+Release: `v1.16.0-alpha.3`
 
-This document describes a local experimental sampling path. It is not a
-public release note. The public AdaSDF-CL version remains `1.16.0-alpha.2`,
-and this path is enabled only when the user explicitly selects
-`--sampling contact-band`.
+This document describes the alpha contact-focused narrow-band sampling path.
+The path is enabled only when the user explicitly selects
+`--sampling contact-band`; the default builder path remains exact.
 
 ## Motivation
 
@@ -29,7 +28,7 @@ far-field interpolation.
 
 ## Components
 
-The local prototype adds these default-off components:
+The alpha.3 release adds these default-off components:
 
 - `ContactBandMarker`
 - `ContactBandSamplingPolicy`
@@ -38,9 +37,11 @@ The local prototype adds these default-off components:
 - `ContactBandDiagnostics`
 - `ContactBandReportWriter`
 - `adasdf_benchmark_contact_band_sampling`
+- `adasdf_sweep_contact_band_sampling`
 
 The implementation does not change the `.sdfbin` format and does not require
-CUDA, FCL, or the existing core.
+CUDA, FCL, or the existing core. It targets collision-oriented construction,
+not globally high-accuracy full-field SDF reconstruction.
 
 ## Marker
 
@@ -105,14 +106,25 @@ Builder CLIs now accept:
 --halo-exact-layers N
 --far-field-resolution N
 --far-field-mode coarse-interpolate|constant-sign|clamped-distance
+--contact-band-marker conservative-aabb|distance-aware|hybrid
+--marker-cell-size-factor value
+--marker-safety-factor value
+--marker-min-band value
+--marker-max-band value
+--disable-global-halo
+--local-halo-only
 --reuse-far-field-sign
 --no-reuse-far-field-sign
 --audit contact-band|global
+--normal-audit
 --contact-band-normal-audit
+--coverage-audit
+--coverage-samples-per-axis N
 --contact-band-normal-error-limit-deg value
 ```
 
-The default remains `--sampling exact`.
+The default remains `--sampling exact`. `--timing-mode` belongs to
+`adasdf_benchmark_contact_band_sampling`, not to builder CLIs.
 
 ## Benchmark Metrics
 

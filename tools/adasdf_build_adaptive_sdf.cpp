@@ -25,8 +25,14 @@ void usage() {
          "[--contact-band-width value] [--contact-band-layers N] "
          "[--halo-exact-layers N] [--far-field-resolution N] "
          "[--far-field-mode coarse-interpolate|constant-sign|clamped-distance] "
+         "[--contact-band-marker conservative-aabb|distance-aware|hybrid] "
+         "[--marker-cell-size-factor value] [--marker-safety-factor value] "
+         "[--marker-min-band value] [--marker-max-band value] "
+         "[--disable-global-halo] [--local-halo-only] "
          "[--reuse-far-field-sign] [--no-reuse-far-field-sign] "
-         "[--audit contact-band|global] [--contact-band-normal-audit] "
+         "[--audit contact-band|global] [--normal-audit] "
+         "[--contact-band-normal-audit] [--coverage-audit] "
+         "[--coverage-samples-per-axis N] "
          "[--contact-band-normal-error-limit-deg value] "
          "[--target-sampling-error 1e-3] "
          "[--target-compression-error 1e-3] [--max-rank N] "
@@ -250,6 +256,28 @@ int main(int argc, char** argv) {
           return 1;
         }
         options.contact_band_sampling.far_field_mode = mode;
+      } else if (arg == "--contact-band-marker" && hasValue(i, argc)) {
+        adasdf::ContactBandMarkerMode mode;
+        if (!adasdf::parseContactBandMarkerMode(argv[++i], &mode)) {
+          std::cerr << "Unknown contact-band marker: " << argv[i] << "\n";
+          return 1;
+        }
+        options.contact_band_sampling.marker_mode = mode;
+      } else if (arg == "--marker-cell-size-factor" && hasValue(i, argc)) {
+        options.contact_band_sampling.marker_cell_size_factor =
+            std::stod(argv[++i]);
+      } else if (arg == "--marker-safety-factor" && hasValue(i, argc)) {
+        options.contact_band_sampling.marker_safety_factor =
+            std::stod(argv[++i]);
+      } else if (arg == "--marker-min-band" && hasValue(i, argc)) {
+        options.contact_band_sampling.marker_min_band = std::stod(argv[++i]);
+      } else if (arg == "--marker-max-band" && hasValue(i, argc)) {
+        options.contact_band_sampling.marker_max_band = std::stod(argv[++i]);
+      } else if (arg == "--disable-global-halo") {
+        options.contact_band_sampling.disable_global_halo = true;
+      } else if (arg == "--local-halo-only") {
+        options.contact_band_sampling.local_halo_only = true;
+        options.contact_band_sampling.disable_global_halo = true;
       } else if (arg == "--reuse-far-field-sign") {
         options.contact_band_sampling.reuse_far_field_sign = true;
       } else if (arg == "--no-reuse-far-field-sign") {
@@ -266,8 +294,14 @@ int main(int argc, char** argv) {
           std::cerr << "Unknown audit mode: " << audit << "\n";
           return 1;
         }
-      } else if (arg == "--contact-band-normal-audit") {
+      } else if (arg == "--normal-audit" ||
+                 arg == "--contact-band-normal-audit") {
         options.contact_band_sampling.normal_audit = true;
+      } else if (arg == "--coverage-audit") {
+        options.contact_band_sampling.coverage_audit = true;
+      } else if (arg == "--coverage-samples-per-axis" && hasValue(i, argc)) {
+        options.contact_band_sampling.coverage_samples_per_axis =
+            std::stoi(argv[++i]);
       } else if (arg == "--contact-band-normal-error-limit-deg" &&
                  hasValue(i, argc)) {
         options.contact_band_sampling.contact_band_normal_error_limit_deg =

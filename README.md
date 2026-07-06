@@ -2,7 +2,7 @@
 
 Adaptive Signed Distance Field Collision Library
 
-Status: 1.16.0-alpha.2 / research preview
+Status: 1.16.0-alpha.3 / research preview
 Build system: CMake
 License: MIT
 Tests: CTest
@@ -11,12 +11,18 @@ AdaSDF-CL is an alpha collision and contact library built around signed distance
 
 AdaSDF-CL is an FCL-style SDF collision backend under development. It complements FCL by providing signed-distance queries, penetration depth, contact normals, batch query, expanded-SDF quality audit, CUDA query paths, and a first SDF-native multi-object CollisionWorld broadphase. It is not a drop-in FCL replacement.
 
-v1.16.0-alpha.2 is the recommended v1.16 tag. It adds hierarchical sampling
-diagnostics, exact BVH query counters, near-surface exact fast-path behavior,
-coarse sample reuse, far-field quality-check modes, and a parameter sweep
-benchmark. The quality gates still pass on the smoke fixtures, but the measured
-alpha.2 benchmarks remain below `speedup > 1`; do not present this release as a
-proven construction-speed acceleration release.
+v1.16.0-alpha.3 is the recommended v1.16 tag. It adds contact-focused
+narrow-band SDF construction for collision-oriented use cases. The path exact
+samples the contact band, interpolates relaxed far-field values, audits
+contact-band phi/sign/normal quality, reports end-to-end timing semantics, and
+gates performance claims on quality and coverage. It is not a global
+full-field SDF reconstruction acceleration claim.
+
+v1.16.0-alpha.2 is retained as the hierarchical sampling diagnostics and
+overhead-reduction tag. It added exact BVH query counters, near-surface exact
+fast-path behavior, coarse sample reuse, far-field quality-check modes, and a
+parameter sweep benchmark. The alpha.2 smoke benchmarks remained below
+`speedup > 1`.
 
 v1.16.0-alpha.1 is retained as a tag-alignment hotfix. It includes the final
 v1.16 documentation/report commits without moving the original
@@ -107,8 +113,8 @@ The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`, `v1.1.0-alpha`,
 `v1.8.1-alpha`, `v1.9.0-alpha`, `v1.10.0-alpha`, `v1.11.0-alpha`,
 `v1.12.0-alpha`, `v1.13.0-alpha`, `v1.13.0-alpha.1`,
 `v1.13.0-alpha.2`, `v1.14.0-alpha`, `v1.15.0-alpha`,
-`v1.16.0-alpha`, and `v1.16.0-alpha.1` tags are retained for traceability. The
-recommended public pre-release is `v1.16.0-alpha.2`.
+`v1.16.0-alpha`, `v1.16.0-alpha.1`, and `v1.16.0-alpha.2` tags are retained
+for traceability. The recommended public pre-release is `v1.16.0-alpha.3`.
 
 ## What Is AdaSDF-CL?
 
@@ -142,6 +148,7 @@ collision engine and does not yet replace FCL.
 | Compressed adaptive block SDF model | Implemented |
 | Compressed block `.sdfbin` read/write | Implemented |
 | Hierarchical adaptive sampling quality guard | Implemented / experimental |
+| Contact-focused narrow-band sampling | Alpha available / collision-oriented |
 | Surrogate-guided build recommendation | Implemented / experimental |
 | `adasdf_recommend_build` | Implemented |
 | Python CLI wrapper | Implemented |
@@ -214,6 +221,52 @@ Detailed capability references:
 - `docs/cuda_active_block_cache.md`
 - `docs/cuda_active_block_benchmarking.md`
 - `docs/runtime_memory_strategy.md`
+- `docs/contact_focused_narrow_band_sampling.md`
+- `docs/contact_band_timing_semantics.md`
+- `docs/contact_band_sampling_v1_16_alpha3_report.md`
+
+## Contact-Band Sampling Example
+
+Contact-focused narrow-band sampling is opt-in. The default adaptive and
+compressed builder paths remain exact. Use this mode only when the workflow is
+collision-oriented and the contact-band quality and coverage gates pass:
+
+```bash
+adasdf_build_adaptive_sdf model.stl model_contact_band.sdfbin \
+  --sampling contact-band \
+  --contact-band-width 5e-4 \
+  --contact-band-layers 1 \
+  --halo-exact-layers 1 \
+  --contact-band-marker distance-aware \
+  --marker-cell-size-factor 0.5 \
+  --marker-safety-factor 1.0 \
+  --local-halo-only \
+  --far-field-resolution 3 \
+  --far-field-mode coarse-interpolate \
+  --reuse-far-field-sign \
+  --audit contact-band \
+  --contact-band-normal-audit \
+  --report contact_band_build.md
+```
+
+For release-facing timing, use the benchmark CLI with end-to-end semantics:
+
+```bash
+adasdf_benchmark_contact_band_sampling model.stl \
+  --max-level 5 \
+  --block-resolution 8 \
+  --contact-band-marker distance-aware \
+  --timing-mode end-to-end \
+  --include-audit-in-wall-time \
+  --include-marker-in-speedup \
+  --normal-audit \
+  --coverage-audit \
+  --csv contact_band.csv \
+  --report contact_band.md
+```
+
+`speedup_end_to_end` is the public timing metric. Diagnostic-only fields such
+as `speedup_excluding_marker` must not be presented as end-to-end performance.
 
 ## Sparse SDF Collision And Contact Candidates
 

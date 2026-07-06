@@ -1,5 +1,40 @@
 # Changelog
 
+## 1.16.0-alpha.3
+
+Contact-focused narrow-band SDF construction for collision-oriented use cases.
+
+### Added
+
+- Contact-band SDF sampling mode.
+- Distance-aware and hybrid contact-band marker.
+- Contact-band exact sampling with far-field interpolation.
+- Contact-band quality audit for phi, sign and normal.
+- Coverage audit to detect missed contact-band points.
+- Marker cost audit and timing semantics.
+- End-to-end timing fields and performance claim gate.
+- Synthetic fixtures for thin gaps, robot-like links, dense curved meshes and
+  gear-like teeth.
+- `adasdf_benchmark_contact_band_sampling`.
+- `adasdf_sweep_contact_band_sampling`.
+- Python wrapper support for contact-band benchmark.
+
+### Improved
+
+- Reduces exact node sampling in collision-relevant construction paths.
+- Preserves contact-band phi/sign/normal quality on tested synthetic fixtures.
+- Distinguishes end-to-end speedup from diagnostic-only speedup.
+
+### Notes
+
+- The default builder path remains exact unless contact-band sampling is
+  explicitly requested.
+- Far-field phi is relaxed and should not be interpreted as globally
+  high-accuracy SDF reconstruction.
+- Speedup claims apply only to contact-focused, collision-oriented construction
+  cases where quality and coverage gates pass.
+- Old tags are preserved.
+
 ## 1.16.0-alpha.2
 
 Hierarchical sampling diagnostics and overhead reduction.

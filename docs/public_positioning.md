@@ -38,6 +38,10 @@ replacement.
 - Deterministic multi-threaded builder sampling.
 - Experimental hierarchical adaptive sampling with quality guard for adaptive
   and compressed SDF construction.
+- Alpha contact-focused narrow-band SDF construction for collision-oriented
+  use cases.
+- End-to-end contact-band benchmark speedup when contact-band quality and
+  coverage gates pass.
 - Adaptive builder preview for future Tucker/trained-surrogate/GPU compressed
   stages.
 
@@ -67,6 +71,10 @@ replacement.
 - GPU-native compressed direct query in v1.9.
 - CUDA active block cache in v1.10.
 - BVH acceleration as a GPU query backend.
+- Universal speedup for all STL models.
+- Global full-field SDF reconstruction acceleration from contact-band sampling.
+- Marker-excluded speedup as end-to-end performance.
+- Industrial certification from synthetic fixture benchmarks.
 
 ## Short Description
 
@@ -87,9 +95,13 @@ stabilization for external hard-contact simulation workflows. v1.14 adds
 CollisionWorld broadphase and multi-object sample-based SDF collision. v1.15
 adds strict JSON/CSV reproducibility reports for automation. v1.16 adds
 experimental hierarchical adaptive sampling with near-surface exact sampling,
-guarded transition/far-field prediction, and exact fallback. It does not
+guarded transition/far-field prediction, and exact fallback. v1.16.0-alpha.3
+adds contact-focused narrow-band construction for collision-oriented use cases,
+with contact-band exact sampling, relaxed far-field interpolation, quality and
+coverage gates, and end-to-end timing semantics. It does not
 fill holes, repair self-intersections, implement Tucker/HOSVD compression,
 claim a universal trained recommender, guarantee optimal parameters, claim
-GPU-native compressed query, provide GPU BVH, provide FCL fallback, provide
-exact mesh-vs-mesh world contact, provide a full contact solver, or provide a
-native pybind11 binding.
+GPU-native compressed query, provide GPU BVH, provide FCL fallback, claim
+global full-field SDF reconstruction acceleration from contact-band sampling,
+provide exact mesh-vs-mesh world contact, provide a full contact solver, or
+provide a native pybind11 binding.

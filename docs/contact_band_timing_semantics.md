@@ -1,8 +1,7 @@
 # Contact-Band Timing Semantics
 
-This document defines the local timing vocabulary for contact-focused
-narrow-band sampling. The public version string remains `1.16.0-alpha.2`; this
-is local release-prep documentation for a possible future `v1.16.0-alpha.3`.
+This document defines the timing vocabulary for the `v1.16.0-alpha.3`
+contact-focused narrow-band sampling release.
 
 ## Primary Rule
 

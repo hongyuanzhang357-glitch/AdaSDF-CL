@@ -58,6 +58,10 @@
 - v1.16 hierarchical adaptive block sampling with near-surface exact default,
   quality-guarded prediction, exact fallback, speed/quality benchmark CLI, and
   Python wrapper support.
+- v1.16.0-alpha.3 contact-focused narrow-band SDF construction with
+  contact-band exact sampling, relaxed far-field interpolation, quality and
+  coverage audit, timing semantics, benchmark/sweep CLIs, and Python benchmark
+  wrapper support.
 
 ## v1.16.0-alpha Scope
 
@@ -72,6 +76,21 @@
 - explicit boundary that exact sampling remains the default, predictions
   require quality guard plus exact fallback, and `.sdfbin` formats do not
   change.
+
+## v1.16.0-alpha.3 Scope
+
+- opt-in `--sampling contact-band` on adaptive and compressed builder CLIs;
+- distance-aware and hybrid contact-band marker modes;
+- contact-band exact sampling with relaxed far-field interpolation;
+- contact-band phi, sign, normal, and coverage audit;
+- marker cost audit and end-to-end timing semantics;
+- `adasdf_benchmark_contact_band_sampling`;
+- `adasdf_sweep_contact_band_sampling`;
+- project-generated synthetic fixtures for thin gaps, robot-like links, dense
+  curved meshes, and gear-like teeth;
+- Python wrapper support for `benchmark_contact_band_sampling`;
+- explicit boundary that this is collision-oriented SDF construction and not a
+  global full-field SDF reconstruction acceleration claim.
 
 ## v1.15.0-alpha Scope
 

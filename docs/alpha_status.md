@@ -1,6 +1,6 @@
 # Alpha Status
 
-AdaSDF-CL 1.16.0-alpha.2 is a research-preview release candidate.
+AdaSDF-CL 1.16.0-alpha.3 is a research-preview release candidate.
 
 The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`,
 `v1.1.0-alpha`, `v1.1.1-alpha`, `v1.2.0-alpha`, `v1.3.0-alpha`,
@@ -8,8 +8,9 @@ The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`,
 `v1.8.0-alpha`, `v1.8.1-alpha`, `v1.9.0-alpha`, `v1.10.0-alpha`,
 `v1.11.0-alpha`, `v1.12.0-alpha`, `v1.13.0-alpha`,
 `v1.13.0-alpha.1`, `v1.13.0-alpha.2`, `v1.14.0-alpha`,
-`v1.15.0-alpha`, `v1.16.0-alpha`, and `v1.16.0-alpha.1` tags are retained for
-traceability. The recommended public pre-release is `v1.16.0-alpha.2`.
+`v1.15.0-alpha`, `v1.16.0-alpha`, `v1.16.0-alpha.1`, and
+`v1.16.0-alpha.2` tags are retained for traceability. The recommended public
+pre-release is `v1.16.0-alpha.3`.
 
 ## What Works
 
@@ -73,6 +74,13 @@ traceability. The recommended public pre-release is `v1.16.0-alpha.2`.
 - Hierarchical sampling diagnostics, far-field quality-check modes,
   transition-specific quality-check sample counts, coarse sample reuse metrics,
   exact BVH query counters, and `adasdf_sweep_hierarchical_sampling`.
+- Contact-focused narrow-band SDF construction for collision-oriented use
+  cases through opt-in `--sampling contact-band`.
+- `adasdf_benchmark_contact_band_sampling` and
+  `adasdf_sweep_contact_band_sampling`.
+- Contact-band marker modes, exact contact-band sampling, relaxed far-field
+  interpolation, phi/sign/normal quality audit, coverage audit, marker cost
+  audit, end-to-end timing fields, and a performance claim gate.
 - `MeshFeatureExtractor`, `BuildSurrogateEstimator`, `SurrogateProfile`,
   `BuildRecommender`, and `BuildRecommendationWriter` for deterministic build
   recommendation.
@@ -264,15 +272,14 @@ run summary collection, Python wrapper support, and validation coverage. It
 does not change core collision algorithms.
 
 v1.16.0-alpha is a hierarchical adaptive sampling release. v1.16.0-alpha.1 is
-retained as a tag-alignment hotfix. v1.16.0-alpha.2 is the recommended v1.16
-tag because it adds diagnostics and reduces obvious hierarchical sampling
-overhead without moving older tags. The release keeps exact sampling as the
-default and adds opt-in `--sampling hierarchical` for adaptive and compressed
-builders. Near-surface blocks remain exact by default, predictions require a
-quality guard, rejected predictions fall back to exact sampling, and `.sdfbin`
-formats remain unchanged. Effective speedup claims require both `speedup > 1`
-and `quality_gate_passed=true`; the alpha.2 smoke benchmarks do not yet meet
-that claim boundary.
+retained as a tag-alignment hotfix. v1.16.0-alpha.2 adds diagnostics and
+reduces obvious hierarchical sampling overhead without moving older tags.
+v1.16.0-alpha.3 adds opt-in contact-focused narrow-band construction for
+collision-oriented use cases. The default builder path remains exact. The
+contact-band path exact-samples the contact band, interpolates relaxed
+far-field values, audits phi/sign/normal quality and coverage inside the
+contact band, and reports end-to-end timing semantics. It is not a global
+full-field SDF reconstruction acceleration claim.
 
 Benchmark `total_ms` is a full query timing. Benchmark `kernel_ms` is CUDA
 kernel event timing. Original UI warmed kernel-average numbers should be
@@ -294,14 +301,14 @@ analysis.
 - Target external collision test verdict for v0.9.0-alpha: PASS for the demo
   adaptive workflow.
 - Expected CUDA-unavailable behavior: GPU benchmark/tests SKIPPED, not FAILED.
-- Current v1.16.0-alpha.2 local CPU CTest target: 189 tests.
-- Current v1.16.0-alpha.2 CUDA validation is optional and should skip gracefully
+- Current v1.16.0-alpha.3 local CPU CTest target: 208 tests.
+- Current v1.16.0-alpha.3 CUDA validation is optional and should skip gracefully
   when CUDA is unavailable.
-- Current v1.16.0-alpha.2 Python wrapper unittest target: 54 tests with one
-  environment-gated smoke test skipped when real CLI env vars are absent.
-- Current v1.16.0-alpha.2 install validation target: PASS.
-- Current v1.16.0-alpha.2 alpha validation target: PASS.
-- Current v1.16.0-alpha.2 clean check target: PASS.
+- Current v1.16.0-alpha.3 Python wrapper unittest target: 57 tests with
+  environment-gated smoke paths controlled by real CLI env vars.
+- Current v1.16.0-alpha.3 install validation target: PASS.
+- Current v1.16.0-alpha.3 alpha validation target: PASS.
+- Current v1.16.0-alpha.3 clean check target: PASS.
 - Expected CI behavior: main/tag workflows should use the reused CI build tree
   for install validation and limit build parallelism. `v1.13.0-alpha` and
   `v1.13.0-alpha.1` remain unchanged.
