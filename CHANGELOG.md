@@ -1,5 +1,39 @@
 # Changelog
 
+## 1.17.0-alpha
+
+Persistent active block cache and fast block lookup.
+
+### Added
+
+- Block spatial key and Morton key utilities.
+- Hash-based block lookup index.
+- Morton-sorted block lookup reference path.
+- Active block hash map for block_id to cache slot lookup.
+- Active block spatial hash for point to active block lookup.
+- CacheSlotMap for unified active cache lookup.
+- Lookup statistics and mismatch checks for runtime queries.
+- `--lookup linear|hash|morton`, `--cache-lookup linear|hash|spatial-hash`,
+  `--allow-linear-fallback`, `--no-linear-fallback`, and
+  `--report-lookup-stats` on active block query and cache benchmark CLIs.
+- `adasdf_benchmark_block_lookup`.
+- Python wrapper support for active lookup options and block lookup
+  benchmarks.
+- Flat lookup metadata preparation for future GPU lookup.
+
+### Notes
+
+- Block-internal trilinear interpolation still uses direct regular-grid
+  indexing for the eight interpolation nodes.
+- Hash/spatial lookup is used for block and cache lookup, not for the eight
+  interpolation nodes.
+- Linear scan remains as a reference and optional fallback.
+- Fast lookup is intended to preserve query results; speedup claims require
+  zero lookup mismatch and bounded phi difference.
+- No `.sdfbin` format change is introduced.
+- GPU hash lookup is not implemented in this release; v1.17 prepares
+  CPU-built flat metadata for a future GPU path.
+
 ## 1.16.0-alpha.3
 
 Contact-focused narrow-band SDF construction for collision-oriented use cases.

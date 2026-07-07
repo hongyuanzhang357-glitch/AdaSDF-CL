@@ -6,6 +6,8 @@
 
 #include "adasdf/runtime/ActiveBlockSelector.h"
 #include "adasdf/runtime/BlockExpansionManager.h"
+#include "adasdf/lookup/ActiveBlockHashMap.h"
+#include "adasdf/lookup/BlockLookupIndex.h"
 #include "adasdf/sparse/SparseSDFQuery.h"
 
 namespace adasdf {
@@ -19,6 +21,10 @@ struct ActiveBlockQueryOptions {
   bool use_sample_radius = true;
   bool fallback_to_model_query = true;
   bool sort_results_by_effective_phi = false;
+  BlockLookupMode lookup_mode = BlockLookupMode::SpatialHash;
+  BlockLookupMode cache_lookup_mode = BlockLookupMode::SpatialHash;
+  bool allow_linear_fallback = true;
+  bool report_lookup_stats = false;
 };
 
 struct ActiveBlockQueryStats {
@@ -34,6 +40,8 @@ struct ActiveBlockQueryStats {
   double query_time_ms = 0.0;
   BlockExpansionStats expansion_stats;
   ExpandedBlockCacheStats cache_stats;
+  BlockLookupIndexStats lookup_stats;
+  ActiveBlockHashMapStats cache_lookup_stats;
 };
 
 struct ActiveBlockQueryResult {

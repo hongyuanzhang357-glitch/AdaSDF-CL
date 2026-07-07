@@ -48,3 +48,13 @@ reports `CUDA available: false` and returns `20`.
 
 The next optimization step is persistent GPU resident active-block reuse plus a
 deterministic active block index map for faster local lookup.
+
+## v1.17 Lookup Metadata
+
+v1.17.0-alpha adds a CPU-built flat lookup metadata export on
+`CudaActiveBlockCache`. The exported table contains keys, block ids, cache
+slots, and bounds. It is intended for future GPU-side binary search or flat
+lookup work.
+
+This is not a CUDA hash table. Active block selection and expansion still occur
+on CPU, and compressed SVD reconstruction is still not GPU-native.

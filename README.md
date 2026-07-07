@@ -2,7 +2,7 @@
 
 Adaptive Signed Distance Field Collision Library
 
-Status: 1.16.0-alpha.3 / research preview
+Status: 1.17.0-alpha / research preview
 Build system: CMake
 License: MIT
 Tests: CTest
@@ -11,7 +11,15 @@ AdaSDF-CL is an alpha collision and contact library built around signed distance
 
 AdaSDF-CL is an FCL-style SDF collision backend under development. It complements FCL by providing signed-distance queries, penetration depth, contact normals, batch query, expanded-SDF quality audit, CUDA query paths, and a first SDF-native multi-object CollisionWorld broadphase. It is not a drop-in FCL replacement.
 
-v1.16.0-alpha.3 is the recommended v1.16 tag. It adds contact-focused
+v1.17.0-alpha adds persistent active block lookup metadata and fast block/cache
+lookup paths for active block runtime queries. It introduces deterministic
+Morton/spatial keys, hash and sorted lookup indices, active block id-to-cache
+slot maps, lookup diagnostics, `adasdf_benchmark_block_lookup`, and Python
+wrapper support. Block-internal 8-node trilinear interpolation still uses
+direct regular-grid indexing; hash/spatial lookup is only for point-to-block,
+point-to-active-block, and block_id-to-cache-slot mapping.
+
+v1.16.0-alpha.3 is retained as the contact-focused narrow-band tag. It adds
 narrow-band SDF construction for collision-oriented use cases. The path exact
 samples the contact band, interpolates relaxed far-field values, audits
 contact-band phi/sign/normal quality, reports end-to-end timing semantics, and
@@ -113,8 +121,9 @@ The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`, `v1.1.0-alpha`,
 `v1.8.1-alpha`, `v1.9.0-alpha`, `v1.10.0-alpha`, `v1.11.0-alpha`,
 `v1.12.0-alpha`, `v1.13.0-alpha`, `v1.13.0-alpha.1`,
 `v1.13.0-alpha.2`, `v1.14.0-alpha`, `v1.15.0-alpha`,
-`v1.16.0-alpha`, `v1.16.0-alpha.1`, and `v1.16.0-alpha.2` tags are retained
-for traceability. The recommended public pre-release is `v1.16.0-alpha.3`.
+`v1.16.0-alpha`, `v1.16.0-alpha.1`, `v1.16.0-alpha.2`, and
+`v1.16.0-alpha.3` tags are retained for traceability. The recommended public
+pre-release is `v1.17.0-alpha`.
 
 ## What Is AdaSDF-CL?
 
@@ -149,6 +158,8 @@ collision engine and does not yet replace FCL.
 | Compressed block `.sdfbin` read/write | Implemented |
 | Hierarchical adaptive sampling quality guard | Implemented / experimental |
 | Contact-focused narrow-band sampling | Alpha available / collision-oriented |
+| Fast block lookup index | Alpha available |
+| Active block hash/spatial cache lookup | Alpha available |
 | Surrogate-guided build recommendation | Implemented / experimental |
 | `adasdf_recommend_build` | Implemented |
 | Python CLI wrapper | Implemented |
@@ -167,6 +178,7 @@ collision engine and does not yet replace FCL.
 | Sparse query benchmark | Implemented |
 | Contact-aware active block cache | Implemented |
 | Active block cache benchmark | Implemented |
+| Block lookup benchmark | Implemented |
 | CUDA active block cache | Implemented / experimental |
 | CUDA local active-block query | Implemented / experimental |
 | Native Python / pybind11 binding | Planned |
@@ -504,7 +516,7 @@ universal trained model, not fully trained, and not an optimality guarantee.
 ```bash
 git clone https://github.com/hongyuanzhang357-glitch/AdaSDF-CL.git
 cd AdaSDF-CL
-git checkout v1.16.0-alpha
+git checkout v1.17.0-alpha
 
 cmake -S . -B build -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD_TESTS=ON -DADASDF_CL_BUILD_BENCHMARKS=ON
 cmake --build build --config Release
@@ -917,7 +929,8 @@ See `docs/fcl_complement_strategy.md` and `docs/public_positioning.md`.
   standalone adaptive octree/block dense SDF building, and matrix-SVD low-rank
   adaptive block compression, pure-Python CLI wrappers, and sparse SDF
   collision/contact candidate APIs, plus CPU contact-aware active block
-  expansion/cache and CollisionWorld broadphase.
+  expansion/cache, fast block/cache lookup metadata, and CollisionWorld
+  broadphase.
 - Partial / experimental: demo surrogate, adaptive compressed builder preview,
   existing-core bridge, CUDA expanded query backend, block-expanded query,
   direct compressed sparse query for small point sets, and contact manifold

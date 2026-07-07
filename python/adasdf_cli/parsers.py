@@ -295,6 +295,37 @@ def parse_block_cache_benchmark_metrics(stdout: str) -> Dict[str, object]:
     return metrics
 
 
+def parse_block_lookup_benchmark_metrics(stdout: str) -> Dict[str, object]:
+    metrics: Dict[str, object] = {}
+    for label, key in (
+        ("Case id", "case_id"),
+        ("Linear query time ms", "linear_query_time_ms"),
+    ):
+        match = _search(rf"^{re.escape(label)}:\s*(.+)$", stdout)
+        if match:
+            metrics[key] = match.group(1).strip()
+    for line in (stdout or "").splitlines():
+        if line.startswith("case_id,model_type,sample_count,"):
+            metrics["csv_header"] = line
+        elif metrics.get("csv_header") and "csv_values" not in metrics:
+            metrics["csv_values"] = line
+            columns = metrics["csv_header"].split(",")
+            values = line.split(",")
+            for name in (
+                "speedup_vs_linear",
+                "lookup_result_mismatch_count",
+                "max_abs_phi_diff",
+                "cache_hit_rate",
+                "linear_fallback_count",
+                "performance_claim_allowed",
+            ):
+                if name in columns:
+                    index = columns.index(name)
+                    if index < len(values):
+                        metrics[name] = values[index]
+    return metrics
+
+
 def parse_cuda_block_cache_benchmark_metrics(stdout: str) -> Dict[str, object]:
     metrics: Dict[str, object] = {}
     for line in (stdout or "").splitlines():

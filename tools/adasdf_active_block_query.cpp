@@ -15,6 +15,10 @@ void usage() {
          "[--phi-only] [--with-normal] [--early-exit] [--no-radius] "
          "[--no-neighbors] [--no-fallback] [--colliding-only] [--sort] "
          "[--cache-max-blocks N] [--cache-max-mb value] "
+         "[--lookup linear|hash|morton] "
+         "[--cache-lookup linear|hash|spatial-hash] "
+         "[--allow-linear-fallback] [--no-linear-fallback] "
+         "[--report-lookup-stats] "
          "[--out results.csv] [--report report.md] [--json report.json]\n";
 }
 
@@ -90,6 +94,17 @@ int main(int argc, char** argv) {
       } else if (arg == "--cache-max-mb" && hasValue(i, argc)) {
         cache_options.max_memory_bytes = static_cast<std::size_t>(
             std::stod(argv[++i]) * 1024.0 * 1024.0);
+      } else if (arg == "--lookup" && hasValue(i, argc)) {
+        query_options.lookup_mode = adasdf::parseBlockLookupMode(argv[++i]);
+      } else if (arg == "--cache-lookup" && hasValue(i, argc)) {
+        query_options.cache_lookup_mode =
+            adasdf::parseBlockLookupMode(argv[++i]);
+      } else if (arg == "--allow-linear-fallback") {
+        query_options.allow_linear_fallback = true;
+      } else if (arg == "--no-linear-fallback") {
+        query_options.allow_linear_fallback = false;
+      } else if (arg == "--report-lookup-stats") {
+        query_options.report_lookup_stats = true;
       } else if (arg == "--out" && hasValue(i, argc)) {
         out_path = argv[++i];
       } else if (arg == "--report" && hasValue(i, argc)) {
@@ -139,6 +154,26 @@ int main(int argc, char** argv) {
     std::cout << "Resident blocks: " << result.stats.cache_stats.block_count << "\n";
     std::cout << "Resident memory bytes: "
               << result.stats.cache_stats.memory_bytes << "\n";
+    std::cout << "Lookup mode: "
+              << adasdf::toString(query_options.lookup_mode) << "\n";
+    std::cout << "Cache lookup mode: "
+              << adasdf::toString(query_options.cache_lookup_mode) << "\n";
+    if (query_options.report_lookup_stats) {
+      std::cout << "Lookup index build time ms: "
+                << result.stats.lookup_stats.build_time_ms << "\n";
+      std::cout << "Lookup query time ms: "
+                << result.stats.lookup_stats.query_time_ms << "\n";
+      std::cout << "Lookup fallback count: "
+                << result.stats.lookup_stats.linear_fallback_count << "\n";
+      std::cout << "Lookup missed count: "
+                << result.stats.lookup_stats.missed_lookup_count << "\n";
+      std::cout << "Cache lookup hit rate: "
+                << result.stats.cache_lookup_stats.hit_rate << "\n";
+      std::cout << "Cache lookup hits: "
+                << result.stats.cache_lookup_stats.hit_count << "\n";
+      std::cout << "Cache lookup misses: "
+                << result.stats.cache_lookup_stats.miss_count << "\n";
+    }
     std::cout << "Colliding: " << (result.colliding ? "true" : "false") << "\n";
     std::cout << "Min effective phi: " << result.stats.min_effective_phi << "\n";
     std::cout << "Query time ms: " << result.stats.query_time_ms << "\n";
@@ -155,7 +190,23 @@ int main(int argc, char** argv) {
     if (!report_path.empty() &&
         !writeText(
             report_path,
-            adasdf::ActiveBlockReportWriter::queryToMarkdown(result))) {
+            adasdf::ActiveBlockReportWriter::queryToMarkdown(result) +
+                (query_options.report_lookup_stats
+                     ? "\n## Lookup Stats\n\n- Lookup mode: " +
+                           std::string(adasdf::toString(
+                               query_options.lookup_mode)) +
+                           "\n- Cache lookup mode: " +
+                           std::string(adasdf::toString(
+                               query_options.cache_lookup_mode)) +
+                           "\n- Lookup fallbacks: " +
+                           std::to_string(
+                               result.stats.lookup_stats
+                                   .linear_fallback_count) +
+                           "\n- Cache hit rate: " +
+                           std::to_string(
+                               result.stats.cache_lookup_stats.hit_rate) +
+                           "\n"
+                     : ""))) {
       std::cerr << "adasdf_active_block_query: failed to write report\n";
       return 2;
     }

@@ -208,6 +208,14 @@ class BlockCacheBenchmarkResult:
 
 
 @dataclass
+class BlockLookupBenchmarkResult:
+    command_result: CommandResult
+    metrics: Dict[str, Any] = field(default_factory=dict)
+    report_path: Optional[Path] = None
+    csv_path: Optional[Path] = None
+
+
+@dataclass
 class CudaActiveBlockQueryResult:
     command_result: CommandResult
     cuda_available: Optional[bool] = None

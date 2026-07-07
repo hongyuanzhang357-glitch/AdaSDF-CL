@@ -515,6 +515,8 @@ def main() -> int:
     active_query_report = build.parent / "install_validation_active_block_query.md"
     block_cache_benchmark_csv = build.parent / "install_validation_block_cache_benchmark.csv"
     block_cache_benchmark_report = build.parent / "install_validation_block_cache_benchmark.md"
+    block_lookup_benchmark_csv = build.parent / "install_validation_block_lookup_benchmark.csv"
+    block_lookup_benchmark_report = build.parent / "install_validation_block_lookup_benchmark.md"
     cuda_active_query_csv = build.parent / "install_validation_cuda_active_block_query.csv"
     cuda_active_query_report = build.parent / "install_validation_cuda_active_block_query.md"
     cuda_block_cache_benchmark_csv = build.parent / "install_validation_cuda_block_cache_benchmark.csv"
@@ -576,6 +578,7 @@ def main() -> int:
         "adasdf_select_active_blocks",
         "adasdf_active_block_query",
         "adasdf_benchmark_block_cache",
+        "adasdf_benchmark_block_lookup",
         "adasdf_cuda_active_block_query",
         "adasdf_benchmark_cuda_block_cache",
         "adasdf_benchmark_hierarchical_sampling",
@@ -1110,6 +1113,26 @@ def main() -> int:
                 str(block_cache_benchmark_csv),
                 "--report",
                 str(block_cache_benchmark_report),
+            ],
+        ),
+        (
+            "Installed Block Lookup Benchmark CLI",
+            [
+                str(dense_tools["adasdf_benchmark_block_lookup"]),
+                str(compressed_direct_sdfbin),
+                str(sample_fixture),
+                "--lookup",
+                "linear,hash,morton",
+                "--cache-lookup",
+                "linear,hash,spatial-hash",
+                "--repeat",
+                "2",
+                "--csv",
+                str(block_lookup_benchmark_csv),
+                "--report",
+                str(block_lookup_benchmark_report),
+                "--case-id",
+                "install_block_lookup_benchmark",
             ],
         ),
         (
@@ -1725,6 +1748,22 @@ def main() -> int:
             ):
                 result.returncode = 1
                 result.output += "\nValidation failed: installed block cache benchmark output is incomplete.\n"
+        elif name == "Installed Block Lookup Benchmark CLI":
+            csv_text = (
+                block_lookup_benchmark_csv.read_text(encoding="utf-8", errors="replace")
+                if block_lookup_benchmark_csv.exists()
+                else ""
+            )
+            if (
+                not block_lookup_benchmark_csv.exists()
+                or not block_lookup_benchmark_report.exists()
+                or "Status: ok" not in result.output
+                or "speedup_vs_linear" not in csv_text.splitlines()[0]
+                or "lookup_result_mismatch_count" not in csv_text.splitlines()[0]
+                or "performance_claim_allowed" not in csv_text.splitlines()[0]
+            ):
+                result.returncode = 1
+                result.output += "\nValidation failed: installed block lookup benchmark output is incomplete.\n"
         elif name == "Installed CUDA Active Block Query CLI":
             csv_text = (
                 cuda_active_query_csv.read_text(encoding="utf-8", errors="replace")

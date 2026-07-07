@@ -80,6 +80,21 @@ std::vector<int> ExpandedBlockCache::residentBlockIds() const {
   return ids;
 }
 
+std::vector<ActiveExpandedBlock> ExpandedBlockCache::residentBlocks() const {
+  std::vector<ActiveExpandedBlock> blocks;
+  blocks.reserve(entries_.size());
+  for (const auto& item : entries_) {
+    blocks.push_back(item.second.block);
+  }
+  std::sort(
+      blocks.begin(),
+      blocks.end(),
+      [](const ActiveExpandedBlock& a, const ActiveExpandedBlock& b) {
+        return a.block_id < b.block_id;
+      });
+  return blocks;
+}
+
 ExpandedBlockCacheStats ExpandedBlockCache::stats() const {
   ExpandedBlockCacheStats copy = stats_;
   copy.block_count = entries_.size();

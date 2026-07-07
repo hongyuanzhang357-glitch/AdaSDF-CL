@@ -40,6 +40,7 @@ class ExpandedBlockCache {
   void put(ActiveExpandedBlock block);
   void clear();
   std::vector<int> residentBlockIds() const;
+  std::vector<ActiveExpandedBlock> residentBlocks() const;
   ExpandedBlockCacheStats stats() const;
 
  private:

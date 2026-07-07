@@ -42,6 +42,9 @@ replacement.
   use cases.
 - End-to-end contact-band benchmark speedup when contact-band quality and
   coverage gates pass.
+- Fast active block lookup and cache slot mapping for CPU active block runtime
+  queries.
+- Block lookup benchmark reporting speedup and consistency gates together.
 - Adaptive builder preview for future Tucker/trained-surrogate/GPU compressed
   stages.
 
@@ -74,6 +77,9 @@ replacement.
 - Universal speedup for all STL models.
 - Global full-field SDF reconstruction acceleration from contact-band sampling.
 - Marker-excluded speedup as end-to-end performance.
+- GPU hash table in v1.17.
+- Hashing the eight trilinear interpolation nodes.
+- Fast lookup speedup without mismatch and phi-difference checks.
 - Industrial certification from synthetic fixture benchmarks.
 
 ## Short Description
@@ -98,10 +104,13 @@ experimental hierarchical adaptive sampling with near-surface exact sampling,
 guarded transition/far-field prediction, and exact fallback. v1.16.0-alpha.3
 adds contact-focused narrow-band construction for collision-oriented use cases,
 with contact-band exact sampling, relaxed far-field interpolation, quality and
-coverage gates, and end-to-end timing semantics. It does not
+coverage gates, and end-to-end timing semantics. v1.17 adds fast active block
+lookup metadata and cache slot maps for CPU active block runtime queries while
+keeping block-internal trilinear interpolation as direct regular-grid indexing.
+It does not
 fill holes, repair self-intersections, implement Tucker/HOSVD compression,
 claim a universal trained recommender, guarantee optimal parameters, claim
 GPU-native compressed query, provide GPU BVH, provide FCL fallback, claim
 global full-field SDF reconstruction acceleration from contact-band sampling,
-provide exact mesh-vs-mesh world contact, provide a full contact solver, or
-provide a native pybind11 binding.
+provide exact mesh-vs-mesh world contact, implement a v1.17 GPU hash table,
+provide a full contact solver, or provide a native pybind11 binding.

@@ -163,6 +163,14 @@ set(ADASDF_CL_RUNTIME_SOURCES
   src/io/ExistingSDFBridge.cpp
   src/io/SDFBinReader.cpp
   src/io/SDFBinWriter.cpp
+  src/lookup/MortonKey.cpp
+  src/lookup/BlockSpatialKey.cpp
+  src/lookup/BlockLookupIndex.cpp
+  src/lookup/ActiveBlockHashMap.cpp
+  src/lookup/ActiveBlockSpatialHash.cpp
+  src/lookup/CacheSlotMap.cpp
+  src/lookup/BlockLookupDiagnostics.cpp
+  src/lookup/BlockLookupReportWriter.cpp
   src/query/CandidatePointSampler.cpp
   src/query/BatchQuery.cpp
   src/query/CollisionObject.cpp
@@ -653,6 +661,12 @@ if(ADASDF_CL_BUILD_BENCHMARKS)
   set_target_properties(adasdf_benchmark_block_cache PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
 
+  add_executable(adasdf_benchmark_block_lookup
+    tools/adasdf_benchmark_block_lookup.cpp)
+  target_link_libraries(adasdf_benchmark_block_lookup PRIVATE adasdf_cl_runtime)
+  set_target_properties(adasdf_benchmark_block_lookup PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
+
   add_executable(adasdf_benchmark_builder_acceleration
     tools/adasdf_benchmark_builder_acceleration.cpp)
   target_link_libraries(adasdf_benchmark_builder_acceleration PRIVATE adasdf_cl_runtime)
@@ -904,9 +918,17 @@ set(ADASDF_CL_TEST_SOURCES
   tests/test_block_expansion_manager.cpp
   tests/test_active_block_query.cpp
   tests/test_active_block_report_writer.cpp
+  tests/test_morton_key.cpp
+  tests/test_block_spatial_key.cpp
+  tests/test_block_lookup_index.cpp
+  tests/test_active_block_hash_map.cpp
+  tests/test_active_block_spatial_hash.cpp
+  tests/test_cache_slot_map.cpp
+  tests/test_active_block_query_hash_lookup.cpp
   tests/test_select_active_blocks_cli.cpp
   tests/test_active_block_query_cli.cpp
   tests/test_benchmark_block_cache_cli.cpp
+  tests/test_benchmark_block_lookup_cli.cpp
   tests/test_active_block_cache_vs_direct.cpp
   tests/test_cuda_active_block_buffer.cpp
   tests/test_cuda_active_block_cache.cpp
@@ -1161,6 +1183,16 @@ if(ADASDF_CL_BUILD_TESTS)
           ADASDF_CL_BENCHMARK_BLOCK_CACHE="$<TARGET_FILE_NAME:adasdf_benchmark_block_cache>")
       endif()
     endif()
+    if(test_name STREQUAL "test_benchmark_block_lookup_cli")
+      add_dependencies(${test_name} adasdf_build_compressed_sdf)
+      target_compile_definitions(${test_name} PRIVATE
+        ADASDF_CL_BUILD_COMPRESSED_SDF="$<TARGET_FILE_NAME:adasdf_build_compressed_sdf>")
+      if(TARGET adasdf_benchmark_block_lookup)
+        add_dependencies(${test_name} adasdf_benchmark_block_lookup)
+        target_compile_definitions(${test_name} PRIVATE
+          ADASDF_CL_BENCHMARK_BLOCK_LOOKUP="$<TARGET_FILE_NAME:adasdf_benchmark_block_lookup>")
+      endif()
+    endif()
     if(test_name STREQUAL "test_benchmark_builder_acceleration_cli")
       if(TARGET adasdf_benchmark_builder_acceleration)
         add_dependencies(${test_name} adasdf_benchmark_builder_acceleration)
@@ -1366,6 +1398,12 @@ if(ADASDF_CL_BUILD_TESTS)
           WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_benchmark_block_cache>")
       endif()
     endif()
+    if(test_name STREQUAL "test_benchmark_block_lookup_cli")
+      if(TARGET adasdf_benchmark_block_lookup)
+        set_tests_properties(${test_name} PROPERTIES
+          WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_benchmark_block_lookup>")
+      endif()
+    endif()
     if(test_name STREQUAL "test_benchmark_builder_acceleration_cli")
       if(TARGET adasdf_benchmark_builder_acceleration)
         set_tests_properties(${test_name} PROPERTIES
@@ -1466,6 +1504,7 @@ if(ADASDF_CL_BUILD_BENCHMARKS)
     adasdf_benchmark_batch_query
     adasdf_benchmark_sparse_query
     adasdf_benchmark_block_cache
+    adasdf_benchmark_block_lookup
     adasdf_benchmark_builder_acceleration
     adasdf_benchmark_contact_reduction
     adasdf_benchmark_collision_world

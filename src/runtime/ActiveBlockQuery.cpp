@@ -6,6 +6,8 @@
 #include <limits>
 #include <numeric>
 
+#include "adasdf/lookup/CacheSlotMap.h"
+
 namespace adasdf {
 namespace {
 
@@ -49,6 +51,15 @@ const ActiveExpandedBlock* findContainingExpandedBlock(
     }
   }
   return best;
+}
+
+const ActiveExpandedBlock* blockFromSlot(
+    int slot,
+    const std::vector<ActiveExpandedBlock>& resident_blocks) {
+  if (slot < 0 || static_cast<std::size_t>(slot) >= resident_blocks.size()) {
+    return nullptr;
+  }
+  return &resident_blocks[static_cast<std::size_t>(slot)];
 }
 
 void sortSamplesAndSources(ActiveBlockQueryResult& result) {
@@ -109,6 +120,20 @@ ActiveBlockQueryResult ActiveBlockQuery::query(
       options.compute_normals ||
       options.output_mode == SparseQueryOutputMode::PhiAndNormal;
   const std::vector<int> resident_ids = cache.residentBlockIds();
+  const bool use_fast_cache_lookup =
+      options.cache_lookup_mode != BlockLookupMode::LinearScan;
+  std::vector<ActiveExpandedBlock> resident_blocks;
+  CacheSlotMap cache_slot_map;
+  if (use_fast_cache_lookup) {
+    resident_blocks = cache.residentBlocks();
+    BlockLookupIndexOptions lookup_options;
+    lookup_options.mode = options.cache_lookup_mode;
+    if (lookup_options.mode == BlockLookupMode::MortonSorted) {
+      lookup_options.mode = BlockLookupMode::SpatialHash;
+    }
+    lookup_options.allow_linear_fallback = options.allow_linear_fallback;
+    cache_slot_map.rebuildFromActiveBlocks(resident_blocks, lookup_options);
+  }
   bool min_initialized = false;
   double min_phi = std::numeric_limits<double>::infinity();
   double min_effective_phi = std::numeric_limits<double>::infinity();
@@ -124,8 +149,14 @@ ActiveBlockQueryResult ActiveBlockQuery::query(
     item.group_id = sample.group_id;
     item.label = sample.label;
 
-    const ActiveExpandedBlock* block =
-        findContainingExpandedBlock(sample.position, cache, resident_ids);
+    const ActiveExpandedBlock* block = nullptr;
+    if (use_fast_cache_lookup) {
+      block = blockFromSlot(
+          cache_slot_map.pointToSlot(sample.position),
+          resident_blocks);
+    } else {
+      block = findContainingExpandedBlock(sample.position, cache, resident_ids);
+    }
     std::string source = "cache";
     if (block) {
       item.phi = block->sampleDistance(sample.position);
@@ -184,6 +215,10 @@ ActiveBlockQueryResult ActiveBlockQuery::query(
   }
   result.stats.result_count = result.samples.size();
   result.stats.cache_stats = cache.stats();
+  if (use_fast_cache_lookup) {
+    result.stats.lookup_stats = cache_slot_map.spatialStats();
+    result.stats.cache_lookup_stats = cache_slot_map.blockIdStats();
+  }
   result.stats.query_time_ms =
       std::chrono::duration<double, std::milli>(
           std::chrono::steady_clock::now() - start)

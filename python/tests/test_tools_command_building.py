@@ -176,16 +176,50 @@ class ToolCommandBuildingTests(unittest.TestCase):
         self.assertIn("--selection-band", stdout)
 
     def test_active_block_query_dry_run_command(self):
-        result = adasdf.active_block_query("model.sdfbin", "samples.csv", threshold=0.1, dry_run=True)
+        result = adasdf.active_block_query(
+            "model.sdfbin",
+            "samples.csv",
+            threshold=0.1,
+            lookup="hash",
+            cache_lookup="spatial-hash",
+            report_lookup_stats=True,
+            dry_run=True,
+        )
         stdout = result.command_result.stdout
         self.assertIn("adasdf_active_block_query", stdout)
         self.assertIn("--phi-only", stdout)
+        self.assertIn("--lookup", stdout)
+        self.assertIn("--cache-lookup", stdout)
+        self.assertIn("--report-lookup-stats", stdout)
 
     def test_block_cache_benchmark_dry_run_command(self):
-        result = adasdf.benchmark_block_cache("model.sdfbin", "samples.csv", repeat=2, dry_run=True)
+        result = adasdf.benchmark_block_cache(
+            "model.sdfbin",
+            "samples.csv",
+            repeat=2,
+            lookup="hash",
+            cache_lookup="spatial-hash",
+            dry_run=True,
+        )
         stdout = result.command_result.stdout
         self.assertIn("adasdf_benchmark_block_cache", stdout)
         self.assertIn("--repeat", stdout)
+        self.assertIn("--lookup", stdout)
+
+    def test_block_lookup_benchmark_dry_run_command(self):
+        result = adasdf.benchmark_block_lookup(
+            "model.sdfbin",
+            "samples.csv",
+            repeat=2,
+            lookup=["linear", "hash"],
+            cache_lookup=["linear", "spatial-hash"],
+            dry_run=True,
+        )
+        stdout = result.command_result.stdout
+        self.assertIn("adasdf_benchmark_block_lookup", stdout)
+        self.assertIn("--lookup", stdout)
+        self.assertIn("linear,hash", stdout)
+        self.assertIn("--cache-lookup", stdout)
 
     def test_cuda_active_block_query_dry_run_command(self):
         result = adasdf.cuda_active_block_query("model.sdfbin", "samples.csv", threshold=0.1, dry_run=True)

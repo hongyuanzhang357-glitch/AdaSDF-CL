@@ -62,6 +62,7 @@ python -m pip install -e python
 - `benchmark_builder_acceleration`
 - `benchmark_sparse_query`
 - `benchmark_block_cache`
+- `benchmark_block_lookup`
 - `benchmark_hierarchical_sampling`
 - `recommend_then_build_compressed`
 - `preprocess_and_build_compressed`
@@ -154,9 +155,23 @@ active = adasdf.active_block_query(
     "samples.csv",
     threshold=0.0,
     selection_band=1e-3,
+    lookup="hash",
+    cache_lookup="spatial-hash",
+    report_lookup_stats=True,
     out="active_query.csv",
 )
 print(active.colliding)
+
+lookup_bench = adasdf.benchmark_block_lookup(
+    "model_compressed.sdfbin",
+    "samples.csv",
+    lookup=["linear", "hash", "morton"],
+    cache_lookup=["linear", "hash", "spatial-hash"],
+    repeat=5,
+    csv="block_lookup.csv",
+    report="block_lookup.md",
+)
+print(lookup_bench.metrics.get("speedup_vs_linear"))
 ```
 
 `solver_contact_candidates()` and `stabilize_contacts()` export

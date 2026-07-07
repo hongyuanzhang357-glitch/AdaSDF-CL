@@ -95,6 +95,13 @@
   `adasdf_benchmark_block_cache`.
 - Python wrappers for active block selection, active block query, and block
   cache benchmarking.
+- `MortonKey`, `BlockSpatialKey`, `BlockLookupIndex`,
+  `ActiveBlockHashMap`, `ActiveBlockSpatialHash`, and `CacheSlotMap` for
+  deterministic fast block/cache lookup.
+- `adasdf_benchmark_block_lookup` with speedup, mismatch, phi-difference,
+  cache-hit, fallback, and performance-claim fields.
+- Python wrapper support for `benchmark_block_lookup` and active block lookup
+  options.
 - CUDA active block cache baseline over CPU-expanded active dense blocks.
 - `adasdf_cuda_active_block_query` and
   `adasdf_benchmark_cuda_block_cache`.
@@ -138,8 +145,9 @@
   and editable install, but no pip release is performed.
 - Direct compressed sparse query: useful for sparse queries, debugging,
   fallback, and small point sets, but not the main high-throughput GPU path.
-- Active block cache: implemented on CPU in v1.10 and as a CUDA upload/query
-  baseline in v1.11; persistent GPU residency reuse remains planned.
+- Active block cache: implemented on CPU in v1.10, as a CUDA upload/query
+  baseline in v1.11, and with CPU fast block/cache lookup metadata in v1.17;
+  persistent GPU residency reuse and a GPU-side hash table remain planned.
 - CUDA active block query: CPU still performs selection and expansion; CUDA
   performs local dense-grid interpolation over uploaded active blocks.
 - BVH builder acceleration: implemented on CPU for builder sampling only; no
@@ -154,7 +162,8 @@
 ## Planned
 
 - GPU BVH or other GPU-native builder acceleration.
-- Persistent CUDA active block residency reuse and faster active block lookup.
+- Persistent CUDA active block residency reuse and GPU-side active block
+  lookup.
 - Tucker/HOSVD compression.
 - Trained surrogate model integration.
 - Online recommendation calibration.

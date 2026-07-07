@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <vector>
 
+#include "adasdf/lookup/MortonKey.h"
 #include "adasdf/runtime/ExpandedBlockCache.h"
 #include "adasdf/runtime/cuda/CudaActiveBlockBuffer.h"
 
@@ -27,6 +28,13 @@ struct CudaActiveBlockCacheStats {
   std::vector<std::string> warnings;
 };
 
+struct FlatBlockLookupTable {
+  std::vector<std::uint64_t> keys;
+  std::vector<int> block_ids;
+  std::vector<int> cache_slots;
+  std::vector<AABB> bounds;
+};
+
 class CudaActiveBlockCache {
  public:
   explicit CudaActiveBlockCache(
@@ -44,6 +52,7 @@ class CudaActiveBlockCache {
       const std::vector<int>& active_block_ids);
 
   CudaActiveBlockCacheStats stats() const;
+  FlatBlockLookupTable flatLookupTable() const;
   void clear();
 
  private:

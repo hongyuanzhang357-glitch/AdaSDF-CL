@@ -119,6 +119,17 @@ contact_bench = adasdf.benchmark_contact_band_sampling(
     csv="contact_band.csv",
 )
 print(contact_bench.metrics.get("speedup_end_to_end"))
+
+lookup_bench = adasdf.benchmark_block_lookup(
+    "model_compressed.sdfbin",
+    "samples.csv",
+    lookup=["linear", "hash", "morton"],
+    cache_lookup=["linear", "hash", "spatial-hash"],
+    repeat=5,
+    csv="block_lookup.csv",
+    report="block_lookup.md",
+)
+print(lookup_bench.metrics.get("performance_claim_allowed"))
 ```
 
 ## Strict Reports
@@ -207,6 +218,7 @@ not as a process failure.
 - `benchmark_sparse_query`
 - `benchmark_contact_reduction`
 - `benchmark_contact_band_sampling`
+- `benchmark_block_lookup`
 - `benchmark_hierarchical_sampling`
 - `benchmark_exact_hotpath`
 - `sweep_hierarchical_sampling`

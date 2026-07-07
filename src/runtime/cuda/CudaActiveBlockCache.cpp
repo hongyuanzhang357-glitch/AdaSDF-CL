@@ -1,5 +1,6 @@
 #include "adasdf/runtime/cuda/CudaActiveBlockCache.h"
 
+#include <algorithm>
 #include <utility>
 
 namespace adasdf {
@@ -71,6 +72,26 @@ CudaActiveBlockCacheStats CudaActiveBlockCache::stats() const {
         "active blocks are reuploaded as a baseline path.");
   }
   return out;
+}
+
+FlatBlockLookupTable CudaActiveBlockCache::flatLookupTable() const {
+  FlatBlockLookupTable table;
+  const std::vector<ActiveExpandedBlock> blocks = cpu_cache_.residentBlocks();
+  table.keys.reserve(blocks.size());
+  table.block_ids.reserve(blocks.size());
+  table.cache_slots.reserve(blocks.size());
+  table.bounds.reserve(blocks.size());
+  for (std::size_t slot = 0; slot < blocks.size(); ++slot) {
+    const ActiveExpandedBlock& block = blocks[slot];
+    table.keys.push_back(MortonKey::encode3D(
+        static_cast<std::uint32_t>(std::max(0, block.block_id)),
+        static_cast<std::uint32_t>(std::max(0, block.level)),
+        0u));
+    table.block_ids.push_back(block.block_id);
+    table.cache_slots.push_back(static_cast<int>(slot));
+    table.bounds.push_back(block.bounds);
+  }
+  return table;
 }
 
 void CudaActiveBlockCache::clear() {

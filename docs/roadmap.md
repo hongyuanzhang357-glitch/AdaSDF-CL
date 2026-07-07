@@ -62,6 +62,30 @@
   contact-band exact sampling, relaxed far-field interpolation, quality and
   coverage audit, timing semantics, benchmark/sweep CLIs, and Python benchmark
   wrapper support.
+- v1.17 fast block/cache lookup for active block runtime queries, including
+  Morton/spatial keys, block lookup indices, active cache slot maps, lookup
+  benchmark CLI, Python wrapper support, and GPU-friendly flat metadata.
+
+## v1.17.0-alpha Scope
+
+- `include/adasdf/lookup` and `src/lookup` for Morton keys, block spatial keys,
+  block lookup indices, active block hash maps, active block spatial hashes,
+  cache slot maps, diagnostics, and report writing;
+- `--lookup linear|hash|morton` and
+  `--cache-lookup linear|hash|spatial-hash` on active block query and active
+  block cache benchmark tools;
+- `--allow-linear-fallback`, `--no-linear-fallback`, and
+  `--report-lookup-stats` for explicit fallback and diagnostics control;
+- `adasdf_benchmark_block_lookup` for timing, speedup, mismatch, phi-diff,
+  cache-hit, fallback, and performance-claim fields;
+- Python wrapper support for active lookup options and
+  `benchmark_block_lookup`;
+- CPU-built flat lookup metadata on the CUDA active block cache for future
+  GPU-side binary search or flat lookup;
+- explicit boundary that block-internal 8-node trilinear interpolation remains
+  direct regular-grid indexing, not hashed lookup;
+- explicit boundary that no `.sdfbin` format change and no GPU hash table are
+  introduced in this release.
 
 ## v1.16.0-alpha Scope
 
@@ -322,12 +346,15 @@ The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`,
 `v1.4.0-alpha`, `v1.5.0-alpha`, `v1.6.0-alpha`, `v1.7.0-alpha`,
 `v1.8.0-alpha`, `v1.8.1-alpha`, `v1.9.0-alpha`, `v1.10.0-alpha`,
 `v1.11.0-alpha`, `v1.12.0-alpha`, `v1.13.0-alpha`,
-`v1.13.0-alpha.1`, `v1.13.0-alpha.2`, and `v1.14.0-alpha` tags are retained
-for traceability. The recommended public pre-release is `v1.16.0-alpha`.
+`v1.13.0-alpha.1`, `v1.13.0-alpha.2`, `v1.14.0-alpha`,
+`v1.15.0-alpha`, `v1.16.0-alpha`, `v1.16.0-alpha.1`,
+`v1.16.0-alpha.2`, and `v1.16.0-alpha.3` tags are retained for
+traceability. The recommended public pre-release is `v1.17.0-alpha`.
 
 ## Future Work
 
-- Persistent CUDA active block residency reuse and faster active block lookup;
+- Persistent CUDA active block residency reuse and GPU-side active block
+  lookup;
 - Tucker/HOSVD compression;
 - trained surrogate model integration and online recommendation calibration;
 - optional hole-filling workflows with explicit user control;

@@ -5,7 +5,7 @@
 #endif
 
 #ifndef ADASDF_CL_VERSION_MINOR
-#define ADASDF_CL_VERSION_MINOR 16
+#define ADASDF_CL_VERSION_MINOR 17
 #endif
 
 #ifndef ADASDF_CL_VERSION_PATCH
@@ -13,7 +13,7 @@
 #endif
 
 #ifndef ADASDF_CL_VERSION_SUFFIX
-#define ADASDF_CL_VERSION_SUFFIX "alpha.3"
+#define ADASDF_CL_VERSION_SUFFIX "alpha"
 #endif
 
 namespace adasdf {
@@ -35,7 +35,7 @@ inline constexpr const char* versionSuffix() {
 }
 
 inline constexpr const char* versionString() {
-  return "1.16.0-alpha.3";
+  return "1.17.0-alpha";
 }
 
 }  // namespace adasdf

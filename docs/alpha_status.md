@@ -1,6 +1,6 @@
 # Alpha Status
 
-AdaSDF-CL 1.16.0-alpha.3 is a research-preview release candidate.
+AdaSDF-CL 1.17.0-alpha is a research-preview release candidate.
 
 The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`,
 `v1.1.0-alpha`, `v1.1.1-alpha`, `v1.2.0-alpha`, `v1.3.0-alpha`,
@@ -8,9 +8,9 @@ The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`,
 `v1.8.0-alpha`, `v1.8.1-alpha`, `v1.9.0-alpha`, `v1.10.0-alpha`,
 `v1.11.0-alpha`, `v1.12.0-alpha`, `v1.13.0-alpha`,
 `v1.13.0-alpha.1`, `v1.13.0-alpha.2`, `v1.14.0-alpha`,
-`v1.15.0-alpha`, `v1.16.0-alpha`, `v1.16.0-alpha.1`, and
-`v1.16.0-alpha.2` tags are retained for traceability. The recommended public
-pre-release is `v1.16.0-alpha.3`.
+`v1.15.0-alpha`, `v1.16.0-alpha`, `v1.16.0-alpha.1`,
+`v1.16.0-alpha.2`, and `v1.16.0-alpha.3` tags are retained for traceability.
+The recommended public pre-release is `v1.17.0-alpha`.
 
 ## What Works
 
@@ -135,6 +135,15 @@ pre-release is `v1.16.0-alpha.3`.
   `adasdf_benchmark_block_cache`.
 - Python wrapper helpers for active block selection, active block query, and
   block cache benchmarking.
+- `MortonKey`, `BlockSpatialKey`, `BlockLookupIndex`,
+  `ActiveBlockHashMap`, `ActiveBlockSpatialHash`, and `CacheSlotMap` for
+  deterministic fast block/cache lookup.
+- `adasdf_active_block_query` and `adasdf_benchmark_block_cache` support
+  `--lookup`, `--cache-lookup`, and linear fallback diagnostics.
+- `adasdf_benchmark_block_lookup` reports speedup, mismatch, phi-difference,
+  cache-hit, fallback, and performance-claim fields.
+- Python wrapper helpers expose active lookup options and
+  `benchmark_block_lookup`.
 - `CudaActiveBlockBuffer`, `CudaActiveBlockCache`, `CudaActiveBlockQuery`, and
   `CudaActiveBlockBenchmark` for optional CUDA local active-block query over
   CPU-expanded active dense blocks.
@@ -281,6 +290,14 @@ far-field values, audits phi/sign/normal quality and coverage inside the
 contact band, and reports end-to-end timing semantics. It is not a global
 full-field SDF reconstruction acceleration claim.
 
+v1.17.0-alpha is a fast active block lookup release. It keeps `.sdfbin` formats
+and block-internal interpolation unchanged. The block-internal eight-node
+trilinear interpolation path still uses direct regular-grid indexing. Hash,
+spatial, and Morton lookup are used only for query point to block, query point
+to active block, and block_id to cache slot mapping. Linear scan remains the
+reference path and optional fallback. GPU hash lookup is not implemented; the
+CUDA active block cache exports CPU-built flat metadata for future GPU lookup.
+
 Benchmark `total_ms` is a full query timing. Benchmark `kernel_ms` is CUDA
 kernel event timing. Original UI warmed kernel-average numbers should be
 compared to `--kernel-only --output phi --reuse-resident` rows.
@@ -292,8 +309,8 @@ analysis.
 
 ## Validation Snapshot
 
-- Expected tests: 189.
-- Python wrapper unittest: PASS target, 54 tests with real CLI smoke enabled through
+- Expected tests: 216.
+- Python wrapper unittest: PASS target, 60 tests with real CLI smoke enabled through
   `ADASDF_BIN`, `ADASDF_TEST_STL`, and `ADASDF_TEST_SAMPLES`.
 - Install validation: PASS with `ADASDF_CL_USE_EXISTING_CORE=OFF`.
 - Alpha validation: PASS.
@@ -301,14 +318,14 @@ analysis.
 - Target external collision test verdict for v0.9.0-alpha: PASS for the demo
   adaptive workflow.
 - Expected CUDA-unavailable behavior: GPU benchmark/tests SKIPPED, not FAILED.
-- Current v1.16.0-alpha.3 local CPU CTest target: 208 tests.
-- Current v1.16.0-alpha.3 CUDA validation is optional and should skip gracefully
+- Current v1.17.0-alpha local CPU CTest target: 216 tests.
+- Current v1.17.0-alpha CUDA validation is optional and should skip gracefully
   when CUDA is unavailable.
-- Current v1.16.0-alpha.3 Python wrapper unittest target: 57 tests with
+- Current v1.17.0-alpha Python wrapper unittest target: 60 tests with
   environment-gated smoke paths controlled by real CLI env vars.
-- Current v1.16.0-alpha.3 install validation target: PASS.
-- Current v1.16.0-alpha.3 alpha validation target: PASS.
-- Current v1.16.0-alpha.3 clean check target: PASS.
+- Current v1.17.0-alpha install validation target: PASS.
+- Current v1.17.0-alpha alpha validation target: PASS.
+- Current v1.17.0-alpha clean check target: PASS.
 - Expected CI behavior: main/tag workflows should use the reused CI build tree
   for install validation and limit build parallelism. `v1.13.0-alpha` and
   `v1.13.0-alpha.1` remain unchanged.

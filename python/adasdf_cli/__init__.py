@@ -9,6 +9,7 @@ from .results import (
     ActiveBlockSelectionResult,
     BenchmarkResult,
     BlockCacheBenchmarkResult,
+    BlockLookupBenchmarkResult,
     BuildResult,
     CollisionResult,
     CollisionWorldBenchmarkResult,
@@ -38,6 +39,7 @@ from .tools import (
     active_block_query,
     benchmark_batch_query,
     benchmark_block_cache,
+    benchmark_block_lookup,
     benchmark_builder_acceleration,
     benchmark_collision_world,
     benchmark_contact_band_sampling,
@@ -75,7 +77,7 @@ from .tools import (
 )
 from .workflows import preprocess_and_build_compressed, recommend_then_build_compressed
 
-__version__ = "1.16.0-alpha.3"
+__version__ = "1.17.0-alpha"
 
 __all__ = [
     "AdaSDFConfig",
@@ -87,6 +89,7 @@ __all__ = [
     "ActiveBlockSelectionResult",
     "BenchmarkResult",
     "BlockCacheBenchmarkResult",
+    "BlockLookupBenchmarkResult",
     "BuildResult",
     "CollisionResult",
     "CollisionWorldBenchmarkResult",
@@ -114,6 +117,7 @@ __all__ = [
     "active_block_query",
     "benchmark_batch_query",
     "benchmark_block_cache",
+    "benchmark_block_lookup",
     "benchmark_builder_acceleration",
     "benchmark_collision_world",
     "benchmark_contact_band_sampling",

@@ -10,6 +10,7 @@ from .parsers import (
     parse_benchmark_metrics,
     parse_build_acceleration_stats,
     parse_block_cache_benchmark_metrics,
+    parse_block_lookup_benchmark_metrics,
     parse_collision_world_benchmark_metrics,
     parse_collision_colliding,
     parse_contact_band_sampling_benchmark_metrics,
@@ -40,6 +41,7 @@ from .results import (
     ActiveBlockQueryResult,
     ActiveBlockSelectionResult,
     BlockCacheBenchmarkResult,
+    BlockLookupBenchmarkResult,
     BuildResult,
     CollisionResult,
     CollisionWorldBenchmarkResult,
@@ -1334,6 +1336,10 @@ def active_block_query(
     sort: bool = False,
     cache_max_blocks: Optional[int] = None,
     cache_max_mb: Optional[float] = None,
+    lookup: Optional[str] = None,
+    cache_lookup: Optional[str] = None,
+    allow_linear_fallback: bool = True,
+    report_lookup_stats: bool = False,
     out: Optional[PathLike] = None,
     report: Optional[PathLike] = None,
     json: Optional[PathLike] = None,
@@ -1354,6 +1360,10 @@ def active_block_query(
     _append_bool(command, "--sort", sort)
     _append_value(command, "--cache-max-blocks", cache_max_blocks)
     _append_value(command, "--cache-max-mb", cache_max_mb)
+    _append_value(command, "--lookup", lookup)
+    _append_value(command, "--cache-lookup", cache_lookup)
+    _append_bool(command, "--no-linear-fallback", not allow_linear_fallback)
+    _append_bool(command, "--report-lookup-stats", report_lookup_stats)
     _append_value(command, "--out", _path(out) if out is not None else None)
     _append_value(command, "--report", _path(report) if report is not None else None)
     _append_value(command, "--json", _path(json) if json is not None else None)
@@ -1390,6 +1400,10 @@ def benchmark_block_cache(
     include_neighbors: bool = True,
     cache_max_blocks: Optional[int] = None,
     cache_max_mb: Optional[float] = None,
+    lookup: Optional[str] = None,
+    cache_lookup: Optional[str] = None,
+    allow_linear_fallback: bool = True,
+    report_lookup_stats: bool = False,
     compare_direct: bool = False,
     report: Optional[PathLike] = None,
     json: Optional[PathLike] = None,
@@ -1409,6 +1423,10 @@ def benchmark_block_cache(
     _append_bool(command, "--no-neighbors", not include_neighbors)
     _append_value(command, "--cache-max-blocks", cache_max_blocks)
     _append_value(command, "--cache-max-mb", cache_max_mb)
+    _append_value(command, "--lookup", lookup)
+    _append_value(command, "--cache-lookup", cache_lookup)
+    _append_bool(command, "--no-linear-fallback", not allow_linear_fallback)
+    _append_bool(command, "--report-lookup-stats", report_lookup_stats)
     _append_bool(command, "--compare-direct", compare_direct)
     _append_value(command, "--report", _path(report) if report is not None else None)
     _append_value(command, "--json", _path(json) if json is not None else None)
@@ -1419,6 +1437,42 @@ def benchmark_block_cache(
         metrics=parse_block_cache_benchmark_metrics(result.stdout),
         report_path=Path(report) if report is not None else None,
         json_path=Path(json) if json is not None else None,
+        csv_path=Path(csv) if csv is not None else None,
+    )
+
+
+def benchmark_block_lookup(
+    model: PathLike,
+    samples_csv: PathLike,
+    *,
+    lookup: Union[str, Iterable[str]] = "linear,hash,morton",
+    cache_lookup: Union[str, Iterable[str]] = "linear,hash,spatial-hash",
+    repeat: int = 5,
+    report: Optional[PathLike] = None,
+    csv: Optional[PathLike] = None,
+    case_id: Optional[str] = None,
+    bin_dir: Optional[PathLike] = None,
+    check: bool = True,
+    dry_run: bool = False,
+) -> BlockLookupBenchmarkResult:
+    lookup_text = lookup if isinstance(lookup, str) else ",".join(lookup)
+    cache_lookup_text = (
+        cache_lookup
+        if isinstance(cache_lookup, str)
+        else ",".join(cache_lookup)
+    )
+    command = [_tool("adasdf_benchmark_block_lookup", bin_dir, dry_run), _path(model), _path(samples_csv)]
+    _append_value(command, "--lookup", lookup_text)
+    _append_value(command, "--cache-lookup", cache_lookup_text)
+    _append_value(command, "--repeat", repeat)
+    _append_value(command, "--report", _path(report) if report is not None else None)
+    _append_value(command, "--csv", _path(csv) if csv is not None else None)
+    _append_value(command, "--case-id", case_id)
+    result = _run(command, check=check, dry_run=dry_run)
+    return BlockLookupBenchmarkResult(
+        command_result=result,
+        metrics=parse_block_lookup_benchmark_metrics(result.stdout),
+        report_path=Path(report) if report is not None else None,
         csv_path=Path(csv) if csv is not None else None,
     )
 

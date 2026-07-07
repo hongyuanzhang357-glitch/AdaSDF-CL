@@ -28,6 +28,9 @@ struct Metrics {
   double direct_total_ms = 0.0;
   double direct_avg_ms = 0.0;
   double direct_ns_per_sample = 0.0;
+  double lookup_query_time_ms = 0.0;
+  std::size_t lookup_fallback_count = 0;
+  double cache_lookup_hit_rate = 0.0;
 };
 
 void usage() {
@@ -36,6 +39,10 @@ void usage() {
          "[--repeat N] [--warmup N] [--mode phi-only|phi-normal] "
          "[--threshold value] [--selection-band value] [--extra-margin value] "
          "[--no-radius] [--no-neighbors] [--cache-max-blocks N] "
+         "[--lookup linear|hash|morton] "
+         "[--cache-lookup linear|hash|spatial-hash] "
+         "[--allow-linear-fallback] [--no-linear-fallback] "
+         "[--report-lookup-stats] "
          "[--cache-max-mb value] [--compare-direct] "
          "[--csv benchmark.csv] [--report benchmark.md] [--json benchmark.json]\n";
 }
@@ -81,7 +88,8 @@ std::string metricsCSV(
       "sample_count,repeat,warmup,active_block_count,expanded_block_count,"
       "cache_memory_bytes,cache_hit_rate,fallback_query_count,"
       "active_block_avg_ms,active_block_ns_per_sample,direct_avg_ms,"
-      "direct_ns_per_sample,mode,threshold,selection_band,status\n" +
+      "direct_ns_per_sample,lookup_query_time_ms,lookup_fallback_count,"
+      "cache_lookup_hit_rate,mode,threshold,selection_band,status\n" +
       std::to_string(metrics.sample_count) + "," +
       std::to_string(repeat) + "," +
       std::to_string(warmup) + "," +
@@ -94,6 +102,9 @@ std::string metricsCSV(
       std::to_string(metrics.active_block_ns_per_sample) + "," +
       std::to_string(metrics.direct_avg_ms) + "," +
       std::to_string(metrics.direct_ns_per_sample) + "," +
+      std::to_string(metrics.lookup_query_time_ms) + "," +
+      std::to_string(metrics.lookup_fallback_count) + "," +
+      std::to_string(metrics.cache_lookup_hit_rate) + "," +
       toString(mode) + "," +
       std::to_string(threshold) + "," +
       std::to_string(selection_band) + ",ok\n";
@@ -151,6 +162,17 @@ int main(int argc, char** argv) {
       } else if (arg == "--cache-max-mb" && hasValue(i, argc)) {
         cache_options.max_memory_bytes = static_cast<std::size_t>(
             std::stod(argv[++i]) * 1024.0 * 1024.0);
+      } else if (arg == "--lookup" && hasValue(i, argc)) {
+        query_options.lookup_mode = adasdf::parseBlockLookupMode(argv[++i]);
+      } else if (arg == "--cache-lookup" && hasValue(i, argc)) {
+        query_options.cache_lookup_mode =
+            adasdf::parseBlockLookupMode(argv[++i]);
+      } else if (arg == "--allow-linear-fallback") {
+        query_options.allow_linear_fallback = true;
+      } else if (arg == "--no-linear-fallback") {
+        query_options.allow_linear_fallback = false;
+      } else if (arg == "--report-lookup-stats") {
+        query_options.report_lookup_stats = true;
       } else if (arg == "--compare-direct") {
         compare_direct = true;
       } else if (arg == "--csv" && hasValue(i, argc)) {
@@ -215,6 +237,10 @@ int main(int argc, char** argv) {
           result.stats.cache_stats.memory_bytes;
       metrics.cache_hit_rate = result.stats.cache_stats.hitRate();
       metrics.fallback_query_count += result.stats.fallback_query_count;
+      metrics.lookup_query_time_ms += result.stats.lookup_stats.query_time_ms;
+      metrics.lookup_fallback_count +=
+          result.stats.lookup_stats.linear_fallback_count;
+      metrics.cache_lookup_hit_rate = result.stats.cache_lookup_stats.hit_rate;
     };
 
     for (int i = 0; i < warmup; ++i) {
@@ -282,8 +308,20 @@ int main(int argc, char** argv) {
         selection_options.selection_band);
     std::cout << csv;
     std::cout << "Active block cache benchmark mode: " << toString(mode) << "\n";
+    std::cout << "Lookup mode: " << adasdf::toString(query_options.lookup_mode)
+              << "\n";
+    std::cout << "Cache lookup mode: "
+              << adasdf::toString(query_options.cache_lookup_mode) << "\n";
     std::cout << "Average ns per sample: "
               << metrics.active_block_ns_per_sample << "\n";
+    if (query_options.report_lookup_stats) {
+      std::cout << "Lookup query time ms: "
+                << metrics.lookup_query_time_ms << "\n";
+      std::cout << "Lookup fallback count: "
+                << metrics.lookup_fallback_count << "\n";
+      std::cout << "Cache lookup hit rate: "
+                << metrics.cache_lookup_hit_rate << "\n";
+    }
     std::cout << "Status: ok\n";
 
     if (!csv_path.empty() && !writeText(csv_path, csv)) {
@@ -304,7 +342,16 @@ int main(int argc, char** argv) {
           std::to_string(metrics.active_block_avg_ms) + "\n"
           "- Direct sparse average ms: " +
           std::to_string(metrics.direct_avg_ms) + "\n";
-      if (!writeText(report_path, md)) {
+      const std::string md_with_lookup =
+          md + "- Lookup mode: " +
+          std::string(adasdf::toString(query_options.lookup_mode)) + "\n" +
+          "- Cache lookup mode: " +
+          std::string(adasdf::toString(query_options.cache_lookup_mode)) +
+          "\n" + "- Lookup fallback count: " +
+          std::to_string(metrics.lookup_fallback_count) + "\n" +
+          "- Cache lookup hit rate: " +
+          std::to_string(metrics.cache_lookup_hit_rate) + "\n";
+      if (!writeText(report_path, md_with_lookup)) {
         std::cerr << "adasdf_benchmark_block_cache: failed to write report\n";
         return 2;
       }
