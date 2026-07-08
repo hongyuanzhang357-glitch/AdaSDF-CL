@@ -2,7 +2,7 @@
 
 Adaptive Signed Distance Field Collision Library
 
-Status: 1.17.0-alpha / research preview
+Status: 1.17.1-alpha / research preview
 Build system: CMake
 License: MIT
 Tests: CTest
@@ -11,7 +11,17 @@ AdaSDF-CL is an alpha collision and contact library built around signed distance
 
 AdaSDF-CL is an FCL-style SDF collision backend under development. It complements FCL by providing signed-distance queries, penetration depth, contact normals, batch query, expanded-SDF quality audit, CUDA query paths, and a first SDF-native multi-object CollisionWorld broadphase. It is not a drop-in FCL replacement.
 
-v1.17.0-alpha adds persistent active block lookup metadata and fast block/cache
+v1.17.1-alpha adds a stable dependency-free backend JSON contract for Studio
+and automation integrations. It introduces versioned schemas under `schemas/`,
+standard `status_code` / warning semantics, JSON export CLIs for model
+structure, block grids, and compression metadata, `--json --full` info output,
+collision and benchmark JSON contract output, and build profiling/progress/
+timeout flags for dense, adaptive, adaptive-compression, and compressed SDF
+build CLIs. It does not change SDF algorithms,
+GPU compressed query behavior, FCL-style APIs, or `.sdfbin` formats.
+
+v1.17.0-alpha is retained as the fast block lookup tag. It adds persistent
+active block lookup metadata and fast block/cache
 lookup paths for active block runtime queries. It introduces deterministic
 Morton/spatial keys, hash and sorted lookup indices, active block id-to-cache
 slot maps, lookup diagnostics, `adasdf_benchmark_block_lookup`, and Python
@@ -121,9 +131,9 @@ The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`, `v1.1.0-alpha`,
 `v1.8.1-alpha`, `v1.9.0-alpha`, `v1.10.0-alpha`, `v1.11.0-alpha`,
 `v1.12.0-alpha`, `v1.13.0-alpha`, `v1.13.0-alpha.1`,
 `v1.13.0-alpha.2`, `v1.14.0-alpha`, `v1.15.0-alpha`,
-`v1.16.0-alpha`, `v1.16.0-alpha.1`, `v1.16.0-alpha.2`, and
-`v1.16.0-alpha.3` tags are retained for traceability. The recommended public
-pre-release is `v1.17.0-alpha`.
+`v1.16.0-alpha`, `v1.16.0-alpha.1`, `v1.16.0-alpha.2`,
+`v1.16.0-alpha.3`, and `v1.17.0-alpha` tags are retained for traceability.
+The recommended public pre-release is `v1.17.1-alpha`.
 
 ## What Is AdaSDF-CL?
 
@@ -516,7 +526,7 @@ universal trained model, not fully trained, and not an optimality guarantee.
 ```bash
 git clone https://github.com/hongyuanzhang357-glitch/AdaSDF-CL.git
 cd AdaSDF-CL
-git checkout v1.17.0-alpha
+git checkout v1.17.1-alpha
 
 cmake -S . -B build -DADASDF_CL_BUILD_EXAMPLES=ON -DADASDF_CL_BUILD_TESTS=ON -DADASDF_CL_BUILD_BENCHMARKS=ON
 cmake --build build --config Release

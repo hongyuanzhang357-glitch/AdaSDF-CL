@@ -8,6 +8,7 @@ from typing import Iterable, List, Mapping, Optional, Sequence, Union
 from .config import AdaSDFConfig, find_tool, preview_tool
 from .parsers import (
     parse_benchmark_metrics,
+    parse_backend_json,
     parse_build_acceleration_stats,
     parse_block_cache_benchmark_metrics,
     parse_block_lookup_benchmark_metrics,
@@ -40,6 +41,7 @@ from .results import (
     BenchmarkResult,
     ActiveBlockQueryResult,
     ActiveBlockSelectionResult,
+    BackendJsonResult,
     BlockCacheBenchmarkResult,
     BlockLookupBenchmarkResult,
     BuildResult,
@@ -122,6 +124,33 @@ def _append_strict(
 ) -> None:
     _append_value(command, "--strict-json", _path(strict_json) if strict_json is not None else None)
     _append_value(command, "--case-id", case_id)
+
+
+def _append_json_option(command: List[str], value: Optional[Union[bool, PathLike]]) -> None:
+    if value is True:
+        command.append("--json")
+    elif value:
+        command.extend(["--json", _path(value)])
+
+
+def _append_profile_options(
+    command: List[str],
+    *,
+    profile: bool,
+    profile_json: Optional[PathLike],
+    progress: bool,
+    progress_json: Optional[PathLike],
+    max_seconds: Optional[float],
+    distance_backend: Optional[str],
+    threads: Optional[Union[int, str]],
+) -> None:
+    _append_bool(command, "--profile", profile)
+    _append_value(command, "--profile-json", _path(profile_json) if profile_json is not None else None)
+    _append_bool(command, "--progress", progress)
+    _append_value(command, "--progress-json", _path(progress_json) if progress_json is not None else None)
+    _append_value(command, "--max-seconds", max_seconds)
+    _append_value(command, "--distance-backend", distance_backend)
+    _append_value(command, "--threads", threads)
 
 
 def _append_signed(command: List[str], signed: bool, unsigned: bool) -> None:
@@ -248,7 +277,7 @@ def mesh_check(
     input_stl: PathLike,
     *,
     out: Optional[PathLike] = None,
-    json: Optional[PathLike] = None,
+    json: Optional[Union[bool, PathLike]] = None,
     strict_json: Optional[PathLike] = None,
     case_id: Optional[str] = None,
     readiness: bool = False,
@@ -262,7 +291,7 @@ def mesh_check(
 ) -> MeshCheckResult:
     command = [_tool("adasdf_mesh_check", bin_dir, dry_run), _path(input_stl)]
     _append_value(command, "--out", _path(out) if out is not None else None)
-    _append_value(command, "--json", _path(json) if json is not None else None)
+    _append_json_option(command, json)
     _append_strict(command, strict_json, case_id)
     _append_bool(command, "--readiness", readiness)
     _append_bool(command, "--strict", strict)
@@ -273,7 +302,7 @@ def mesh_check(
     return MeshCheckResult(
         command_result=result,
         report_path=Path(out) if out is not None else None,
-        json_path=Path(json) if json is not None else None,
+        json_path=Path(json) if json not in (None, True, False) else None,
     )
 
 
@@ -322,7 +351,7 @@ def recommend_build(
     prefer_fast_build: bool = False,
     profile: Optional[PathLike] = None,
     out: Optional[PathLike] = None,
-    json: Optional[PathLike] = None,
+    json: Optional[Union[bool, PathLike]] = None,
     emit_command: bool = True,
     bin_dir: Optional[PathLike] = None,
     check: bool = True,
@@ -339,7 +368,7 @@ def recommend_build(
     _append_bool(command, "--prefer-fast-build", prefer_fast_build)
     _append_value(command, "--profile", _path(profile) if profile is not None else None)
     _append_value(command, "--out", _path(out) if out is not None else None)
-    _append_value(command, "--json", _path(json) if json is not None else None)
+    _append_json_option(command, json)
     _append_bool(command, "--emit-command", emit_command)
     result = _run(command, check=check, dry_run=dry_run)
     return RecommendationResult(
@@ -361,7 +390,7 @@ def build_dense_sdf(
     unsigned: bool = False,
     auto_clean: bool = False,
     accel: Optional[str] = None,
-    threads: Optional[int] = None,
+    threads: Optional[Union[int, str]] = None,
     benchmark_brute_reference: bool = False,
     sampling: Optional[str] = None,
     coarse_resolution: Optional[int] = None,
@@ -372,8 +401,14 @@ def build_dense_sdf(
     quality_guard: Optional[bool] = None,
     target_sampling_error: Optional[float] = None,
     report: Optional[PathLike] = None,
-    json: Optional[PathLike] = None,
+    json: Optional[Union[bool, PathLike]] = None,
     strict_json: Optional[PathLike] = None,
+    profile: bool = False,
+    profile_json: Optional[PathLike] = None,
+    progress: bool = False,
+    progress_json: Optional[PathLike] = None,
+    max_seconds: Optional[float] = None,
+    distance_backend: Optional[str] = None,
     case_id: Optional[str] = None,
     bin_dir: Optional[PathLike] = None,
     check: bool = True,
@@ -385,7 +420,18 @@ def build_dense_sdf(
     _append_signed(command, signed, unsigned)
     _append_bool(command, "--auto-clean", auto_clean)
     _append_value(command, "--accel", accel)
-    _append_value(command, "--threads", threads)
+    if not (threads is not None and distance_backend is not None):
+        _append_value(command, "--threads", threads)
+    _append_profile_options(
+        command,
+        profile=profile,
+        profile_json=profile_json,
+        progress=progress,
+        progress_json=progress_json,
+        max_seconds=max_seconds,
+        distance_backend=distance_backend,
+        threads=threads if distance_backend is not None else None,
+    )
     _append_bool(command, "--benchmark-brute-reference", benchmark_brute_reference)
     _append_sampling_options(
         command,
@@ -399,10 +445,17 @@ def build_dense_sdf(
         target_sampling_error=target_sampling_error,
     )
     _append_value(command, "--report", _path(report) if report is not None else None)
-    _append_value(command, "--json", _path(json) if json is not None else None)
+    _append_json_option(command, json)
     _append_strict(command, strict_json, case_id)
     result = _run(command, check=check, dry_run=dry_run)
-    return BuildResult(result, Path(output_sdfbin), Path(report) if report is not None else None, Path(json) if json is not None else None)
+    return BuildResult(
+        result,
+        Path(output_sdfbin),
+        Path(report) if report is not None else None,
+        Path(json) if json is not None else None,
+        Path(profile_json) if profile_json is not None else None,
+        Path(progress_json) if progress_json is not None else None,
+    )
 
 
 def build_adaptive_sdf(
@@ -418,7 +471,7 @@ def build_adaptive_sdf(
     unsigned: bool = False,
     auto_clean: bool = False,
     accel: Optional[str] = None,
-    threads: Optional[int] = None,
+    threads: Optional[Union[int, str]] = None,
     benchmark_brute_reference: bool = False,
     sampling: Optional[str] = None,
     coarse_resolution: Optional[int] = None,
@@ -431,6 +484,12 @@ def build_adaptive_sdf(
     report: Optional[PathLike] = None,
     json: Optional[PathLike] = None,
     strict_json: Optional[PathLike] = None,
+    profile: bool = False,
+    profile_json: Optional[PathLike] = None,
+    progress: bool = False,
+    progress_json: Optional[PathLike] = None,
+    max_seconds: Optional[float] = None,
+    distance_backend: Optional[str] = None,
     case_id: Optional[str] = None,
     dry_run_builder: bool = False,
     bin_dir: Optional[PathLike] = None,
@@ -446,7 +505,18 @@ def build_adaptive_sdf(
     _append_signed(command, signed, unsigned)
     _append_bool(command, "--auto-clean", auto_clean)
     _append_value(command, "--accel", accel)
-    _append_value(command, "--threads", threads)
+    if not (threads is not None and distance_backend is not None):
+        _append_value(command, "--threads", threads)
+    _append_profile_options(
+        command,
+        profile=profile,
+        profile_json=profile_json,
+        progress=progress,
+        progress_json=progress_json,
+        max_seconds=max_seconds,
+        distance_backend=distance_backend,
+        threads=threads if distance_backend is not None else None,
+    )
     _append_bool(command, "--benchmark-brute-reference", benchmark_brute_reference)
     _append_sampling_options(
         command,
@@ -465,7 +535,14 @@ def build_adaptive_sdf(
     _append_bool(command, "--dry-run", dry_run_builder)
     result = _run(command, check=check, dry_run=dry_run)
     output_path = None if dry_run_builder else Path(output_sdfbin)
-    return BuildResult(result, output_path, Path(report) if report is not None else None, Path(json) if json is not None else None)
+    return BuildResult(
+        result,
+        output_path,
+        Path(report) if report is not None else None,
+        Path(json) if json is not None else None,
+        Path(profile_json) if profile_json is not None else None,
+        Path(progress_json) if progress_json is not None else None,
+    )
 
 
 def compress_adaptive_sdf(
@@ -479,6 +556,13 @@ def compress_adaptive_sdf(
     json: Optional[PathLike] = None,
     quality_report: Optional[PathLike] = None,
     strict_json: Optional[PathLike] = None,
+    profile: bool = False,
+    profile_json: Optional[PathLike] = None,
+    progress: bool = False,
+    progress_json: Optional[PathLike] = None,
+    max_seconds: Optional[float] = None,
+    distance_backend: Optional[str] = None,
+    threads: Optional[Union[int, str]] = None,
     case_id: Optional[str] = None,
     bin_dir: Optional[PathLike] = None,
     check: bool = True,
@@ -496,8 +580,25 @@ def compress_adaptive_sdf(
     _append_value(command, "--json", _path(json) if json is not None else None)
     _append_value(command, "--quality-report", _path(quality_report) if quality_report is not None else None)
     _append_strict(command, strict_json, case_id)
+    _append_profile_options(
+        command,
+        profile=profile,
+        profile_json=profile_json,
+        progress=progress,
+        progress_json=progress_json,
+        max_seconds=max_seconds,
+        distance_backend=distance_backend,
+        threads=threads,
+    )
     result = _run(command, check=check, dry_run=dry_run)
-    return BuildResult(result, Path(output_compressed_sdfbin), Path(report) if report is not None else None, Path(json) if json is not None else None)
+    return BuildResult(
+        result,
+        Path(output_compressed_sdfbin),
+        Path(report) if report is not None else None,
+        Path(json) if json is not None else None,
+        Path(profile_json) if profile_json is not None else None,
+        Path(progress_json) if progress_json is not None else None,
+    )
 
 
 def build_compressed_sdf(
@@ -515,7 +616,7 @@ def build_compressed_sdf(
     unsigned: bool = False,
     auto_clean: bool = False,
     accel: Optional[str] = None,
-    threads: Optional[int] = None,
+    threads: Optional[Union[int, str]] = None,
     benchmark_brute_reference: bool = False,
     sampling: Optional[str] = None,
     coarse_resolution: Optional[int] = None,
@@ -529,6 +630,12 @@ def build_compressed_sdf(
     compression_report: Optional[PathLike] = None,
     quality_report: Optional[PathLike] = None,
     strict_json: Optional[PathLike] = None,
+    profile: bool = False,
+    profile_json: Optional[PathLike] = None,
+    progress: bool = False,
+    progress_json: Optional[PathLike] = None,
+    max_seconds: Optional[float] = None,
+    distance_backend: Optional[str] = None,
     case_id: Optional[str] = None,
     bin_dir: Optional[PathLike] = None,
     check: bool = True,
@@ -543,7 +650,18 @@ def build_compressed_sdf(
     _append_signed(command, signed, unsigned)
     _append_bool(command, "--auto-clean", auto_clean)
     _append_value(command, "--accel", accel)
-    _append_value(command, "--threads", threads)
+    if not (threads is not None and distance_backend is not None):
+        _append_value(command, "--threads", threads)
+    _append_profile_options(
+        command,
+        profile=profile,
+        profile_json=profile_json,
+        progress=progress,
+        progress_json=progress_json,
+        max_seconds=max_seconds,
+        distance_backend=distance_backend,
+        threads=threads if distance_backend is not None else None,
+    )
     _append_bool(command, "--benchmark-brute-reference", benchmark_brute_reference)
     _append_sampling_options(
         command,
@@ -563,13 +681,76 @@ def build_compressed_sdf(
     _append_value(command, "--quality-report", _path(quality_report) if quality_report is not None else None)
     _append_strict(command, strict_json, case_id)
     result = _run(command, check=check, dry_run=dry_run)
-    return BuildResult(result, Path(output_sdfbin), Path(report) if report is not None else None)
+    return BuildResult(
+        result,
+        Path(output_sdfbin),
+        Path(report) if report is not None else None,
+        None,
+        Path(profile_json) if profile_json is not None else None,
+        Path(progress_json) if progress_json is not None else None,
+    )
 
 
-def info(sdfbin: PathLike, *, bin_dir: Optional[PathLike] = None, check: bool = True, dry_run: bool = False) -> InfoResult:
+def info(
+    sdfbin: PathLike,
+    *,
+    json: bool = False,
+    full: bool = False,
+    bin_dir: Optional[PathLike] = None,
+    check: bool = True,
+    dry_run: bool = False,
+) -> InfoResult:
     command = [_tool("adasdf_info", bin_dir, dry_run), _path(sdfbin)]
+    _append_bool(command, "--json", json)
+    _append_bool(command, "--full", full)
     result = _run(command, check=check, dry_run=dry_run)
-    return InfoResult(result, format=parse_info_format(result.stdout))
+    return InfoResult(
+        result,
+        format=parse_info_format(result.stdout),
+        json_data=parse_backend_json(result.stdout),
+    )
+
+
+def export_structure(
+    sdfbin: PathLike,
+    *,
+    json: bool = True,
+    bin_dir: Optional[PathLike] = None,
+    check: bool = True,
+    dry_run: bool = False,
+) -> BackendJsonResult:
+    command = [_tool("adasdf_export_structure", bin_dir, dry_run), _path(sdfbin)]
+    _append_bool(command, "--json", json)
+    result = _run(command, check=check, dry_run=dry_run)
+    return BackendJsonResult(result, json_data=parse_backend_json(result.stdout))
+
+
+def export_block_grid(
+    sdfbin: PathLike,
+    *,
+    json: bool = True,
+    bin_dir: Optional[PathLike] = None,
+    check: bool = True,
+    dry_run: bool = False,
+) -> BackendJsonResult:
+    command = [_tool("adasdf_export_block_grid", bin_dir, dry_run), _path(sdfbin)]
+    _append_bool(command, "--json", json)
+    result = _run(command, check=check, dry_run=dry_run)
+    return BackendJsonResult(result, json_data=parse_backend_json(result.stdout))
+
+
+def export_compression(
+    sdfbin: PathLike,
+    *,
+    json: bool = True,
+    bin_dir: Optional[PathLike] = None,
+    check: bool = True,
+    dry_run: bool = False,
+) -> BackendJsonResult:
+    command = [_tool("adasdf_export_compression", bin_dir, dry_run), _path(sdfbin)]
+    _append_bool(command, "--json", json)
+    result = _run(command, check=check, dry_run=dry_run)
+    return BackendJsonResult(result, json_data=parse_backend_json(result.stdout))
 
 
 def query(
@@ -612,6 +793,7 @@ def collide(
     backend: Optional[str] = None,
     expansion: Optional[str] = None,
     blocks: Optional[Union[str, Iterable[int]]] = None,
+    json: bool = False,
     bin_dir: Optional[PathLike] = None,
     check: bool = True,
     dry_run: bool = False,
@@ -623,12 +805,14 @@ def collide(
     if blocks is not None:
         block_text = blocks if isinstance(blocks, str) else ",".join(str(block) for block in blocks)
         _append_value(command, "--blocks", block_text)
+    _append_bool(command, "--json", json)
     result = _run(command, check=check, dry_run=dry_run)
+    json_data = parse_backend_json(result.stdout)
     return CollisionResult(
         result,
-        colliding=parse_collision_colliding(result.stdout),
-        contact_count=parse_contact_count(result.stdout),
-        minimum_distance=parse_minimum_distance(result.stdout),
+        colliding=(json_data.get("collided") if json_data else parse_collision_colliding(result.stdout)),
+        contact_count=(json_data.get("contact_count") if json_data else parse_contact_count(result.stdout)),
+        minimum_distance=(json_data.get("minimum_distance") if json_data else parse_minimum_distance(result.stdout)),
     )
 
 
@@ -840,6 +1024,7 @@ def benchmark_exact_hotpath(
     threads: Optional[int] = None,
     csv: Optional[PathLike] = None,
     report: Optional[PathLike] = None,
+    json: Optional[Union[bool, PathLike]] = None,
     case_id: Optional[str] = None,
     bin_dir: Optional[PathLike] = None,
     check: bool = True,
@@ -886,6 +1071,7 @@ def benchmark_contact_band_sampling(
     threads: Optional[int] = None,
     csv: Optional[PathLike] = None,
     report: Optional[PathLike] = None,
+    json: Optional[Union[bool, PathLike]] = None,
     case_id: Optional[str] = None,
     bin_dir: Optional[PathLike] = None,
     check: bool = True,
@@ -928,11 +1114,12 @@ def benchmark_contact_band_sampling(
     _append_value(command, "--threads", threads)
     _append_value(command, "--csv", _path(csv) if csv is not None else None)
     _append_value(command, "--report", _path(report) if report is not None else None)
+    _append_json_option(command, json)
     _append_value(command, "--case-id", case_id)
     result = _run(command, check=check, dry_run=dry_run)
     return ContactBandBenchmarkResult(
         command_result=result,
-        metrics=parse_contact_band_sampling_benchmark_metrics(result.stdout),
+        metrics=parse_backend_json(result.stdout) or parse_contact_band_sampling_benchmark_metrics(result.stdout),
         report_path=Path(report) if report is not None else None,
         csv_path=Path(csv) if csv is not None else None,
         marker_debug_csv_path=Path(save_marker_debug_csv) if save_marker_debug_csv is not None else None,
@@ -1252,7 +1439,7 @@ def benchmark_sparse_query(
     with_normal: bool = False,
     use_radius: bool = True,
     report: Optional[PathLike] = None,
-    json: Optional[PathLike] = None,
+    json: Optional[Union[bool, PathLike]] = None,
     csv: Optional[PathLike] = None,
     bin_dir: Optional[PathLike] = None,
     check: bool = True,
@@ -1268,14 +1455,14 @@ def benchmark_sparse_query(
     _append_bool(command, "--with-normal", with_normal)
     _append_bool(command, "--no-radius", not use_radius)
     _append_value(command, "--report", _path(report) if report is not None else None)
-    _append_value(command, "--json", _path(json) if json is not None else None)
+    _append_json_option(command, json)
     _append_value(command, "--csv", _path(csv) if csv is not None else None)
     result = _run(command, check=check, dry_run=dry_run)
     return SparseBenchmarkResult(
         command_result=result,
-        metrics=parse_sparse_benchmark_metrics(result.stdout),
+        metrics=parse_backend_json(result.stdout) or parse_sparse_benchmark_metrics(result.stdout),
         report_path=Path(report) if report is not None else None,
-        json_path=Path(json) if json is not None else None,
+        json_path=Path(json) if json not in (None, True, False) else None,
         csv_path=Path(csv) if csv is not None else None,
     )
 
@@ -1450,6 +1637,7 @@ def benchmark_block_lookup(
     repeat: int = 5,
     report: Optional[PathLike] = None,
     csv: Optional[PathLike] = None,
+    json: Optional[Union[bool, PathLike]] = None,
     case_id: Optional[str] = None,
     bin_dir: Optional[PathLike] = None,
     check: bool = True,
@@ -1467,11 +1655,12 @@ def benchmark_block_lookup(
     _append_value(command, "--repeat", repeat)
     _append_value(command, "--report", _path(report) if report is not None else None)
     _append_value(command, "--csv", _path(csv) if csv is not None else None)
+    _append_json_option(command, json)
     _append_value(command, "--case-id", case_id)
     result = _run(command, check=check, dry_run=dry_run)
     return BlockLookupBenchmarkResult(
         command_result=result,
-        metrics=parse_block_lookup_benchmark_metrics(result.stdout),
+        metrics=parse_backend_json(result.stdout) or parse_block_lookup_benchmark_metrics(result.stdout),
         report_path=Path(report) if report is not None else None,
         csv_path=Path(csv) if csv is not None else None,
     )

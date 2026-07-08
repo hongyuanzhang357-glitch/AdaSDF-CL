@@ -1,5 +1,7 @@
 #include <adasdf/adasdf.h>
 
+#include "BuildCliProfileHelpers.h"
+
 #include <exception>
 #include <filesystem>
 #include <iostream>
@@ -38,6 +40,10 @@ void usage() {
          "[--target-compression-error 1e-3] [--max-rank N] "
          "[--fixed-rank N] [--keep-near-surface-dense] "
          "[--strict-json report.json] [--case-id case_id] "
+         "[--profile] [--profile-json profile.json] "
+         "[--progress] [--progress-json progress.jsonl] "
+         "[--max-seconds value] "
+         "[--distance-backend brute_force|brute|bvh] [--threads auto|N] "
          "[--recommend] [--verbose]\n";
 }
 
@@ -81,7 +87,7 @@ bool parseAcceleration(
     const std::string& value,
     adasdf::AdaptiveBlockSDFBuildOptions* options) {
   adasdf::SDFSamplingAcceleration acceleration;
-  if (!adasdf::parseSDFSamplingAcceleration(value, &acceleration)) {
+  if (!adasdf_tools::parseAccelerationAlias(value, &acceleration)) {
     return false;
   }
   options->acceleration = acceleration;
@@ -145,6 +151,7 @@ int main(int argc, char** argv) {
     bool enable_low_rank = false;
     adasdf::AdaptiveBlockSDFBuildOptions options;
     adasdf::BlockLowRankCompressionOptions compression_options;
+    adasdf_tools::BuildCliRuntimeOptions runtime_options;
     const auto strict_timer = adasdf::startStrictRunTimer();
     std::map<std::string, std::string> strict_parameters =
         adasdf::commandLineParameters(argc, argv);
@@ -177,6 +184,18 @@ int main(int argc, char** argv) {
 
     for (int i = 1; i < argc; ++i) {
       const std::string arg = argv[i];
+      const auto common_result = adasdf_tools::parseBuildCliRuntimeOption(
+          arg,
+          &i,
+          argc,
+          argv,
+          &runtime_options);
+      if (common_result == adasdf_tools::CommonOptionParseResult::Error) {
+        return 1;
+      }
+      if (common_result == adasdf_tools::CommonOptionParseResult::Parsed) {
+        continue;
+      }
       if (arg == "--help" || arg == "-h") {
         usage();
         return 0;
@@ -207,13 +226,14 @@ int main(int argc, char** argv) {
         options.require_watertight_for_signed = false;
       } else if (arg == "--auto-clean") {
         options.auto_safe_cleanup = true;
-      } else if (arg == "--accel" && hasValue(i, argc)) {
+      } else if ((arg == "--accel" || arg == "--distance-backend") &&
+                 hasValue(i, argc)) {
         if (!parseAcceleration(argv[++i], &options)) {
           std::cerr << "Unknown acceleration mode: " << argv[i] << "\n";
           return 1;
         }
       } else if (arg == "--threads" && hasValue(i, argc)) {
-        options.threads = std::stoi(argv[++i]);
+        options.threads = adasdf_tools::parseThreadsAuto(argv[++i]);
       } else if (arg == "--benchmark-brute-reference") {
         options.benchmark_brute_reference = true;
       } else if (arg == "--sampling" && hasValue(i, argc)) {
@@ -353,15 +373,50 @@ int main(int argc, char** argv) {
       write_strict(false, "failed", "missing input or output path");
       return 1;
     }
+
+    const bool profile_requested =
+        adasdf_tools::profileRequested(runtime_options);
+    adasdf::BuildProfiler profiler(profile_requested);
+    profiler.setToolName("adasdf_build_adaptive_sdf");
+    profiler.setInputPath(input.string());
+    profiler.setOutputPath(output.string());
+    adasdf::ProgressReporter progress(
+        "adasdf_build_adaptive_sdf",
+        runtime_options.progress_stderr,
+        runtime_options.progress_json_path);
+    adasdf::TimeoutGuard timeout(runtime_options.max_seconds);
+    auto write_profile = [&]() {
+      adasdf_tools::writeBuildProfile(
+          "adasdf_build_adaptive_sdf",
+          runtime_options,
+          profiler);
+    };
+    auto timeout_exit = [&]() {
+      write_strict(false, "timeout", "maximum wall-clock time reached");
+      return adasdf_tools::timeoutExit(
+          "adasdf_build_adaptive_sdf",
+          runtime_options,
+          &profiler,
+          progress);
+    };
+    progress.emit("load_mesh", "validating input mesh path", 0, 1);
+    if (timeout.enabled() && runtime_options.max_seconds <= 0.01) {
+      return timeout_exit();
+    }
     if (!std::filesystem::exists(input)) {
       std::cerr << "adasdf_build_adaptive_sdf: input STL does not exist: "
                 << input.string() << "\n";
+      profiler.finishFailed(
+          adasdf::ErrorCode::IO_ERROR,
+          "input STL does not exist");
+      write_profile();
       write_strict(false, "failed", "input STL does not exist");
       return 1;
     }
 
     if (dry_run) {
       const adasdf::AdaptiveBlockSDFBuildReport report = dryRunReport(options);
+      adasdf_tools::fillAdaptiveProfile(&profiler, report);
       writeReports(report, report_path, json_path);
       std::cout << "AdaSDF-CL adaptive block SDF builder\n";
       std::cout << "Input: " << input.string() << "\n";
@@ -404,18 +459,32 @@ int main(int argc, char** argv) {
           "",
           {{"build_time_ms", report.build_time_ms},
            {"memory_bytes", static_cast<double>(report.memory_bytes)}});
+      progress.emit("complete", "adaptive SDF dry run complete", 1, 1);
+      profiler.finishCompleted();
+      write_profile();
       return 0;
     }
 
     adasdf::AdaptiveBlockSDFBuildReport report;
-    auto model = adasdf::AdaptiveBlockSDFBuilder::fromSTL(
-        input.string(),
-        options,
-        &report);
+    std::shared_ptr<adasdf::SDFModel> model;
+    {
+      adasdf::BuildProfileScope scope(
+          &profiler.timings.adaptive_refinement_time_ms);
+      progress.emit("adaptive_refinement", "building adaptive block SDF", 0, 1);
+      model = adasdf::AdaptiveBlockSDFBuilder::fromSTL(
+          input.string(),
+          options,
+          &report);
+    }
+    adasdf_tools::fillAdaptiveProfile(&profiler, report);
     writeReports(report, report_path, json_path);
     if (!model) {
       std::cerr << "adasdf_build_adaptive_sdf: build failed: "
                 << report.error_message << "\n";
+      profiler.finishFailed(
+          adasdf::ErrorCode::INVALID_MODEL,
+          report.error_message);
+      write_profile();
       write_strict(false, "failed", report.error_message);
       if (options.signed_distance && options.require_watertight_for_signed &&
           !report.watertight) {
@@ -426,6 +495,9 @@ int main(int argc, char** argv) {
       }
       return 3;
     }
+    if (timeout.expired()) {
+      return timeout_exit();
+    }
 
     adasdf::BlockLowRankCompressionReport compression_report;
     std::shared_ptr<adasdf::SDFModel> output_model = model;
@@ -435,17 +507,30 @@ int main(int argc, char** argv) {
       if (!adaptive) {
         std::cerr << "adasdf_build_adaptive_sdf: low-rank compression requires "
                      "an AdaptiveBlockSDFModel.\n";
+        profiler.finishFailed(
+            adasdf::ErrorCode::INTERNAL_ERROR,
+            "low-rank compression requires AdaptiveBlockSDFModel");
+        write_profile();
         write_strict(false, "failed", "low-rank compression requires AdaptiveBlockSDFModel");
         return 3;
       }
-      adasdf::CompressedAdaptiveBlockSDF compressed =
-          adasdf::BlockLowRankCompressor::compress(
-              adaptive->blockSet(),
-              compression_options,
-              &compression_report);
+      adasdf::CompressedAdaptiveBlockSDF compressed;
+      {
+        adasdf::BuildProfileScope scope(&profiler.timings.compression_time_ms);
+        progress.emit("compression", "compressing adaptive blocks", 0, 1);
+        compressed = adasdf::BlockLowRankCompressor::compress(
+            adaptive->blockSet(),
+            compression_options,
+            &compression_report);
+      }
+      adasdf_tools::fillCompressionProfile(&profiler, compression_report);
       if (!compression_report.success) {
         std::cerr << "adasdf_build_adaptive_sdf: low-rank compression failed: "
                   << compression_report.error_message << "\n";
+        profiler.finishFailed(
+            adasdf::ErrorCode::INTERNAL_ERROR,
+            compression_report.error_message);
+        write_profile();
         write_strict(false, "failed", compression_report.error_message);
         return 3;
       }
@@ -453,20 +538,36 @@ int main(int argc, char** argv) {
           std::make_shared<adasdf::CompressedAdaptiveBlockSDFModel>(
               std::move(compressed));
     }
+    if (timeout.expired()) {
+      return timeout_exit();
+    }
 
     try {
-      adasdf::SDFBinWriter::write(output.string(), *output_model);
-      auto reloaded = adasdf::SDFBinReader::read(output);
+      adasdf::BuildProfileScope scope(&profiler.timings.write_model_time_ms);
+      progress.emit("write_model", "writing adaptive SDF model", 0, 1);
+      std::filesystem::path temp_output = output;
+      temp_output += ".tmp";
+      adasdf::SDFBinWriter::write(temp_output.string(), *output_model);
+      auto reloaded = adasdf::SDFBinReader::read(temp_output);
       if (!reloaded || !reloaded->isValid() || !reloaded->queryBackendAvailable()) {
         throw std::runtime_error("reloaded SDF model is invalid");
       }
+      if (std::filesystem::exists(output)) {
+        std::filesystem::remove(output);
+      }
+      std::filesystem::rename(temp_output, output);
+      profiler.counters.output_bytes = std::filesystem::file_size(output);
     } catch (const std::exception& exc) {
       std::cerr
           << "adasdf_build_adaptive_sdf: write/reload validation failed: "
           << exc.what() << "\n";
+      profiler.finishFailed(adasdf::ErrorCode::IO_ERROR, exc.what());
+      write_profile();
       write_strict(false, "failed", exc.what());
       return 4;
     }
+    progress.emit("complete", "adaptive SDF build complete", 1, 1);
+    profiler.finishCompleted();
 
     std::cout << "AdaSDF-CL adaptive block SDF builder\n";
     std::cout << "Input: " << input.string() << "\n";
@@ -613,6 +714,7 @@ int main(int argc, char** argv) {
       strict_metrics["p95_error"] = compression_report.global_p95_abs_error;
     }
     write_strict(true, "ok", "", strict_metrics);
+    write_profile();
     return 0;
   } catch (const std::exception& exc) {
     std::cerr << "adasdf_build_adaptive_sdf failed: " << exc.what() << "\n";

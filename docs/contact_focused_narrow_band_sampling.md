@@ -2,6 +2,10 @@
 
 Release: `v1.16.0-alpha.3`
 
+v1.17.1-alpha keeps this sampling algorithm unchanged and adds JSON benchmark
+contract output plus build profile/progress reporting around the public build
+CLIs, including compressed SDF builder workflows.
+
 This document describes the alpha contact-focused narrow-band sampling path.
 The path is enabled only when the user explicitly selects
 `--sampling contact-band`; the default builder path remains exact.

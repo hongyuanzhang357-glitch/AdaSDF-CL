@@ -9,6 +9,8 @@
 #include <string>
 #include <vector>
 
+#include "ModelJsonHelpers.h"
+
 namespace {
 
 struct Options {
@@ -21,6 +23,7 @@ struct Options {
   bool signed_distance = true;
   std::filesystem::path csv;
   std::filesystem::path report;
+  std::filesystem::path json;
   std::filesystem::path marker_debug_csv;
   std::string case_id = "contact_band";
   bool marker_cost_audit = false;
@@ -66,7 +69,7 @@ void usage() {
          "[--include-marker-in-speedup] [--exclude-marker-from-speedup] "
          "[--normal-audit] [--normal-error-limit-deg value] "
          "[--threads N] [--csv out.csv] [--report out.md] "
-         "[--case-id id]\n";
+         "[--json [out.json]] [--case-id id]\n";
 }
 
 bool hasValue(int index, int argc) {
@@ -552,6 +555,12 @@ int main(int argc, char** argv) {
         options.csv = argv[++i];
       } else if (arg == "--report" && hasValue(i, argc)) {
         options.report = argv[++i];
+      } else if (arg == "--json") {
+        if (hasValue(i, argc) && std::string(argv[i + 1]).rfind("-", 0) != 0) {
+          options.json = argv[++i];
+        } else {
+          options.json = "-";
+        }
       } else if (arg == "--case-id" && hasValue(i, argc)) {
         options.case_id = argv[++i];
       } else if (!arg.empty() && arg[0] == '-') {
@@ -593,6 +602,74 @@ int main(int argc, char** argv) {
           << "adasdf_benchmark_contact_band_sampling: benchmark failed: "
           << result.error_message << "\n";
       return 3;
+    }
+
+    auto make_json = [&]() {
+      const double query_count =
+          static_cast<double>(result.diagnostics.distance_query_count +
+                              result.diagnostics.sign_query_count);
+      adasdf::BackendJsonContract contract = adasdf_tools::makeBaseContract(
+          adasdf::SchemaIds::Benchmark,
+          "adasdf_benchmark_contact_band_sampling");
+      contract.payload_fields.push_back(
+          {"sample_count",
+           adasdf::JsonContractWriter::integer(
+               result.diagnostics.total_node_count)});
+      contract.payload_fields.push_back(
+          {"query_count", adasdf::JsonContractWriter::number(query_count)});
+      contract.payload_fields.push_back(
+          {"time_ms",
+           adasdf::JsonContractWriter::number(
+               result.contact_band_wall_time_ms)});
+      contract.payload_fields.push_back(
+          {"ns_per_query",
+           adasdf::JsonContractWriter::number(
+               query_count > 0.0
+                   ? result.contact_band_wall_time_ms * 1.0e6 / query_count
+                   : 0.0)});
+      contract.payload_fields.push_back(
+          {"throughput",
+           adasdf::JsonContractWriter::number(
+               result.contact_band_wall_time_ms > 0.0
+                   ? query_count / (result.contact_band_wall_time_ms / 1000.0)
+                   : 0.0)});
+      contract.payload_fields.push_back(
+          {"backend", adasdf::JsonContractWriter::quote("cpu")});
+      contract.payload_fields.push_back(
+          {"model_type",
+           adasdf::JsonContractWriter::quote("mesh_contact_band")});
+      contract.payload_fields.push_back(
+          {"mode",
+           adasdf::JsonContractWriter::quote("contact_band_sampling")});
+      contract.payload_fields.push_back(
+          {"contact_band_blocks",
+           adasdf::JsonContractWriter::integer(
+               result.diagnostics.contact_band_block_count)});
+      contract.payload_fields.push_back(
+          {"block_count",
+           adasdf::JsonContractWriter::integer(
+               result.diagnostics.total_block_count)});
+      contract.payload_fields.push_back(
+          {"speedup",
+           adasdf::JsonContractWriter::number(result.speedup_end_to_end)});
+      return adasdf::JsonContractWriter::writeObject(contract);
+    };
+
+    if (options.json == "-") {
+      std::cout << make_json();
+      return 0;
+    }
+    if (!options.json.empty()) {
+      if (!options.json.parent_path().empty()) {
+        std::filesystem::create_directories(options.json.parent_path());
+      }
+      std::ofstream file(options.json);
+      if (!file) {
+        std::cerr
+            << "adasdf_benchmark_contact_band_sampling: failed to write JSON\n";
+        return 3;
+      }
+      file << make_json();
     }
 
     std::cout << "AdaSDF-CL contact-band sampling benchmark\n";

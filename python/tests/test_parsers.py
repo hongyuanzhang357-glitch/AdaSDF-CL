@@ -2,6 +2,7 @@ import unittest
 
 from adasdf_cli.parsers import (
     parse_benchmark_metrics,
+    parse_backend_json,
     parse_collision_colliding,
     parse_contact_count,
     parse_contact_reduction_benchmark_metrics,
@@ -67,6 +68,11 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(metrics["backend"], "cpu")
         self.assertEqual(metrics["status"], "ok")
         self.assertEqual(metrics["points"], "1000")
+
+    def test_parse_backend_json(self):
+        parsed = parse_backend_json('{"schema_id":"adasdf.benchmark.v1","success":true}')
+        self.assertEqual(parsed["schema_id"], "adasdf.benchmark.v1")
+        self.assertTrue(parsed["success"])
 
     def test_parse_sparse_fields(self):
         stdout = (

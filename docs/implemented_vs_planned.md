@@ -147,6 +147,8 @@
   fallback, and small point sets, but not the main high-throughput GPU path.
 - Active block cache: implemented on CPU in v1.10, as a CUDA upload/query
   baseline in v1.11, and with CPU fast block/cache lookup metadata in v1.17;
+  v1.17.1 adds stable backend JSON schemas and build profiling for automation
+  but does not change the GPU-native compressed-query plan;
   persistent GPU residency reuse and a GPU-side hash table remain planned.
 - CUDA active block query: CPU still performs selection and expansion; CUDA
   performs local dense-grid interpolation over uploaded active blocks.

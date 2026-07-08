@@ -5,8 +5,11 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
+#include <sstream>
 #include <utility>
 #include <vector>
+
+#include "ModelJsonHelpers.h"
 
 namespace {
 
@@ -21,7 +24,8 @@ void usage() {
       << "  --backend cpu|cuda      Query backend, default cpu\n"
       << "  --expansion none|global|block\n"
       << "  --blocks all|0,1,2      Block selection for block expansion\n"
-      << "  --no-contact            Only report collision state and distance\n";
+      << "  --no-contact            Only report collision state and distance\n"
+      << "  --json                  Emit stable adasdf.collide.v1 JSON\n";
 }
 
 bool hasValue(int index, int argc, int count = 1) {
@@ -112,6 +116,29 @@ adasdf::BlockSelection parseBlocks(const std::string& text) {
   return adasdf::BlockSelection::selected(std::move(ids));
 }
 
+std::string contactsJson(const adasdf::CollisionResult& result) {
+  std::ostringstream out;
+  out << "[";
+  const auto& contacts = result.contacts();
+  for (std::size_t i = 0; i < contacts.size(); ++i) {
+    const adasdf::Contact& contact = contacts[i];
+    if (i != 0) {
+      out << ",";
+    }
+    out << "{\"point\":" << adasdf::JsonContractWriter::vec3(contact.point)
+        << ",\"normal\":" << adasdf::JsonContractWriter::vec3(contact.normal)
+        << ",\"phi\":"
+        << adasdf::JsonContractWriter::number(contact.signed_distance)
+        << ",\"penetration_depth\":"
+        << adasdf::JsonContractWriter::number(contact.penetration_depth)
+        << ",\"object_id_a\":" << contact.object_id_a
+        << ",\"object_id_b\":" << contact.object_id_b
+        << ",\"block_id\":-1,\"source\":\"adasdf_collide\"}";
+  }
+  out << "]";
+  return out.str();
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -138,6 +165,7 @@ int main(int argc, char** argv) {
   request.backend = BackendType::CPU;
   request.query_mode = QueryMode::Balanced;
   bool expansion_set = false;
+  bool json = false;
 
   for (int i = 3; i < argc; ++i) {
     const std::string arg = argv[i];
@@ -160,6 +188,8 @@ int main(int argc, char** argv) {
     } else if (arg == "--no-contact") {
       request.enable_contact = false;
       request.max_contacts = 0;
+    } else if (arg == "--json") {
+      json = true;
     } else if (arg == "--help" || arg == "-h") {
       usage();
       return 0;
@@ -193,6 +223,37 @@ int main(int argc, char** argv) {
 
     CollisionResult result;
     const bool hit = collide(object_a, object_b, request, result);
+
+    if (json) {
+      BackendJsonContract contract = adasdf_tools::makeBaseContract(
+          SchemaIds::Collide,
+          "adasdf_collide");
+      contract.status_code = hit ? ErrorCode::OK : ErrorCode::NO_COLLISION;
+      contract.payload_fields.push_back(
+          {"mode", JsonContractWriter::quote("pair")});
+      contract.payload_fields.push_back(
+          {"collided", JsonContractWriter::boolean(hit)});
+      contract.payload_fields.push_back(
+          {"candidate_count",
+           JsonContractWriter::integer(result.numCandidatePoints())});
+      contract.payload_fields.push_back(
+          {"contact_count", JsonContractWriter::integer(result.contacts().size())});
+      contract.payload_fields.push_back(
+          {"contacts", contactsJson(result)});
+      contract.payload_fields.push_back(
+          {"minimum_distance",
+           JsonContractWriter::number(result.minimumDistance())});
+      contract.payload_fields.push_back(
+          {"backend", JsonContractWriter::quote(result.backendInfo())});
+      contract.payload_fields.push_back(
+          {"requested_query_backend",
+           JsonContractWriter::quote(toString(request.query_mode_config.backend))});
+      contract.payload_fields.push_back(
+          {"requested_expansion",
+           JsonContractWriter::quote(toString(request.query_mode_config.expansion))});
+      std::cout << JsonContractWriter::writeObject(contract);
+      return 0;
+    }
 
     std::cout << "AdaSDF-CL collision query\n";
     std::cout << "Model A: " << path_a.string() << "\n";

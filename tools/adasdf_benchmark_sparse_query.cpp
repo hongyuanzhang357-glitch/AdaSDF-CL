@@ -8,6 +8,8 @@
 #include <iostream>
 #include <string>
 
+#include "ModelJsonHelpers.h"
+
 namespace {
 
 enum class Mode {
@@ -24,7 +26,7 @@ void usage() {
          "[--repeat N] [--warmup N] "
          "[--mode phi-only|phi-normal|collision-only|clearance|candidates] "
          "[--threshold value] [--top-k N] [--early-exit] [--with-normal] "
-         "[--no-radius] [--report benchmark.md] [--json benchmark.json] "
+         "[--no-radius] [--report benchmark.md] [--json [benchmark.json]] "
          "[--csv benchmark.csv]\n";
 }
 
@@ -118,6 +120,7 @@ int main(int argc, char** argv) {
     std::filesystem::path report_path;
     std::filesystem::path json_path;
     std::filesystem::path csv_path;
+    bool json_stdout = false;
 
     for (int i = 3; i < argc; ++i) {
       const std::string arg = argv[i];
@@ -139,8 +142,12 @@ int main(int argc, char** argv) {
         use_radius = false;
       } else if (arg == "--report" && hasValue(i, argc)) {
         report_path = argv[++i];
-      } else if (arg == "--json" && hasValue(i, argc)) {
-        json_path = argv[++i];
+      } else if (arg == "--json") {
+        if (hasValue(i, argc) && std::string(argv[i + 1]).rfind("-", 0) != 0) {
+          json_path = argv[++i];
+        } else {
+          json_stdout = true;
+        }
       } else if (arg == "--csv" && hasValue(i, argc)) {
         csv_path = argv[++i];
       } else if (arg == "--help" || arg == "-h") {
@@ -246,27 +253,80 @@ int main(int argc, char** argv) {
       metrics.candidate_count /= static_cast<std::size_t>(repeat);
     }
 
-    std::cout << "sample_count,repeat,warmup,total_ms,avg_ms,avg_us,"
-                 "avg_ns_per_sample,queried_samples_avg,early_exit_rate,mode,"
-                 "with_normal,threshold,top_k,status\n";
-    std::cout << metrics.sample_count << ","
-              << metrics.repeat << ","
-              << metrics.warmup << ","
-              << metrics.total_ms << ","
-              << metrics.avg_ms << ","
-              << metrics.avg_us << ","
-              << metrics.avg_ns_per_sample << ","
-              << metrics.queried_samples_avg << ","
-              << metrics.early_exit_rate << ","
-              << toString(mode) << ","
-              << (with_normal || mode == Mode::PhiNormal ||
-                  mode == Mode::Candidates ? "true" : "false")
-              << ","
-              << threshold << ","
-              << top_k << ",ok\n";
-    std::cout << "Sparse benchmark mode: " << toString(mode) << "\n";
-    std::cout << "Average ns per sample: " << metrics.avg_ns_per_sample << "\n";
-    std::cout << "Status: ok\n";
+    if (json_stdout) {
+      adasdf::BackendJsonContract contract = adasdf_tools::makeBaseContract(
+          adasdf::SchemaIds::Benchmark,
+          "adasdf_benchmark_sparse_query");
+      contract.payload_fields.push_back(
+          {"sample_count",
+           adasdf::JsonContractWriter::integer(metrics.sample_count)});
+      contract.payload_fields.push_back(
+          {"query_count",
+           adasdf::JsonContractWriter::number(metrics.queried_samples_avg)});
+      contract.payload_fields.push_back(
+          {"time_ms", adasdf::JsonContractWriter::number(metrics.avg_ms)});
+      contract.payload_fields.push_back(
+          {"total_time_ms",
+           adasdf::JsonContractWriter::number(metrics.total_ms)});
+      contract.payload_fields.push_back(
+          {"ns_per_query",
+           adasdf::JsonContractWriter::number(metrics.avg_ns_per_sample)});
+      const double throughput = metrics.avg_ms > 0.0
+          ? metrics.queried_samples_avg / (metrics.avg_ms / 1000.0)
+          : 0.0;
+      contract.payload_fields.push_back(
+          {"throughput", adasdf::JsonContractWriter::number(throughput)});
+      contract.payload_fields.push_back(
+          {"backend", adasdf::JsonContractWriter::quote("cpu")});
+      contract.payload_fields.push_back(
+          {"model_type",
+           adasdf::JsonContractWriter::quote(adasdf_tools::modelType(*model))});
+      contract.payload_fields.push_back(
+          {"mode", adasdf::JsonContractWriter::quote(toString(mode))});
+      contract.payload_fields.push_back(
+          {"repeat", adasdf::JsonContractWriter::integerSigned(repeat)});
+      contract.payload_fields.push_back(
+          {"warmup", adasdf::JsonContractWriter::integerSigned(warmup)});
+      contract.payload_fields.push_back(
+          {"phi_stats",
+           "{\"threshold\":" + adasdf::JsonContractWriter::number(threshold) +
+               ",\"with_normal\":" +
+               adasdf::JsonContractWriter::boolean(
+                   with_normal || mode == Mode::PhiNormal ||
+                   mode == Mode::Candidates) +
+               "}"});
+      contract.payload_fields.push_back(
+          {"collision_stats",
+           "{\"early_exit_rate\":" +
+               adasdf::JsonContractWriter::number(metrics.early_exit_rate) +
+               ",\"candidate_count\":" +
+               adasdf::JsonContractWriter::integer(metrics.candidate_count) +
+               "}"});
+      std::cout << adasdf::JsonContractWriter::writeObject(contract);
+    } else {
+      std::cout << "sample_count,repeat,warmup,total_ms,avg_ms,avg_us,"
+                   "avg_ns_per_sample,queried_samples_avg,early_exit_rate,mode,"
+                   "with_normal,threshold,top_k,status\n";
+      std::cout << metrics.sample_count << ","
+                << metrics.repeat << ","
+                << metrics.warmup << ","
+                << metrics.total_ms << ","
+                << metrics.avg_ms << ","
+                << metrics.avg_us << ","
+                << metrics.avg_ns_per_sample << ","
+                << metrics.queried_samples_avg << ","
+                << metrics.early_exit_rate << ","
+                << toString(mode) << ","
+                << (with_normal || mode == Mode::PhiNormal ||
+                    mode == Mode::Candidates ? "true" : "false")
+                << ","
+                << threshold << ","
+                << top_k << ",ok\n";
+      std::cout << "Sparse benchmark mode: " << toString(mode) << "\n";
+      std::cout << "Average ns per sample: " << metrics.avg_ns_per_sample
+                << "\n";
+      std::cout << "Status: ok\n";
+    }
 
     const std::string csv =
         "sample_count,repeat,warmup,total_ms,avg_ms,avg_us,avg_ns_per_sample,"
@@ -304,15 +364,34 @@ int main(int argc, char** argv) {
       }
     }
     if (!json_path.empty()) {
+      adasdf::BackendJsonContract contract = adasdf_tools::makeBaseContract(
+          adasdf::SchemaIds::Benchmark,
+          "adasdf_benchmark_sparse_query");
+      contract.payload_fields.push_back(
+          {"sample_count",
+           adasdf::JsonContractWriter::integer(metrics.sample_count)});
+      contract.payload_fields.push_back(
+          {"query_count",
+           adasdf::JsonContractWriter::number(metrics.queried_samples_avg)});
+      contract.payload_fields.push_back(
+          {"time_ms", adasdf::JsonContractWriter::number(metrics.avg_ms)});
+      contract.payload_fields.push_back(
+          {"ns_per_query",
+           adasdf::JsonContractWriter::number(metrics.avg_ns_per_sample)});
+      const double throughput = metrics.avg_ms > 0.0
+          ? metrics.queried_samples_avg / (metrics.avg_ms / 1000.0)
+          : 0.0;
+      contract.payload_fields.push_back(
+          {"throughput", adasdf::JsonContractWriter::number(throughput)});
+      contract.payload_fields.push_back(
+          {"backend", adasdf::JsonContractWriter::quote("cpu")});
+      contract.payload_fields.push_back(
+          {"model_type",
+           adasdf::JsonContractWriter::quote(adasdf_tools::modelType(*model))});
+      contract.payload_fields.push_back(
+          {"mode", adasdf::JsonContractWriter::quote(toString(mode))});
       const std::string json =
-          "{\n"
-          "  \"sample_count\": " + std::to_string(metrics.sample_count) + ",\n"
-          "  \"repeat\": " + std::to_string(repeat) + ",\n"
-          "  \"warmup\": " + std::to_string(warmup) + ",\n"
-          "  \"avg_ns_per_sample\": " +
-          std::to_string(metrics.avg_ns_per_sample) + ",\n"
-          "  \"mode\": \"" + std::string(toString(mode)) + "\"\n"
-          "}\n";
+          adasdf::JsonContractWriter::writeObject(contract);
       if (!writeText(json_path, json)) {
         std::cerr << "adasdf_benchmark_sparse_query: failed to write JSON report\n";
         return 2;

@@ -13,6 +13,8 @@
 #include <string>
 #include <vector>
 
+#include "ModelJsonHelpers.h"
+
 namespace {
 
 struct BenchmarkRow {
@@ -50,6 +52,7 @@ void usage() {
          "[--lookup linear,hash,morton] "
          "[--cache-lookup linear,hash,spatial-hash] "
          "[--repeat N] [--csv benchmark.csv] [--report report.md] "
+         "[--json [benchmark.json]] "
          "[--case-id id]\n";
 }
 
@@ -271,7 +274,9 @@ int main(int argc, char** argv) {
     int repeat = 5;
     std::filesystem::path csv_path;
     std::filesystem::path report_path;
+    std::filesystem::path json_path;
     std::string case_id = "block_lookup";
+    bool json_stdout = false;
 
     for (int i = 3; i < argc; ++i) {
       const std::string arg = argv[i];
@@ -285,6 +290,12 @@ int main(int argc, char** argv) {
         csv_path = argv[++i];
       } else if (arg == "--report" && hasValue(i, argc)) {
         report_path = argv[++i];
+      } else if (arg == "--json") {
+        if (hasValue(i, argc) && std::string(argv[i + 1]).rfind("-", 0) != 0) {
+          json_path = argv[++i];
+        } else {
+          json_stdout = true;
+        }
       } else if (arg == "--case-id" && hasValue(i, argc)) {
         case_id = argv[++i];
       } else if (arg == "--help" || arg == "-h") {
@@ -431,11 +442,56 @@ int main(int argc, char** argv) {
       }
     }
 
-    std::cout << csv;
-    std::cout << "Block lookup benchmark\n";
-    std::cout << "Case id: " << case_id << "\n";
-    std::cout << "Linear query time ms: " << linear_ms << "\n";
-    std::cout << "Status: ok\n";
+    auto make_json = [&]() {
+      const double query_count =
+          static_cast<double>(samples.sample_set.size()) *
+          static_cast<double>(repeat);
+      adasdf::BackendJsonContract contract = adasdf_tools::makeBaseContract(
+          adasdf::SchemaIds::Benchmark,
+          "adasdf_benchmark_block_lookup");
+      contract.payload_fields.push_back(
+          {"sample_count",
+           adasdf::JsonContractWriter::integer(samples.sample_set.size())});
+      contract.payload_fields.push_back(
+          {"query_count", adasdf::JsonContractWriter::number(query_count)});
+      contract.payload_fields.push_back(
+          {"time_ms", adasdf::JsonContractWriter::number(linear_ms)});
+      contract.payload_fields.push_back(
+          {"ns_per_query",
+           adasdf::JsonContractWriter::number(
+               query_count > 0.0 ? linear_ms * 1.0e6 / query_count : 0.0)});
+      contract.payload_fields.push_back(
+          {"throughput",
+           adasdf::JsonContractWriter::number(
+               linear_ms > 0.0 ? query_count / (linear_ms / 1000.0) : 0.0)});
+      contract.payload_fields.push_back(
+          {"backend", adasdf::JsonContractWriter::quote("cpu")});
+      contract.payload_fields.push_back(
+          {"model_type",
+           adasdf::JsonContractWriter::quote(adasdf_tools::modelType(*model))});
+      contract.payload_fields.push_back(
+          {"mode", adasdf::JsonContractWriter::quote("block_lookup")});
+      contract.payload_fields.push_back(
+          {"lookup_modes",
+           adasdf::JsonContractWriter::stringArray(lookup_modes)});
+      contract.payload_fields.push_back(
+          {"cache_lookup_modes",
+           adasdf::JsonContractWriter::stringArray(cache_lookup_modes)});
+      contract.payload_fields.push_back(
+          {"block_count",
+           adasdf::JsonContractWriter::integer(lookup_blocks.size())});
+      return adasdf::JsonContractWriter::writeObject(contract);
+    };
+
+    if (json_stdout) {
+      std::cout << make_json();
+    } else {
+      std::cout << csv;
+      std::cout << "Block lookup benchmark\n";
+      std::cout << "Case id: " << case_id << "\n";
+      std::cout << "Linear query time ms: " << linear_ms << "\n";
+      std::cout << "Status: ok\n";
+    }
 
     if (!csv_path.empty() && !writeText(csv_path, csv)) {
       std::cerr << "adasdf_benchmark_block_lookup: failed to write CSV\n";
@@ -443,6 +499,10 @@ int main(int argc, char** argv) {
     }
     if (!report_path.empty() && !writeText(report_path, report.str())) {
       std::cerr << "adasdf_benchmark_block_lookup: failed to write report\n";
+      return 2;
+    }
+    if (!json_path.empty() && !writeText(json_path, make_json())) {
+      std::cerr << "adasdf_benchmark_block_lookup: failed to write JSON\n";
       return 2;
     }
     return 0;

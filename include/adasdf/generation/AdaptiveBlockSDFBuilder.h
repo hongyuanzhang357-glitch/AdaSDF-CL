@@ -35,7 +35,7 @@ struct AdaptiveBlockSDFBuildOptions {
   double vertex_merge_tolerance = 1e-12;
   double degenerate_area_epsilon = 1e-14;
 
-  SDFSamplingAcceleration acceleration = SDFSamplingAcceleration::BruteForce;
+  SDFSamplingAcceleration acceleration = SDFSamplingAcceleration::BVH;
   int threads = 1;
   bool benchmark_brute_reference = false;
 

@@ -29,6 +29,8 @@ class BuildResult:
     output_path: Optional[Path] = None
     report_path: Optional[Path] = None
     json_path: Optional[Path] = None
+    profile_json_path: Optional[Path] = None
+    progress_json_path: Optional[Path] = None
 
 
 @dataclass
@@ -59,6 +61,14 @@ class CollisionResult:
 class InfoResult:
     command_result: CommandResult
     format: Optional[str] = None
+    json_data: Optional[Dict[str, Any]] = None
+
+
+@dataclass
+class BackendJsonResult:
+    command_result: CommandResult
+    json_data: Optional[Dict[str, Any]] = None
+    json_path: Optional[Path] = None
 
 
 @dataclass

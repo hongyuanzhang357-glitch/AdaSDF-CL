@@ -5,11 +5,14 @@
 #include <filesystem>
 #include <iomanip>
 #include <iostream>
+#include <string>
+
+#include "ModelJsonHelpers.h"
 
 namespace {
 
 void usage() {
-  std::cout << "Usage: adasdf_info model.sdfbin\n";
+  std::cout << "Usage: adasdf_info model.sdfbin [--json] [--full]\n";
 }
 
 const char* yesNo(bool value) {
@@ -38,12 +41,36 @@ int main(int argc, char** argv) {
     usage();
     return 0;
   }
-  if (argc != 2) {
+  std::filesystem::path path;
+  bool json = false;
+  bool full = false;
+  for (int i = 1; i < argc; ++i) {
+    const std::string arg = argv[i];
+    if (arg == "--json") {
+      json = true;
+    } else if (arg == "--full") {
+      full = true;
+    } else if (arg == "--help" || arg == "-h") {
+      usage();
+      return 0;
+    } else if (!arg.empty() && arg[0] == '-') {
+      std::cerr << "adasdf_info: unknown option: " << arg << "\n";
+      usage();
+      return 2;
+    } else if (path.empty()) {
+      path = arg;
+    } else {
+      std::cerr << "adasdf_info: unexpected positional argument: " << arg
+                << "\n";
+      usage();
+      return 2;
+    }
+  }
+  if (path.empty()) {
     usage();
     return 2;
   }
 
-  const std::filesystem::path path = argv[1];
   if (!std::filesystem::exists(path)) {
     std::cerr << "adasdf_info: file does not exist: " << path.string() << "\n";
     return 2;
@@ -54,6 +81,41 @@ int main(int argc, char** argv) {
     const SDFMetadata& metadata = model->metadata();
     const double memory_mb =
         static_cast<double>(model->memoryFootprintBytes()) / (1024.0 * 1024.0);
+    if (json) {
+      adasdf::BackendJsonContract contract = adasdf_tools::makeBaseContract(
+          adasdf::SchemaIds::Info,
+          "adasdf_info");
+      contract.payload_fields.push_back(
+          {"model_type",
+           adasdf::JsonContractWriter::quote(adasdf_tools::modelType(*model))});
+      contract.payload_fields.push_back(
+          {"file_path", adasdf::JsonContractWriter::quote(path.string())});
+      contract.payload_fields.push_back(
+          {"file_size_bytes",
+           adasdf::JsonContractWriter::integer(
+               std::filesystem::file_size(path))});
+      contract.payload_fields.push_back(
+          {"sdfbin_format",
+           adasdf::JsonContractWriter::quote(metadata.format_name)});
+      contract.payload_fields.push_back(
+          {"bounds", adasdf::JsonContractWriter::aabb(model->boundingBox())});
+      contract.payload_fields.push_back(
+          {"dense_grid", adasdf_tools::denseGridJson(*model)});
+      contract.payload_fields.push_back(
+          {"block_count",
+           adasdf::JsonContractWriter::integer(
+               adasdf_tools::blockCount(*model))});
+      contract.payload_fields.push_back(
+          {"compression", adasdf_tools::compressionSummaryJson(*model)});
+      contract.payload_fields.push_back(
+          {"capabilities", adasdf_tools::capabilitiesJson(*model)});
+      if (full) {
+        contract.payload_fields.push_back(
+            {"blocks", adasdf_tools::blocksJson(*model)});
+      }
+      std::cout << adasdf::JsonContractWriter::writeObject(contract);
+      return model->isValid() ? 0 : 1;
+    }
 
     std::cout << "AdaSDF-CL info\n";
     std::cout << "Library version: " << versionString() << "\n";

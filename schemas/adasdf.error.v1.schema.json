@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "adasdf.error.v1",
+  "title": "AdaSDF-CL Error JSON v1",
+  "type": "object",
+  "required": ["schema_id", "schema_version", "adasdf_version", "tool_name", "generated_at_utc", "status", "status_code", "success", "warnings", "message"],
+  "properties": {
+    "schema_id": {"const": "adasdf.error.v1"},
+    "schema_version": {"const": 1},
+    "adasdf_version": {"type": "string"},
+    "tool_name": {"type": "string"},
+    "generated_at_utc": {"type": "string"},
+    "status": {"const": "error"},
+    "status_code": {"type": "string"},
+    "success": {"const": false},
+    "warnings": {"type": "array"},
+    "message": {"type": "string"}
+  }
+}

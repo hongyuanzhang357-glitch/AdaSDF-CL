@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "adasdf.block_grid.v1",
+  "title": "AdaSDF-CL Block Grid JSON v1",
+  "type": "object",
+  "required": ["schema_id", "schema_version", "adasdf_version", "tool_name", "generated_at_utc", "status", "status_code", "success", "warnings", "block_count", "blocks"],
+  "properties": {
+    "schema_id": {"const": "adasdf.block_grid.v1"},
+    "schema_version": {"const": 1},
+    "adasdf_version": {"type": "string"},
+    "tool_name": {"type": "string"},
+    "generated_at_utc": {"type": "string"},
+    "status": {"enum": ["ok", "warning", "error"]},
+    "status_code": {"type": "string"},
+    "success": {"type": "boolean"},
+    "warnings": {"type": "array"},
+    "block_count": {"type": "integer"},
+    "blocks": {"type": "array"}
+  }
+}

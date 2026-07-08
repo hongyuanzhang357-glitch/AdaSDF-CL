@@ -60,6 +60,11 @@ class ToolCommandBuildingTests(unittest.TestCase):
             quality_guard=True,
             target_sampling_error=0.01,
             strict_json="build.strict.json",
+            profile_json="build.profile.json",
+            progress_json="progress.jsonl",
+            max_seconds=30,
+            distance_backend="bvh",
+            threads="auto",
             case_id="build_case",
             dry_run=True,
         )
@@ -71,6 +76,14 @@ class ToolCommandBuildingTests(unittest.TestCase):
         self.assertIn("--no-far-field-interpolation", stdout)
         self.assertIn("--target-sampling-error", stdout)
         self.assertIn("--strict-json", stdout)
+        self.assertIn("--profile-json", stdout)
+        self.assertIn("--progress-json", stdout)
+        self.assertIn("--distance-backend", stdout)
+
+    def test_backend_export_dry_run_commands(self):
+        self.assertIn("adasdf_export_structure", adasdf.export_structure("model.sdfbin", dry_run=True).command_result.stdout)
+        self.assertIn("adasdf_export_block_grid", adasdf.export_block_grid("model.sdfbin", dry_run=True).command_result.stdout)
+        self.assertIn("adasdf_export_compression", adasdf.export_compression("model.sdfbin", dry_run=True).command_result.stdout)
 
     def test_build_adaptive_hierarchical_sampling_dry_run_command(self):
         result = adasdf.build_adaptive_sdf(

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "adasdf.progress.v1",
+  "title": "AdaSDF-CL Progress JSONL Event v1",
+  "type": "object",
+  "required": ["schema_id", "schema_version", "adasdf_version", "tool_name", "generated_at_utc", "stage", "message", "current", "total", "percent", "elapsed_ms"],
+  "properties": {
+    "schema_id": {"const": "adasdf.progress.v1"},
+    "schema_version": {"const": 1},
+    "adasdf_version": {"type": "string"},
+    "tool_name": {"type": "string"},
+    "generated_at_utc": {"type": "string"},
+    "stage": {"type": "string"},
+    "message": {"type": "string"},
+    "current": {"type": "integer"},
+    "total": {"type": "integer"},
+    "percent": {"type": "number"},
+    "elapsed_ms": {"type": "number"}
+  }
+}

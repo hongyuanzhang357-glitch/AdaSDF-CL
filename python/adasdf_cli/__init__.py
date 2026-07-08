@@ -8,6 +8,7 @@ from .results import (
     ActiveBlockQueryResult,
     ActiveBlockSelectionResult,
     BenchmarkResult,
+    BackendJsonResult,
     BlockCacheBenchmarkResult,
     BlockLookupBenchmarkResult,
     BuildResult,
@@ -58,6 +59,9 @@ from .tools import (
     contact_candidates,
     cuda_active_block_query,
     expansion_quality,
+    export_block_grid,
+    export_compression,
+    export_structure,
     info,
     mesh_check,
     mesh_clean,
@@ -77,7 +81,7 @@ from .tools import (
 )
 from .workflows import preprocess_and_build_compressed, recommend_then_build_compressed
 
-__version__ = "1.17.0-alpha"
+__version__ = "1.17.1-alpha"
 
 __all__ = [
     "AdaSDFConfig",
@@ -88,6 +92,7 @@ __all__ = [
     "ActiveBlockQueryResult",
     "ActiveBlockSelectionResult",
     "BenchmarkResult",
+    "BackendJsonResult",
     "BlockCacheBenchmarkResult",
     "BlockLookupBenchmarkResult",
     "BuildResult",
@@ -137,6 +142,9 @@ __all__ = [
     "cuda_active_block_query",
     "default_config",
     "expansion_quality",
+    "export_block_grid",
+    "export_compression",
+    "export_structure",
     "find_tool",
     "info",
     "mesh_check",

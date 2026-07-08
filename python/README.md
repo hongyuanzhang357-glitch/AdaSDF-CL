@@ -4,6 +4,9 @@
 command-line tools. It is subprocess-based. It is not a native pybind11 binding,
 not a C++ extension module, and not a replacement for the C++ API.
 
+v1.17.1-alpha adds backend JSON/profile/progress arguments and read-only export
+helpers for structure, block-grid, and compression metadata.
+
 ## Requirements
 
 - Python 3.9 or newer.
@@ -58,8 +61,18 @@ adasdf.build_compressed_sdf(
     block_resolution=8,
     max_rank=8,
     strict_json="build_report.json",
+    profile_json="build_profile.json",
+    progress_json="build_progress.jsonl",
+    max_seconds=60,
+    distance_backend="bvh",
+    threads="auto",
     case_id="case001",
 )
+
+info = adasdf.info("model_compressed.sdfbin", json=True, full=True)
+structure = adasdf.export_structure("model_compressed.sdfbin", json=True)
+block_grid = adasdf.export_block_grid("model_compressed.sdfbin", json=True)
+compression = adasdf.export_compression("model_compressed.sdfbin", json=True)
 
 adasdf.validate_report("build_report.json")
 

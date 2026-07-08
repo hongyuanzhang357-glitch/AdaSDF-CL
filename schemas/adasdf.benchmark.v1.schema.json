@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "adasdf.benchmark.v1",
+  "title": "AdaSDF-CL Benchmark JSON v1",
+  "type": "object",
+  "required": ["schema_id", "schema_version", "adasdf_version", "tool_name", "generated_at_utc", "status", "status_code", "success", "warnings", "sample_count", "query_count", "time_ms", "ns_per_query", "throughput", "backend", "model_type"],
+  "properties": {
+    "schema_id": {"const": "adasdf.benchmark.v1"},
+    "schema_version": {"const": 1},
+    "adasdf_version": {"type": "string"},
+    "tool_name": {"type": "string"},
+    "generated_at_utc": {"type": "string"},
+    "status": {"enum": ["ok", "warning", "error"]},
+    "status_code": {"type": "string"},
+    "success": {"type": "boolean"},
+    "warnings": {"type": "array"},
+    "sample_count": {"type": "integer"},
+    "query_count": {"type": "number"},
+    "time_ms": {"type": "number"},
+    "ns_per_query": {"type": "number"},
+    "throughput": {"type": "number"},
+    "backend": {"type": "string"},
+    "model_type": {"type": "string"}
+  }
+}

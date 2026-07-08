@@ -3,6 +3,10 @@
 AdaSDF-CL v1.8.1-alpha adds `python/adasdf_cli`, a lightweight pure-Python
 wrapper around installed AdaSDF-CL command-line tools.
 
+v1.17.1-alpha adds wrapper parameters for backend JSON/profile/progress flags
+and exposes read-only export helpers for structure, block-grid, and compression
+metadata.
+
 The wrapper is subprocess-based. It is not pybind11, not a native Python
 binding, and not a C++ extension module. It requires AdaSDF-CL CLI tools to be
 built or installed first.
@@ -41,6 +45,9 @@ python -m pip install -e python
 - `build_adaptive_sdf`
 - `compress_adaptive_sdf`
 - `build_compressed_sdf`
+- `export_structure`
+- `export_block_grid`
+- `export_compression`
 - `benchmark_builder_acceleration`
 - `info`
 - `query`

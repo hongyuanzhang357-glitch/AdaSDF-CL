@@ -108,6 +108,10 @@ set(ADASDF_CL_RUNTIME_SOURCES
   src/backend/CudaQueryBackend.cpp
   src/backend/GpuBackend.cpp
   src/benchmark/PointCloudGenerator.cpp
+  src/contract/ErrorCode.cpp
+  src/contract/JsonContractValidator.cpp
+  src/contract/JsonContractWriter.cpp
+  src/contract/Status.cpp
   src/contact/ContactBudget.cpp
   src/contact/ContactPatch.cpp
   src/contact/ContactClusterer.cpp
@@ -224,6 +228,12 @@ set(ADASDF_CL_RUNTIME_SOURCES
   src/report/StrictCsvWriter.cpp
   src/report/ReportValidator.cpp
   src/report/ReportCollector.cpp
+  src/profile/BuildProfileJsonWriter.cpp
+  src/profile/BuildProfileReportWriter.cpp
+  src/profile/BuildProfileScope.cpp
+  src/profile/BuildProfiler.cpp
+  src/profile/ProgressReporter.cpp
+  src/profile/TimeoutGuard.cpp
   src/runtime/ActiveBlockSelector.cpp
   src/runtime/ExpandedBlock.cpp
   src/runtime/ExpandedBlockCache.cpp
@@ -480,6 +490,21 @@ target_link_libraries(adasdf_build PRIVATE adasdf_cl_runtime)
 add_executable(adasdf_info tools/adasdf_info.cpp)
 target_link_libraries(adasdf_info PRIVATE adasdf_cl_runtime)
 set_target_properties(adasdf_info PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
+
+add_executable(adasdf_export_structure tools/adasdf_export_structure.cpp)
+target_link_libraries(adasdf_export_structure PRIVATE adasdf_cl_runtime)
+set_target_properties(adasdf_export_structure PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
+
+add_executable(adasdf_export_block_grid tools/adasdf_export_block_grid.cpp)
+target_link_libraries(adasdf_export_block_grid PRIVATE adasdf_cl_runtime)
+set_target_properties(adasdf_export_block_grid PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
+
+add_executable(adasdf_export_compression tools/adasdf_export_compression.cpp)
+target_link_libraries(adasdf_export_compression PRIVATE adasdf_cl_runtime)
+set_target_properties(adasdf_export_compression PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
 
 add_executable(adasdf_query tools/adasdf_query.cpp)
@@ -759,6 +784,11 @@ set(ADASDF_CL_TEST_SOURCES
   tests/test_query_engine_cuda.cpp
   tests/test_query_mode_cli.cpp
   tests/test_benchmark_timing_fields.cpp
+  tests/test_schema_ids.cpp
+  tests/test_error_code_contract.cpp
+  tests/test_backend_json_contract.cpp
+  tests/test_json_contract_writer.cpp
+  tests/test_build_profiler.cpp
   tests/test_benchmark_cli_modes.cpp
   tests/test_benchmark_output_modes.cpp
   tests/test_cuda_device_only_benchmark.cpp
@@ -826,6 +856,15 @@ set(ADASDF_CL_TEST_SOURCES
   tests/test_compression_quality.cpp
   tests/test_compress_adaptive_sdf_cli.cpp
   tests/test_build_compressed_sdf_cli.cpp
+  tests/test_info_json_schema_cli.cpp
+  tests/test_export_structure_cli.cpp
+  tests/test_export_block_grid_cli.cpp
+  tests/test_export_compression_cli.cpp
+  tests/test_collide_json_schema_cli.cpp
+  tests/test_build_profile_json_cli.cpp
+  tests/test_progress_timeout_cli.cpp
+  tests/test_build_cli_profile_options.cpp
+  tests/test_distance_backend_selector.cpp
   tests/test_compressed_sdf_builder_bvh_cli.cpp
   tests/test_compressed_builder_hierarchical_sampling_cli.cpp
   tests/test_benchmark_hierarchical_sampling_cli.cpp
@@ -889,6 +928,7 @@ set(ADASDF_CL_TEST_SOURCES
   tests/test_solver_contact_candidates_cli.cpp
   tests/test_benchmark_contact_reduction_cli.cpp
   tests/test_benchmark_sparse_query_cli.cpp
+  tests/test_benchmark_sparse_query_json_cli.cpp
   tests/test_sparse_collision_modes.cpp
   tests/test_world_transform.cpp
   tests/test_collision_group_mask.cpp
@@ -1057,18 +1097,42 @@ if(ADASDF_CL_BUILD_TESTS)
         ADASDF_CL_QUERY="$<TARGET_FILE_NAME:adasdf_query>"
         ADASDF_CL_COLLIDE="$<TARGET_FILE_NAME:adasdf_collide>")
     endif()
+    if(test_name STREQUAL "test_build_cli_profile_options")
+      add_dependencies(${test_name}
+        adasdf_build_dense_sdf
+        adasdf_build_adaptive_sdf
+        adasdf_compress_adaptive_sdf)
+      target_compile_definitions(${test_name} PRIVATE
+        ADASDF_CL_BUILD_DENSE_SDF="$<TARGET_FILE_NAME:adasdf_build_dense_sdf>"
+        ADASDF_CL_BUILD_ADAPTIVE_SDF="$<TARGET_FILE_NAME:adasdf_build_adaptive_sdf>"
+        ADASDF_CL_COMPRESS_ADAPTIVE_SDF="$<TARGET_FILE_NAME:adasdf_compress_adaptive_sdf>")
+    endif()
     if(test_name STREQUAL "test_build_compressed_sdf_cli" OR
         test_name STREQUAL "test_compressed_sdf_builder_bvh_cli" OR
         test_name STREQUAL "test_compressed_builder_hierarchical_sampling_cli" OR
         test_name STREQUAL "test_compressed_block_sdfbin_roundtrip" OR
-        test_name STREQUAL "test_compressed_sdf_collision")
+        test_name STREQUAL "test_compressed_sdf_collision" OR
+        test_name STREQUAL "test_info_json_schema_cli" OR
+        test_name STREQUAL "test_export_structure_cli" OR
+        test_name STREQUAL "test_export_block_grid_cli" OR
+        test_name STREQUAL "test_export_compression_cli" OR
+        test_name STREQUAL "test_collide_json_schema_cli" OR
+        test_name STREQUAL "test_build_profile_json_cli" OR
+        test_name STREQUAL "test_progress_timeout_cli" OR
+        test_name STREQUAL "test_distance_backend_selector")
       add_dependencies(${test_name}
         adasdf_build_compressed_sdf
+        adasdf_export_structure
+        adasdf_export_block_grid
+        adasdf_export_compression
         adasdf_info
         adasdf_query
         adasdf_collide)
       target_compile_definitions(${test_name} PRIVATE
         ADASDF_CL_BUILD_COMPRESSED_SDF="$<TARGET_FILE_NAME:adasdf_build_compressed_sdf>"
+        ADASDF_CL_EXPORT_STRUCTURE="$<TARGET_FILE_NAME:adasdf_export_structure>"
+        ADASDF_CL_EXPORT_BLOCK_GRID="$<TARGET_FILE_NAME:adasdf_export_block_grid>"
+        ADASDF_CL_EXPORT_COMPRESSION="$<TARGET_FILE_NAME:adasdf_export_compression>"
         ADASDF_CL_INFO="$<TARGET_FILE_NAME:adasdf_info>"
         ADASDF_CL_QUERY="$<TARGET_FILE_NAME:adasdf_query>"
         ADASDF_CL_COLLIDE="$<TARGET_FILE_NAME:adasdf_collide>")
@@ -1143,7 +1207,8 @@ if(ADASDF_CL_BUILD_TESTS)
         ADASDF_CL_WORLD_SPARSE_COLLIDE="$<TARGET_FILE_NAME:adasdf_world_sparse_collide>"
         ADASDF_CL_WORLD_SOLVER_CONTACTS="$<TARGET_FILE_NAME:adasdf_world_solver_contacts>")
     endif()
-    if(test_name STREQUAL "test_benchmark_sparse_query_cli")
+    if(test_name STREQUAL "test_benchmark_sparse_query_cli" OR
+        test_name STREQUAL "test_benchmark_sparse_query_json_cli")
       add_dependencies(${test_name} adasdf_build_dense_sdf)
       target_compile_definitions(${test_name} PRIVATE
         ADASDF_CL_BUILD_DENSE_SDF="$<TARGET_FILE_NAME:adasdf_build_dense_sdf>")
@@ -1314,11 +1379,23 @@ if(ADASDF_CL_BUILD_TESTS)
       set_tests_properties(${test_name} PROPERTIES
         WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_build_adaptive_sdf>")
     endif()
+    if(test_name STREQUAL "test_build_cli_profile_options")
+      set_tests_properties(${test_name} PROPERTIES
+        WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_build_dense_sdf>")
+    endif()
     if(test_name STREQUAL "test_build_compressed_sdf_cli" OR
         test_name STREQUAL "test_compressed_sdf_builder_bvh_cli" OR
         test_name STREQUAL "test_compressed_builder_hierarchical_sampling_cli" OR
         test_name STREQUAL "test_compressed_block_sdfbin_roundtrip" OR
-        test_name STREQUAL "test_compressed_sdf_collision")
+        test_name STREQUAL "test_compressed_sdf_collision" OR
+        test_name STREQUAL "test_info_json_schema_cli" OR
+        test_name STREQUAL "test_export_structure_cli" OR
+        test_name STREQUAL "test_export_block_grid_cli" OR
+        test_name STREQUAL "test_export_compression_cli" OR
+        test_name STREQUAL "test_collide_json_schema_cli" OR
+        test_name STREQUAL "test_build_profile_json_cli" OR
+        test_name STREQUAL "test_progress_timeout_cli" OR
+        test_name STREQUAL "test_distance_backend_selector")
       set_tests_properties(${test_name} PROPERTIES
         WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_build_compressed_sdf>")
     endif()
@@ -1376,7 +1453,8 @@ if(ADASDF_CL_BUILD_TESTS)
       set_tests_properties(${test_name} PROPERTIES
         WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_world_solver_contacts>")
     endif()
-    if(test_name STREQUAL "test_benchmark_sparse_query_cli")
+    if(test_name STREQUAL "test_benchmark_sparse_query_cli" OR
+        test_name STREQUAL "test_benchmark_sparse_query_json_cli")
       if(TARGET adasdf_benchmark_sparse_query)
         set_tests_properties(${test_name} PROPERTIES
           WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_benchmark_sparse_query>")
@@ -1467,6 +1545,9 @@ set(ADASDF_CL_INSTALL_HAS_CUDA_BACKEND ${ADASDF_CL_HAS_CUDA_BACKEND})
 set(ADASDF_CL_INSTALL_TOOL_TARGETS
   adasdf_build
   adasdf_info
+  adasdf_export_structure
+  adasdf_export_block_grid
+  adasdf_export_compression
   adasdf_query
   adasdf_collide
   adasdf_make_demo_box
@@ -1527,6 +1608,7 @@ install(TARGETS ${ADASDF_CL_INSTALL_TOOL_TARGETS}
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(DIRECTORY schemas/ DESTINATION ${CMAKE_INSTALL_DOCDIR}/schemas)
 install(FILES LICENSE README.md CHANGELOG.md
   DESTINATION ${CMAKE_INSTALL_DOCDIR})
 install(DIRECTORY models/surrogate/v1_8

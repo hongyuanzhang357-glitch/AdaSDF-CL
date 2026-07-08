@@ -2,6 +2,9 @@
 
 Release: `v1.17.0-alpha`
 
+v1.17.1-alpha keeps the lookup implementation unchanged and adds stable
+`adasdf.benchmark.v1` JSON output for `adasdf_benchmark_block_lookup`.
+
 AdaSDF-CL v1.17.0-alpha adds deterministic lookup helpers for runtime active
 block query paths. The goal is to avoid scanning every adaptive or resident
 active block for every query point while keeping the linear scan path available
@@ -57,4 +60,3 @@ flat lookup path:
 - block ids;
 - cache slots;
 - block bounds.
-

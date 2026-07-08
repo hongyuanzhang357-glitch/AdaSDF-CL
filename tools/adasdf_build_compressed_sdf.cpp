@@ -5,6 +5,7 @@
 #include <iostream>
 #include <map>
 #include <string>
+#include <thread>
 
 namespace {
 
@@ -37,6 +38,10 @@ void usage() {
          "[--compression-report compression_report.md] "
          "[--quality-report quality_report.md] "
          "[--strict-json report.json] [--case-id case_id] "
+         "[--profile] [--profile-json profile.json] "
+         "[--progress] [--progress-json progress.jsonl] "
+         "[--max-seconds value] "
+         "[--distance-backend brute_force|brute|bvh] [--threads auto|N] "
          "[--recommend] [--verbose]\n";
 }
 
@@ -47,12 +52,24 @@ bool hasValue(int index, int argc) {
 bool parseAcceleration(
     const std::string& value,
     adasdf::AdaptiveBlockSDFBuildOptions* options) {
+  if (value == "brute_force") {
+    options->acceleration = adasdf::SDFSamplingAcceleration::BruteForce;
+    return true;
+  }
   adasdf::SDFSamplingAcceleration acceleration;
   if (!adasdf::parseSDFSamplingAcceleration(value, &acceleration)) {
     return false;
   }
   options->acceleration = acceleration;
   return true;
+}
+
+int parseThreads(const std::string& value) {
+  if (value == "auto") {
+    const unsigned int hardware = std::thread::hardware_concurrency();
+    return static_cast<int>(hardware == 0 ? 1 : hardware);
+  }
+  return std::stoi(value);
 }
 
 bool parseSamplingMode(
@@ -108,7 +125,12 @@ int main(int argc, char** argv) {
     std::filesystem::path compression_report_path;
     std::filesystem::path quality_report_path;
     std::filesystem::path strict_json_path;
+    std::filesystem::path profile_json_path;
+    std::filesystem::path progress_json_path;
     std::string case_id = "default";
+    bool profile_stdout = false;
+    bool progress_enabled = false;
+    double max_seconds = 0.0;
     adasdf::AdaptiveBlockSDFBuildOptions build_options;
     adasdf::BlockLowRankCompressionOptions compression_options;
     const auto strict_timer = adasdf::startStrictRunTimer();
@@ -177,7 +199,12 @@ int main(int argc, char** argv) {
           return 1;
         }
       } else if (arg == "--threads" && hasValue(i, argc)) {
-        build_options.threads = std::stoi(argv[++i]);
+        build_options.threads = parseThreads(argv[++i]);
+      } else if (arg == "--distance-backend" && hasValue(i, argc)) {
+        if (!parseAcceleration(argv[++i], &build_options)) {
+          std::cerr << "Unknown distance backend: " << argv[i] << "\n";
+          return 1;
+        }
       } else if (arg == "--benchmark-brute-reference") {
         build_options.benchmark_brute_reference = true;
       } else if (arg == "--sampling" && hasValue(i, argc)) {
@@ -300,6 +327,16 @@ int main(int argc, char** argv) {
         strict_json_path = argv[++i];
       } else if (arg == "--case-id" && hasValue(i, argc)) {
         case_id = argv[++i];
+      } else if (arg == "--profile") {
+        profile_stdout = true;
+      } else if (arg == "--profile-json" && hasValue(i, argc)) {
+        profile_json_path = argv[++i];
+      } else if (arg == "--progress") {
+        progress_enabled = true;
+      } else if (arg == "--progress-json" && hasValue(i, argc)) {
+        progress_json_path = argv[++i];
+      } else if (arg == "--max-seconds" && hasValue(i, argc)) {
+        max_seconds = std::stod(argv[++i]);
       } else if (arg == "--verbose") {
         build_options.verbose = true;
         compression_options.verbose = true;
@@ -323,18 +360,106 @@ int main(int argc, char** argv) {
       write_strict(false, "failed", "missing input or output path");
       return 1;
     }
+
+    const bool profile_requested = profile_stdout || !profile_json_path.empty();
+    adasdf::BuildProfiler profiler(profile_requested);
+    profiler.setToolName("adasdf_build_compressed_sdf");
+    profiler.setInputPath(input.string());
+    profiler.setOutputPath(output.string());
+    adasdf::ProgressReporter progress(
+        "adasdf_build_compressed_sdf",
+        progress_enabled,
+        progress_json_path);
+    adasdf::TimeoutGuard timeout(max_seconds);
+    auto write_profile = [&]() {
+      if (!profile_json_path.empty() &&
+          !adasdf::BuildProfileJsonWriter::write(
+              profile_json_path.string(),
+              profiler)) {
+        std::cerr << "adasdf_build_compressed_sdf: failed to write profile JSON\n";
+      }
+      if (profile_stdout) {
+        std::cerr << adasdf::BuildProfileJsonWriter::toJson(profiler);
+      }
+    };
+    auto timeout_exit = [&]() {
+      progress.emit("timeout", "maximum wall-clock time reached");
+      profiler.finishTimeout();
+      write_profile();
+      write_strict(false, "timeout", "maximum wall-clock time reached");
+      return adasdf::toInt(adasdf::CliExitCode::Timeout);
+    };
+    progress.emit("load_mesh", "validating input mesh path", 0, 1);
+    if (timeout.enabled() && max_seconds <= 0.01) {
+      return timeout_exit();
+    }
     if (!std::filesystem::exists(input)) {
       std::cerr << "adasdf_build_compressed_sdf: input STL does not exist: "
                 << input.string() << "\n";
+      profiler.finishFailed(
+          adasdf::ErrorCode::IO_ERROR,
+          "input STL does not exist");
+      write_profile();
       write_strict(false, "failed", "input STL does not exist");
       return 1;
     }
 
     adasdf::AdaptiveBlockSDFBuildReport build_report;
-    auto dense_model = adasdf::AdaptiveBlockSDFBuilder::fromSTL(
-        input.string(),
-        build_options,
-        &build_report);
+    std::shared_ptr<adasdf::SDFModel> dense_model;
+    {
+      adasdf::BuildProfileScope scope(
+          &profiler.timings.adaptive_refinement_time_ms);
+      progress.emit("adaptive_refinement", "building adaptive block SDF", 0, 1);
+      dense_model = adasdf::AdaptiveBlockSDFBuilder::fromSTL(
+          input.string(),
+          build_options,
+          &build_report);
+    }
+    profiler.timings.bvh_build_time_ms =
+        build_report.acceleration_stats.bvh_build_time_ms;
+    profiler.timings.distance_query_time_ms =
+        build_report.acceleration_stats.sampling_time_ms > 0.0
+            ? build_report.acceleration_stats.sampling_time_ms
+            : build_report.sampling_time_ms;
+    profiler.timings.sign_query_time_ms = 0.0;
+    profiler.timings.contact_band_marker_time_ms =
+        build_report.contact_band_sampling.contact_band_marker_time_ms;
+    profiler.counters.num_vertices = build_report.diagnostics.vertex_count;
+    profiler.counters.num_triangles = build_report.diagnostics.triangle_count;
+    profiler.counters.num_grid_points =
+        build_report.acceleration_stats.sample_count;
+    profiler.counters.num_blocks = build_report.block_count;
+    profiler.counters.num_contact_band_blocks =
+        build_report.contact_band_sampling.contact_band_block_count;
+    profiler.counters.num_distance_queries =
+        build_report.contact_band_sampling.distance_query_count;
+    profiler.counters.num_sign_queries =
+        build_report.contact_band_sampling.sign_query_count;
+    profiler.counters.num_triangle_tests_total =
+        build_report.acceleration_stats.nearest_triangle_tests +
+        build_report.acceleration_stats.ray_triangle_tests;
+    const std::size_t total_queries =
+        build_report.acceleration_stats.sample_count > 0
+            ? build_report.acceleration_stats.sample_count
+            : profiler.counters.num_distance_queries +
+                  profiler.counters.num_sign_queries;
+    profiler.counters.avg_triangles_tested_per_query = total_queries > 0
+        ? static_cast<double>(profiler.counters.num_triangle_tests_total) /
+              static_cast<double>(total_queries)
+        : 0.0;
+    profiler.counters.bvh_node_visit_count =
+        build_report.acceleration_stats.nearest_node_visits +
+        build_report.acceleration_stats.ray_node_visits;
+    profiler.counters.exact_node_count =
+        build_report.contact_band_sampling.exact_node_count;
+    profiler.counters.predicted_node_count =
+        build_report.contact_band_sampling.predicted_node_count;
+    profiler.counters.fallback_count =
+        build_report.acceleration_stats.fallback_count +
+        build_report.hierarchical_sampling.fallback_exact_block_count;
+    for (const std::string& warning : build_report.warnings) {
+      profiler.addWarning("ADASDF_BUILD_WARNING", warning);
+    }
     if (!build_report_path.empty()) {
       adasdf::AdaptiveBlockSDFBuildReportWriter::writeMarkdown(
           build_report_path.string(),
@@ -343,6 +468,10 @@ int main(int argc, char** argv) {
     if (!dense_model) {
       std::cerr << "adasdf_build_compressed_sdf: adaptive build failed: "
                 << build_report.error_message << "\n";
+      profiler.finishFailed(
+          adasdf::ErrorCode::INVALID_MODEL,
+          build_report.error_message);
+      write_profile();
       write_strict(false, "failed", build_report.error_message);
       return build_options.signed_distance &&
                      build_options.require_watertight_for_signed &&
@@ -356,16 +485,38 @@ int main(int argc, char** argv) {
     if (!adaptive) {
       std::cerr << "adasdf_build_compressed_sdf: adaptive builder returned "
                    "unexpected model type.\n";
+      profiler.finishFailed(
+          adasdf::ErrorCode::INTERNAL_ERROR,
+          "adaptive builder returned unexpected model type");
+      write_profile();
       write_strict(false, "failed", "adaptive builder returned unexpected model type");
       return 3;
     }
+    if (timeout.expired()) {
+      return timeout_exit();
+    }
 
     adasdf::BlockLowRankCompressionReport compression_report;
-    adasdf::CompressedAdaptiveBlockSDF compressed =
-        adasdf::BlockLowRankCompressor::compress(
-            adaptive->blockSet(),
-            compression_options,
-            &compression_report);
+    adasdf::CompressedAdaptiveBlockSDF compressed;
+    {
+      adasdf::BuildProfileScope scope(&profiler.timings.compression_time_ms);
+      progress.emit("compression", "compressing adaptive blocks", 0, 1);
+      compressed = adasdf::BlockLowRankCompressor::compress(
+          adaptive->blockSet(),
+          compression_options,
+          &compression_report);
+    }
+    if (compression_report.compression_time_ms > 0.0) {
+      profiler.timings.compression_time_ms =
+          compression_report.compression_time_ms;
+    }
+    profiler.counters.compressed_block_count =
+        compression_report.compressed_block_count;
+    profiler.counters.dense_fallback_block_count =
+        compression_report.dense_fallback_block_count;
+    for (const std::string& warning : compression_report.warnings) {
+      profiler.addWarning("ADASDF_COMPRESSION_WARNING", warning);
+    }
     if (!compression_report_path.empty()) {
       adasdf::CompressionReportWriter::writeMarkdown(
           compression_report_path.string(),
@@ -374,13 +525,24 @@ int main(int argc, char** argv) {
     if (!compression_report.success) {
       std::cerr << "adasdf_build_compressed_sdf: compression failed: "
                 << compression_report.error_message << "\n";
+      profiler.finishFailed(
+          adasdf::ErrorCode::INTERNAL_ERROR,
+          compression_report.error_message);
+      write_profile();
       write_strict(false, "failed", compression_report.error_message);
       return 3;
     }
+    if (timeout.expired()) {
+      return timeout_exit();
+    }
 
     adasdf::CompressedAdaptiveBlockSDFModel compressed_model(std::move(compressed));
-    adasdf::CompressionQualityReport quality_report =
-        adasdf::CompressionQuality::compare(*adaptive, compressed_model);
+    adasdf::CompressionQualityReport quality_report;
+    {
+      adasdf::BuildProfileScope scope(&profiler.timings.metadata_time_ms);
+      quality_report =
+          adasdf::CompressionQuality::compare(*adaptive, compressed_model);
+    }
     if (!quality_report_path.empty()) {
       adasdf::CompressionReportWriter::writeQualityMarkdown(
           quality_report_path.string(),
@@ -388,15 +550,29 @@ int main(int argc, char** argv) {
     }
 
     try {
-      adasdf::SDFBinWriter::write(output.string(), compressed_model);
-      auto reloaded = adasdf::SDFBinReader::read(output);
+      if (timeout.expired()) {
+        return timeout_exit();
+      }
+      adasdf::BuildProfileScope scope(&profiler.timings.write_model_time_ms);
+      progress.emit("write_model", "writing compressed SDF model", 0, 1);
+      std::filesystem::path temp_output = output;
+      temp_output += ".tmp";
+      adasdf::SDFBinWriter::write(temp_output.string(), compressed_model);
+      auto reloaded = adasdf::SDFBinReader::read(temp_output);
       if (!reloaded || !reloaded->isValid() || !reloaded->queryBackendAvailable()) {
         throw std::runtime_error("reloaded compressed model is invalid");
       }
+      if (std::filesystem::exists(output)) {
+        std::filesystem::remove(output);
+      }
+      std::filesystem::rename(temp_output, output);
+      profiler.counters.output_bytes = std::filesystem::file_size(output);
     } catch (const std::exception& exc) {
       std::cerr
           << "adasdf_build_compressed_sdf: write/reload validation failed: "
           << exc.what() << "\n";
+      profiler.finishFailed(adasdf::ErrorCode::IO_ERROR, exc.what());
+      write_profile();
       write_strict(false, "failed", exc.what());
       return 4;
     }
@@ -404,9 +580,15 @@ int main(int argc, char** argv) {
     if (!quality_report.success) {
       std::cerr << "adasdf_build_compressed_sdf: quality check failed: "
                 << quality_report.error_message << "\n";
+      profiler.finishFailed(
+          adasdf::ErrorCode::INTERNAL_ERROR,
+          quality_report.error_message);
+      write_profile();
       write_strict(false, "failed", quality_report.error_message);
       return 5;
     }
+    progress.emit("complete", "compressed SDF build complete", 1, 1);
+    profiler.finishCompleted();
 
     std::cout << "AdaSDF-CL compressed SDF builder\n";
     std::cout << "Input: " << input.string() << "\n";
@@ -555,6 +737,7 @@ int main(int argc, char** argv) {
             {"near_surface_sign_mismatch_count",
              static_cast<double>(
                  compression_report.near_surface_sign_mismatch_count)}});
+    write_profile();
     return 0;
   } catch (const std::exception& exc) {
     std::cerr << "adasdf_build_compressed_sdf failed: " << exc.what() << "\n";

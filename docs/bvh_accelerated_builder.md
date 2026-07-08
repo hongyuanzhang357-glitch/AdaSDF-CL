@@ -9,9 +9,12 @@ Implemented:
 
 - `--accel brute` keeps the original brute-force reference path.
 - `--accel bvh` builds a deterministic median-split TriangleBVH.
+- v1.17.1 also accepts `--distance-backend bvh` as the explicit backend
+  spelling for profiled builder workflows.
 - DenseSDF, AdaptiveBlockSDF, and CompressedAdaptiveBlockSDF builder CLIs can
   use the BVH sampler.
 - `--threads N` enables deterministic stdlib-based parallel sampling.
+- v1.17.1 accepts `--threads auto` in profiled builder workflows.
 - `--benchmark-brute-reference` reports brute-reference time and speedup.
 - v1.16 hierarchical sampling can use the BVH sampler as its exact reference
   and fallback path.
@@ -30,11 +33,14 @@ Not implemented:
 ```bash
 adasdf_build_dense_sdf model.stl dense.sdfbin --accel bvh --threads 4
 adasdf_build_adaptive_sdf model.stl adaptive.sdfbin --accel bvh --threads 4
-adasdf_build_compressed_sdf model.stl compressed.sdfbin --accel bvh --threads 4
+adasdf_build_dense_sdf model.stl dense.sdfbin --distance-backend bvh --threads auto --profile-json dense_profile.json
+adasdf_build_adaptive_sdf model.stl adaptive.sdfbin --distance-backend bvh --threads auto --profile-json adaptive_profile.json
+adasdf_build_compressed_sdf model.stl compressed.sdfbin --distance-backend bvh --threads auto --profile-json compressed_profile.json
 ```
 
-The default remains `--accel brute` so the historical reference behavior is
-preserved unless users explicitly select BVH.
+The v1.17.1 CLI default is BVH for public builder sampling, while
+`--accel brute` / `--distance-backend brute_force` remains available for
+debugging, benchmark references, and regression comparison.
 
 ## Reporting
 

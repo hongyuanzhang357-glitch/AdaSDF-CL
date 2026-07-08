@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "adasdf.collide.v1",
+  "title": "AdaSDF-CL Collision JSON v1",
+  "type": "object",
+  "required": ["schema_id", "schema_version", "adasdf_version", "tool_name", "generated_at_utc", "status", "status_code", "success", "warnings", "mode", "collided", "candidate_count", "contact_count", "contacts"],
+  "properties": {
+    "schema_id": {"const": "adasdf.collide.v1"},
+    "schema_version": {"const": 1},
+    "adasdf_version": {"type": "string"},
+    "tool_name": {"type": "string"},
+    "generated_at_utc": {"type": "string"},
+    "status": {"enum": ["ok", "warning", "error"]},
+    "status_code": {"type": "string"},
+    "success": {"type": "boolean"},
+    "warnings": {"type": "array"},
+    "mode": {"type": "string"},
+    "collided": {"type": "boolean"},
+    "candidate_count": {"type": "integer"},
+    "contact_count": {"type": "integer"},
+    "contacts": {"type": "array"}
+  }
+}

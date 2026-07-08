@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "adasdf.info.v1",
+  "title": "AdaSDF-CL Info JSON v1",
+  "type": "object",
+  "required": ["schema_id", "schema_version", "adasdf_version", "tool_name", "generated_at_utc", "status", "status_code", "success", "warnings", "model_type", "file_path", "file_size_bytes", "sdfbin_format", "bounds", "capabilities"],
+  "properties": {
+    "schema_id": {"const": "adasdf.info.v1"},
+    "schema_version": {"const": 1},
+    "adasdf_version": {"type": "string"},
+    "tool_name": {"type": "string"},
+    "generated_at_utc": {"type": "string"},
+    "status": {"enum": ["ok", "warning", "error"]},
+    "status_code": {"type": "string"},
+    "success": {"type": "boolean"},
+    "warnings": {"type": "array"},
+    "model_type": {"type": "string"},
+    "file_path": {"type": "string"},
+    "file_size_bytes": {"type": "integer"},
+    "sdfbin_format": {"type": "string"},
+    "bounds": {"type": "object"},
+    "capabilities": {"type": "object"}
+  }
+}

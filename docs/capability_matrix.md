@@ -18,10 +18,11 @@ only, Planned, Not implemented.
 | Build / Input | standalone adaptive block STL builder | Implemented | v1.6 | `AdaptiveBlockSDFBuilder`, `adasdf_build_adaptive_sdf` | Core-free adaptive octree/block builder; block data remains dense. |
 | Build / Input | adaptive compressed builder interface preview | Experimental | v1.5 | `AdaptiveSDFBuilderPreview`, `adasdf_build_adaptive_sdf_preview` | Planning tool; matrix-SVD and deterministic recommendation stages are implemented, trained surrogate and GPU compressed stages remain planned. |
 | Build / Input | low-rank adaptive compressed STL builder | Implemented | v1.7 | `adasdf_build_compressed_sdf`, `adasdf_compress_adaptive_sdf` | Matrix-SVD block compression with dense fallback and quality audit. |
+| Build / Input | build profile/progress/timeout contract | Alpha available | v1.17.1 | `--profile-json`, `--progress-json`, `--max-seconds` | Dense, adaptive, adaptive-compression, and compressed SDF build CLIs emit `adasdf.build_profile.v1` and `adasdf.progress.v1`; timeout writes a partial profile and avoids corrupt model output. |
 | Build / Input | hierarchical adaptive block sampling with quality guard | Experimental | v1.16 | `--sampling hierarchical`, `HierarchicalBlockSampler` | Default remains exact. Near-surface blocks stay exact by default; predicted blocks require quality guard and exact fallback. No `.sdfbin` format change. |
 | Build / Input | contact-focused narrow-band sampling | Alpha available | v1.16.0-alpha.3 | `--sampling contact-band`, `ContactBandBlockSampler` | Collision-oriented construction path. Exact-samples the contact band, interpolates relaxed far-field values, audits contact-band phi/sign/normal quality and coverage. Not a global full-field reconstruction acceleration claim. |
-| Build / Input | BVH-accelerated builder sampling | Implemented | v1.12 | `--accel bvh`, `TriangleBVH` | Optional CPU acceleration for DenseSDF, AdaptiveBlockSDF, and CompressedAdaptiveBlockSDF sampling; brute remains default. |
-| Build / Input | deterministic parallel builder sampling | Implemented | v1.12 | `--threads N`, `ParallelSampling` | C++17 stdlib threads only; no OpenMP/TBB dependency. |
+| Build / Input | BVH-accelerated builder sampling | Implemented | v1.12 | `--accel bvh`, `--distance-backend bvh`, `TriangleBVH` | CPU acceleration for DenseSDF, AdaptiveBlockSDF, and CompressedAdaptiveBlockSDF sampling; brute/brute_force remains available for debug and benchmark comparison. |
+| Build / Input | deterministic parallel builder sampling | Implemented | v1.12 | `--threads N`, `--threads auto`, `ParallelSampling` | C++17 stdlib threads only; no OpenMP/TBB dependency. |
 | Build / Input | surrogate-guided build recommendation | Experimental | v1.8 | `BuildRecommender`, `adasdf_recommend_build` | Deterministic heuristic-calibrated recommender for DenseSDF, AdaptiveBlockSDF, and CompressedAdaptiveBlockSDF. |
 | Build / Input | mesh-feature-based parameter recommendation | Experimental | v1.8 | `MeshFeatureExtractor`, `BuildSurrogateEstimator` | Uses diagnostics/readiness features, target error, memory budget, and use case. |
 | Build / Input | recommendation profile override | Experimental | v1.8 | `SurrogateProfile`, `--profile` | Key-value constants only; not a universal trained model. |
@@ -99,6 +100,7 @@ only, Planned, Not implemented.
 | Accuracy / Reliability | build recommendation confidence scoring | Experimental | v1.8 | `RecommendationConfidence` | Low/medium/high heuristic confidence; not a certification. |
 | Accuracy / Reliability | memory/error build estimates | Experimental | v1.8 | `BuildSurrogateEstimator` | Deterministic estimates with safety factors; validate final SDF reports. |
 | Accuracy / Reliability | strict JSON reproducibility report | Implemented | v1.15 | `StrictJsonWriter`, `--strict-json` | Dependency-free schema for selected build/query/benchmark/world CLIs. |
+| Accuracy / Reliability | backend JSON contract schemas | Alpha available | v1.17.1 | `schemas/adasdf.*.v1.schema.json`, `JsonContractWriter` | Stable common fields, schema ids, status codes, warnings, deterministic field order, and no external JSON dependency. |
 | Accuracy / Reliability | strict report validation | Implemented | v1.15 | `adasdf_validate_report` | Validates required fields and optional numeric metrics. |
 | Accuracy / Reliability | run summary CSV collection | Implemented | v1.15 | `adasdf_collect_run_summary` | Collects strict reports into a fixed-column CSV. |
 | Accuracy / Reliability | mesh AABB / scale report | Implemented | v1.2 | `MeshDiagnosticsReport` | Prompts users to confirm units. |
@@ -113,6 +115,7 @@ only, Planned, Not implemented.
 | Integration | `find_package(AdaSDFCL CONFIG REQUIRED)` | Implemented | v0.7 | downstream CMake | Tested. |
 | Integration | downstream CMake example | Implemented | v0.7 | `examples/downstream_cmake_project` | No-input demo path. |
 | Integration | Python CLI wrapper | Implemented | v1.8.1 | `python/adasdf_cli` | Pure-Python subprocess wrapper over installed CLI tools; not pybind11. |
+| Integration | Studio backend JSON export contract | Alpha available | v1.17.1 | `adasdf_info --json --full`, `adasdf_export_structure`, `adasdf_export_block_grid`, `adasdf_export_compression` | Read-only JSON exports for model metadata, structure, block grids, and compression summaries. No `.sdfbin` format change. |
 | Integration | Python package distribution | Partial | v1.8.1 | `python/pyproject.toml` | Supports source-tree use and editable install; no pip release in v1.8.1. |
 | Integration | Native Python / pybind11 binding | Planned | - | `PythonBindingPlan` | Not implemented. |
 | Integration | C API | Planned | - | - | Not implemented. |
@@ -126,6 +129,7 @@ only, Planned, Not implemented.
 | Benchmark | sparse query benchmark | Implemented | v1.9 | `adasdf_benchmark_sparse_query` | CPU sparse phi-only, phi-normal, collision-only, clearance, and candidates modes. |
 | Benchmark | active block cache benchmark | Implemented | v1.10 | `adasdf_benchmark_block_cache` | Compares CPU active block cached query with direct sparse query. |
 | Benchmark | block lookup benchmark | Alpha available | v1.17 | `adasdf_benchmark_block_lookup` | Reports linear/hash/Morton lookup timings, cache lookup timings, speedup_vs_linear, mismatch counts, phi-diff fields, fallback counts, and performance-claim gating. |
+| Benchmark | benchmark JSON contract output | Alpha available | v1.17.1 | `adasdf_benchmark_sparse_query --json`, `adasdf_benchmark_block_lookup --json`, `adasdf_benchmark_contact_band_sampling --json` | Emits `adasdf.benchmark.v1` while preserving existing CSV/report paths. |
 | Benchmark | contact reduction benchmark | Implemented | v1.13 | `adasdf_benchmark_contact_reduction` | Measures sparse query plus contact stabilization overhead and candidate reduction ratio. |
 | Benchmark | CollisionWorld benchmark | Implemented | v1.14 | `adasdf_benchmark_collision_world` | Measures broadphase, sparse world collision, or world contact orchestration timing. |
 | Benchmark | CUDA active block cache benchmark | Experimental | v1.11 | `adasdf_benchmark_cuda_block_cache` | Reports CUDA total/kernel/upload/download timing and CPU/direct sparse baselines; CUDA unavailable returns code `20`. |

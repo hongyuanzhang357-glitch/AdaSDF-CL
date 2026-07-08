@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "adasdf.build_profile.v1",
+  "title": "AdaSDF-CL Build Profile JSON v1",
+  "type": "object",
+  "required": ["schema_id", "schema_version", "adasdf_version", "tool_name", "generated_at_utc", "status", "status_code", "success", "warnings", "profile_status", "timings", "counters"],
+  "properties": {
+    "schema_id": {"const": "adasdf.build_profile.v1"},
+    "schema_version": {"const": 1},
+    "adasdf_version": {"type": "string"},
+    "tool_name": {"type": "string"},
+    "generated_at_utc": {"type": "string"},
+    "status": {"enum": ["ok", "warning", "error"]},
+    "status_code": {"type": "string"},
+    "success": {"type": "boolean"},
+    "warnings": {"type": "array"},
+    "profile_status": {"enum": ["completed", "timeout", "failed"]},
+    "timings": {"type": "object"},
+    "counters": {"type": "object"}
+  }
+}

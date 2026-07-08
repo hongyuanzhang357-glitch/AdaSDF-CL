@@ -1,5 +1,36 @@
 # Changelog
 
+## 1.17.1-alpha
+
+Stable backend JSON contract and build profiler.
+
+### Added
+
+- Versioned JSON schemas under `schemas/` for info, structure, block grid,
+  compression, collision, benchmark, build profile, error, and progress
+  outputs.
+- Dependency-free backend JSON contract helpers with deterministic field order,
+  stable schema ids, standard status strings, stable `ADASDF_*` status codes,
+  and structured warnings.
+- `adasdf_info --json --full`.
+- `adasdf_export_structure --json`, `adasdf_export_block_grid --json`, and
+  `adasdf_export_compression --json`.
+- `adasdf_collide --json` with no-collision represented as a successful
+  execution using `ADASDF_NO_COLLISION`.
+- Stable JSON output for sparse, block-lookup, and contact-band benchmark
+  CLIs.
+- Build profile, progress JSONL, timeout guard, `--distance-backend`, and
+  `--threads auto` support on dense, adaptive, adaptive-compression, and
+  compressed SDF build CLIs.
+
+### Notes
+
+- No `.sdfbin` format change is introduced.
+- No new SDF algorithm, GPU feature, FCL-style API, or native Python binding is
+  introduced.
+- Progress JSON is emitted to a JSONL file or stderr and does not pollute JSON
+  stdout.
+
 ## 1.17.0-alpha
 
 Persistent active block cache and fast block lookup.

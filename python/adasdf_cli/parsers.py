@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import json
 from typing import Dict, Optional, Tuple
 
 
@@ -97,6 +98,17 @@ def parse_info_format(stdout: str) -> Optional[str]:
     if not match:
         match = _search(r"^format:\s*(.+)$", stdout)
     return match.group(1).strip() if match else None
+
+
+def parse_backend_json(stdout: str) -> Optional[Dict[str, object]]:
+    text = (stdout or "").strip()
+    if not text.startswith("{"):
+      return None
+    try:
+        value = json.loads(text)
+    except json.JSONDecodeError:
+        return None
+    return value if isinstance(value, dict) else None
 
 
 def parse_benchmark_metrics(stdout: str) -> Dict[str, object]:

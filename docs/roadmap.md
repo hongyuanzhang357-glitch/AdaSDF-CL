@@ -65,6 +65,31 @@
 - v1.17 fast block/cache lookup for active block runtime queries, including
   Morton/spatial keys, block lookup indices, active cache slot maps, lookup
   benchmark CLI, Python wrapper support, and GPU-friendly flat metadata.
+- v1.17.1 stable backend JSON contract, versioned schemas, Studio-oriented
+  model export CLIs, build profile/progress/timeout reporting, and standard
+  `ADASDF_*` status-code semantics.
+
+## v1.17.1-alpha Scope
+
+- `schemas/adasdf.*.v1.schema.json` for info, structure, block grid,
+  compression, collide, benchmark, build profile, error, and progress outputs;
+- `include/adasdf/contract` and `src/contract` for dependency-free deterministic
+  JSON contract writing, schema ids, status codes, warnings, and lightweight
+  validation;
+- `include/adasdf/profile` and `src/profile` for build profile counters,
+  timing fields, progress JSONL events, and timeout guards;
+- `adasdf_info --json --full`, `adasdf_export_structure --json`,
+  `adasdf_export_block_grid --json`, and
+  `adasdf_export_compression --json`;
+- `adasdf_collide --json` where no-collision is `ADASDF_NO_COLLISION` with a
+  successful process result;
+- benchmark JSON contract output for sparse query, block lookup, and
+  contact-band benchmark tools;
+- dense, adaptive, adaptive-compression, and compressed SDF build CLI
+  `--profile`, `--profile-json`, `--progress`, `--progress-json`,
+  `--max-seconds`, `--distance-backend`, and `--threads auto` support;
+- explicit boundary that no SDF algorithm, GPU compressed query path,
+  FCL-style API, or `.sdfbin` format changes are introduced.
 
 ## v1.17.0-alpha Scope
 
@@ -348,8 +373,8 @@ The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`,
 `v1.11.0-alpha`, `v1.12.0-alpha`, `v1.13.0-alpha`,
 `v1.13.0-alpha.1`, `v1.13.0-alpha.2`, `v1.14.0-alpha`,
 `v1.15.0-alpha`, `v1.16.0-alpha`, `v1.16.0-alpha.1`,
-`v1.16.0-alpha.2`, and `v1.16.0-alpha.3` tags are retained for
-traceability. The recommended public pre-release is `v1.17.0-alpha`.
+`v1.16.0-alpha.2`, `v1.16.0-alpha.3`, and `v1.17.0-alpha` tags are retained
+for traceability. The recommended public pre-release is `v1.17.1-alpha`.
 
 ## Future Work
 

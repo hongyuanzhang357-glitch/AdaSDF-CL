@@ -45,6 +45,9 @@ replacement.
 - Fast active block lookup and cache slot mapping for CPU active block runtime
   queries.
 - Block lookup benchmark reporting speedup and consistency gates together.
+- Stable backend JSON contract and versioned schemas for Studio/automation.
+- Build profile, progress JSONL, and timeout reporting for dense, adaptive,
+  adaptive-compression, and compressed SDF build workflows.
 - Adaptive builder preview for future Tucker/trained-surrogate/GPU compressed
   stages.
 
@@ -80,6 +83,8 @@ replacement.
 - GPU hash table in v1.17.
 - Hashing the eight trilinear interpolation nodes.
 - Fast lookup speedup without mismatch and phi-difference checks.
+- Treating no-collision or no-candidate JSON status codes as crashes.
+- Assuming v1.17.1 JSON schemas imply a `.sdfbin` format change.
 - Industrial certification from synthetic fixture benchmarks.
 
 ## Short Description
@@ -107,7 +112,10 @@ with contact-band exact sampling, relaxed far-field interpolation, quality and
 coverage gates, and end-to-end timing semantics. v1.17 adds fast active block
 lookup metadata and cache slot maps for CPU active block runtime queries while
 keeping block-internal trilinear interpolation as direct regular-grid indexing.
-It does not
+v1.17.1 adds stable backend JSON schemas, model export CLIs, collision and
+benchmark JSON contract output, and build profile/progress/timeout reporting
+for dense, adaptive, adaptive-compression, and compressed SDF build workflows
+without changing SDF algorithms or `.sdfbin` formats. It does not
 fill holes, repair self-intersections, implement Tucker/HOSVD compression,
 claim a universal trained recommender, guarantee optimal parameters, claim
 GPU-native compressed query, provide GPU BVH, provide FCL fallback, claim
