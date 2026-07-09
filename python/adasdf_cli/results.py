@@ -218,6 +218,14 @@ class BlockCacheBenchmarkResult:
 
 
 @dataclass
+class BuildCacheBenchmarkResult:
+    command_result: CommandResult
+    metrics: Dict[str, Any] = field(default_factory=dict)
+    report_path: Optional[Path] = None
+    csv_path: Optional[Path] = None
+
+
+@dataclass
 class BlockLookupBenchmarkResult:
     command_result: CommandResult
     metrics: Dict[str, Any] = field(default_factory=dict)

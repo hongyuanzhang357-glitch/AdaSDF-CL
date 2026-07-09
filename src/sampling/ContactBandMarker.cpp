@@ -5,6 +5,7 @@
 #include <cmath>
 #include <vector>
 
+#include "adasdf/cache/ContactBandMarkerCache.h"
 #include "adasdf/acceleration/TriangleAABB.h"
 #include "adasdf/geometry/BoxTriangleDistance.h"
 
@@ -355,10 +356,13 @@ bool parseContactBandMarkerMode(
 }
 
 ContactBandMask ContactBandMarker::markBlock(
-    const AABB& block_bounds,
-    int block_resolution,
-    const TriangleBVH& triangle_bvh,
-    const ContactBandOptions& options) {
+      const AABB& block_bounds,
+      int block_resolution,
+      const TriangleBVH& triangle_bvh,
+      const ContactBandOptions& options,
+      ContactBandMarkerCache* cache,
+      int block_id,
+      int level) {
   const auto marker0 = std::chrono::steady_clock::now();
   const int n = std::max(2, block_resolution);
   ContactBandMask mask;
@@ -383,8 +387,26 @@ ContactBandMask ContactBandMarker::markBlock(
       for (int j = 0; j < cell_count; ++j) {
         for (int i = 0; i < cell_count; ++i) {
           const AABB cell = cellAABB(block_bounds, i, j, k, cell_count);
-          const CellMarkResult cell_result =
-              markCellWithBVH(triangle_bvh, cell, options);
+          CellMarkResult cell_result;
+          const MarkerCellKey key{
+              block_id,
+              i,
+              j,
+              k,
+              level,
+              contactBandMarkerConfigId(options)};
+          bool cached_decision = false;
+          bool cached_mark = false;
+          if (cache != nullptr &&
+              cache->findCellDecision(key, &cached_mark)) {
+            cached_decision = true;
+            cell_result.mark = cached_mark;
+          } else {
+            cell_result = markCellWithBVH(triangle_bvh, cell, options);
+            if (cache != nullptr) {
+              cache->insertCellDecision(key, cell_result.mark);
+            }
+          }
           mask.candidate_triangle_aabb_overlap_count +=
               cell_result.candidates;
           mask.candidate_triangle_count += cell_result.candidates;
@@ -402,6 +424,9 @@ ContactBandMask ContactBandMarker::markBlock(
               cell_result.box_triangle_distance_time_ms;
           mask.triangle_bvh_query_time_ms +=
               cell_result.triangle_bvh_query_time_ms;
+          if (cached_decision && cell_result.mark) {
+            ++mask.candidate_cell_count;
+          }
           if (!cell_result.mark) {
             continue;
           }

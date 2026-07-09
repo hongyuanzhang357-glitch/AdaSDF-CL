@@ -5,6 +5,8 @@
 #include <vector>
 
 #include "adasdf/acceleration/BuildAccelerationReport.h"
+#include "adasdf/cache/BuildCacheOptions.h"
+#include "adasdf/cache/BuildCacheStats.h"
 #include "adasdf/geometry/DenseSDFModel.h"
 #include "adasdf/mesh/MeshDiagnostics.h"
 #include "adasdf/mesh/MeshReadiness.h"
@@ -29,6 +31,7 @@ struct DenseSDFBuildOptions {
   SDFSamplingAcceleration acceleration = SDFSamplingAcceleration::BVH;
   int threads = 1;
   bool benchmark_brute_reference = false;
+  BuildCacheOptions cache_options;
 
   bool verbose = true;
 };
@@ -55,6 +58,7 @@ struct DenseSDFBuildReport {
   int threads_used = 1;
 
   BuildAccelerationStats acceleration_stats;
+  BuildCacheStats cache_stats;
 
   MeshDiagnosticsReport diagnostics;
   MeshReadinessReport readiness;

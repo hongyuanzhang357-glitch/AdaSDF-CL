@@ -3,7 +3,12 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <limits>
+#include <numeric>
 #include <vector>
+
+#include "adasdf/cache/BlockPointDeduplicator.h"
+#include "adasdf/cache/SDFSampleCache.h"
 
 namespace adasdf {
 namespace {
@@ -77,6 +82,100 @@ BVHSDFSampleResult sampleExactPoint(
     return BVHSDFSampler::sampleBruteForce(*mesh, point, signed_distance);
   }
   return sampler.sample(point);
+}
+
+CachedSDFSample toCachedSample(
+    const BVHSDFSampleResult& sample,
+    bool signed_distance) {
+  CachedSDFSample cached;
+  cached.phi = sample.success ? sample.phi : 0.0;
+  cached.sign_known = signed_distance && sample.success;
+  cached.sign = cached.phi < 0.0 ? -1 : (cached.phi > 0.0 ? 1 : 0);
+  cached.nearest_triangle_id = sample.nearest.triangle_index;
+  cached.finite = std::isfinite(cached.phi);
+  return cached;
+}
+
+double blockQuantizationSpacing(const AABB& bounds, int n, int coarse_n) {
+  const int exact_den = std::max(1, n - 1);
+  const int coarse_den = std::max(1, coarse_n - 1);
+  const int common_den = std::max(1, std::lcm(exact_den, coarse_den));
+  double spacing = std::numeric_limits<double>::infinity();
+  const auto consider = [&](double value) {
+    if (value > 0.0) {
+      spacing = std::min(spacing, value);
+    }
+  };
+  consider((bounds.max.x - bounds.min.x) / static_cast<double>(common_den));
+  consider((bounds.max.y - bounds.min.y) / static_cast<double>(common_den));
+  consider((bounds.max.z - bounds.min.z) / static_cast<double>(common_den));
+  return std::isfinite(spacing) ? spacing : 1.0;
+}
+
+BVHSDFSampleResult sampleExactPointCached(
+    BVHSDFSampler& sampler,
+    const Vector3& point,
+    bool signed_distance,
+    int level,
+    const QuantizationOptions& quantization,
+    const BuildCacheOptions& cache_options,
+    SDFSampleCache* sample_cache) {
+  if (sample_cache == nullptr ||
+      cache_options.sample_cache == BuildCacheScope::Off) {
+    return sampleExactPoint(sampler, point, signed_distance);
+  }
+  const QuantizedPointKey key =
+      QuantizedPointKeyBuilder::fromPoint(point, level, quantization);
+  CachedSDFSample cached;
+  if (sample_cache->find(key, &cached)) {
+    BVHSDFSampleResult result;
+    result.success = cached.finite;
+    result.phi = cached.phi;
+    result.nearest.triangle_index = cached.nearest_triangle_id;
+    return result;
+  }
+  BVHSDFSampleResult result = sampleExactPoint(sampler, point, signed_distance);
+  sample_cache->insert(key, toCachedSample(result, signed_distance));
+  return result;
+}
+
+BuildCacheStats buildCacheStatsFromSampleCache(
+    const BuildCacheOptions& options,
+    const SDFSampleCache& cache,
+    std::size_t duplicate_count,
+    const ContactBandMarkerCacheStats& marker_stats) {
+  const SDFSampleCacheStats sample = cache.snapshotStats();
+  BuildCacheStats stats;
+  stats.sample_cache_enabled = options.sample_cache != BuildCacheScope::Off;
+  stats.sample_cache_scope = options.sample_cache;
+  stats.sample_cache_entries = sample.entry_count;
+  stats.sample_cache_hits = sample.hit_count;
+  stats.sample_cache_misses = sample.miss_count;
+  stats.distance_cache_hits = options.distance_cache ? sample.hit_count : 0;
+  stats.distance_cache_misses = options.distance_cache ? sample.miss_count : 0;
+  stats.sign_cache_hits = options.sign_cache ? sample.hit_count : 0;
+  stats.sign_cache_misses = options.sign_cache ? sample.miss_count : 0;
+  stats.corner_cache_hits = options.corner_cache != BuildCacheScope::Off
+                                 ? sample.hit_count
+                                 : 0;
+  stats.corner_cache_misses = options.corner_cache != BuildCacheScope::Off
+                                   ? sample.miss_count
+                                   : 0;
+  stats.block_point_duplicate_count = duplicate_count;
+  stats.marker_candidate_cache_hits = marker_stats.candidate_hit_count;
+  stats.marker_candidate_cache_misses = marker_stats.candidate_miss_count;
+  stats.marker_decision_cache_hits = marker_stats.decision_hit_count;
+  stats.marker_decision_cache_misses = marker_stats.decision_miss_count;
+  stats.distance_queries_saved = sample.distance_query_saved;
+  stats.sign_queries_saved = sample.sign_query_saved;
+  stats.box_triangle_distance_saved = marker_stats.box_triangle_distance_saved;
+  stats.cache_memory_estimate_bytes =
+      sample.entry_count * sizeof(CachedSDFSample);
+  stats.cache_lookup_time_ms = sample.lookup_time_ms;
+  stats.cache_insert_time_ms = sample.insert_time_ms;
+  stats.marker_cache_time_ms = marker_stats.marker_cache_time_ms;
+  finalizeBuildCacheStats(&stats);
+  return stats;
 }
 
 double trilerp(
@@ -157,12 +256,28 @@ ContactBandBlockSamplingResult ContactBandBlockSampler::sampleBlock(
     int level,
     int block_resolution,
     bool signed_distance,
-    BVHSDFSampler& exact_sampler,
-    const TriangleBVH& triangle_bvh,
-    const ContactBandSamplingOptions& options) {
+      BVHSDFSampler& exact_sampler,
+      const TriangleBVH& triangle_bvh,
+      const ContactBandSamplingOptions& options,
+      const BuildCacheOptions* cache_options,
+      ContactBandMarkerCache* marker_cache) {
   const auto total0 = std::chrono::steady_clock::now();
   ContactBandBlockSamplingResult result;
   const int n = std::max(2, block_resolution);
+  BuildCacheOptions effective_cache;
+  if (cache_options != nullptr) {
+    effective_cache = *cache_options;
+  } else {
+    effective_cache.sample_cache = BuildCacheScope::Off;
+    effective_cache.corner_cache = BuildCacheScope::Off;
+    effective_cache.sign_cache = false;
+    effective_cache.distance_cache = false;
+    effective_cache.marker_cache = false;
+  }
+  if (!effective_cache.marker_cache) {
+    marker_cache = nullptr;
+  }
+  SDFSampleCache sample_cache(effective_cache.cache_max_entries);
   result.block = makeBlockHeader(
       block_bounds,
       block_id,
@@ -178,10 +293,18 @@ ContactBandBlockSamplingResult ContactBandBlockSampler::sampleBlock(
       block_bounds,
       n,
       triangle_bvh,
-      options.markerOptions());
+      options.markerOptions(),
+      marker_cache,
+      block_id,
+      level);
   result.has_contact_band = result.mask.contact_band_node_count > 0;
 
   const int coarse_n = std::max(2, options.far_field_resolution);
+  QuantizationOptions quantization;
+  quantization.origin = block_bounds.min;
+  quantization.spacing = blockQuantizationSpacing(block_bounds, n, coarse_n);
+  quantization.epsilon = effective_cache.cache_quantization_epsilon;
+  quantization.include_level = true;
   std::vector<double> coarse(
       static_cast<std::size_t>(coarse_n) * static_cast<std::size_t>(coarse_n) *
           static_cast<std::size_t>(coarse_n),
@@ -191,10 +314,14 @@ ContactBandBlockSamplingResult ContactBandBlockSampler::sampleBlock(
     for (int j = 0; j < coarse_n; ++j) {
       for (int i = 0; i < coarse_n; ++i) {
         const BVHSDFSampleResult sample =
-            sampleExactPoint(
+            sampleExactPointCached(
                 exact_sampler,
                 gridPoint(block_bounds, i, j, k, coarse_n),
-                signed_distance);
+                signed_distance,
+                level,
+                quantization,
+                effective_cache,
+                &sample_cache);
         coarse[gridIndex(i, j, k, coarse_n, coarse_n)] =
             sample.success ? sample.phi : 0.0;
         ++result.coarse_sample_count;
@@ -225,6 +352,8 @@ ContactBandBlockSamplingResult ContactBandBlockSampler::sampleBlock(
   result.interpolation_time_ms = elapsedMs(interp0, interp1);
 
   const auto exact0 = std::chrono::steady_clock::now();
+  std::vector<std::size_t> exact_indices;
+  std::vector<Vector3> exact_points;
   for (int k = 0; k < n; ++k) {
     for (int j = 0; j < n; ++j) {
       for (int i = 0; i < n; ++i) {
@@ -232,16 +361,41 @@ ContactBandBlockSamplingResult ContactBandBlockSampler::sampleBlock(
         if (!shouldExactNode(result.mask, index, result.has_contact_band, options)) {
           continue;
         }
-        const BVHSDFSampleResult sample =
-            sampleExactPoint(
-                exact_sampler,
-                gridPoint(block_bounds, i, j, k, n),
-                signed_distance);
-        result.block.phi[index] = sample.success ? sample.phi : result.block.phi[index];
-        ++result.exact_node_count;
+        exact_indices.push_back(index);
+        exact_points.push_back(gridPoint(block_bounds, i, j, k, n));
       }
     }
   }
+  const auto dedup0 = std::chrono::steady_clock::now();
+  const DeduplicatedPointSet dedup = BlockPointDeduplicator::deduplicate(
+      exact_points,
+      level,
+      quantization);
+  const auto dedup1 = std::chrono::steady_clock::now();
+  std::vector<double> unique_phi(dedup.unique_points.size(), 0.0);
+  for (std::size_t i = 0; i < dedup.unique_points.size(); ++i) {
+    const BVHSDFSampleResult sample =
+        sampleExactPointCached(
+            exact_sampler,
+            dedup.unique_points[i],
+            signed_distance,
+            level,
+            quantization,
+            effective_cache,
+            &sample_cache);
+    unique_phi[i] = sample.success ? sample.phi : 0.0;
+  }
+  for (std::size_t i = 0; i < exact_indices.size(); ++i) {
+    const int unique_index = i < dedup.reverse_index.size()
+                                 ? dedup.reverse_index[i]
+                                 : -1;
+    if (unique_index >= 0 &&
+        static_cast<std::size_t>(unique_index) < unique_phi.size()) {
+      result.block.phi[exact_indices[i]] =
+          unique_phi[static_cast<std::size_t>(unique_index)];
+    }
+  }
+  result.exact_node_count = exact_indices.size();
   const auto exact1 = std::chrono::steady_clock::now();
   result.exact_sampling_time_ms = elapsedMs(exact0, exact1);
   result.predicted_node_count = result.block.phi.size() - result.exact_node_count;
@@ -261,7 +415,9 @@ ContactBandBlockSamplingResult ContactBandBlockSampler::sampleBlock(
   result.diagnostics.far_field_node_count = result.far_field_node_count;
   result.diagnostics.coarse_sample_count = result.coarse_sample_count;
   result.diagnostics.distance_query_count =
-      result.exact_node_count + result.coarse_sample_count;
+      effective_cache.sample_cache == BuildCacheScope::Off
+          ? result.exact_node_count + result.coarse_sample_count
+          : sample_cache.snapshotStats().miss_count;
   result.diagnostics.sign_query_count =
       signed_distance ? result.diagnostics.distance_query_count : 0;
   result.diagnostics.candidate_triangle_aabb_overlap_count =
@@ -302,6 +458,16 @@ ContactBandBlockSamplingResult ContactBandBlockSampler::sampleBlock(
   result.diagnostics.triangle_bvh_query_time_ms =
       result.mask.triangle_bvh_query_time_ms;
   finalizeContactBandDiagnostics(&result.diagnostics);
+  const ContactBandMarkerCacheStats marker_stats =
+      marker_cache != nullptr ? marker_cache->snapshotStats()
+                              : ContactBandMarkerCacheStats{};
+  result.cache_stats = buildCacheStatsFromSampleCache(
+      effective_cache,
+      sample_cache,
+      dedup.duplicate_count,
+      marker_stats);
+  result.cache_stats.deduplication_time_ms =
+      elapsedMs(dedup0, dedup1);
   return result;
 }
 

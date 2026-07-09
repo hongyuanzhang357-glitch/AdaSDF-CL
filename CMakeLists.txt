@@ -108,6 +108,17 @@ set(ADASDF_CL_RUNTIME_SOURCES
   src/backend/CudaQueryBackend.cpp
   src/backend/GpuBackend.cpp
   src/benchmark/PointCloudGenerator.cpp
+  src/cache/AdaptiveRefinementCache.cpp
+  src/cache/BlockPointDeduplicator.cpp
+  src/cache/BuildCacheOptions.cpp
+  src/cache/BuildCacheReportWriter.cpp
+  src/cache/BuildCacheStats.cpp
+  src/cache/CellCornerCache.cpp
+  src/cache/ContactBandMarkerCache.cpp
+  src/cache/DistanceQueryCache.cpp
+  src/cache/QuantizedPointKey.cpp
+  src/cache/SDFSampleCache.cpp
+  src/cache/SignQueryCache.cpp
   src/contract/ErrorCode.cpp
   src/contract/JsonContractValidator.cpp
   src/contract/JsonContractWriter.cpp
@@ -698,6 +709,12 @@ if(ADASDF_CL_BUILD_BENCHMARKS)
   set_target_properties(adasdf_benchmark_builder_acceleration PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
 
+  add_executable(adasdf_benchmark_build_cache
+    tools/adasdf_benchmark_build_cache.cpp)
+  target_link_libraries(adasdf_benchmark_build_cache PRIVATE adasdf_cl_runtime)
+  set_target_properties(adasdf_benchmark_build_cache PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
+
   add_executable(adasdf_benchmark_contact_reduction
     tools/adasdf_benchmark_contact_reduction.cpp)
   target_link_libraries(adasdf_benchmark_contact_reduction PRIVATE adasdf_cl_runtime)
@@ -864,6 +881,15 @@ set(ADASDF_CL_TEST_SOURCES
   tests/test_build_profile_json_cli.cpp
   tests/test_progress_timeout_cli.cpp
   tests/test_build_cli_profile_options.cpp
+  tests/test_quantized_point_key.cpp
+  tests/test_sdf_sample_cache.cpp
+  tests/test_cell_corner_cache.cpp
+  tests/test_block_point_deduplicator.cpp
+  tests/test_adaptive_refinement_cache.cpp
+  tests/test_contact_band_marker_cache.cpp
+  tests/test_build_cache_profile_fields.cpp
+  tests/test_build_cache_cli.cpp
+  tests/test_benchmark_build_cache_cli.cpp
   tests/test_distance_backend_selector.cpp
   tests/test_compressed_sdf_builder_bvh_cli.cpp
   tests/test_compressed_builder_hierarchical_sampling_cli.cpp
@@ -1106,6 +1132,19 @@ if(ADASDF_CL_BUILD_TESTS)
         ADASDF_CL_BUILD_DENSE_SDF="$<TARGET_FILE_NAME:adasdf_build_dense_sdf>"
         ADASDF_CL_BUILD_ADAPTIVE_SDF="$<TARGET_FILE_NAME:adasdf_build_adaptive_sdf>"
         ADASDF_CL_COMPRESS_ADAPTIVE_SDF="$<TARGET_FILE_NAME:adasdf_compress_adaptive_sdf>")
+    endif()
+    if(test_name STREQUAL "test_build_cache_cli" OR
+        test_name STREQUAL "test_build_cache_profile_fields")
+      add_dependencies(${test_name} adasdf_build_compressed_sdf)
+      target_compile_definitions(${test_name} PRIVATE
+        ADASDF_CL_BUILD_COMPRESSED_SDF="$<TARGET_FILE_NAME:adasdf_build_compressed_sdf>")
+    endif()
+    if(test_name STREQUAL "test_benchmark_build_cache_cli")
+      if(TARGET adasdf_benchmark_build_cache)
+        add_dependencies(${test_name} adasdf_benchmark_build_cache)
+        target_compile_definitions(${test_name} PRIVATE
+          ADASDF_CL_BENCHMARK_BUILD_CACHE="$<TARGET_FILE_NAME:adasdf_benchmark_build_cache>")
+      endif()
     endif()
     if(test_name STREQUAL "test_build_compressed_sdf_cli" OR
         test_name STREQUAL "test_compressed_sdf_builder_bvh_cli" OR
@@ -1383,6 +1422,17 @@ if(ADASDF_CL_BUILD_TESTS)
       set_tests_properties(${test_name} PROPERTIES
         WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_build_dense_sdf>")
     endif()
+    if(test_name STREQUAL "test_build_cache_cli" OR
+        test_name STREQUAL "test_build_cache_profile_fields")
+      set_tests_properties(${test_name} PROPERTIES
+        WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_build_compressed_sdf>")
+    endif()
+    if(test_name STREQUAL "test_benchmark_build_cache_cli")
+      if(TARGET adasdf_benchmark_build_cache)
+        set_tests_properties(${test_name} PROPERTIES
+          WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_benchmark_build_cache>")
+      endif()
+    endif()
     if(test_name STREQUAL "test_build_compressed_sdf_cli" OR
         test_name STREQUAL "test_compressed_sdf_builder_bvh_cli" OR
         test_name STREQUAL "test_compressed_builder_hierarchical_sampling_cli" OR
@@ -1587,6 +1637,7 @@ if(ADASDF_CL_BUILD_BENCHMARKS)
     adasdf_benchmark_block_cache
     adasdf_benchmark_block_lookup
     adasdf_benchmark_builder_acceleration
+    adasdf_benchmark_build_cache
     adasdf_benchmark_contact_reduction
     adasdf_benchmark_collision_world
     adasdf_benchmark_cuda_block_cache

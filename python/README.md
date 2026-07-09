@@ -7,6 +7,9 @@ not a C++ extension module, and not a replacement for the C++ API.
 v1.17.1-alpha adds backend JSON/profile/progress arguments and read-only export
 helpers for structure, block-grid, and compression metadata.
 
+v1.17.2-alpha adds build cache flags on build helpers and
+`benchmark_build_cache` for no-cache reference benchmarking.
+
 ## Requirements
 
 - Python 3.9 or newer.
@@ -66,6 +69,12 @@ adasdf.build_compressed_sdf(
     max_seconds=60,
     distance_backend="bvh",
     threads="auto",
+    sample_cache="block",
+    corner_cache="block",
+    sign_cache="on",
+    distance_cache="on",
+    marker_cache="on",
+    report_cache_stats=True,
     case_id="case001",
 )
 
@@ -143,6 +152,17 @@ lookup_bench = adasdf.benchmark_block_lookup(
     report="block_lookup.md",
 )
 print(lookup_bench.metrics.get("performance_claim_allowed"))
+
+cache_bench = adasdf.benchmark_build_cache(
+    "model.stl",
+    builder="compressed",
+    sampling="contact-band",
+    cache_modes=["off", "block"],
+    distance_backend="bvh",
+    csv="build_cache.csv",
+    report="build_cache.md",
+)
+print(cache_bench.metrics.get("speedup_vs_no_cache"))
 ```
 
 ## Strict Reports

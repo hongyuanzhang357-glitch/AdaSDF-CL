@@ -1,5 +1,7 @@
 #include <adasdf/adasdf.h>
 
+#include "BuildCliProfileHelpers.h"
+
 #include <algorithm>
 #include <chrono>
 #include <exception>
@@ -33,6 +35,7 @@ struct Options {
   bool include_marker_in_speedup = true;
   bool exclude_marker_from_speedup = false;
   adasdf::ContactBandSamplingOptions contact;
+  adasdf::BuildCacheOptions cache_options;
 };
 
 struct Location {
@@ -67,6 +70,11 @@ void usage() {
          "[--timing-mode end-to-end|core|diagnostic] "
          "[--include-audit-in-wall-time] [--exclude-audit-from-speedup] "
          "[--include-marker-in-speedup] [--exclude-marker-from-speedup] "
+         "[--sample-cache off|block|global] "
+         "[--corner-cache off|block|global] "
+         "[--sign-cache off|on] [--distance-cache off|on] "
+         "[--marker-cache off|on] [--cache-max-entries N] "
+         "[--cache-quantization-epsilon value] [--report-cache-stats] "
          "[--normal-audit] [--normal-error-limit-deg value] "
          "[--threads N] [--csv out.csv] [--report out.md] "
          "[--json [out.json]] [--case-id id]\n";
@@ -241,6 +249,7 @@ adasdf::ContactBandBenchmarkResult runBenchmark(
       parallel_options,
       [&](std::size_t block_index) {
         const adasdf::AdaptiveSDFBlock& block = contact_blocks[block_index];
+        adasdf::ContactBandMarkerCache marker_cache;
         sampled[block_index] = adasdf::ContactBandBlockSampler::sampleBlock(
             block.bounds,
             block.block_id,
@@ -250,7 +259,9 @@ adasdf::ContactBandBenchmarkResult runBenchmark(
             options.signed_distance,
             sampler,
             sampler.bvh(),
-            options.contact);
+            options.contact,
+            &options.cache_options,
+            options.cache_options.marker_cache ? &marker_cache : nullptr);
       });
   const auto core1 = std::chrono::steady_clock::now();
   result.contact_band_core_build_time_ms = elapsedMs(core0, core1);
@@ -466,6 +477,19 @@ int main(int argc, char** argv) {
     options.contact.normal_audit = false;
     for (int i = 1; i < argc; ++i) {
       const std::string arg = argv[i];
+      const adasdf_tools::CommonOptionParseResult cache_parse =
+          adasdf_tools::parseBuildCacheOption(
+              arg,
+              &i,
+              argc,
+              argv,
+              &options.cache_options);
+      if (cache_parse == adasdf_tools::CommonOptionParseResult::Error) {
+        return 1;
+      }
+      if (cache_parse == adasdf_tools::CommonOptionParseResult::Parsed) {
+        continue;
+      }
       if (arg == "--help" || arg == "-h") {
         usage();
         return 0;

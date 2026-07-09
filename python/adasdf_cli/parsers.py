@@ -307,6 +307,47 @@ def parse_block_cache_benchmark_metrics(stdout: str) -> Dict[str, object]:
     return metrics
 
 
+def parse_build_cache_benchmark_metrics(stdout: str) -> Dict[str, object]:
+    metrics: Dict[str, object] = {}
+    for label, key in (
+        ("Case id", "case_id"),
+        ("Builder", "builder"),
+        ("Reference cache mode", "reference_cache_mode"),
+    ):
+        match = _search(rf"^{re.escape(label)}:\s*(.+)$", stdout)
+        if match:
+            metrics[key] = match.group(1).strip()
+    for line in (stdout or "").splitlines():
+        if line.startswith("case_id,builder,sampling,cache_mode,"):
+            metrics["csv_header"] = line
+        elif metrics.get("csv_header") and "csv_values" not in metrics:
+            metrics["csv_values"] = line
+            columns = metrics["csv_header"].split(",")
+            values = line.split(",")
+            for name in (
+                "cache_mode",
+                "speedup_vs_no_cache",
+                "sample_cache_hit_rate",
+                "corner_cache_hit_rate",
+                "sign_cache_hit_rate",
+                "distance_queries_saved",
+                "sign_queries_saved",
+                "duplicate_point_count",
+                "marker_cache_hit_rate",
+                "max_abs_phi_diff",
+                "rms_phi_diff",
+                "p95_phi_diff",
+                "sign_mismatch_count",
+                "quality_passed",
+                "performance_claim_allowed",
+            ):
+                if name in columns:
+                    index = columns.index(name)
+                    if index < len(values):
+                        metrics[name] = values[index]
+    return metrics
+
+
 def parse_block_lookup_benchmark_metrics(stdout: str) -> Dict[str, object]:
     metrics: Dict[str, object] = {}
     for label, key in (

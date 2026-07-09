@@ -1,5 +1,7 @@
 #include <adasdf/adasdf.h>
 
+#include "BuildCliProfileHelpers.h"
+
 #include <exception>
 #include <filesystem>
 #include <iostream>
@@ -29,6 +31,11 @@ void usage() {
          "[--no-transition-prediction] [--near-surface-exact] "
          "[--hierarchical-diagnostics] [--no-hierarchical-diagnostics] "
          "[--quality-guard] [--no-quality-guard] "
+         "[--sample-cache off|block|global] "
+         "[--corner-cache off|block|global] "
+         "[--sign-cache off|on] [--distance-cache off|on] "
+         "[--marker-cache off|on] [--cache-max-entries N] "
+         "[--cache-quantization-epsilon value] [--report-cache-stats] "
          "[--report report.md] [--json report.json] [--csv report.csv] "
          "[--diagnostics-report report.md] [--diagnostics-csv report.csv] "
          "[--strict-json report.json] [--case-id case_id]\n";
@@ -134,6 +141,19 @@ int main(int argc, char** argv) {
 
     for (int i = 1; i < argc; ++i) {
       const std::string arg = argv[i];
+      const adasdf_tools::CommonOptionParseResult cache_parse =
+          adasdf_tools::parseBuildCacheOption(
+              arg,
+              &i,
+              argc,
+              argv,
+              &options.build_options.cache_options);
+      if (cache_parse == adasdf_tools::CommonOptionParseResult::Error) {
+        return 1;
+      }
+      if (cache_parse == adasdf_tools::CommonOptionParseResult::Parsed) {
+        continue;
+      }
       if (arg == "--help" || arg == "-h") {
         usage();
         return 0;

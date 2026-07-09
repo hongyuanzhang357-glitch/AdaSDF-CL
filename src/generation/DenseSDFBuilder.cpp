@@ -8,6 +8,7 @@
 
 #include "adasdf/acceleration/BVHSDFSampler.h"
 #include "adasdf/acceleration/ParallelSampling.h"
+#include "adasdf/cache/SDFSampleCache.h"
 #include "adasdf/mesh/MeshCleanup.h"
 #include "adasdf/mesh/STLReader.h"
 
@@ -37,6 +38,56 @@ Vector3 gridPointFromIndex(const DenseSDFGrid& grid, std::size_t index) {
       (static_cast<std::size_t>(grid.nx) *
        static_cast<std::size_t>(grid.ny)));
   return gridPoint(grid, i, j, k);
+}
+
+double minSpacing(const DenseSDFGrid& grid) {
+  double spacing = std::numeric_limits<double>::infinity();
+  if (grid.spacing.x > 0.0) {
+    spacing = std::min(spacing, grid.spacing.x);
+  }
+  if (grid.spacing.y > 0.0) {
+    spacing = std::min(spacing, grid.spacing.y);
+  }
+  if (grid.spacing.z > 0.0) {
+    spacing = std::min(spacing, grid.spacing.z);
+  }
+  return std::isfinite(spacing) ? spacing : 1.0;
+}
+
+CachedSDFSample toCachedSample(
+    const BVHSDFSampleResult& sample,
+    bool signed_distance) {
+  CachedSDFSample cached;
+  cached.phi = sample.success ? sample.phi : 0.0;
+  cached.sign_known = signed_distance && sample.success;
+  cached.sign = cached.phi < 0.0 ? -1 : (cached.phi > 0.0 ? 1 : 0);
+  cached.nearest_triangle_id = sample.nearest.triangle_index;
+  cached.finite = std::isfinite(cached.phi);
+  return cached;
+}
+
+BuildCacheStats buildCacheStatsFromSampleCache(
+    const BuildCacheOptions& options,
+    const SDFSampleCache& cache) {
+  const SDFSampleCacheStats sample = cache.snapshotStats();
+  BuildCacheStats stats;
+  stats.sample_cache_enabled = options.sample_cache != BuildCacheScope::Off;
+  stats.sample_cache_scope = options.sample_cache;
+  stats.sample_cache_entries = sample.entry_count;
+  stats.sample_cache_hits = sample.hit_count;
+  stats.sample_cache_misses = sample.miss_count;
+  stats.distance_cache_hits = options.distance_cache ? sample.hit_count : 0;
+  stats.distance_cache_misses = options.distance_cache ? sample.miss_count : 0;
+  stats.sign_cache_hits = options.sign_cache ? sample.hit_count : 0;
+  stats.sign_cache_misses = options.sign_cache ? sample.miss_count : 0;
+  stats.distance_queries_saved = sample.distance_query_saved;
+  stats.sign_queries_saved = sample.sign_query_saved;
+  stats.cache_memory_estimate_bytes =
+      sample.entry_count * sizeof(CachedSDFSample);
+  stats.cache_lookup_time_ms = sample.lookup_time_ms;
+  stats.cache_insert_time_ms = sample.insert_time_ms;
+  finalizeBuildCacheStats(&stats);
+  return stats;
 }
 
 TriangleMesh maybeCleanup(
@@ -119,12 +170,19 @@ DenseSDFGrid makeGrid(
       options.acceleration == SDFSamplingAcceleration::BVH && sampler.hasBVH();
 
   const std::size_t total = grid.phi.size();
+  SDFSampleCache sample_cache(options.cache_options.cache_max_entries);
+  QuantizationOptions quantization;
+  quantization.origin = grid.origin;
+  quantization.spacing = minSpacing(grid);
+  quantization.epsilon = options.cache_options.cache_quantization_epsilon;
+  quantization.include_level = false;
   std::atomic<std::size_t> nearest_node_visits{0};
   std::atomic<std::size_t> nearest_triangle_tests{0};
   std::atomic<std::size_t> ray_node_visits{0};
   std::atomic<std::size_t> ray_triangle_tests{0};
   std::atomic<std::size_t> ambiguous_count{0};
   std::atomic<std::size_t> fallback_count{0};
+  std::atomic<std::size_t> cache_hits{0};
   ParallelSamplingOptions parallel_options;
   parallel_options.threads = std::max(1, options.threads);
   const ParallelSamplingStats parallel_stats = parallelFor(
@@ -132,6 +190,50 @@ DenseSDFGrid makeGrid(
       parallel_options,
       [&](std::size_t index) {
         const Vector3 p = gridPointFromIndex(grid, index);
+        if (options.cache_options.sample_cache != BuildCacheScope::Off) {
+          CachedSDFSample cached;
+          const QuantizedPointKey key =
+              QuantizedPointKeyBuilder::fromPoint(p, 0, quantization);
+          if (sample_cache.find(key, &cached)) {
+            grid.phi[index] = cached.phi;
+            cache_hits.fetch_add(1, std::memory_order_relaxed);
+            return;
+          }
+          const BVHSDFSampleResult sample =
+              use_bvh
+                  ? BVHSDFSampler::sampleWithBVH(
+                        mesh,
+                        sampler.bvh(),
+                        p,
+                        sampler_options)
+                  : BVHSDFSampler::sampleBruteForce(
+                        mesh,
+                        p,
+                        options.signed_distance);
+          grid.phi[index] = sample.success ? sample.phi : 0.0;
+          sample_cache.insert(
+              key,
+              toCachedSample(sample, options.signed_distance));
+          nearest_node_visits.fetch_add(
+              sample.nearest.node_visits,
+              std::memory_order_relaxed);
+          nearest_triangle_tests.fetch_add(
+              sample.nearest.triangle_tests,
+              std::memory_order_relaxed);
+          ray_node_visits.fetch_add(
+              sample.ray.node_visits,
+              std::memory_order_relaxed);
+          ray_triangle_tests.fetch_add(
+              sample.ray.triangle_tests,
+              std::memory_order_relaxed);
+          if (sample.ambiguous_sign) {
+            ambiguous_count.fetch_add(1, std::memory_order_relaxed);
+          }
+          if (sample.fallback_sign) {
+            fallback_count.fetch_add(1, std::memory_order_relaxed);
+          }
+          return;
+        }
         const BVHSDFSampleResult sample =
             use_bvh
                 ? BVHSDFSampler::sampleWithBVH(
@@ -164,7 +266,7 @@ DenseSDFGrid makeGrid(
         }
       });
 
-  stats.sample_count = total;
+  stats.sample_count = total - cache_hits.load();
   stats.threads_used = parallel_stats.threads_used;
   stats.sampling_time_ms = parallel_stats.elapsed_ms;
   stats.nearest_node_visits = nearest_node_visits.load();
@@ -204,6 +306,8 @@ DenseSDFGrid makeGrid(
   report.used_bvh = use_bvh;
   report.threads_used = stats.threads_used;
   report.acceleration_stats = stats;
+  report.cache_stats =
+      buildCacheStatsFromSampleCache(options.cache_options, sample_cache);
   return grid;
 }
 

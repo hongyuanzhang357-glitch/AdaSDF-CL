@@ -1,5 +1,33 @@
 # Changelog
 
+## 1.17.2-alpha
+
+Adaptive build sample cache and repeated query reduction.
+
+### Added
+
+- Quantized point keys for deterministic build-time caching.
+- SDF sample cache, distance cache, and sign cache.
+- Cell corner cache for adaptive/block sampling.
+- Block point deduplication for exact-required nodes.
+- Adaptive refinement cache.
+- Contact-band marker cache.
+- Build profile cache counters and timings.
+- `adasdf_benchmark_build_cache`.
+- Python wrapper support for build cache options and benchmarks.
+
+### Improved
+
+- Reduces repeated build-time SDF and marker queries.
+- Adds cache-on/off benchmarking against a no-cache reference.
+- Preserves SDFBin format and query results.
+
+### Notes
+
+- Global cache is optional and may increase memory.
+- Cache speedup claims require quality checks against no-cache reference.
+- This release does not introduce new GPU kernels or FCL-style APIs.
+
 ## 1.17.1-alpha
 
 Stable backend JSON contract and build profiler.

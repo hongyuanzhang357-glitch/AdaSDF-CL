@@ -22,6 +22,11 @@ void usage() {
          "[--profile] [--profile-json profile.json] "
          "[--progress] [--progress-json progress.jsonl] "
          "[--max-seconds value] "
+         "[--sample-cache off|block|global] "
+         "[--corner-cache off|block|global] [--sign-cache off|on] "
+         "[--distance-cache off|on] [--marker-cache off|on] "
+         "[--cache-max-entries N] "
+         "[--cache-quantization-epsilon value] [--report-cache-stats] "
          "[--distance-backend brute_force|brute|bvh] [--threads auto|N] "
          "[--verbose]\n";
 }
@@ -71,6 +76,8 @@ int main(int argc, char** argv) {
     std::string case_id = "default";
     adasdf::BlockLowRankCompressionOptions options;
     adasdf_tools::BuildCliRuntimeOptions runtime_options;
+    adasdf::BuildCacheOptions ignored_cache_options;
+    bool ignored_cache_options_seen = false;
     std::string ignored_distance_backend;
     int ignored_threads = 0;
     const auto strict_timer = adasdf::startStrictRunTimer();
@@ -116,6 +123,19 @@ int main(int argc, char** argv) {
         return 1;
       }
       if (common_result == adasdf_tools::CommonOptionParseResult::Parsed) {
+        continue;
+      }
+      const auto cache_result = adasdf_tools::parseBuildCacheOption(
+          arg,
+          &i,
+          argc,
+          argv,
+          &ignored_cache_options);
+      if (cache_result == adasdf_tools::CommonOptionParseResult::Error) {
+        return 1;
+      }
+      if (cache_result == adasdf_tools::CommonOptionParseResult::Parsed) {
+        ignored_cache_options_seen = true;
         continue;
       }
       if (arg == "--help" || arg == "-h") {
@@ -203,6 +223,12 @@ int main(int argc, char** argv) {
           "ADASDF_OPTION_IGNORED",
           "--threads is accepted for script compatibility but is not used by "
           "the standalone compressor");
+    }
+    if (ignored_cache_options_seen) {
+      profiler.addWarning(
+          "ADASDF_OPTION_IGNORED",
+          "build sample cache options are accepted for script compatibility "
+          "but are not used by the standalone compressor");
     }
     adasdf::ProgressReporter progress(
         "adasdf_compress_adaptive_sdf",

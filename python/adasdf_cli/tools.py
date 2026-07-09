@@ -10,6 +10,7 @@ from .parsers import (
     parse_benchmark_metrics,
     parse_backend_json,
     parse_build_acceleration_stats,
+    parse_build_cache_benchmark_metrics,
     parse_block_cache_benchmark_metrics,
     parse_block_lookup_benchmark_metrics,
     parse_collision_world_benchmark_metrics,
@@ -43,6 +44,7 @@ from .results import (
     ActiveBlockSelectionResult,
     BackendJsonResult,
     BlockCacheBenchmarkResult,
+    BuildCacheBenchmarkResult,
     BlockLookupBenchmarkResult,
     BuildResult,
     CollisionResult,
@@ -151,6 +153,28 @@ def _append_profile_options(
     _append_value(command, "--max-seconds", max_seconds)
     _append_value(command, "--distance-backend", distance_backend)
     _append_value(command, "--threads", threads)
+
+
+def _append_cache_options(
+    command: List[str],
+    *,
+    sample_cache: Optional[str],
+    corner_cache: Optional[str],
+    sign_cache: Optional[str],
+    distance_cache: Optional[str],
+    marker_cache: Optional[str],
+    cache_max_entries: Optional[int],
+    cache_quantization_epsilon: Optional[float],
+    report_cache_stats: bool,
+) -> None:
+    _append_value(command, "--sample-cache", sample_cache)
+    _append_value(command, "--corner-cache", corner_cache)
+    _append_value(command, "--sign-cache", sign_cache)
+    _append_value(command, "--distance-cache", distance_cache)
+    _append_value(command, "--marker-cache", marker_cache)
+    _append_value(command, "--cache-max-entries", cache_max_entries)
+    _append_value(command, "--cache-quantization-epsilon", cache_quantization_epsilon)
+    _append_bool(command, "--report-cache-stats", report_cache_stats)
 
 
 def _append_signed(command: List[str], signed: bool, unsigned: bool) -> None:
@@ -409,6 +433,14 @@ def build_dense_sdf(
     progress_json: Optional[PathLike] = None,
     max_seconds: Optional[float] = None,
     distance_backend: Optional[str] = None,
+    sample_cache: Optional[str] = None,
+    corner_cache: Optional[str] = None,
+    sign_cache: Optional[str] = None,
+    distance_cache: Optional[str] = None,
+    marker_cache: Optional[str] = None,
+    cache_max_entries: Optional[int] = None,
+    cache_quantization_epsilon: Optional[float] = None,
+    report_cache_stats: bool = False,
     case_id: Optional[str] = None,
     bin_dir: Optional[PathLike] = None,
     check: bool = True,
@@ -443,6 +475,17 @@ def build_dense_sdf(
         near_surface_exact=near_surface_exact,
         quality_guard=quality_guard,
         target_sampling_error=target_sampling_error,
+    )
+    _append_cache_options(
+        command,
+        sample_cache=sample_cache,
+        corner_cache=corner_cache,
+        sign_cache=sign_cache,
+        distance_cache=distance_cache,
+        marker_cache=marker_cache,
+        cache_max_entries=cache_max_entries,
+        cache_quantization_epsilon=cache_quantization_epsilon,
+        report_cache_stats=report_cache_stats,
     )
     _append_value(command, "--report", _path(report) if report is not None else None)
     _append_json_option(command, json)
@@ -490,6 +533,14 @@ def build_adaptive_sdf(
     progress_json: Optional[PathLike] = None,
     max_seconds: Optional[float] = None,
     distance_backend: Optional[str] = None,
+    sample_cache: Optional[str] = None,
+    corner_cache: Optional[str] = None,
+    sign_cache: Optional[str] = None,
+    distance_cache: Optional[str] = None,
+    marker_cache: Optional[str] = None,
+    cache_max_entries: Optional[int] = None,
+    cache_quantization_epsilon: Optional[float] = None,
+    report_cache_stats: bool = False,
     case_id: Optional[str] = None,
     dry_run_builder: bool = False,
     bin_dir: Optional[PathLike] = None,
@@ -529,6 +580,17 @@ def build_adaptive_sdf(
         quality_guard=quality_guard,
         target_sampling_error=target_sampling_error,
     )
+    _append_cache_options(
+        command,
+        sample_cache=sample_cache,
+        corner_cache=corner_cache,
+        sign_cache=sign_cache,
+        distance_cache=distance_cache,
+        marker_cache=marker_cache,
+        cache_max_entries=cache_max_entries,
+        cache_quantization_epsilon=cache_quantization_epsilon,
+        report_cache_stats=report_cache_stats,
+    )
     _append_value(command, "--report", _path(report) if report is not None else None)
     _append_value(command, "--json", _path(json) if json is not None else None)
     _append_strict(command, strict_json, case_id)
@@ -563,6 +625,14 @@ def compress_adaptive_sdf(
     max_seconds: Optional[float] = None,
     distance_backend: Optional[str] = None,
     threads: Optional[Union[int, str]] = None,
+    sample_cache: Optional[str] = None,
+    corner_cache: Optional[str] = None,
+    sign_cache: Optional[str] = None,
+    distance_cache: Optional[str] = None,
+    marker_cache: Optional[str] = None,
+    cache_max_entries: Optional[int] = None,
+    cache_quantization_epsilon: Optional[float] = None,
+    report_cache_stats: bool = False,
     case_id: Optional[str] = None,
     bin_dir: Optional[PathLike] = None,
     check: bool = True,
@@ -589,6 +659,17 @@ def compress_adaptive_sdf(
         max_seconds=max_seconds,
         distance_backend=distance_backend,
         threads=threads,
+    )
+    _append_cache_options(
+        command,
+        sample_cache=sample_cache,
+        corner_cache=corner_cache,
+        sign_cache=sign_cache,
+        distance_cache=distance_cache,
+        marker_cache=marker_cache,
+        cache_max_entries=cache_max_entries,
+        cache_quantization_epsilon=cache_quantization_epsilon,
+        report_cache_stats=report_cache_stats,
     )
     result = _run(command, check=check, dry_run=dry_run)
     return BuildResult(
@@ -636,6 +717,14 @@ def build_compressed_sdf(
     progress_json: Optional[PathLike] = None,
     max_seconds: Optional[float] = None,
     distance_backend: Optional[str] = None,
+    sample_cache: Optional[str] = None,
+    corner_cache: Optional[str] = None,
+    sign_cache: Optional[str] = None,
+    distance_cache: Optional[str] = None,
+    marker_cache: Optional[str] = None,
+    cache_max_entries: Optional[int] = None,
+    cache_quantization_epsilon: Optional[float] = None,
+    report_cache_stats: bool = False,
     case_id: Optional[str] = None,
     bin_dir: Optional[PathLike] = None,
     check: bool = True,
@@ -673,6 +762,17 @@ def build_compressed_sdf(
         near_surface_exact=near_surface_exact,
         quality_guard=quality_guard,
         target_sampling_error=target_sampling_error,
+    )
+    _append_cache_options(
+        command,
+        sample_cache=sample_cache,
+        corner_cache=corner_cache,
+        sign_cache=sign_cache,
+        distance_cache=distance_cache,
+        marker_cache=marker_cache,
+        cache_max_entries=cache_max_entries,
+        cache_quantization_epsilon=cache_quantization_epsilon,
+        report_cache_stats=report_cache_stats,
     )
     _append_value(command, "--fixed-rank", fixed_rank)
     _append_value(command, "--max-rank", max_rank)
@@ -906,6 +1006,62 @@ def benchmark_builder_acceleration(
     return BenchmarkResult(result, metrics=parse_build_acceleration_stats(result.stdout))
 
 
+def benchmark_build_cache(
+    input_stl: PathLike,
+    *,
+    builder: str = "compressed",
+    max_level: Optional[int] = None,
+    min_level: Optional[int] = None,
+    block_resolution: Optional[int] = None,
+    target_error: Optional[float] = None,
+    max_rank: Optional[int] = None,
+    sampling: Optional[str] = None,
+    contact_band_width: Optional[float] = None,
+    contact_band_marker: Optional[str] = None,
+    marker_cell_size_factor: Optional[float] = None,
+    marker_safety_factor: Optional[float] = None,
+    local_halo_only: bool = False,
+    cache_modes: Union[str, Iterable[str]] = "off,block",
+    distance_backend: Optional[str] = None,
+    threads: Optional[Union[int, str]] = None,
+    csv: Optional[PathLike] = None,
+    report: Optional[PathLike] = None,
+    case_id: Optional[str] = None,
+    bin_dir: Optional[PathLike] = None,
+    check: bool = True,
+    dry_run: bool = False,
+) -> BuildCacheBenchmarkResult:
+    cache_modes_text = (
+        cache_modes if isinstance(cache_modes, str) else ",".join(cache_modes)
+    )
+    command = [_tool("adasdf_benchmark_build_cache", bin_dir, dry_run), _path(input_stl)]
+    _append_value(command, "--builder", builder)
+    _append_value(command, "--max-level", max_level)
+    _append_value(command, "--min-level", min_level)
+    _append_value(command, "--block-resolution", block_resolution)
+    _append_value(command, "--target-error", target_error)
+    _append_value(command, "--max-rank", max_rank)
+    _append_value(command, "--sampling", sampling)
+    _append_value(command, "--contact-band-width", contact_band_width)
+    _append_value(command, "--contact-band-marker", contact_band_marker)
+    _append_value(command, "--marker-cell-size-factor", marker_cell_size_factor)
+    _append_value(command, "--marker-safety-factor", marker_safety_factor)
+    _append_bool(command, "--local-halo-only", local_halo_only)
+    _append_value(command, "--cache-modes", cache_modes_text)
+    _append_value(command, "--distance-backend", distance_backend)
+    _append_value(command, "--threads", threads)
+    _append_value(command, "--csv", _path(csv) if csv is not None else None)
+    _append_value(command, "--report", _path(report) if report is not None else None)
+    _append_value(command, "--case-id", case_id)
+    result = _run(command, check=check, dry_run=dry_run)
+    return BuildCacheBenchmarkResult(
+        command_result=result,
+        metrics=parse_build_cache_benchmark_metrics(result.stdout),
+        report_path=Path(report) if report is not None else None,
+        csv_path=Path(csv) if csv is not None else None,
+    )
+
+
 def benchmark_hierarchical_sampling(
     input_stl: PathLike,
     *,
@@ -940,6 +1096,14 @@ def benchmark_hierarchical_sampling(
     diagnostics_report: Optional[PathLike] = None,
     diagnostics_csv: Optional[PathLike] = None,
     strict_json: Optional[PathLike] = None,
+    sample_cache: Optional[str] = None,
+    corner_cache: Optional[str] = None,
+    sign_cache: Optional[str] = None,
+    distance_cache: Optional[str] = None,
+    marker_cache: Optional[str] = None,
+    cache_max_entries: Optional[int] = None,
+    cache_quantization_epsilon: Optional[float] = None,
+    report_cache_stats: bool = False,
     case_id: Optional[str] = None,
     bin_dir: Optional[PathLike] = None,
     check: bool = True,
@@ -1008,6 +1172,17 @@ def benchmark_hierarchical_sampling(
         "--diagnostics-csv",
         _path(diagnostics_csv) if diagnostics_csv is not None else None,
     )
+    _append_cache_options(
+        command,
+        sample_cache=sample_cache,
+        corner_cache=corner_cache,
+        sign_cache=sign_cache,
+        distance_cache=distance_cache,
+        marker_cache=marker_cache,
+        cache_max_entries=cache_max_entries,
+        cache_quantization_epsilon=cache_quantization_epsilon,
+        report_cache_stats=report_cache_stats,
+    )
     _append_strict(command, strict_json, case_id)
     result = _run(command, check=check, dry_run=dry_run)
     return BenchmarkResult(
@@ -1072,6 +1247,14 @@ def benchmark_contact_band_sampling(
     csv: Optional[PathLike] = None,
     report: Optional[PathLike] = None,
     json: Optional[Union[bool, PathLike]] = None,
+    sample_cache: Optional[str] = None,
+    corner_cache: Optional[str] = None,
+    sign_cache: Optional[str] = None,
+    distance_cache: Optional[str] = None,
+    marker_cache: Optional[str] = None,
+    cache_max_entries: Optional[int] = None,
+    cache_quantization_epsilon: Optional[float] = None,
+    report_cache_stats: bool = False,
     case_id: Optional[str] = None,
     bin_dir: Optional[PathLike] = None,
     check: bool = True,
@@ -1115,6 +1298,17 @@ def benchmark_contact_band_sampling(
     _append_value(command, "--csv", _path(csv) if csv is not None else None)
     _append_value(command, "--report", _path(report) if report is not None else None)
     _append_json_option(command, json)
+    _append_cache_options(
+        command,
+        sample_cache=sample_cache,
+        corner_cache=corner_cache,
+        sign_cache=sign_cache,
+        distance_cache=distance_cache,
+        marker_cache=marker_cache,
+        cache_max_entries=cache_max_entries,
+        cache_quantization_epsilon=cache_quantization_epsilon,
+        report_cache_stats=report_cache_stats,
+    )
     _append_value(command, "--case-id", case_id)
     result = _run(command, check=check, dry_run=dry_run)
     return ContactBandBenchmarkResult(

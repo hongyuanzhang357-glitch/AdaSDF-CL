@@ -7,6 +7,9 @@ v1.17.1-alpha adds wrapper parameters for backend JSON/profile/progress flags
 and exposes read-only export helpers for structure, block-grid, and compression
 metadata.
 
+v1.17.2-alpha adds build cache options on SDF build wrappers and
+`benchmark_build_cache` for no-cache reference benchmarking.
+
 The wrapper is subprocess-based. It is not pybind11, not a native Python
 binding, and not a C++ extension module. It requires AdaSDF-CL CLI tools to be
 built or installed first.
@@ -49,6 +52,7 @@ python -m pip install -e python
 - `export_block_grid`
 - `export_compression`
 - `benchmark_builder_acceleration`
+- `benchmark_build_cache`
 - `info`
 - `query`
 - `collide`
@@ -99,7 +103,24 @@ adasdf.build_compressed_sdf(
     max_rank=8,
     accel="bvh",
     threads=4,
+    sample_cache="block",
+    corner_cache="block",
+    sign_cache="on",
+    distance_cache="on",
+    marker_cache="on",
+    report_cache_stats=True,
 )
+
+cache_bench = adasdf.benchmark_build_cache(
+    "model.stl",
+    builder="compressed",
+    sampling="contact-band",
+    cache_modes=["off", "block"],
+    distance_backend="bvh",
+    csv="build_cache.csv",
+    report="build_cache.md",
+)
+print(cache_bench.metrics.get("speedup_vs_no_cache"))
 
 bench = adasdf.benchmark_builder_acceleration(
     "model.stl",

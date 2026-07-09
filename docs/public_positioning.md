@@ -48,6 +48,8 @@ replacement.
 - Stable backend JSON contract and versioned schemas for Studio/automation.
 - Build profile, progress JSONL, and timeout reporting for dense, adaptive,
   adaptive-compression, and compressed SDF build workflows.
+- Adaptive build sample cache for reducing repeated build-time SDF queries with
+  no-cache reference benchmarking.
 - Adaptive builder preview for future Tucker/trained-surrogate/GPU compressed
   stages.
 
@@ -85,6 +87,8 @@ replacement.
 - Fast lookup speedup without mismatch and phi-difference checks.
 - Treating no-collision or no-candidate JSON status codes as crashes.
 - Assuming v1.17.1 JSON schemas imply a `.sdfbin` format change.
+- Claiming cache speedup without no-cache quality comparison.
+- Claiming global cache is always faster or always lower memory.
 - Industrial certification from synthetic fixture benchmarks.
 
 ## Short Description
@@ -115,7 +119,10 @@ keeping block-internal trilinear interpolation as direct regular-grid indexing.
 v1.17.1 adds stable backend JSON schemas, model export CLIs, collision and
 benchmark JSON contract output, and build profile/progress/timeout reporting
 for dense, adaptive, adaptive-compression, and compressed SDF build workflows
-without changing SDF algorithms or `.sdfbin` formats. It does not
+without changing SDF algorithms or `.sdfbin` formats. v1.17.2 adds build-time
+sample caches and no-cache reference benchmarking for repeated adaptive/contact
+band SDF queries without changing `.sdfbin` formats or runtime query APIs. It
+does not
 fill holes, repair self-intersections, implement Tucker/HOSVD compression,
 claim a universal trained recommender, guarantee optimal parameters, claim
 GPU-native compressed query, provide GPU BVH, provide FCL fallback, claim

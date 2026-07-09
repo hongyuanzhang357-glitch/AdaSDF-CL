@@ -68,6 +68,25 @@
 - v1.17.1 stable backend JSON contract, versioned schemas, Studio-oriented
   model export CLIs, build profile/progress/timeout reporting, and standard
   `ADASDF_*` status-code semantics.
+- v1.17.2 adaptive build sample cache, deterministic quantized point keys,
+  repeated query reduction counters, contact-band marker cache, build cache
+  benchmark CLI, and Python wrapper support.
+
+## v1.17.2-alpha Scope
+
+- `include/adasdf/cache` and `src/cache` for quantized point keys, SDF sample
+  cache, distance/sign wrappers, cell corner cache, block-local point
+  deduplication, adaptive refinement cache, contact-band marker cache, and
+  build cache report writing;
+- `--sample-cache`, `--corner-cache`, `--sign-cache`, `--distance-cache`,
+  `--marker-cache`, `--cache-max-entries`,
+  `--cache-quantization-epsilon`, and `--report-cache-stats` on build tools;
+- build profile cache counters and timings in `adasdf.build_profile.v1`;
+- `adasdf_benchmark_build_cache` for cache off/block/global comparison against
+  a no-cache quality reference;
+- Python wrapper support for cache options and `benchmark_build_cache`;
+- explicit boundary that no `.sdfbin` format, GPU kernel, FCL-style API, or
+  runtime query contract change is introduced.
 
 ## v1.17.1-alpha Scope
 

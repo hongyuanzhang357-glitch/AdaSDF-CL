@@ -1,6 +1,6 @@
 # AdaSDF-CL Backend JSON Contract
 
-Release: `v1.17.1-alpha`
+Release: `v1.17.2-alpha`
 
 AdaSDF-CL backend JSON output is versioned, deterministic, and dependency-free.
 It is intended for Studio, automation, and regression tools that need stable
@@ -36,3 +36,7 @@ Every contract JSON object includes:
 - `adasdf.progress.v1`
 
 No `.sdfbin` format change is introduced by this contract.
+
+v1.17.2-alpha adds optional cache fields to `adasdf.build_profile.v1`
+timings/counters. They document build-time cache behavior and remain optional
+within the v1 schema.

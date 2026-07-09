@@ -89,6 +89,11 @@
   collection.
 - `adasdf_write_manifest`, `adasdf_validate_report`, and
   `adasdf_collect_run_summary`.
+- Adaptive build sample cache modules with deterministic quantized point keys,
+  SDF sample cache, corner cache, block-local exact point deduplication,
+  adaptive refinement cache, contact-band marker cache, cache profile counters,
+  and `adasdf_benchmark_build_cache`.
+- Python wrapper support for build cache options and build cache benchmarking.
 - Contact-aware active block selection for adaptive/compressed block SDFs.
 - CPU active expanded-block cache for local compressed SDF runtime queries.
 - `adasdf_select_active_blocks`, `adasdf_active_block_query`, and

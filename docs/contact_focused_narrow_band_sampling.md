@@ -6,6 +6,11 @@ v1.17.1-alpha keeps this sampling algorithm unchanged and adds JSON benchmark
 contract output plus build profile/progress reporting around the public build
 CLIs, including compressed SDF builder workflows.
 
+v1.17.2-alpha keeps the contact-band sampling policy unchanged and adds
+build-time cache hooks for repeated exact-required nodes and marker decisions.
+Use `--sample-cache off` and `adasdf_benchmark_build_cache` for no-cache
+reference comparisons before making speedup claims.
+
 This document describes the alpha contact-focused narrow-band sampling path.
 The path is enabled only when the user explicitly selects
 `--sampling contact-band`; the default builder path remains exact.
@@ -118,6 +123,9 @@ Builder CLIs now accept:
 --disable-global-halo
 --local-halo-only
 --reuse-far-field-sign
+--sample-cache off|block|global
+--marker-cache off|on
+--report-cache-stats
 --no-reuse-far-field-sign
 --audit contact-band|global
 --normal-audit

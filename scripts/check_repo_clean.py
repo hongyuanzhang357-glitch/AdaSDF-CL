@@ -41,6 +41,18 @@ def should_skip(path: Path, root: Path) -> bool:
     return bool({".git"} & rel_parts)
 
 
+def is_allowed_source_cache_path(rel_text: str) -> bool:
+    normalized = rel_text.replace("\\", "/").lower()
+    allowed_prefixes = (
+        "include/adasdf/cache",
+        "src/cache",
+    )
+    return any(
+        normalized == prefix or normalized.startswith(prefix + "/")
+        for prefix in allowed_prefixes
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("root", nargs="?", default=".")
@@ -118,9 +130,10 @@ def main() -> int:
         rel = path.relative_to(root)
         rel_parts = {part.lower() for part in rel.parts}
         rel_text = str(rel).replace("\\", "/")
+        allowed_source_cache = is_allowed_source_cache_path(rel_text)
 
         if path.is_dir():
-            if forbidden_parts & rel_parts:
+            if forbidden_parts & rel_parts and not allowed_source_cache:
                 issues.append(f"forbidden directory name: {rel_text}")
             continue
 
@@ -130,7 +143,7 @@ def main() -> int:
         if path.stat().st_size > 100 * 1024 * 1024:
             issues.append(f"large file >100MB: {rel_text}")
 
-        if forbidden_parts & rel_parts:
+        if forbidden_parts & rel_parts and not allowed_source_cache:
             issues.append(f"file inside forbidden directory: {rel_text}")
 
         suffix = path.suffix.lower()

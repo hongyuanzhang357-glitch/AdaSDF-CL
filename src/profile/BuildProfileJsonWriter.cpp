@@ -33,6 +33,14 @@ std::string timingsJson(const BuildProfileTimings& t) {
          JsonContractWriter::number(t.write_model_time_ms) +
          ",\"metadata_time_ms\":" +
          JsonContractWriter::number(t.metadata_time_ms) +
+         ",\"cache_lookup_time_ms\":" +
+         JsonContractWriter::number(t.cache_lookup_time_ms) +
+         ",\"cache_insert_time_ms\":" +
+         JsonContractWriter::number(t.cache_insert_time_ms) +
+         ",\"deduplication_time_ms\":" +
+         JsonContractWriter::number(t.deduplication_time_ms) +
+         ",\"marker_cache_time_ms\":" +
+         JsonContractWriter::number(t.marker_cache_time_ms) +
          ",\"total_time_ms\":" +
          JsonContractWriter::number(t.total_time_ms) + "}";
 }
@@ -67,6 +75,48 @@ std::string countersJson(const BuildProfileCounters& c) {
          ",\"dense_fallback_block_count\":" +
          JsonContractWriter::integer(c.dense_fallback_block_count) +
          ",\"output_bytes\":" + JsonContractWriter::integer(c.output_bytes) +
+         ",\"sample_cache_enabled\":" +
+         JsonContractWriter::boolean(c.sample_cache_enabled) +
+         ",\"sample_cache_scope\":" +
+         JsonContractWriter::quote(c.sample_cache_scope) +
+         ",\"sample_cache_entries\":" +
+         JsonContractWriter::integer(c.sample_cache_entries) +
+         ",\"sample_cache_hits\":" +
+         JsonContractWriter::integer(c.sample_cache_hits) +
+         ",\"sample_cache_misses\":" +
+         JsonContractWriter::integer(c.sample_cache_misses) +
+         ",\"sample_cache_hit_rate\":" +
+         JsonContractWriter::number(c.sample_cache_hit_rate) +
+         ",\"distance_cache_hits\":" +
+         JsonContractWriter::integer(c.distance_cache_hits) +
+         ",\"distance_cache_misses\":" +
+         JsonContractWriter::integer(c.distance_cache_misses) +
+         ",\"sign_cache_hits\":" +
+         JsonContractWriter::integer(c.sign_cache_hits) +
+         ",\"sign_cache_misses\":" +
+         JsonContractWriter::integer(c.sign_cache_misses) +
+         ",\"corner_cache_hits\":" +
+         JsonContractWriter::integer(c.corner_cache_hits) +
+         ",\"corner_cache_misses\":" +
+         JsonContractWriter::integer(c.corner_cache_misses) +
+         ",\"block_point_duplicate_count\":" +
+         JsonContractWriter::integer(c.block_point_duplicate_count) +
+         ",\"marker_candidate_cache_hits\":" +
+         JsonContractWriter::integer(c.marker_candidate_cache_hits) +
+         ",\"marker_candidate_cache_misses\":" +
+         JsonContractWriter::integer(c.marker_candidate_cache_misses) +
+         ",\"marker_decision_cache_hits\":" +
+         JsonContractWriter::integer(c.marker_decision_cache_hits) +
+         ",\"marker_decision_cache_misses\":" +
+         JsonContractWriter::integer(c.marker_decision_cache_misses) +
+         ",\"distance_queries_saved\":" +
+         JsonContractWriter::integer(c.distance_queries_saved) +
+         ",\"sign_queries_saved\":" +
+         JsonContractWriter::integer(c.sign_queries_saved) +
+         ",\"box_triangle_distance_saved\":" +
+         JsonContractWriter::integer(c.box_triangle_distance_saved) +
+         ",\"cache_memory_estimate_bytes\":" +
+         JsonContractWriter::integer(c.cache_memory_estimate_bytes) +
          "}";
 }
 

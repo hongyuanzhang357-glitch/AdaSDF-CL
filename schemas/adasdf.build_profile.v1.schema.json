@@ -15,7 +15,40 @@
     "success": {"type": "boolean"},
     "warnings": {"type": "array"},
     "profile_status": {"enum": ["completed", "timeout", "failed"]},
-    "timings": {"type": "object"},
-    "counters": {"type": "object"}
+    "timings": {
+      "type": "object",
+      "properties": {
+        "cache_lookup_time_ms": {"type": "number"},
+        "cache_insert_time_ms": {"type": "number"},
+        "deduplication_time_ms": {"type": "number"},
+        "marker_cache_time_ms": {"type": "number"}
+      }
+    },
+    "counters": {
+      "type": "object",
+      "properties": {
+        "sample_cache_enabled": {"type": "boolean"},
+        "sample_cache_scope": {"enum": ["off", "block", "global"]},
+        "sample_cache_entries": {"type": "integer"},
+        "sample_cache_hits": {"type": "integer"},
+        "sample_cache_misses": {"type": "integer"},
+        "sample_cache_hit_rate": {"type": "number"},
+        "distance_cache_hits": {"type": "integer"},
+        "distance_cache_misses": {"type": "integer"},
+        "sign_cache_hits": {"type": "integer"},
+        "sign_cache_misses": {"type": "integer"},
+        "corner_cache_hits": {"type": "integer"},
+        "corner_cache_misses": {"type": "integer"},
+        "block_point_duplicate_count": {"type": "integer"},
+        "marker_candidate_cache_hits": {"type": "integer"},
+        "marker_candidate_cache_misses": {"type": "integer"},
+        "marker_decision_cache_hits": {"type": "integer"},
+        "marker_decision_cache_misses": {"type": "integer"},
+        "distance_queries_saved": {"type": "integer"},
+        "sign_queries_saved": {"type": "integer"},
+        "box_triangle_distance_saved": {"type": "integer"},
+        "cache_memory_estimate_bytes": {"type": "integer"}
+      }
+    }
   }
 }

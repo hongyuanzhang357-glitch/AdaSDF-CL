@@ -5,6 +5,8 @@
 #include <vector>
 
 #include "adasdf/acceleration/BuildAccelerationReport.h"
+#include "adasdf/cache/BuildCacheOptions.h"
+#include "adasdf/cache/BuildCacheStats.h"
 #include "adasdf/generation/AdaptiveOctreeBuilder.h"
 #include "adasdf/geometry/AdaptiveBlockSDFModel.h"
 #include "adasdf/mesh/MeshDiagnostics.h"
@@ -38,6 +40,7 @@ struct AdaptiveBlockSDFBuildOptions {
   SDFSamplingAcceleration acceleration = SDFSamplingAcceleration::BVH;
   int threads = 1;
   bool benchmark_brute_reference = false;
+  BuildCacheOptions cache_options;
 
   HierarchicalSamplingOptions hierarchical_sampling;
   ContactBandSamplingOptions contact_band_sampling;
@@ -70,6 +73,7 @@ struct AdaptiveBlockSDFBuildReport {
   bool used_bvh = false;
   int threads_used = 1;
   BuildAccelerationStats acceleration_stats;
+  BuildCacheStats cache_stats;
   HierarchicalBlockSamplingStats hierarchical_sampling;
   ContactBandDiagnostics contact_band_sampling;
 

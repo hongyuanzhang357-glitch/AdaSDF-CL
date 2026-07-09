@@ -10,6 +10,7 @@ from .results import (
     BenchmarkResult,
     BackendJsonResult,
     BlockCacheBenchmarkResult,
+    BuildCacheBenchmarkResult,
     BlockLookupBenchmarkResult,
     BuildResult,
     CollisionResult,
@@ -41,6 +42,7 @@ from .tools import (
     benchmark_batch_query,
     benchmark_block_cache,
     benchmark_block_lookup,
+    benchmark_build_cache,
     benchmark_builder_acceleration,
     benchmark_collision_world,
     benchmark_contact_band_sampling,
@@ -81,7 +83,7 @@ from .tools import (
 )
 from .workflows import preprocess_and_build_compressed, recommend_then_build_compressed
 
-__version__ = "1.17.1-alpha"
+__version__ = "1.17.2-alpha"
 
 __all__ = [
     "AdaSDFConfig",
@@ -94,6 +96,7 @@ __all__ = [
     "BenchmarkResult",
     "BackendJsonResult",
     "BlockCacheBenchmarkResult",
+    "BuildCacheBenchmarkResult",
     "BlockLookupBenchmarkResult",
     "BuildResult",
     "CollisionResult",
@@ -123,6 +126,7 @@ __all__ = [
     "benchmark_batch_query",
     "benchmark_block_cache",
     "benchmark_block_lookup",
+    "benchmark_build_cache",
     "benchmark_builder_acceleration",
     "benchmark_collision_world",
     "benchmark_contact_band_sampling",

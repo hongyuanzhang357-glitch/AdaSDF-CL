@@ -23,6 +23,11 @@ void usage() {
          "[--profile] [--profile-json profile.json] "
          "[--progress] [--progress-json progress.jsonl] "
          "[--max-seconds value] "
+         "[--sample-cache off|block|global] "
+         "[--corner-cache off|block|global] [--sign-cache off|on] "
+         "[--distance-cache off|on] [--marker-cache off|on] "
+         "[--cache-max-entries N] "
+         "[--cache-quantization-epsilon value] [--report-cache-stats] "
          "[--recommend] [--verbose]\n";
 }
 
@@ -111,6 +116,18 @@ int main(int argc, char** argv) {
         return 1;
       }
       if (common_result == adasdf_tools::CommonOptionParseResult::Parsed) {
+        continue;
+      }
+      const auto cache_result = adasdf_tools::parseBuildCacheOption(
+          arg,
+          &i,
+          argc,
+          argv,
+          &options.cache_options);
+      if (cache_result == adasdf_tools::CommonOptionParseResult::Error) {
+        return 1;
+      }
+      if (cache_result == adasdf_tools::CommonOptionParseResult::Parsed) {
         continue;
       }
       if (arg == "--help" || arg == "-h") {
@@ -314,6 +331,20 @@ int main(int argc, char** argv) {
     std::cout << "Build time ms: " << report.build_time_ms << "\n";
     std::cout << "Memory bytes: " << report.memory_bytes << "\n";
     std::cout << "Reload validation: success\n";
+    if (options.cache_options.report_cache_stats) {
+      std::cout << "Sample cache enabled: "
+                << (report.cache_stats.sample_cache_enabled ? "yes" : "no")
+                << "\n";
+      std::cout << "Sample cache scope: "
+                << adasdf::toString(report.cache_stats.sample_cache_scope)
+                << "\n";
+      std::cout << "Sample cache hit rate: "
+                << report.cache_stats.sample_cache_hit_rate << "\n";
+      std::cout << "Distance queries saved: "
+                << report.cache_stats.distance_queries_saved << "\n";
+      std::cout << "Sign queries saved: "
+                << report.cache_stats.sign_queries_saved << "\n";
+    }
     if (!report_path.empty()) {
       std::cout << "Report: " << report_path.string() << "\n";
     }

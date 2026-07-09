@@ -21,6 +21,10 @@ struct BuildProfileTimings {
   double compression_time_ms = 0.0;
   double write_model_time_ms = 0.0;
   double metadata_time_ms = 0.0;
+  double cache_lookup_time_ms = 0.0;
+  double cache_insert_time_ms = 0.0;
+  double deduplication_time_ms = 0.0;
+  double marker_cache_time_ms = 0.0;
   double total_time_ms = 0.0;
 };
 

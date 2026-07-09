@@ -2,6 +2,9 @@
 
 #include <string>
 
+#include "adasdf/cache/BuildCacheOptions.h"
+#include "adasdf/cache/BuildCacheStats.h"
+#include "adasdf/cache/ContactBandMarkerCache.h"
 #include "adasdf/acceleration/BVHSDFSampler.h"
 #include "adasdf/generation/AdaptiveBlock.h"
 #include "adasdf/sampling/ContactBandDiagnostics.h"
@@ -30,6 +33,7 @@ struct ContactBandBlockSamplingResult {
   double total_time_ms = 0.0;
 
   ContactBandDiagnostics diagnostics;
+  BuildCacheStats cache_stats;
 };
 
 class ContactBandBlockSampler {
@@ -43,7 +47,9 @@ class ContactBandBlockSampler {
       bool signed_distance,
       BVHSDFSampler& exact_sampler,
       const TriangleBVH& triangle_bvh,
-      const ContactBandSamplingOptions& options);
+      const ContactBandSamplingOptions& options,
+      const BuildCacheOptions* cache_options = nullptr,
+      ContactBandMarkerCache* marker_cache = nullptr);
 };
 
 }  // namespace adasdf

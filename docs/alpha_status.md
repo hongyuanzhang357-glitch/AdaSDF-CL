@@ -1,6 +1,6 @@
 # Alpha Status
 
-AdaSDF-CL 1.17.1-alpha is a research-preview release candidate.
+AdaSDF-CL 1.17.2-alpha is a research-preview release candidate.
 
 The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`,
 `v1.1.0-alpha`, `v1.1.1-alpha`, `v1.2.0-alpha`, `v1.3.0-alpha`,
@@ -9,8 +9,9 @@ The original `v1.0.2-alpha`, `v1.0.2-alpha.1`, `v1.0.3-alpha`,
 `v1.11.0-alpha`, `v1.12.0-alpha`, `v1.13.0-alpha`,
 `v1.13.0-alpha.1`, `v1.13.0-alpha.2`, `v1.14.0-alpha`,
 `v1.15.0-alpha`, `v1.16.0-alpha`, `v1.16.0-alpha.1`,
-`v1.16.0-alpha.2`, `v1.16.0-alpha.3`, and `v1.17.0-alpha` tags are retained
-for traceability. The recommended public pre-release is `v1.17.1-alpha`.
+`v1.16.0-alpha.2`, `v1.16.0-alpha.3`, `v1.17.0-alpha`, and
+`v1.17.1-alpha` tags are retained for traceability. The recommended public
+pre-release is `v1.17.2-alpha`.
 
 ## What Works
 
@@ -19,6 +20,10 @@ for traceability. The recommended public pre-release is `v1.17.1-alpha`.
 - `adasdf_info --json --full`, structure/block/compression export CLIs,
   collision JSON, benchmark JSON, and build profile/progress/timeout output
   for dense, adaptive, adaptive-compression, and compressed SDF build CLIs.
+- Adaptive build sample cache, deterministic quantized point keys,
+  block-local point deduplication, contact-band marker cache stats, cache
+  profile counters, and `adasdf_benchmark_build_cache` for no-cache reference
+  comparison.
 - Standard `ADASDF_*` status codes where no-collision and no-candidate are
   successful executions, not process crashes.
 - Core-free analytic box SDF backend.

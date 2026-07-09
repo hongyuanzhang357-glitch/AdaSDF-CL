@@ -10,6 +10,8 @@
 
 namespace adasdf {
 
+class ContactBandMarkerCache;
+
 enum class ContactBandMarkerMode {
   ConservativeAABB,
   DistanceAware,
@@ -82,7 +84,10 @@ class ContactBandMarker {
       const AABB& block_bounds,
       int block_resolution,
       const TriangleBVH& triangle_bvh,
-      const ContactBandOptions& options);
+      const ContactBandOptions& options,
+      ContactBandMarkerCache* cache = nullptr,
+      int block_id = -1,
+      int level = 0);
 };
 
 }  // namespace adasdf

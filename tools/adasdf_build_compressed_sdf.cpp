@@ -1,5 +1,7 @@
 #include <adasdf/adasdf.h>
 
+#include "BuildCliProfileHelpers.h"
+
 #include <exception>
 #include <filesystem>
 #include <iostream>
@@ -41,6 +43,11 @@ void usage() {
          "[--profile] [--profile-json profile.json] "
          "[--progress] [--progress-json progress.jsonl] "
          "[--max-seconds value] "
+         "[--sample-cache off|block|global] "
+         "[--corner-cache off|block|global] [--sign-cache off|on] "
+         "[--distance-cache off|on] [--marker-cache off|on] "
+         "[--cache-max-entries N] "
+         "[--cache-quantization-epsilon value] [--report-cache-stats] "
          "[--distance-backend brute_force|brute|bvh] [--threads auto|N] "
          "[--recommend] [--verbose]\n";
 }
@@ -166,6 +173,18 @@ int main(int argc, char** argv) {
 
     for (int i = 1; i < argc; ++i) {
       const std::string arg = argv[i];
+      const auto cache_result = adasdf_tools::parseBuildCacheOption(
+          arg,
+          &i,
+          argc,
+          argv,
+          &build_options.cache_options);
+      if (cache_result == adasdf_tools::CommonOptionParseResult::Error) {
+        return 1;
+      }
+      if (cache_result == adasdf_tools::CommonOptionParseResult::Parsed) {
+        continue;
+      }
       if (arg == "--help" || arg == "-h") {
         usage();
         return 0;
@@ -457,6 +476,7 @@ int main(int argc, char** argv) {
     profiler.counters.fallback_count =
         build_report.acceleration_stats.fallback_count +
         build_report.hierarchical_sampling.fallback_exact_block_count;
+    adasdf_tools::fillCacheProfile(&profiler, build_report.cache_stats);
     for (const std::string& warning : build_report.warnings) {
       profiler.addWarning("ADASDF_BUILD_WARNING", warning);
     }
@@ -673,6 +693,34 @@ int main(int argc, char** argv) {
               << compression_report.global_max_abs_error << "\n";
     std::cout << "Quality samples: " << quality_report.sample_count << "\n";
     std::cout << "Reload validation: success\n";
+    if (build_options.cache_options.report_cache_stats) {
+      std::cout << "Sample cache enabled: "
+                << (build_report.cache_stats.sample_cache_enabled ? "yes" : "no")
+                << "\n";
+      std::cout << "Sample cache scope: "
+                << adasdf::toString(build_report.cache_stats.sample_cache_scope)
+                << "\n";
+      std::cout << "Sample cache hit rate: "
+                << build_report.cache_stats.sample_cache_hit_rate << "\n";
+      std::cout << "Corner cache hit rate: "
+                << (build_report.cache_stats.corner_cache_hits +
+                            build_report.cache_stats.corner_cache_misses >
+                        0
+                    ? static_cast<double>(build_report.cache_stats.corner_cache_hits) /
+                          static_cast<double>(
+                              build_report.cache_stats.corner_cache_hits +
+                              build_report.cache_stats.corner_cache_misses)
+                    : 0.0)
+                << "\n";
+      std::cout << "Distance queries saved: "
+                << build_report.cache_stats.distance_queries_saved << "\n";
+      std::cout << "Sign queries saved: "
+                << build_report.cache_stats.sign_queries_saved << "\n";
+      std::cout << "Block point duplicates: "
+                << build_report.cache_stats.block_point_duplicate_count << "\n";
+      std::cout << "Marker decision cache hits: "
+                << build_report.cache_stats.marker_decision_cache_hits << "\n";
+    }
     std::cout << "Tucker/HOSVD compression: planned / not implemented\n";
     std::cout
         << "Surrogate recommendation: use adasdf_recommend_build "
