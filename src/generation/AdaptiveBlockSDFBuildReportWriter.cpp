@@ -5,6 +5,7 @@
 #include <sstream>
 
 #include "adasdf/acceleration/BuildAccelerationReport.h"
+#include "adasdf/generation/AdaptiveTreeStats.h"
 
 namespace adasdf {
 namespace {
@@ -65,6 +66,8 @@ std::string AdaptiveBlockSDFBuildReportWriter::toMarkdown(
   out << "## Octree Parameters\n\n";
   out << "- Min level: " << report.min_octree_level << "\n";
   out << "- Max level: " << report.max_octree_level << "\n";
+  out << "- Adaptive leaf mode: "
+      << toString(report.adaptive_leaf_mode) << "\n";
   out << "- Max level used: " << report.max_octree_level_used << "\n\n";
 
   out << "## Octree Stats\n\n";
@@ -77,6 +80,12 @@ std::string AdaptiveBlockSDFBuildReportWriter::toMarkdown(
   out << "- Block count: " << report.block_count << "\n";
   out << "- Near-surface blocks: " << report.near_surface_block_count << "\n";
   out << "- Block resolution: " << report.block_resolution << "\n";
+  out << "- Uniform max-level leaf count: "
+      << adaptiveUniformLeafCountForLevel(report.max_octree_level) << "\n";
+  out << "- Uniform max-level logical nodes: "
+      << adaptiveUniformLeafCountForLevel(report.max_octree_level) *
+             adaptiveLogicalNodesPerBlock(report.block_resolution)
+      << "\n";
   out << "- Block storage: dense phi values per adaptive leaf block\n\n";
 
   out << "## Memory\n\n";
@@ -188,12 +197,20 @@ std::string AdaptiveBlockSDFBuildReportWriter::toJson(
   out << "  \"min_octree_level\": " << report.min_octree_level << ",\n";
   out << "  \"max_octree_level\": " << report.max_octree_level << ",\n";
   out << "  \"max_octree_level_used\": " << report.max_octree_level_used << ",\n";
+  out << "  \"adaptive_leaf_mode\": \""
+      << toString(report.adaptive_leaf_mode) << "\",\n";
   out << "  \"block_resolution\": " << report.block_resolution << ",\n";
   out << "  \"octree_node_count\": " << report.octree_node_count << ",\n";
   out << "  \"octree_leaf_count\": " << report.octree_leaf_count << ",\n";
   out << "  \"block_count\": " << report.block_count << ",\n";
   out << "  \"near_surface_block_count\": "
       << report.near_surface_block_count << ",\n";
+  out << "  \"uniform_max_level_leaf_count\": "
+      << adaptiveUniformLeafCountForLevel(report.max_octree_level) << ",\n";
+  out << "  \"uniform_max_level_logical_node_count\": "
+      << adaptiveUniformLeafCountForLevel(report.max_octree_level) *
+             adaptiveLogicalNodesPerBlock(report.block_resolution)
+      << ",\n";
   out << "  \"memory_bytes\": " << report.memory_bytes << ",\n";
   out << "  \"sampling_time_ms\": " << report.sampling_time_ms << ",\n";
   out << "  \"build_time_ms\": " << report.build_time_ms << ",\n";

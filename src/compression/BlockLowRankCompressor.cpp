@@ -4,6 +4,7 @@
 #include <chrono>
 #include <cmath>
 #include <numeric>
+#include <unordered_set>
 
 #include "adasdf/compression/SmallMatrixSVD.h"
 
@@ -61,6 +62,14 @@ struct ErrorStats {
   std::vector<double> abs_errors;
 };
 
+struct NearZeroGuardStats {
+  std::size_t sample_count = 0;
+  std::size_t sign_flip_count = 0;
+  double max_abs_error = 0.0;
+  double p95_abs_error = 0.0;
+  std::vector<double> abs_errors;
+};
+
 bool signMismatch(double a, double b) {
   if (std::abs(a) <= 1.0e-12 || std::abs(b) <= 1.0e-12) {
     return false;
@@ -107,6 +116,36 @@ ErrorStats computeStats(
     stats.rms = std::sqrt(sum_sq / static_cast<double>(count));
     stats.p95 = percentile(stats.abs_errors, 0.95);
   }
+  return stats;
+}
+
+NearZeroGuardStats computeNearZeroGuardStats(
+    const AdaptiveSDFBlock& reference,
+    const SmallSVDResult& svd,
+    double guard_band) {
+  NearZeroGuardStats stats;
+  for (int ix = 0; ix < reference.nx; ++ix) {
+    for (int iy = 0; iy < reference.ny; ++iy) {
+      for (int iz = 0; iz < reference.nz; ++iz) {
+        const int col = iy * reference.nz + iz;
+        const double dense =
+            reference.phi[denseIndex(ix, iy, iz, reference.nx, reference.ny)];
+        if (std::abs(dense) > guard_band) {
+          continue;
+        }
+        const double compressed =
+            SmallMatrixSVD::reconstructValue(svd, ix, col);
+        const double abs_error = std::abs(compressed - dense);
+        stats.abs_errors.push_back(abs_error);
+        stats.max_abs_error = std::max(stats.max_abs_error, abs_error);
+        if (signMismatch(dense, compressed)) {
+          ++stats.sign_flip_count;
+        }
+      }
+    }
+  }
+  stats.sample_count = stats.abs_errors.size();
+  stats.p95_abs_error = percentile(stats.abs_errors, 0.95);
   return stats;
 }
 
@@ -158,6 +197,33 @@ void copySVD(const SmallSVDResult& svd, MatrixSVDBlockData* target) {
 
 }  // namespace
 
+bool parseCompressionSignGuardAction(
+    const std::string& value,
+    CompressionSignGuardAction* action) {
+  if (action == nullptr) {
+    return false;
+  }
+  if (value == "keep-dense") {
+    *action = CompressionSignGuardAction::KeepDense;
+    return true;
+  }
+  if (value == "increase-rank") {
+    *action = CompressionSignGuardAction::IncreaseRank;
+    return true;
+  }
+  return false;
+}
+
+const char* toString(CompressionSignGuardAction action) {
+  switch (action) {
+    case CompressionSignGuardAction::KeepDense:
+      return "keep-dense";
+    case CompressionSignGuardAction::IncreaseRank:
+      return "increase-rank";
+  }
+  return "unknown";
+}
+
 CompressedAdaptiveBlockSDF BlockLowRankCompressor::compress(
     const AdaptiveSDFBlockSet& dense_blocks,
     const BlockLowRankCompressionOptions& options,
@@ -166,6 +232,11 @@ CompressedAdaptiveBlockSDF BlockLowRankCompressor::compress(
   BlockLowRankCompressionReport local_report;
   local_report.input_block_count = dense_blocks.blocks.size();
   local_report.original_memory_bytes = dense_blocks.memoryFootprintBytes();
+  local_report.compression_guard_enabled =
+      options.near_zero_compression_guard;
+  const std::unordered_set<int> force_dense(
+      options.force_dense_block_ids.begin(),
+      options.force_dense_block_ids.end());
 
   CompressedAdaptiveBlockSDF output;
   output.global_bounds = dense_blocks.global_bounds;
@@ -173,6 +244,7 @@ CompressedAdaptiveBlockSDF BlockLowRankCompressor::compress(
   output.blocks.reserve(dense_blocks.blocks.size());
 
   std::vector<double> global_errors;
+  std::vector<double> global_near_zero_errors;
   double global_sum_abs = 0.0;
   double global_sum_sq = 0.0;
   std::size_t global_sample_count = 0;
@@ -196,6 +268,14 @@ CompressedAdaptiveBlockSDF BlockLowRankCompressor::compress(
       continue;
     }
 
+    if (force_dense.find(source.block_id) != force_dense.end()) {
+      output.blocks.push_back(denseFallbackBlock(
+          source,
+          "block kept dense by block-id compression option"));
+      ++local_report.dense_fallback_block_count;
+      continue;
+    }
+
     const int max_rank =
         std::max(1, std::min({options.max_rank, source.nx, source.ny * source.nz}));
     const int min_rank = std::max(1, std::min(options.min_rank, max_rank));
@@ -213,7 +293,11 @@ CompressedAdaptiveBlockSDF BlockLowRankCompressor::compress(
     const std::vector<double> matrix = blockToMatrix(source);
     SmallSVDResult chosen_svd;
     ErrorStats chosen_stats;
+    NearZeroGuardStats chosen_guard_stats;
     bool accepted = false;
+    bool guard_failed_for_chosen = false;
+    bool guard_sign_failed_for_chosen = false;
+    bool guard_error_failed_for_chosen = false;
     std::string failure_note;
 
     for (int rank = first_rank; rank <= last_rank; ++rank) {
@@ -229,21 +313,71 @@ CompressedAdaptiveBlockSDF BlockLowRankCompressor::compress(
       const bool ok = options.rank_selection == RankSelectionMode::FixedRank ||
                       options.rank_selection == RankSelectionMode::MemoryBounded ||
                       errorAcceptable(stats, options);
+      NearZeroGuardStats guard_stats;
+      bool guard_ok = true;
+      bool guard_sign_failed = false;
+      bool guard_error_failed = false;
+      if (options.near_zero_compression_guard) {
+        guard_stats = computeNearZeroGuardStats(
+            source,
+            svd,
+            options.compression_sign_guard_band);
+        guard_sign_failed = guard_stats.sign_flip_count > 0;
+        guard_error_failed =
+            guard_stats.sample_count > 0 &&
+            guard_stats.p95_abs_error >
+                options.compression_near_zero_error_limit;
+        guard_ok = !guard_sign_failed && !guard_error_failed;
+      }
       chosen_svd = std::move(svd);
       chosen_stats = std::move(stats);
-      if (ok) {
+      chosen_guard_stats = std::move(guard_stats);
+      guard_failed_for_chosen = !guard_ok;
+      guard_sign_failed_for_chosen = guard_sign_failed;
+      guard_error_failed_for_chosen = guard_error_failed;
+      if (ok && guard_ok) {
         accepted = true;
+        break;
+      }
+      if (ok && !guard_ok &&
+          options.compression_sign_guard_action ==
+              CompressionSignGuardAction::KeepDense) {
+        failure_note = "near-zero compression guard kept block dense";
         break;
       }
     }
 
-    if (!accepted || !chosen_svd.success) {
-      if (options.dense_fallback_if_error_exceeds_target) {
+    if (options.near_zero_compression_guard &&
+        chosen_guard_stats.sample_count > 0) {
+      ++local_report.guarded_block_count;
+      local_report.near_zero_compression_sign_flip_count +=
+          chosen_guard_stats.sign_flip_count;
+      for (double error : chosen_guard_stats.abs_errors) {
+        global_near_zero_errors.push_back(error);
+      }
+    }
+
+    const bool use_dense_for_guard =
+        chosen_svd.success && guard_failed_for_chosen &&
+        options.near_zero_compression_guard;
+    if (!accepted || !chosen_svd.success || use_dense_for_guard) {
+      if (use_dense_for_guard) {
+        if (guard_sign_failed_for_chosen) {
+          ++local_report.kept_dense_due_to_sign_count;
+        }
+        if (guard_error_failed_for_chosen) {
+          ++local_report.kept_dense_due_to_error_count;
+        }
+      }
+      if (options.dense_fallback_if_error_exceeds_target ||
+          use_dense_for_guard) {
         output.blocks.push_back(denseFallbackBlock(
             source,
-            failure_note.empty()
-                ? "dense fallback because matrix-SVD did not satisfy error target"
-                : failure_note));
+            use_dense_for_guard
+                ? "dense fallback because near-zero compression guard failed"
+                : (failure_note.empty()
+                       ? "dense fallback because matrix-SVD did not satisfy error target"
+                       : failure_note)));
         ++local_report.dense_fallback_block_count;
         continue;
       }
@@ -297,6 +431,13 @@ CompressedAdaptiveBlockSDF BlockLowRankCompressor::compress(
   }
 
   local_report.compressed_memory_bytes = output.compressedMemoryBytes();
+  for (const CompressedSDFBlock& block : output.blocks) {
+    if (block.method == BlockCompressionMethod::DenseFallback) {
+      local_report.dense_fallback_memory_bytes += block.compressed_bytes;
+    }
+  }
+  local_report.compressed_memory_bytes_after_guard =
+      local_report.compressed_memory_bytes;
   local_report.compression_ratio = output.compressionRatio();
   if (global_sample_count > 0) {
     local_report.global_mean_abs_error =
@@ -305,6 +446,8 @@ CompressedAdaptiveBlockSDF BlockLowRankCompressor::compress(
         std::sqrt(global_sum_sq / static_cast<double>(global_sample_count));
     local_report.global_p95_abs_error = percentile(global_errors, 0.95);
   }
+  local_report.near_zero_compression_p95_error =
+      percentile(global_near_zero_errors, 0.95);
 
   const auto end = std::chrono::steady_clock::now();
   local_report.compression_time_ms =

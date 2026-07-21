@@ -8,6 +8,7 @@
 #include "adasdf/cache/BuildCacheOptions.h"
 #include "adasdf/cache/BuildCacheStats.h"
 #include "adasdf/generation/AdaptiveOctreeBuilder.h"
+#include "adasdf/generation/AdaptiveTreeStats.h"
 #include "adasdf/geometry/AdaptiveBlockSDFModel.h"
 #include "adasdf/mesh/MeshDiagnostics.h"
 #include "adasdf/mesh/MeshReadiness.h"
@@ -20,6 +21,7 @@ namespace adasdf {
 struct AdaptiveBlockSDFBuildOptions {
   int min_octree_level = 1;
   int max_octree_level = 5;
+  AdaptiveLeafMode adaptive_leaf_mode = AdaptiveLeafMode::Mixed;
 
   int block_resolution = 8;
 
@@ -59,6 +61,7 @@ struct AdaptiveBlockSDFBuildReport {
   int min_octree_level = 0;
   int max_octree_level = 0;
   int max_octree_level_used = 0;
+  AdaptiveLeafMode adaptive_leaf_mode = AdaptiveLeafMode::Mixed;
   int block_resolution = 0;
 
   std::size_t octree_node_count = 0;
@@ -76,6 +79,8 @@ struct AdaptiveBlockSDFBuildReport {
   BuildCacheStats cache_stats;
   HierarchicalBlockSamplingStats hierarchical_sampling;
   ContactBandDiagnostics contact_band_sampling;
+  AdaptiveTreeStats adaptive_tree_stats;
+  std::vector<AdaptiveTreeBlockSamplingStats> adaptive_tree_block_sampling_stats;
 
   MeshDiagnosticsReport diagnostics;
   MeshReadinessReport readiness;

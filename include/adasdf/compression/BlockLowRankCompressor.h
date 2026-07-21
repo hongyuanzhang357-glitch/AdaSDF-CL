@@ -14,6 +14,16 @@ enum class RankSelectionMode {
   MemoryBounded
 };
 
+enum class CompressionSignGuardAction {
+  KeepDense,
+  IncreaseRank
+};
+
+bool parseCompressionSignGuardAction(
+    const std::string& value,
+    CompressionSignGuardAction* action);
+const char* toString(CompressionSignGuardAction action);
+
 struct BlockLowRankCompressionOptions {
   BlockCompressionMethod method = BlockCompressionMethod::MatrixSVD;
 
@@ -31,6 +41,13 @@ struct BlockLowRankCompressionOptions {
 
   bool dense_fallback_if_error_exceeds_target = true;
   bool always_keep_near_surface_blocks_dense = false;
+  std::vector<int> force_dense_block_ids;
+
+  bool near_zero_compression_guard = false;
+  double compression_sign_guard_band = 1.0e-2;
+  double compression_near_zero_error_limit = 2.0e-3;
+  CompressionSignGuardAction compression_sign_guard_action =
+      CompressionSignGuardAction::KeepDense;
 
   double near_surface_error_weight = 1.0;
 
@@ -60,6 +77,15 @@ struct BlockLowRankCompressionReport {
 
   std::size_t sign_mismatch_count = 0;
   std::size_t near_surface_sign_mismatch_count = 0;
+
+  bool compression_guard_enabled = false;
+  std::size_t guarded_block_count = 0;
+  std::size_t kept_dense_due_to_sign_count = 0;
+  std::size_t kept_dense_due_to_error_count = 0;
+  std::size_t near_zero_compression_sign_flip_count = 0;
+  double near_zero_compression_p95_error = 0.0;
+  std::size_t dense_fallback_memory_bytes = 0;
+  std::size_t compressed_memory_bytes_after_guard = 0;
 
   std::vector<int> ranks_used;
   std::vector<std::string> warnings;

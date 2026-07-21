@@ -81,6 +81,13 @@ int main(int argc, char** argv) {
     const SDFMetadata& metadata = model->metadata();
     const double memory_mb =
         static_cast<double>(model->memoryFootprintBytes()) / (1024.0 * 1024.0);
+    BlockProvenanceSet provenance;
+    std::string provenance_error;
+    const bool provenance_present =
+        BlockProvenanceIO::readSidecarForSDF(
+            path,
+            &provenance,
+            &provenance_error);
     if (json) {
       adasdf::BackendJsonContract contract = adasdf_tools::makeBaseContract(
           adasdf::SchemaIds::Info,
@@ -109,6 +116,11 @@ int main(int argc, char** argv) {
           {"compression", adasdf_tools::compressionSummaryJson(*model)});
       contract.payload_fields.push_back(
           {"capabilities", adasdf_tools::capabilitiesJson(*model)});
+      contract.payload_fields.push_back(
+          {"provenance",
+           provenance_present
+               ? BlockProvenanceIO::summaryJson(provenance)
+               : "{\"provenance_present\":false}"});
       if (full) {
         contract.payload_fields.push_back(
             {"blocks", adasdf_tools::blocksJson(*model)});
@@ -266,6 +278,23 @@ int main(int argc, char** argv) {
     std::cout << "Memory footprint bytes: " << model->memoryFootprintBytes() << "\n";
     std::cout << "Memory footprint MB: " << std::fixed << std::setprecision(3)
               << memory_mb << "\n";
+    if (provenance_present) {
+      const BlockProvenanceSummary summary = provenance.summary();
+      std::cout << "Provenance present: yes\n";
+      std::cout << "Provenance format: " << provenance.provenance_format << "\n";
+      std::cout << "Provenance contact_band_block_count: "
+                << summary.contact_band_block_count << "\n";
+      std::cout << "Provenance far_field_block_count: "
+                << summary.far_field_block_count << "\n";
+      std::cout << "Provenance coverage_promoted_block_count: "
+                << summary.coverage_promoted_block_count << "\n";
+      std::cout << "Provenance exact_node_total: "
+                << summary.exact_node_total << "\n";
+      std::cout << "Provenance predicted_node_total: "
+                << summary.predicted_node_total << "\n";
+    } else {
+      std::cout << "Provenance present: no\n";
+    }
     return model->isValid() ? 0 : 1;
   } catch (const std::exception& exc) {
     std::cerr << "adasdf_info failed: " << exc.what() << "\n";

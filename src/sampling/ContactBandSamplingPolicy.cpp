@@ -34,6 +34,45 @@ bool parseContactBandFarFieldMode(
   return false;
 }
 
+const char* toString(NearSurfaceExactMode mode) {
+  switch (mode) {
+    case NearSurfaceExactMode::Off:
+      return "off";
+    case NearSurfaceExactMode::ContactBandNodes:
+      return "contact-band-nodes";
+    case NearSurfaceExactMode::ContactBandCells:
+      return "contact-band-cells";
+    case NearSurfaceExactMode::ContactBandBlocks:
+      return "contact-band-blocks";
+  }
+  return "off";
+}
+
+bool parseNearSurfaceExactMode(
+    const std::string& value,
+    NearSurfaceExactMode* mode) {
+  if (mode == nullptr) {
+    return false;
+  }
+  if (value == "off") {
+    *mode = NearSurfaceExactMode::Off;
+    return true;
+  }
+  if (value == "contact-band-nodes" || value == "nodes") {
+    *mode = NearSurfaceExactMode::ContactBandNodes;
+    return true;
+  }
+  if (value == "contact-band-cells" || value == "cells") {
+    *mode = NearSurfaceExactMode::ContactBandCells;
+    return true;
+  }
+  if (value == "contact-band-blocks" || value == "blocks") {
+    *mode = NearSurfaceExactMode::ContactBandBlocks;
+    return true;
+  }
+  return false;
+}
+
 ContactBandOptions ContactBandSamplingOptions::markerOptions() const {
   ContactBandOptions options;
   options.contact_band_width = contact_band_width;

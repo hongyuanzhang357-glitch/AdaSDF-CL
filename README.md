@@ -2,7 +2,7 @@
 
 Adaptive Signed Distance Field Collision Library
 
-Status: 1.17.2-alpha / research preview
+Status: 1.18.0-alpha / Adaptive SDF Compiler Preview
 Build system: CMake
 License: MIT
 Tests: CTest
@@ -10,6 +10,16 @@ Tests: CTest
 AdaSDF-CL is an alpha collision and contact library built around signed distance fields. It provides an FCL-style API for distance, collision, and contact queries while keeping CUDA, FCL, native Python bindings, and full adaptive backend work optional or future-facing.
 
 AdaSDF-CL is an FCL-style SDF collision backend under development. It complements FCL by providing signed-distance queries, penetration depth, contact normals, batch query, expanded-SDF quality audit, CUDA query paths, and a first SDF-native multi-object CollisionWorld broadphase. It is not a drop-in FCL replacement.
+
+v1.18.0-alpha is the Adaptive SDF Compiler Preview. It adds a constrained
+STL-to-SDF creation contract, adaptive octree refinement, deterministic BVH
+sampling, block partitioning, Dense/MatrixSVD/HOSVD/TT/Tucker tensor storage,
+compressed-direct runtime queries, serialized reload validation, and the
+`adasdf_create_sdf` command. The default parameter path is a deterministic
+heuristic; no trained advisor, surrogate weights, optimizer experiments, or
+model installation resources are included. The reported zero-surface error is
+a bidirectional measured estimate, not a certified Hausdorff bound. See
+`docs/adaptive_sdf_compiler_preview_v1_18.md` for the supported boundary.
 
 v1.17.2-alpha adds adaptive build sample caches and repeated-query reduction
 for STL-to-SDF construction. It introduces deterministic quantized point keys,

@@ -232,11 +232,79 @@ double applyFarFieldMode(
 bool shouldExactNode(
     const ContactBandMask& mask,
     std::size_t index,
+    int i,
+    int j,
+    int k,
+    int n,
     bool has_contact_band,
-    const ContactBandSamplingOptions& options) {
+    const ContactBandSamplingOptions& options,
+    double predicted_phi) {
+  if (has_contact_band &&
+      options.near_surface_exact_mode == NearSurfaceExactMode::ContactBandBlocks) {
+    return true;
+  }
+  if (has_contact_band &&
+      (options.exact_sign_band > 0.0 || options.exact_distance_band > 0.0)) {
+    const double band =
+        std::max(std::max(0.0, options.exact_sign_band),
+                 std::max(0.0, options.exact_distance_band));
+    if (std::abs(predicted_phi) <= band) {
+      return true;
+    }
+  }
   if (!has_contact_band || index >= mask.exact_required.size() ||
       mask.exact_required[index] == 0) {
+    if (has_contact_band &&
+        options.force_exact_sign_in_contact_band &&
+        index < mask.contact_band_node.size() &&
+        mask.contact_band_node[index] != 0) {
+      return true;
+    }
+    if (has_contact_band &&
+        options.near_surface_exact_mode ==
+            NearSurfaceExactMode::ContactBandCells) {
+      for (int dz = -1; dz <= 0; ++dz) {
+        for (int dy = -1; dy <= 0; ++dy) {
+          for (int dx = -1; dx <= 0; ++dx) {
+            const int cx = i + dx;
+            const int cy = j + dy;
+            const int cz = k + dz;
+            if (cx < 0 || cy < 0 || cz < 0 || cx >= n - 1 ||
+                cy >= n - 1 || cz >= n - 1) {
+              continue;
+            }
+            for (int oz = 0; oz <= 1; ++oz) {
+              for (int oy = 0; oy <= 1; ++oy) {
+                for (int ox = 0; ox <= 1; ++ox) {
+                  const std::size_t corner =
+                      gridIndex(cx + ox, cy + oy, cz + oz, n, n);
+                  if (corner < mask.contact_band_node.size() &&
+                      mask.contact_band_node[corner] != 0) {
+                    return true;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
     return false;
+  }
+  if (options.force_exact_sign_in_contact_band &&
+      index < mask.contact_band_node.size() &&
+      mask.contact_band_node[index] != 0) {
+    return true;
+  }
+  if (options.near_surface_exact_mode ==
+          NearSurfaceExactMode::ContactBandNodes &&
+      index < mask.contact_band_node.size() &&
+      mask.contact_band_node[index] != 0) {
+    return true;
+  }
+  if (options.near_surface_exact_mode ==
+      NearSurfaceExactMode::ContactBandCells) {
+    return true;
   }
   if (mask.contact_band_node[index] != 0) {
     return options.exact_contact_band_nodes;
@@ -358,7 +426,16 @@ ContactBandBlockSamplingResult ContactBandBlockSampler::sampleBlock(
     for (int j = 0; j < n; ++j) {
       for (int i = 0; i < n; ++i) {
         const std::size_t index = gridIndex(i, j, k, n, n);
-        if (!shouldExactNode(result.mask, index, result.has_contact_band, options)) {
+        if (!shouldExactNode(
+                result.mask,
+                index,
+                i,
+                j,
+                k,
+                n,
+                result.has_contact_band,
+                options,
+                result.block.phi[index])) {
           continue;
         }
         exact_indices.push_back(index);

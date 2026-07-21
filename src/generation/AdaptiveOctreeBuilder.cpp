@@ -6,58 +6,64 @@
 #include <limits>
 #include <vector>
 
+#include "adasdf/acceleration/BVHSDFSampler.h"
+#include "adasdf/acceleration/TriangleAABB.h"
 #include "adasdf/mesh/MeshDiagnostics.h"
-#include "adasdf/mesh/MeshSign.h"
-#include "adasdf/mesh/TriangleDistance.h"
 
 namespace adasdf {
 namespace {
 
-bool validIndex(const TriangleMesh& mesh, int index) {
-  return index >= 0 && static_cast<std::size_t>(index) < mesh.vertices.size();
+bool boxesOverlap(const TriangleAABB& tri_box, const AABB& cell) {
+  return isValid(tri_box) && cell.valid &&
+         tri_box.max.x >= cell.min.x && tri_box.min.x <= cell.max.x &&
+         tri_box.max.y >= cell.min.y && tri_box.min.y <= cell.max.y &&
+         tri_box.max.z >= cell.min.z && tri_box.min.z <= cell.max.z;
+}
+
+std::vector<TriangleAABB> makeTriangleAABBs(const TriangleMesh& mesh) {
+  std::vector<TriangleAABB> boxes;
+  boxes.reserve(mesh.triangles.size());
+  for (const MeshTriangle& triangle : mesh.triangles) {
+    boxes.push_back(makeMeshTriangleAABB(mesh, triangle));
+  }
+  return boxes;
+}
+
+bool triangleAABBOverlapsCell(
+    const std::vector<TriangleAABB>& triangle_aabbs,
+    const AABB& cell) {
+  for (const TriangleAABB& triangle_aabb : triangle_aabbs) {
+    if (boxesOverlap(triangle_aabb, cell)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 double length(const Vector3& v) {
   return std::sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
 }
 
-double minTriangleDistance(const TriangleMesh& mesh, const Vector3& p) {
-  double min_dist = std::numeric_limits<double>::infinity();
-  for (const MeshTriangle& triangle : mesh.triangles) {
-    if (!validIndex(mesh, triangle.v0) || !validIndex(mesh, triangle.v1) ||
-        !validIndex(mesh, triangle.v2)) {
-      continue;
-    }
-    const double dist = pointTriangleDistance(
-        p,
-        toVector3(mesh.vertices[triangle.v0]),
-        toVector3(mesh.vertices[triangle.v1]),
-        toVector3(mesh.vertices[triangle.v2]));
-    if (std::isfinite(dist)) {
-      min_dist = std::min(min_dist, dist);
-    }
-  }
-  return min_dist;
-}
-
 double signedPhi(
     const TriangleMesh& mesh,
     const Vector3& p,
-    bool signed_distance) {
-  double phi = minTriangleDistance(mesh, p);
-  if (!std::isfinite(phi)) {
+    bool signed_distance,
+    const BVHSDFSampler* sampler,
+    const BVHSDFSamplerOptions& sampler_options) {
+  BVHSDFSampleResult sample;
+  if (sampler != nullptr && sampler->hasBVH()) {
+    sample = BVHSDFSampler::sampleWithBVH(
+        mesh,
+        sampler->bvh(),
+        p,
+        sampler_options);
+  } else {
+    sample = BVHSDFSampler::sampleBruteForce(mesh, p, signed_distance);
+  }
+  if (!sample.success || !std::isfinite(sample.phi)) {
     return 0.0;
   }
-  if (!signed_distance) {
-    return phi;
-  }
-  const MeshSignResult sign = MeshSign::classifyPoint(mesh, p);
-  if (sign == MeshSignResult::Inside) {
-    phi = -phi;
-  } else if (sign == MeshSignResult::OnSurface) {
-    phi = 0.0;
-  }
-  return phi;
+  return sample.phi;
 }
 
 Vector3 midPoint(const Vector3& a, const Vector3& b) {
@@ -114,11 +120,19 @@ std::vector<Vector3> cellSamples(const AABB& bounds) {
 void evaluateNode(
     const TriangleMesh& mesh,
     const AdaptiveOctreeBuildOptions& options,
+    const std::vector<TriangleAABB>& triangle_aabbs,
+    const BVHSDFSampler* sampler,
+    const BVHSDFSamplerOptions& sampler_options,
     AdaptiveOctreeNode& node) {
   const Vector3 diag = node.bounds.max - node.bounds.min;
   node.cell_diagonal = length(diag);
   const Vector3 center = midPoint(node.bounds.min, node.bounds.max);
-  node.center_phi = signedPhi(mesh, center, options.signed_distance);
+  node.center_phi = signedPhi(
+      mesh,
+      center,
+      options.signed_distance,
+      sampler,
+      sampler_options);
 
   const std::vector<Vector3> samples = cellSamples(node.bounds);
   node.min_abs_sample_phi = std::numeric_limits<double>::infinity();
@@ -127,7 +141,12 @@ void evaluateNode(
   bool saw_positive = false;
   bool saw_zero = false;
   for (const Vector3& sample : samples) {
-    const double phi = signedPhi(mesh, sample, options.signed_distance);
+    const double phi = signedPhi(
+        mesh,
+        sample,
+        options.signed_distance,
+        sampler,
+        sampler_options);
     const double abs_phi = std::abs(phi);
     if (std::isfinite(abs_phi)) {
       node.min_abs_sample_phi = std::min(node.min_abs_sample_phi, abs_phi);
@@ -144,17 +163,26 @@ void evaluateNode(
   if (!std::isfinite(node.min_abs_sample_phi)) {
     node.min_abs_sample_phi = 0.0;
   }
-  node.contains_surface = saw_zero || (saw_negative && saw_positive);
+  node.contains_surface =
+      saw_zero || (saw_negative && saw_positive) ||
+      triangleAABBOverlapsCell(triangle_aabbs, node.bounds);
   const double near_band = std::max(0.0, options.surface_band_factor) *
                            std::max(node.cell_diagonal, 0.0);
   const double target_band =
       std::max(0.0, options.target_near_surface_error) *
       std::max(0.0, options.surface_band_factor);
-  node.near_surface =
-      node.contains_surface ||
-      (options.refine_near_surface &&
-       (node.min_abs_sample_phi <= near_band ||
-        node.min_abs_sample_phi <= target_band));
+  if (options.leaf_mode == AdaptiveLeafMode::Uniform) {
+    node.near_surface =
+        node.contains_surface ||
+        (options.refine_near_surface &&
+         (node.min_abs_sample_phi <= near_band ||
+          node.min_abs_sample_phi <= target_band));
+  } else {
+    node.near_surface =
+        node.contains_surface ||
+        (options.refine_near_surface &&
+         node.min_abs_sample_phi <= target_band);
+  }
 }
 
 bool shouldRefine(
@@ -165,6 +193,9 @@ bool shouldRefine(
   }
   if (node.level >= options.max_level) {
     return false;
+  }
+  if (options.leaf_mode == AdaptiveLeafMode::Uniform) {
+    return true;
   }
   if (options.refine_sign_changes && node.contains_surface) {
     return true;
@@ -194,7 +225,10 @@ void addChildren(
     AdaptiveOctree& octree,
     int parent_id,
     const TriangleMesh& mesh,
-    const AdaptiveOctreeBuildOptions& options) {
+    const AdaptiveOctreeBuildOptions& options,
+    const std::vector<TriangleAABB>& triangle_aabbs,
+    const BVHSDFSampler* sampler,
+    const BVHSDFSamplerOptions& sampler_options) {
   const AABB parent_bounds =
       octree.nodes[static_cast<std::size_t>(parent_id)].bounds;
   const int parent_level =
@@ -208,7 +242,13 @@ void addChildren(
     node.parent_id = parent_id;
     node.level = parent_level + 1;
     node.bounds = childBounds(parent_bounds, child);
-    evaluateNode(mesh, options, node);
+    evaluateNode(
+        mesh,
+        options,
+        triangle_aabbs,
+        sampler,
+        sampler_options,
+        node);
     child_ids[static_cast<std::size_t>(child)] = node.id;
     octree.nodes.push_back(node);
   }
@@ -223,6 +263,31 @@ void assignReport(AdaptiveOctreeBuildReport* out, const AdaptiveOctreeBuildRepor
 
 }  // namespace
 
+const char* toString(AdaptiveLeafMode mode) {
+  switch (mode) {
+    case AdaptiveLeafMode::Mixed:
+      return "mixed";
+    case AdaptiveLeafMode::Uniform:
+      return "uniform";
+  }
+  return "mixed";
+}
+
+bool parseAdaptiveLeafMode(const std::string& value, AdaptiveLeafMode* mode) {
+  if (mode == nullptr) {
+    return false;
+  }
+  if (value == "mixed") {
+    *mode = AdaptiveLeafMode::Mixed;
+    return true;
+  }
+  if (value == "uniform" || value == "max-level" || value == "uniform-max") {
+    *mode = AdaptiveLeafMode::Uniform;
+    return true;
+  }
+  return false;
+}
+
 AdaptiveOctree AdaptiveOctreeBuilder::build(
     const TriangleMesh& mesh,
     const AdaptiveOctreeBuildOptions& options,
@@ -230,6 +295,7 @@ AdaptiveOctree AdaptiveOctreeBuilder::build(
   AdaptiveOctreeBuildReport report;
   report.min_level = options.min_level;
   report.max_level = options.max_level;
+  report.leaf_mode = options.leaf_mode;
   const auto t0 = std::chrono::steady_clock::now();
 
   AdaptiveOctree octree;
@@ -254,12 +320,38 @@ AdaptiveOctree AdaptiveOctreeBuilder::build(
     }
   }
 
+  BVHSDFSamplerOptions sampler_options;
+  sampler_options.acceleration = options.distance_backend;
+  sampler_options.signed_distance = options.signed_distance;
+  sampler_options.bvh_options.degenerate_area_epsilon =
+      options.degenerate_area_epsilon;
+  BVHSDFSampler sampler;
+  const BVHSDFSampler* sampler_ptr = nullptr;
+  if (options.distance_backend == SDFSamplingAcceleration::BVH) {
+    BuildAccelerationStats acceleration_stats;
+    if (sampler.reset(mesh, sampler_options, &acceleration_stats) &&
+        sampler.hasBVH()) {
+      sampler_ptr = &sampler;
+    } else {
+      report.warnings.push_back(
+          "Adaptive octree BVH distance backend was requested but BVH build "
+          "failed; falling back to brute-force refinement sampling.");
+    }
+  }
+  const std::vector<TriangleAABB> triangle_aabbs = makeTriangleAABBs(mesh);
+
   AdaptiveOctreeNode root;
   root.id = 0;
   root.parent_id = -1;
   root.level = 0;
   root.bounds = paddedRoot(mesh, options.padding);
-  evaluateNode(mesh, options, root);
+  evaluateNode(
+      mesh,
+      options,
+      triangle_aabbs,
+      sampler_ptr,
+      sampler_options,
+      root);
   octree.root_id = 0;
   octree.nodes.push_back(root);
 
@@ -267,7 +359,14 @@ AdaptiveOctree AdaptiveOctreeBuilder::build(
     AdaptiveOctreeNode& node = octree.nodes[index];
     if (shouldRefine(node, options)) {
       const int parent_id = node.id;
-      addChildren(octree, parent_id, mesh, options);
+      addChildren(
+          octree,
+          parent_id,
+          mesh,
+          options,
+          triangle_aabbs,
+          sampler_ptr,
+          sampler_options);
     }
   }
 

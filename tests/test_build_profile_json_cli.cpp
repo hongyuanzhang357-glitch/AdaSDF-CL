@@ -37,6 +37,9 @@ int main() {
   if (!containsText(profile_text, "\"schema_id\": \"adasdf.build_profile.v1\"") ||
       !containsText(profile_text, "\"profile_status\": \"completed\"") ||
       !containsText(profile_text, "\"timings\"") ||
+      !containsText(profile_text, "\"adaptive_tree\"") ||
+      !containsText(profile_text, "\"leaf_count_by_level\"") ||
+      !containsText(profile_text, "\"mixed_level_leaves_present\"") ||
       !containsText(progress_text, "\"schema_id\":\"adasdf.progress.v1\"")) {
     std::cerr << "build profile/progress JSON missing expected fields\n";
     return 1;

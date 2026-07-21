@@ -6,6 +6,8 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <limits>
+#include <map>
 #include <string>
 
 #include "ModelJsonHelpers.h"
@@ -20,13 +22,21 @@ enum class Mode {
   Candidates
 };
 
+enum class QueryBackend {
+  Auto,
+  Legacy,
+  BrickFast
+};
+
 void usage() {
   std::cout
       << "Usage: adasdf_benchmark_sparse_query model.sdfbin samples.csv "
          "[--repeat N] [--warmup N] "
          "[--mode phi-only|phi-normal|collision-only|clearance|candidates] "
          "[--threshold value] [--top-k N] [--early-exit] [--with-normal] "
-         "[--no-radius] [--report benchmark.md] [--json [benchmark.json]] "
+         "[--no-radius] [--query-backend auto|legacy|brick-fast] "
+         "[--report-query-breakdown] "
+         "[--report benchmark.md] [--json [benchmark.json]] "
          "[--csv benchmark.csv]\n";
 }
 
@@ -69,6 +79,31 @@ const char* toString(Mode mode) {
   return "unknown";
 }
 
+QueryBackend parseQueryBackend(const std::string& text) {
+  if (text == "auto") {
+    return QueryBackend::Auto;
+  }
+  if (text == "legacy") {
+    return QueryBackend::Legacy;
+  }
+  if (text == "brick-fast") {
+    return QueryBackend::BrickFast;
+  }
+  throw std::runtime_error("unsupported query backend: " + text);
+}
+
+const char* toString(QueryBackend backend) {
+  switch (backend) {
+    case QueryBackend::Auto:
+      return "auto";
+    case QueryBackend::Legacy:
+      return "legacy";
+    case QueryBackend::BrickFast:
+      return "brick-fast";
+  }
+  return "auto";
+}
+
 bool writeText(const std::filesystem::path& path, const std::string& text) {
   if (!path.parent_path().empty()) {
     std::filesystem::create_directories(path.parent_path());
@@ -79,6 +114,22 @@ bool writeText(const std::filesystem::path& path, const std::string& text) {
   }
   file << text;
   return true;
+}
+
+std::string stringSizeMapJson(const std::map<std::string, std::size_t>& values) {
+  std::string out = "{";
+  bool first = true;
+  for (const auto& item : values) {
+    if (!first) {
+      out += ",";
+    }
+    first = false;
+    out += adasdf::JsonContractWriter::quote(item.first);
+    out += ":";
+    out += adasdf::JsonContractWriter::integer(item.second);
+  }
+  out += "}";
+  return out;
 }
 
 struct Metrics {
@@ -92,6 +143,13 @@ struct Metrics {
   double queried_samples_avg = 0.0;
   double early_exit_rate = 0.0;
   std::size_t candidate_count = 0;
+  std::string query_backend = "legacy";
+  std::size_t block_count = 0;
+  std::string model_type;
+  std::string tensor_dim_distribution = "{}";
+  double max_abs_phi_diff = 0.0;
+  std::size_t query_mismatch_count = 0;
+  adasdf::NarrowBandBrickQueryStats brick_stats;
 };
 
 }  // namespace
@@ -117,6 +175,8 @@ int main(int argc, char** argv) {
     bool early_exit = false;
     bool with_normal = false;
     bool use_radius = true;
+    QueryBackend requested_backend = QueryBackend::Legacy;
+    bool report_query_breakdown = false;
     std::filesystem::path report_path;
     std::filesystem::path json_path;
     std::filesystem::path csv_path;
@@ -140,6 +200,10 @@ int main(int argc, char** argv) {
         with_normal = true;
       } else if (arg == "--no-radius") {
         use_radius = false;
+      } else if (arg == "--query-backend" && hasValue(i, argc)) {
+        requested_backend = parseQueryBackend(argv[++i]);
+      } else if (arg == "--report-query-breakdown") {
+        report_query_breakdown = true;
       } else if (arg == "--report" && hasValue(i, argc)) {
         report_path = argv[++i];
       } else if (arg == "--json") {
@@ -175,12 +239,71 @@ int main(int argc, char** argv) {
       return 1;
     }
 
+    adasdf::NarrowBandBrickIndex brick_index;
+    const auto* adaptive_model =
+        dynamic_cast<const adasdf::AdaptiveBlockSDFModel*>(model.get());
+    const bool brick_index_available =
+        adaptive_model != nullptr && brick_index.build(*adaptive_model);
+    QueryBackend actual_backend = requested_backend;
+    const bool brick_mode_supported =
+        mode == Mode::PhiOnly && !with_normal && brick_index_available;
+    if (requested_backend == QueryBackend::Auto) {
+      actual_backend =
+          brick_mode_supported ? QueryBackend::BrickFast : QueryBackend::Legacy;
+    }
+    if (requested_backend == QueryBackend::BrickFast && !brick_mode_supported) {
+      std::cerr << "adasdf_benchmark_sparse_query: brick-fast backend requires "
+                   "an adaptive block model and phi-only mode\n";
+      return 1;
+    }
+
     Metrics metrics;
     metrics.sample_count = samples.sample_set.size();
     metrics.repeat = repeat;
     metrics.warmup = warmup;
+    metrics.query_backend = toString(actual_backend);
+    metrics.model_type = adasdf_tools::modelType(*model);
+    if (brick_index_available) {
+      metrics.block_count = brick_index.stats().block_count;
+      metrics.tensor_dim_distribution =
+          stringSizeMapJson(brick_index.stats().tensor_dim_distribution);
+    } else {
+      metrics.block_count =
+          static_cast<std::size_t>(std::max(0, model->metadata().final_block_count));
+    }
+
+    if (actual_backend == QueryBackend::BrickFast) {
+      for (const adasdf::CollisionSample& sample : samples.sample_set.samples) {
+        const double legacy_phi = model->sampleDistance(sample.position);
+        const adasdf::NarrowBandBrickQueryResult fast =
+            adasdf::NarrowBandBrickQuery::samplePhi(
+                brick_index,
+                sample.position,
+                nullptr);
+        const double diff = std::abs(legacy_phi - fast.phi);
+        metrics.max_abs_phi_diff = std::max(metrics.max_abs_phi_diff, diff);
+        if (diff > 1.0e-9) {
+          ++metrics.query_mismatch_count;
+        }
+      }
+    }
 
     auto run_once = [&]() {
+      if (actual_backend == QueryBackend::BrickFast) {
+        for (const adasdf::CollisionSample& sample : samples.sample_set.samples) {
+          const adasdf::NarrowBandBrickQueryResult query =
+              adasdf::NarrowBandBrickQuery::samplePhi(
+                  brick_index,
+                  sample.position,
+                  report_query_breakdown ? &metrics.brick_stats : nullptr);
+          if (!query.success) {
+            throw std::runtime_error("brick-fast query failed");
+          }
+        }
+        metrics.queried_samples_avg +=
+            static_cast<double>(samples.sample_set.size());
+        return;
+      }
       if (mode == Mode::CollisionOnly || mode == Mode::Clearance) {
         adasdf::SparseCollisionQueryOptions options;
         options.mode = mode == Mode::CollisionOnly
@@ -233,6 +356,7 @@ int main(int argc, char** argv) {
     metrics.queried_samples_avg = 0.0;
     metrics.early_exit_rate = 0.0;
     metrics.candidate_count = 0;
+    metrics.brick_stats = {};
 
     const auto start = std::chrono::steady_clock::now();
     for (int i = 0; i < repeat; ++i) {
@@ -284,6 +408,14 @@ int main(int argc, char** argv) {
       contract.payload_fields.push_back(
           {"mode", adasdf::JsonContractWriter::quote(toString(mode))});
       contract.payload_fields.push_back(
+          {"query_backend",
+           adasdf::JsonContractWriter::quote(metrics.query_backend)});
+      contract.payload_fields.push_back(
+          {"block_count",
+           adasdf::JsonContractWriter::integer(metrics.block_count)});
+      contract.payload_fields.push_back(
+          {"tensor_dim_distribution", metrics.tensor_dim_distribution});
+      contract.payload_fields.push_back(
           {"repeat", adasdf::JsonContractWriter::integerSigned(repeat)});
       contract.payload_fields.push_back(
           {"warmup", adasdf::JsonContractWriter::integerSigned(warmup)});
@@ -302,11 +434,59 @@ int main(int argc, char** argv) {
                ",\"candidate_count\":" +
                adasdf::JsonContractWriter::integer(metrics.candidate_count) +
                "}"});
+      contract.payload_fields.push_back(
+          {"query_breakdown",
+           "{\"block_lookup_time_ms\":" +
+               adasdf::JsonContractWriter::number(
+                   metrics.brick_stats.timing.block_lookup_time_ms) +
+               ",\"cell_index_time_ms\":" +
+               adasdf::JsonContractWriter::number(
+                   metrics.brick_stats.timing.cell_index_time_ms) +
+               ",\"interpolation_time_ms\":" +
+               adasdf::JsonContractWriter::number(
+                   metrics.brick_stats.timing.interpolation_time_ms) +
+               ",\"model_dispatch_time_ms\":" +
+               adasdf::JsonContractWriter::number(
+                   metrics.brick_stats.timing.model_dispatch_time_ms) +
+               ",\"decompression_or_decode_time_ms\":" +
+               adasdf::JsonContractWriter::number(
+                   metrics.brick_stats.timing.decompression_or_decode_time_ms) +
+               ",\"data_access_time_ms\":" +
+               adasdf::JsonContractWriter::number(
+                   metrics.brick_stats.timing.data_access_time_ms) +
+               ",\"block_lookup_count\":" +
+               adasdf::JsonContractWriter::integer(
+                   metrics.brick_stats.block_lookup_count) +
+               ",\"block_lookup_miss_count\":" +
+               adasdf::JsonContractWriter::integer(
+                   metrics.brick_stats.block_lookup_miss_count) +
+               ",\"out_of_domain_count\":" +
+               adasdf::JsonContractWriter::integer(
+                   metrics.brick_stats.out_of_domain_count) +
+               ",\"average_blocks_checked_per_query\":" +
+               adasdf::JsonContractWriter::number(
+                   metrics.brick_stats.averageBlocksCheckedPerQuery()) +
+               ",\"average_tensor_nodes_touched_per_query\":" +
+               adasdf::JsonContractWriter::number(
+                   metrics.brick_stats.averageTensorNodesTouchedPerQuery()) +
+               ",\"phi_min\":" +
+               adasdf::JsonContractWriter::number(metrics.brick_stats.phi_min) +
+               ",\"phi_max\":" +
+               adasdf::JsonContractWriter::number(metrics.brick_stats.phi_max) +
+               ",\"phi_mean\":" +
+               adasdf::JsonContractWriter::number(metrics.brick_stats.phi_mean) +
+               ",\"max_abs_phi_diff\":" +
+               adasdf::JsonContractWriter::number(metrics.max_abs_phi_diff) +
+               ",\"query_mismatch_count\":" +
+               adasdf::JsonContractWriter::integer(
+                   metrics.query_mismatch_count) +
+               "}"});
       std::cout << adasdf::JsonContractWriter::writeObject(contract);
     } else {
       std::cout << "sample_count,repeat,warmup,total_ms,avg_ms,avg_us,"
                    "avg_ns_per_sample,queried_samples_avg,early_exit_rate,mode,"
-                   "with_normal,threshold,top_k,status\n";
+                   "query_backend,with_normal,threshold,top_k,max_abs_phi_diff,"
+                   "query_mismatch_count,status\n";
       std::cout << metrics.sample_count << ","
                 << metrics.repeat << ","
                 << metrics.warmup << ","
@@ -317,11 +497,14 @@ int main(int argc, char** argv) {
                 << metrics.queried_samples_avg << ","
                 << metrics.early_exit_rate << ","
                 << toString(mode) << ","
+                << metrics.query_backend << ","
                 << (with_normal || mode == Mode::PhiNormal ||
                     mode == Mode::Candidates ? "true" : "false")
                 << ","
                 << threshold << ","
-                << top_k << ",ok\n";
+                << top_k << ","
+                << metrics.max_abs_phi_diff << ","
+                << metrics.query_mismatch_count << ",ok\n";
       std::cout << "Sparse benchmark mode: " << toString(mode) << "\n";
       std::cout << "Average ns per sample: " << metrics.avg_ns_per_sample
                 << "\n";
@@ -330,7 +513,8 @@ int main(int argc, char** argv) {
 
     const std::string csv =
         "sample_count,repeat,warmup,total_ms,avg_ms,avg_us,avg_ns_per_sample,"
-        "queried_samples_avg,early_exit_rate,mode,with_normal,threshold,top_k\n" +
+        "queried_samples_avg,early_exit_rate,mode,query_backend,with_normal,"
+        "threshold,top_k,max_abs_phi_diff,query_mismatch_count\n" +
         std::to_string(metrics.sample_count) + "," +
         std::to_string(metrics.repeat) + "," +
         std::to_string(metrics.warmup) + "," +
@@ -341,10 +525,13 @@ int main(int argc, char** argv) {
         std::to_string(metrics.queried_samples_avg) + "," +
         std::to_string(metrics.early_exit_rate) + "," +
         toString(mode) + "," +
+        metrics.query_backend + "," +
         ((with_normal || mode == Mode::PhiNormal || mode == Mode::Candidates)
              ? "true"
              : "false") +
-        "," + std::to_string(threshold) + "," + std::to_string(top_k) + "\n";
+        "," + std::to_string(threshold) + "," + std::to_string(top_k) + "," +
+        std::to_string(metrics.max_abs_phi_diff) + "," +
+        std::to_string(metrics.query_mismatch_count) + "\n";
     if (!csv_path.empty() && !writeText(csv_path, csv)) {
       std::cerr << "adasdf_benchmark_sparse_query: failed to write CSV\n";
       return 2;
@@ -353,11 +540,22 @@ int main(int argc, char** argv) {
       const std::string md =
           "# Sparse Query Benchmark\n\n"
           "- Mode: " + std::string(toString(mode)) + "\n"
+          "- Query backend: " + metrics.query_backend + "\n"
           "- Sample count: " + std::to_string(metrics.sample_count) + "\n"
           "- Repeat: " + std::to_string(repeat) + "\n"
           "- Warmup: " + std::to_string(warmup) + "\n"
           "- Average ns per sample: " +
-          std::to_string(metrics.avg_ns_per_sample) + "\n";
+          std::to_string(metrics.avg_ns_per_sample) + "\n"
+          "- Max abs phi diff: " +
+          std::to_string(metrics.max_abs_phi_diff) + "\n"
+          "- Query mismatch count: " +
+          std::to_string(metrics.query_mismatch_count) + "\n"
+          "- Block lookup time ms: " +
+          std::to_string(
+              metrics.brick_stats.timing.block_lookup_time_ms) + "\n"
+          "- Interpolation time ms: " +
+          std::to_string(
+              metrics.brick_stats.timing.interpolation_time_ms) + "\n";
       if (!writeText(report_path, md)) {
         std::cerr << "adasdf_benchmark_sparse_query: failed to write report\n";
         return 2;
@@ -390,6 +588,61 @@ int main(int argc, char** argv) {
            adasdf::JsonContractWriter::quote(adasdf_tools::modelType(*model))});
       contract.payload_fields.push_back(
           {"mode", adasdf::JsonContractWriter::quote(toString(mode))});
+      contract.payload_fields.push_back(
+          {"query_backend",
+           adasdf::JsonContractWriter::quote(metrics.query_backend)});
+      contract.payload_fields.push_back(
+          {"block_count",
+           adasdf::JsonContractWriter::integer(metrics.block_count)});
+      contract.payload_fields.push_back(
+          {"tensor_dim_distribution", metrics.tensor_dim_distribution});
+      contract.payload_fields.push_back(
+          {"query_breakdown",
+           "{\"block_lookup_time_ms\":" +
+               adasdf::JsonContractWriter::number(
+                   metrics.brick_stats.timing.block_lookup_time_ms) +
+               ",\"cell_index_time_ms\":" +
+               adasdf::JsonContractWriter::number(
+                   metrics.brick_stats.timing.cell_index_time_ms) +
+               ",\"interpolation_time_ms\":" +
+               adasdf::JsonContractWriter::number(
+                   metrics.brick_stats.timing.interpolation_time_ms) +
+               ",\"model_dispatch_time_ms\":" +
+               adasdf::JsonContractWriter::number(
+                   metrics.brick_stats.timing.model_dispatch_time_ms) +
+               ",\"decompression_or_decode_time_ms\":" +
+               adasdf::JsonContractWriter::number(
+                   metrics.brick_stats.timing.decompression_or_decode_time_ms) +
+               ",\"data_access_time_ms\":" +
+               adasdf::JsonContractWriter::number(
+                   metrics.brick_stats.timing.data_access_time_ms) +
+               ",\"block_lookup_count\":" +
+               adasdf::JsonContractWriter::integer(
+                   metrics.brick_stats.block_lookup_count) +
+               ",\"block_lookup_miss_count\":" +
+               adasdf::JsonContractWriter::integer(
+                   metrics.brick_stats.block_lookup_miss_count) +
+               ",\"out_of_domain_count\":" +
+               adasdf::JsonContractWriter::integer(
+                   metrics.brick_stats.out_of_domain_count) +
+               ",\"average_blocks_checked_per_query\":" +
+               adasdf::JsonContractWriter::number(
+                   metrics.brick_stats.averageBlocksCheckedPerQuery()) +
+               ",\"average_tensor_nodes_touched_per_query\":" +
+               adasdf::JsonContractWriter::number(
+                   metrics.brick_stats.averageTensorNodesTouchedPerQuery()) +
+               ",\"phi_min\":" +
+               adasdf::JsonContractWriter::number(metrics.brick_stats.phi_min) +
+               ",\"phi_max\":" +
+               adasdf::JsonContractWriter::number(metrics.brick_stats.phi_max) +
+               ",\"phi_mean\":" +
+               adasdf::JsonContractWriter::number(metrics.brick_stats.phi_mean) +
+               ",\"max_abs_phi_diff\":" +
+               adasdf::JsonContractWriter::number(metrics.max_abs_phi_diff) +
+               ",\"query_mismatch_count\":" +
+               adasdf::JsonContractWriter::integer(
+                   metrics.query_mismatch_count) +
+               "}"});
       const std::string json =
           adasdf::JsonContractWriter::writeObject(contract);
       if (!writeText(json_path, json)) {

@@ -18,10 +18,21 @@ enum class ContactBandFarFieldMode {
   ClampedDistance,
 };
 
+enum class NearSurfaceExactMode {
+  Off,
+  ContactBandNodes,
+  ContactBandCells,
+  ContactBandBlocks,
+};
+
 const char* toString(ContactBandFarFieldMode mode);
 bool parseContactBandFarFieldMode(
     const std::string& value,
     ContactBandFarFieldMode* mode);
+const char* toString(NearSurfaceExactMode mode);
+bool parseNearSurfaceExactMode(
+    const std::string& value,
+    NearSurfaceExactMode* mode);
 
 struct ContactBandSamplingOptions {
   bool enable_contact_band_sampling = false;
@@ -48,6 +59,11 @@ struct ContactBandSamplingOptions {
 
   bool exact_contact_band_nodes = true;
   bool exact_halo_nodes = true;
+  NearSurfaceExactMode near_surface_exact_mode = NearSurfaceExactMode::Off;
+  double exact_sign_band = 0.0;
+  double exact_distance_band = 0.0;
+  bool disable_far_field_sign_reuse_near_surface = false;
+  bool force_exact_sign_in_contact_band = false;
 
   bool normal_audit = false;
   bool coverage_audit = false;

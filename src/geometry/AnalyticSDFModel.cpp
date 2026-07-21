@@ -32,17 +32,23 @@ Scalar signNonZero(Scalar value) {
   return value < 0.0 ? -1.0 : 1.0;
 }
 
-void validateBox(const AnalyticSDFDescription& description) {
-  if (description.shape != AnalyticShapeType::Box) {
-    throw std::runtime_error("AnalyticSDFModel currently supports box shapes only.");
-  }
+void validateDescription(const AnalyticSDFDescription& description) {
   if (!description.center.allFinite() || !description.half_extent.allFinite()) {
-    throw std::runtime_error("AnalyticSDFModel box parameters must be finite.");
+    throw std::runtime_error("AnalyticSDFModel parameters must be finite.");
   }
   if (!(description.half_extent.x > 0.0) ||
       !(description.half_extent.y > 0.0) ||
       !(description.half_extent.z > 0.0)) {
-    throw std::runtime_error("AnalyticSDFModel box half extents must be positive.");
+    throw std::runtime_error("AnalyticSDFModel extents must be positive.");
+  }
+  if (description.shape == AnalyticShapeType::Sphere) {
+    const Scalar radius = description.half_extent.x;
+    const Scalar tolerance = std::max<Scalar>(1.0, radius) * 1.0e-12;
+    if (std::abs(description.half_extent.y - radius) > tolerance ||
+        std::abs(description.half_extent.z - radius) > tolerance) {
+      throw std::runtime_error(
+          "AnalyticSDFModel sphere requires equal xyz radii.");
+    }
   }
 }
 
@@ -97,13 +103,27 @@ Vector3 boxGradient(
   return {0.0, 0.0, signNonZero(local.z)};
 }
 
+Scalar sphereSignedDistance(
+    const Vector3& point,
+    const AnalyticSDFDescription& description) {
+  return norm(point - description.center) - description.half_extent.x;
+}
+
+Vector3 sphereGradient(
+    const Vector3& point,
+    const AnalyticSDFDescription& description) {
+  return normalizedOrFallback(point - description.center);
+}
+
 class AnalyticNativeHandle final : public SDFModel::NativeHandle {
  public:
   explicit AnalyticNativeHandle(AnalyticSDFDescription description)
       : description_(std::move(description)) {}
 
   Scalar sampleDistance(const Vector3& point) const override {
-    return boxSignedDistance(point, description_);
+    return description_.shape == AnalyticShapeType::Sphere
+        ? sphereSignedDistance(point, description_)
+        : boxSignedDistance(point, description_);
   }
 
   bool canSampleDistance() const override {
@@ -115,7 +135,9 @@ class AnalyticNativeHandle final : public SDFModel::NativeHandle {
   }
 
   Vector3 sampleGradient(const Vector3& point) const override {
-    return boxGradient(point, description_);
+    return description_.shape == AnalyticShapeType::Sphere
+        ? sphereGradient(point, description_)
+        : boxGradient(point, description_);
   }
 
   Scalar finiteDifferenceStep() const override {
@@ -137,7 +159,7 @@ class AnalyticNativeHandle final : public SDFModel::NativeHandle {
 
 AnalyticSDFModel::AnalyticSDFModel(AnalyticSDFDescription description)
     : description_(std::move(description)) {
-  validateBox(description_);
+  validateDescription(description_);
 
   setBoundingBox(AABB{
       description_.center - description_.half_extent,
@@ -145,7 +167,7 @@ AnalyticSDFModel::AnalyticSDFModel(AnalyticSDFDescription description)
       true});
 
   SDFMetadata metadata;
-  metadata.model_name = "analytic demo box";
+  metadata.model_name = "analytic demo " + shapeName();
   metadata.format_name = "ADASDF_DEMO_SDFBIN_V1";
   metadata.query_backend = backendName();
   metadata.format_version = 1;
@@ -167,6 +189,18 @@ std::shared_ptr<AnalyticSDFModel> AnalyticSDFModel::createBox(
   description.shape = AnalyticShapeType::Box;
   description.center = center;
   description.half_extent = half_extent;
+  description.unit = std::move(unit);
+  return std::make_shared<AnalyticSDFModel>(std::move(description));
+}
+
+std::shared_ptr<AnalyticSDFModel> AnalyticSDFModel::createSphere(
+    const Vector3& center,
+    Scalar radius,
+    std::string unit) {
+  AnalyticSDFDescription description;
+  description.shape = AnalyticShapeType::Sphere;
+  description.center = center;
+  description.half_extent = {radius, radius, radius};
   description.unit = std::move(unit);
   return std::make_shared<AnalyticSDFModel>(std::move(description));
 }

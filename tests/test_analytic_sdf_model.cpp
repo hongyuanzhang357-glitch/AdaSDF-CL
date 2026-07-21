@@ -43,6 +43,22 @@ int main() {
       std::cerr << "analytic box AABB is incorrect\n";
       return 1;
     }
+
+    const auto sphere = adasdf::AnalyticSDFModel::createSphere(
+        {1.0, 2.0, 3.0}, 0.75);
+    if (!near(sphere->sampleDistance({1.0, 2.0, 3.0}), -0.75) ||
+        !near(sphere->sampleDistance({1.75, 2.0, 3.0}), 0.0) ||
+        !near(sphere->sampleDistance({2.0, 2.0, 3.0}), 0.25) ||
+        sphere->shapeName() != "sphere") {
+      std::cerr << "analytic sphere signed distance is incorrect\n";
+      return 1;
+    }
+    const adasdf::Vector3 sphere_gradient =
+        sphere->sampleGradient({2.0, 2.0, 3.0});
+    if (!sphere_gradient.allFinite() || sphere_gradient.x < 0.99) {
+      std::cerr << "analytic sphere gradient is incorrect\n";
+      return 1;
+    }
     return 0;
   } catch (const std::exception& exc) {
     std::cerr << "test_analytic_sdf_model failed: " << exc.what() << "\n";

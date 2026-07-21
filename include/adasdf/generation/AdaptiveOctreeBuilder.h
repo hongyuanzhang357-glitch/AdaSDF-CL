@@ -4,14 +4,25 @@
 #include <string>
 #include <vector>
 
+#include "adasdf/acceleration/BuildAccelerationReport.h"
 #include "adasdf/generation/AdaptiveOctree.h"
 #include "adasdf/mesh/TriangleMesh.h"
 
 namespace adasdf {
 
+enum class AdaptiveLeafMode {
+  Mixed,
+  Uniform,
+};
+
+const char* toString(AdaptiveLeafMode mode);
+bool parseAdaptiveLeafMode(const std::string& value, AdaptiveLeafMode* mode);
+
 struct AdaptiveOctreeBuildOptions {
   int min_level = 1;
   int max_level = 5;
+
+  AdaptiveLeafMode leaf_mode = AdaptiveLeafMode::Mixed;
 
   double padding = 0.05;
 
@@ -25,6 +36,9 @@ struct AdaptiveOctreeBuildOptions {
   bool refine_sign_changes = true;
 
   int samples_per_cell_axis = 2;
+
+  SDFSamplingAcceleration distance_backend = SDFSamplingAcceleration::BruteForce;
+  double degenerate_area_epsilon = 1e-14;
 };
 
 struct AdaptiveOctreeBuildReport {
@@ -34,6 +48,7 @@ struct AdaptiveOctreeBuildReport {
   int min_level = 0;
   int max_level = 0;
   int max_level_used = 0;
+  AdaptiveLeafMode leaf_mode = AdaptiveLeafMode::Mixed;
 
   std::size_t node_count = 0;
   std::size_t leaf_count = 0;

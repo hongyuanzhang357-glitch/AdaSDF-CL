@@ -19,12 +19,25 @@ downstream_build/
 *.tar.xz
 *.tar.bz2
 __pycache__/
+**/__pycache__/
+**pycache**/
+*.pyc
 *.pyd
 *.dll
 *.lib
 *.exp
 datasets/build_results/
+artifacts/
+datasets/
+cmake-build*/
+models/checkpoints/
+*.jsonl
+logs/
 reports/experiments/
 data/raw_stl/
 data/quarantine/
 .cache/
+
+# Test fixtures are source assets and remain tracked.
+!tests/data/
+!tests/data/**

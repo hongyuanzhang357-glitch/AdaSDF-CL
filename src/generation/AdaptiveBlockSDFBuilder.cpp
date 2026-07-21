@@ -81,6 +81,18 @@ CachedSDFSample toCachedSample(
   return cached;
 }
 
+AdaptiveTreeBlockSamplingStats makeExactTreeBlockStats(
+    const AdaptiveSDFBlock& block) {
+  AdaptiveTreeBlockSamplingStats stats;
+  stats.block_id = block.block_id;
+  stats.level = block.level;
+  stats.logical_node_count = block.phi.size();
+  stats.exact_node_count = block.phi.size();
+  stats.contact_band = block.near_surface;
+  stats.far_field = !block.near_surface;
+  return stats;
+}
+
 BuildCacheStats buildCacheStatsFromSampleCache(
     const BuildCacheOptions& options,
     const SDFSampleCache& cache) {
@@ -300,6 +312,12 @@ void sampleBlocks(
   report.used_bvh = use_bvh;
   report.threads_used = stats.threads_used;
   report.acceleration_stats = stats;
+  report.adaptive_tree_block_sampling_stats.clear();
+  report.adaptive_tree_block_sampling_stats.reserve(block_set.blocks.size());
+  for (const AdaptiveSDFBlock& block : block_set.blocks) {
+    report.adaptive_tree_block_sampling_stats.push_back(
+        makeExactTreeBlockStats(block));
+  }
   report.cache_stats = buildCacheStatsFromSampleCache(
       options.cache_options,
       global_sample_cache);
@@ -363,6 +381,8 @@ void sampleBlocksHierarchical(
     AdaptiveSDFBlockSet& block_set,
     const AdaptiveBlockSDFBuildOptions& options,
     AdaptiveBlockSDFBuildReport& report) {
+  report.adaptive_tree_block_sampling_stats.clear();
+  report.adaptive_tree_block_sampling_stats.reserve(block_set.blocks.size());
   BuildAccelerationStats stats;
   stats.acceleration = options.acceleration;
   stats.threads_requested = std::max(1, options.threads);
@@ -454,6 +474,8 @@ void sampleBlocksHierarchical(
     AdaptiveSDFBlock& partitioned_block = block_set.blocks[block_index];
     if (bulk_exact_done[block_index] != 0) {
       const std::size_t sample_count = partitioned_block.phi.size();
+      report.adaptive_tree_block_sampling_stats.push_back(
+          makeExactTreeBlockStats(partitioned_block));
       ++sampling_stats.block_count;
       ++sampling_stats.exact_block_count;
       sampling_stats.exact_sample_count += sample_count;
@@ -483,6 +505,19 @@ void sampleBlocksHierarchical(
           std::to_string(partitioned_block.block_id) +
           " and exact fallback was used: " + sampled.error_message);
     }
+    AdaptiveTreeBlockSamplingStats tree_stats;
+    tree_stats.block_id = sampled.block.block_id;
+    tree_stats.level = sampled.block.level;
+    tree_stats.contact_band = partitioned_block.near_surface;
+    tree_stats.far_field = !partitioned_block.near_surface;
+    tree_stats.exact_node_count = sampled.exact_sample_count;
+    tree_stats.predicted_node_count = sampled.predicted_sample_count;
+    tree_stats.far_field_node_count =
+        sampled.decision.importance == BlockImportanceClass::FarField
+            ? sampled.block.phi.size()
+            : 0;
+    tree_stats.logical_node_count = sampled.block.phi.size();
+    report.adaptive_tree_block_sampling_stats.push_back(tree_stats);
     partitioned_block = std::move(sampled.block);
     ++sampling_stats.block_count;
     sampling_stats.exact_sample_count += sampled.exact_sample_count;
@@ -620,6 +655,8 @@ void sampleBlocksContactBand(
     AdaptiveSDFBlockSet& block_set,
     const AdaptiveBlockSDFBuildOptions& options,
     AdaptiveBlockSDFBuildReport& report) {
+  report.adaptive_tree_block_sampling_stats.clear();
+  report.adaptive_tree_block_sampling_stats.reserve(block_set.blocks.size());
   BuildAccelerationStats stats;
   stats.acceleration = options.acceleration;
   stats.threads_requested = std::max(1, options.threads);
@@ -686,6 +723,16 @@ void sampleBlocksContactBand(
           ": " + sampled.error_message);
       continue;
     }
+    AdaptiveTreeBlockSamplingStats tree_stats;
+    tree_stats.block_id = sampled.block.block_id;
+    tree_stats.level = sampled.block.level;
+    tree_stats.contact_band = sampled.has_contact_band;
+    tree_stats.far_field = !sampled.has_contact_band;
+    tree_stats.exact_node_count = sampled.exact_node_count;
+    tree_stats.predicted_node_count = sampled.predicted_node_count;
+    tree_stats.far_field_node_count = sampled.far_field_node_count;
+    tree_stats.logical_node_count = sampled.block.phi.size();
+    report.adaptive_tree_block_sampling_stats.push_back(tree_stats);
     block_set.blocks[block_index] = std::move(sampled.block);
     diagnostics.total_block_count += sampled.diagnostics.total_block_count;
     diagnostics.contact_band_block_count +=
@@ -783,6 +830,7 @@ std::shared_ptr<SDFModel> AdaptiveBlockSDFBuilder::fromMesh(
   report.signed_distance = options.signed_distance;
   report.min_octree_level = options.min_octree_level;
   report.max_octree_level = options.max_octree_level;
+  report.adaptive_leaf_mode = options.adaptive_leaf_mode;
   report.block_resolution = options.block_resolution;
   const auto t0 = std::chrono::steady_clock::now();
 
@@ -842,6 +890,7 @@ std::shared_ptr<SDFModel> AdaptiveBlockSDFBuilder::fromMesh(
   AdaptiveOctreeBuildOptions octree_options;
   octree_options.min_level = options.min_octree_level;
   octree_options.max_level = options.max_octree_level;
+  octree_options.leaf_mode = options.adaptive_leaf_mode;
   octree_options.padding = options.padding;
   octree_options.target_near_surface_error =
       options.target_near_surface_error;
@@ -849,6 +898,8 @@ std::shared_ptr<SDFModel> AdaptiveBlockSDFBuilder::fromMesh(
   octree_options.signed_distance = options.signed_distance;
   octree_options.require_watertight_for_signed =
       options.require_watertight_for_signed;
+  octree_options.distance_backend = options.acceleration;
+  octree_options.degenerate_area_epsilon = options.degenerate_area_epsilon;
 
   AdaptiveOctree octree =
       AdaptiveOctreeBuilder::build(working_mesh, octree_options, &report.octree_report);
@@ -877,6 +928,12 @@ std::shared_ptr<SDFModel> AdaptiveBlockSDFBuilder::fromMesh(
   report.sampling_time_ms =
       std::chrono::duration<double, std::milli>(sample1 - sample0).count();
   report.acceleration_stats.sampling_time_ms = report.sampling_time_ms;
+  report.adaptive_tree_stats = computeAdaptiveTreeStats(
+      octree,
+      blocks,
+      options.block_resolution,
+      options.max_octree_level,
+      report.adaptive_tree_block_sampling_stats);
 
   auto model = std::make_shared<AdaptiveBlockSDFModel>(std::move(blocks));
   if (!model->isValid()) {

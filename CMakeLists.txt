@@ -102,8 +102,16 @@ set(ADASDF_CL_RUNTIME_SOURCES
   src/acceleration/BVHNearestTriangleQuery.cpp
   src/acceleration/BVHRayIntersectionQuery.cpp
   src/acceleration/BVHSDFSampler.cpp
+  src/acceleration/ExactSDFOracle.cpp
   src/acceleration/ParallelSampling.cpp
   src/adapters/FCLAdapter.cpp
+  src/audit/NearSurfaceSampleGenerator.cpp
+  src/audit/SDFAccuracyAudit.cpp
+  src/audit/SDFAccuracyReportWriter.cpp
+  src/audit/CellZeroCrossingDiagnostic.cpp
+  src/audit/LocalExactSubcellProbe.cpp
+  src/audit/MismatchCellForensics.cpp
+  src/audit/MismatchCellReportWriter.cpp
   src/backend/Backend.cpp
   src/backend/CudaQueryBackend.cpp
   src/backend/GpuBackend.cpp
@@ -123,6 +131,10 @@ set(ADASDF_CL_RUNTIME_SOURCES
   src/contract/JsonContractValidator.cpp
   src/contract/JsonContractWriter.cpp
   src/contract/Status.cpp
+  src/coverage/ContactBandCoverageAudit.cpp
+  src/coverage/CoverageAuditReportWriter.cpp
+  src/coverage/CoverageDrivenRefinement.cpp
+  src/coverage/CoverageMissCluster.cpp
   src/contact/ContactBudget.cpp
   src/contact/ContactPatch.cpp
   src/contact/ContactClusterer.cpp
@@ -131,6 +143,7 @@ set(ADASDF_CL_RUNTIME_SOURCES
   src/contact/SolverContactExporter.cpp
   src/contact/ContactStabilizationReportWriter.cpp
   src/compression/CompressedSDF.cpp
+  src/compression/AdaptiveTensorCompressor.cpp
   src/compression/SmallMatrixSVD.cpp
   src/compression/CompressedSDFBlock.cpp
   src/compression/BlockLowRankCompressor.cpp
@@ -138,22 +151,30 @@ set(ADASDF_CL_RUNTIME_SOURCES
   src/compression/CompressionReportWriter.cpp
   src/generation/AdaptiveSDFBuilder.cpp
   src/generation/AdaptiveSDFBuilderPreview.cpp
+  src/generation/ConstrainedAdaptiveOctree.cpp
+  src/generation/ConstrainedBlockPartitioner.cpp
+  src/generation/ConstrainedBlockTensorBuilder.cpp
+  src/generation/ConstrainedSDFBuilder.cpp
   src/generation/AdaptiveOctree.cpp
   src/generation/AdaptiveOctreeBuilder.cpp
   src/generation/AdaptiveBlock.cpp
   src/generation/AdaptiveBlockPartitioner.cpp
   src/generation/AdaptiveBlockSDFBuilder.cpp
   src/generation/AdaptiveBlockSDFBuildReportWriter.cpp
+  src/generation/AdaptiveTreeStats.cpp
+  src/generation/AdaptiveTreeStatsWriter.cpp
   src/generation/DemoAdaptiveSDFBuilder.cpp
   src/generation/DemoSurrogateRecommender.cpp
   src/generation/DenseSDFBuilder.cpp
   src/generation/DenseSDFBuildReportWriter.cpp
   src/generation/ExistingBuilderBridge.cpp
+  src/generation/SDFCreationContract.cpp
   src/generation/SDFBuilder.cpp
   src/generation/SurrogateRecommender.cpp
   src/geometry/AnalyticSDFModel.cpp
   src/geometry/AdaptiveBlockSDFModel.cpp
   src/geometry/CompressedAdaptiveBlockSDFModel.cpp
+  src/geometry/ConstrainedSDFModel.cpp
   src/geometry/DenseSDFModel.cpp
   src/geometry/DemoAdaptiveSDFModel.cpp
   src/geometry/BoxTriangleDistance.cpp
@@ -169,7 +190,23 @@ set(ADASDF_CL_RUNTIME_SOURCES
   src/mesh/MeshReadiness.cpp
   src/mesh/MeshCleanup.cpp
   src/mesh/MeshDiagnosticsWriter.cpp
+  src/narrowband/SamplingOctree.cpp
+  src/narrowband/SamplingDemandEstimator.cpp
+  src/narrowband/CompressionBrickTree.cpp
+  src/narrowband/CompressionBrick.cpp
+  src/narrowband/SamplingToBrickMapper.cpp
+  src/narrowband/BrickTensorDimensionPolicy.cpp
+  src/narrowband/BrickTensorGenerator.cpp
+  src/narrowband/BrickTensorFillPolicy.cpp
+  src/narrowband/ContactWeightedCompressor.cpp
+  src/narrowband/NarrowBandBrickSDFBuilder.cpp
+  src/narrowband/NarrowBandBrickBuildOptions.cpp
+  src/narrowband/NarrowBandBrickBuildStats.cpp
+  src/narrowband/NarrowBandBrickReportWriter.cpp
+  src/narrowband/NarrowBandBrickIndex.cpp
+  src/narrowband/NarrowBandBrickQuery.cpp
   src/io/ContactOnlySDFBin.cpp
+  src/io/ConstrainedSDFBin.cpp
   src/io/AdaptiveBlockSDFBin.cpp
   src/io/CompressedBlockSDFBin.cpp
   src/io/DenseSDFBin.cpp
@@ -245,6 +282,7 @@ set(ADASDF_CL_RUNTIME_SOURCES
   src/profile/BuildProfiler.cpp
   src/profile/ProgressReporter.cpp
   src/profile/TimeoutGuard.cpp
+  src/provenance/BlockProvenance.cpp
   src/runtime/ActiveBlockSelector.cpp
   src/runtime/ExpandedBlock.cpp
   src/runtime/ExpandedBlockCache.cpp
@@ -255,6 +293,7 @@ set(ADASDF_CL_RUNTIME_SOURCES
   src/runtime/cuda/CudaActiveBlockCache.cpp
   src/runtime/cuda/CudaActiveBlockQuery.cpp
   src/runtime/cuda/CudaActiveBlockBenchmark.cpp
+  src/recommendation/BackendParameterAdvisor.cpp
   src/recommendation/BuildRecommendationWriter.cpp
   src/recommendation/BuildRecommender.cpp
   src/recommendation/BuildSurrogateEstimator.cpp
@@ -593,6 +632,12 @@ add_executable(adasdf_generate_synthetic_fixture
 set_target_properties(adasdf_generate_synthetic_fixture PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
 
+add_executable(adasdf_generate_aabb_samples
+  tools/adasdf_generate_aabb_samples.cpp)
+target_link_libraries(adasdf_generate_aabb_samples PRIVATE adasdf_cl_runtime)
+set_target_properties(adasdf_generate_aabb_samples PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
+
 add_executable(adasdf_build_dense_sdf tools/adasdf_build_dense_sdf.cpp)
 target_link_libraries(adasdf_build_dense_sdf PRIVATE adasdf_cl_runtime)
 set_target_properties(adasdf_build_dense_sdf PROPERTIES
@@ -601,6 +646,53 @@ set_target_properties(adasdf_build_dense_sdf PROPERTIES
 add_executable(adasdf_build_adaptive_sdf tools/adasdf_build_adaptive_sdf.cpp)
 target_link_libraries(adasdf_build_adaptive_sdf PRIVATE adasdf_cl_runtime)
 set_target_properties(adasdf_build_adaptive_sdf PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
+
+add_executable(adasdf_build_narrowband_brick_sdf
+  tools/adasdf_build_narrowband_brick_sdf.cpp)
+target_link_libraries(adasdf_build_narrowband_brick_sdf PRIVATE adasdf_cl_runtime)
+set_target_properties(adasdf_build_narrowband_brick_sdf PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
+
+add_executable(adasdf_create_sdf tools/adasdf_create_sdf.cpp)
+target_link_libraries(adasdf_create_sdf PRIVATE adasdf_cl_runtime)
+set_target_properties(adasdf_create_sdf PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
+
+add_executable(adasdf_diagnose_adaptive_tree
+  tools/adasdf_diagnose_adaptive_tree.cpp)
+target_link_libraries(adasdf_diagnose_adaptive_tree PRIVATE adasdf_cl_runtime)
+set_target_properties(adasdf_diagnose_adaptive_tree PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
+
+add_executable(adasdf_audit_sdf_accuracy
+  tools/adasdf_audit_sdf_accuracy.cpp)
+target_link_libraries(adasdf_audit_sdf_accuracy PRIVATE adasdf_cl_runtime)
+set_target_properties(adasdf_audit_sdf_accuracy PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
+
+add_executable(adasdf_audit_compression_near_surface
+  tools/adasdf_audit_compression_near_surface.cpp)
+target_link_libraries(adasdf_audit_compression_near_surface PRIVATE adasdf_cl_runtime)
+set_target_properties(adasdf_audit_compression_near_surface PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
+
+add_executable(adasdf_diagnose_mismatch_cells
+  tools/adasdf_diagnose_mismatch_cells.cpp)
+target_link_libraries(adasdf_diagnose_mismatch_cells PRIVATE adasdf_cl_runtime)
+set_target_properties(adasdf_diagnose_mismatch_cells PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
+
+add_executable(adasdf_diagnose_mesh_sign
+  tools/adasdf_diagnose_mesh_sign.cpp)
+target_link_libraries(adasdf_diagnose_mesh_sign PRIVATE adasdf_cl_runtime)
+set_target_properties(adasdf_diagnose_mesh_sign PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
+
+add_executable(adasdf_diagnose_contact_band_mask
+  tools/adasdf_diagnose_contact_band_mask.cpp)
+target_link_libraries(adasdf_diagnose_contact_band_mask PRIVATE adasdf_cl_runtime)
+set_target_properties(adasdf_diagnose_contact_band_mask PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
 
 add_executable(adasdf_compress_adaptive_sdf tools/adasdf_compress_adaptive_sdf.cpp)
@@ -762,6 +854,12 @@ if(ADASDF_CL_BUILD_BENCHMARKS)
   target_link_libraries(adasdf_sweep_hierarchical_sampling PRIVATE adasdf_cl_runtime)
   set_target_properties(adasdf_sweep_hierarchical_sampling PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
+
+  add_executable(adasdf_benchmark_sdf_creation
+    benchmarks/adasdf_benchmark_sdf_creation.cpp)
+  target_link_libraries(adasdf_benchmark_sdf_creation PRIVATE adasdf_cl_runtime)
+  set_target_properties(adasdf_benchmark_sdf_creation PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tools")
 endif()
 
 set(ADASDF_CL_TEST_SOURCES
@@ -776,6 +874,19 @@ set(ADASDF_CL_TEST_SOURCES
   tests/test_contact_reducer.cpp
   tests/test_cpu_narrowphase.cpp
   tests/test_build_options.cpp
+  tests/test_sdf_creation_contract.cpp
+  tests/test_exact_sdf_oracle.cpp
+  tests/test_constrained_adaptive_octree.cpp
+  tests/test_constrained_block_partitioner.cpp
+  tests/test_constrained_block_tensor_builder.cpp
+  tests/test_adaptive_tensor_compressor.cpp
+  tests/test_constrained_sdfbin_roundtrip.cpp
+  tests/test_constrained_sdf_query_lookup.cpp
+  tests/test_constrained_sdf_builder.cpp
+  tests/test_constrained_sdf_geometries.cpp
+  tests/test_backend_parameter_advisor.cpp
+  tests/test_create_sdf_cli.cpp
+  tests/test_benchmark_sdf_creation_cli.cpp
   tests/test_analytic_sdf_model.cpp
   tests/test_demo_sdfbin.cpp
   tests/test_core_free_demo_collision.cpp
@@ -840,8 +951,28 @@ set(ADASDF_CL_TEST_SOURCES
   tests/test_bvh_nearest_triangle_query.cpp
   tests/test_bvh_ray_intersection_query.cpp
   tests/test_bvh_sdf_sampler.cpp
+  tests/test_near_surface_sample_generator.cpp
+  tests/test_sdf_accuracy_audit.cpp
+  tests/test_audit_sdf_accuracy_cli.cpp
+  tests/test_sign_cluster_audit.cpp
+  tests/test_cell_zero_crossing_diagnostic.cpp
+  tests/test_local_exact_subcell_probe.cpp
+  tests/test_mismatch_cell_forensics.cpp
+  tests/test_sampling_octree_plan.cpp
+  tests/test_compression_brick_tree.cpp
+  tests/test_sampling_to_brick_mapper.cpp
+  tests/test_brick_tensor_dimension_policy.cpp
+  tests/test_brick_tensor_generator.cpp
+  tests/test_contact_weighted_compressor.cpp
+  tests/test_build_narrowband_brick_sdf_cli.cpp
+  tests/test_narrowband_brick_index.cpp
+  tests/test_narrowband_brick_query.cpp
+  tests/test_narrowband_brick_query_cli.cpp
+  tests/test_sign_protected_tensor_fill.cpp
+  tests/test_contact_exact_enrichment.cpp
   tests/test_parallel_sampling.cpp
   tests/test_mesh_sign.cpp
+  tests/test_mesh_sign_diagnostic.cpp
   tests/test_dense_sdf_builder.cpp
   tests/test_dense_sdf_builder_bvh.cpp
   tests/test_dense_sdfbin_roundtrip.cpp
@@ -851,6 +982,11 @@ set(ADASDF_CL_TEST_SOURCES
   tests/test_build_adaptive_sdf_preview_cli.cpp
   tests/test_adaptive_octree_builder.cpp
   tests/test_adaptive_block_partitioner.cpp
+  tests/test_adaptive_tree_stats.cpp
+  tests/test_adaptive_tree_stats_writer.cpp
+  tests/test_mixed_level_leaf_builder.cpp
+  tests/test_mixed_level_block_lookup.cpp
+  tests/test_diagnose_adaptive_tree_cli.cpp
   tests/test_adaptive_block_sdf_builder.cpp
   tests/test_adaptive_block_sdf_builder_bvh.cpp
   tests/test_block_classification.cpp
@@ -871,6 +1007,9 @@ set(ADASDF_CL_TEST_SOURCES
   tests/test_compressed_adaptive_block_sdf_model.cpp
   tests/test_compressed_block_sdfbin_roundtrip.cpp
   tests/test_compression_quality.cpp
+  tests/test_compression_near_zero_guard.cpp
+  tests/test_keep_contact_blocks_dense.cpp
+  tests/test_audit_compression_near_surface.cpp
   tests/test_compress_adaptive_sdf_cli.cpp
   tests/test_build_compressed_sdf_cli.cpp
   tests/test_info_json_schema_cli.cpp
@@ -903,17 +1042,22 @@ set(ADASDF_CL_TEST_SOURCES
   tests/test_local_fallback_mask.cpp
   tests/test_far_field_sign_policy.cpp
   tests/test_contact_band_marker.cpp
+  tests/test_contact_band_mask_sensitivity.cpp
   tests/test_box_triangle_distance.cpp
   tests/test_contact_band_marker_distance_aware.cpp
   tests/test_contact_band_marker_local_halo.cpp
   tests/test_contact_band_sampling_policy.cpp
   tests/test_contact_band_block_sampler.cpp
+  tests/test_near_surface_exact_modes.cpp
   tests/test_contact_band_quality_audit.cpp
   tests/test_contact_band_benchmark_cli.cpp
   tests/test_contact_band_marker_sweep_cli.cpp
   tests/test_contact_band_coverage_audit.cpp
   tests/test_contact_band_marker_cost_diagnostics.cpp
   tests/test_contact_band_timing_semantics.cpp
+  tests/test_block_provenance.cpp
+  tests/test_coverage_driven_refinement.cpp
+  tests/test_audit_query_source_explain.cpp
   tests/test_thin_gap_fixture.cpp
   tests/test_robot_like_fixture.cpp
   tests/test_sweep_hierarchical_sampling_cli.cpp
@@ -1109,19 +1253,83 @@ if(ADASDF_CL_BUILD_TESTS)
         test_name STREQUAL "test_adaptive_block_sdfbin_roundtrip" OR
         test_name STREQUAL "test_adaptive_sdf_collision" OR
         test_name STREQUAL "test_adaptive_builder_hierarchical_sampling" OR
+        test_name STREQUAL "test_diagnose_adaptive_tree_cli" OR
         test_name STREQUAL "test_compress_adaptive_sdf_cli")
       add_dependencies(${test_name}
         adasdf_build_adaptive_sdf
+        adasdf_diagnose_adaptive_tree
         adasdf_compress_adaptive_sdf
         adasdf_info
         adasdf_query
         adasdf_collide)
       target_compile_definitions(${test_name} PRIVATE
         ADASDF_CL_BUILD_ADAPTIVE_SDF="$<TARGET_FILE_NAME:adasdf_build_adaptive_sdf>"
+        ADASDF_CL_DIAGNOSE_ADAPTIVE_TREE="$<TARGET_FILE_NAME:adasdf_diagnose_adaptive_tree>"
         ADASDF_CL_COMPRESS_ADAPTIVE_SDF="$<TARGET_FILE_NAME:adasdf_compress_adaptive_sdf>"
         ADASDF_CL_INFO="$<TARGET_FILE_NAME:adasdf_info>"
         ADASDF_CL_QUERY="$<TARGET_FILE_NAME:adasdf_query>"
         ADASDF_CL_COLLIDE="$<TARGET_FILE_NAME:adasdf_collide>")
+    endif()
+    if(test_name STREQUAL "test_build_narrowband_brick_sdf_cli")
+      add_dependencies(${test_name}
+        adasdf_build_narrowband_brick_sdf
+        adasdf_info)
+      target_compile_definitions(${test_name} PRIVATE
+        ADASDF_CL_BUILD_NARROWBAND_BRICK_SDF="$<TARGET_FILE_NAME:adasdf_build_narrowband_brick_sdf>"
+        ADASDF_CL_INFO="$<TARGET_FILE_NAME:adasdf_info>")
+    endif()
+    if(test_name STREQUAL "test_create_sdf_cli")
+      add_dependencies(${test_name} adasdf_create_sdf)
+      target_compile_definitions(${test_name} PRIVATE
+        ADASDF_CL_CREATE_SDF="$<TARGET_FILE_NAME:adasdf_create_sdf>")
+    endif()
+    if(test_name STREQUAL "test_narrowband_brick_query_cli")
+      add_dependencies(${test_name} adasdf_benchmark_sparse_query)
+      target_compile_definitions(${test_name} PRIVATE
+        ADASDF_CL_BENCHMARK_SPARSE_QUERY="$<TARGET_FILE_NAME:adasdf_benchmark_sparse_query>")
+    endif()
+    if(test_name STREQUAL "test_benchmark_sdf_creation_cli")
+      if(TARGET adasdf_benchmark_sdf_creation)
+        add_dependencies(${test_name} adasdf_benchmark_sdf_creation)
+        target_compile_definitions(${test_name} PRIVATE
+          ADASDF_CL_BENCHMARK_SDF_CREATION="$<TARGET_FILE_NAME:adasdf_benchmark_sdf_creation>")
+      endif()
+    endif()
+    if(test_name STREQUAL "test_audit_sdf_accuracy_cli")
+      add_dependencies(${test_name}
+        adasdf_build_dense_sdf
+        adasdf_audit_sdf_accuracy)
+      target_compile_definitions(${test_name} PRIVATE
+        ADASDF_CL_BUILD_DENSE_SDF="$<TARGET_FILE_NAME:adasdf_build_dense_sdf>"
+        ADASDF_CL_AUDIT_SDF_ACCURACY="$<TARGET_FILE_NAME:adasdf_audit_sdf_accuracy>")
+    endif()
+    if(test_name STREQUAL "test_audit_compression_near_surface")
+      add_dependencies(${test_name}
+        adasdf_build_adaptive_sdf
+        adasdf_build_compressed_sdf
+        adasdf_audit_compression_near_surface)
+      target_compile_definitions(${test_name} PRIVATE
+        ADASDF_CL_BUILD_ADAPTIVE_SDF="$<TARGET_FILE_NAME:adasdf_build_adaptive_sdf>"
+        ADASDF_CL_BUILD_COMPRESSED_SDF="$<TARGET_FILE_NAME:adasdf_build_compressed_sdf>"
+        ADASDF_CL_AUDIT_COMPRESSION_NEAR_SURFACE="$<TARGET_FILE_NAME:adasdf_audit_compression_near_surface>")
+    endif()
+    if(test_name STREQUAL "test_mismatch_cell_forensics")
+      add_dependencies(${test_name} adasdf_diagnose_mismatch_cells)
+      target_compile_definitions(${test_name} PRIVATE
+        ADASDF_CL_DIAGNOSE_MISMATCH_CELLS="$<TARGET_FILE_NAME:adasdf_diagnose_mismatch_cells>")
+    endif()
+    if(test_name STREQUAL "test_sign_cluster_audit")
+      add_dependencies(${test_name}
+        adasdf_build_dense_sdf
+        adasdf_audit_sdf_accuracy)
+      target_compile_definitions(${test_name} PRIVATE
+        ADASDF_CL_BUILD_DENSE_SDF="$<TARGET_FILE_NAME:adasdf_build_dense_sdf>"
+        ADASDF_CL_AUDIT_SDF_ACCURACY="$<TARGET_FILE_NAME:adasdf_audit_sdf_accuracy>")
+    endif()
+    if(test_name STREQUAL "test_mesh_sign_diagnostic")
+      add_dependencies(${test_name} adasdf_diagnose_mesh_sign)
+      target_compile_definitions(${test_name} PRIVATE
+        ADASDF_CL_DIAGNOSE_MESH_SIGN="$<TARGET_FILE_NAME:adasdf_diagnose_mesh_sign>")
     endif()
     if(test_name STREQUAL "test_build_cli_profile_options")
       add_dependencies(${test_name}
@@ -1359,6 +1567,11 @@ if(ADASDF_CL_BUILD_TESTS)
           ADASDF_CL_SWEEP_CONTACT_BAND_SAMPLING="$<TARGET_FILE_NAME:adasdf_sweep_contact_band_sampling>")
       endif()
     endif()
+    if(test_name STREQUAL "test_contact_band_mask_sensitivity")
+      add_dependencies(${test_name} adasdf_diagnose_contact_band_mask)
+      target_compile_definitions(${test_name} PRIVATE
+        ADASDF_CL_DIAGNOSE_CONTACT_BAND_MASK="$<TARGET_FILE_NAME:adasdf_diagnose_contact_band_mask>")
+    endif()
     if(test_name STREQUAL "test_sweep_hierarchical_sampling_cli")
       if(TARGET adasdf_sweep_hierarchical_sampling)
         add_dependencies(${test_name} adasdf_sweep_hierarchical_sampling)
@@ -1414,9 +1627,43 @@ if(ADASDF_CL_BUILD_TESTS)
         test_name STREQUAL "test_adaptive_block_sdfbin_roundtrip" OR
         test_name STREQUAL "test_adaptive_sdf_collision" OR
         test_name STREQUAL "test_adaptive_builder_hierarchical_sampling" OR
+        test_name STREQUAL "test_diagnose_adaptive_tree_cli" OR
         test_name STREQUAL "test_compress_adaptive_sdf_cli")
       set_tests_properties(${test_name} PROPERTIES
         WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_build_adaptive_sdf>")
+    endif()
+    if(test_name STREQUAL "test_build_narrowband_brick_sdf_cli")
+      set_tests_properties(${test_name} PROPERTIES
+        WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_build_narrowband_brick_sdf>")
+    endif()
+    if(test_name STREQUAL "test_create_sdf_cli")
+      set_tests_properties(${test_name} PROPERTIES
+        WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_create_sdf>")
+    endif()
+    if(test_name STREQUAL "test_narrowband_brick_query_cli")
+      set_tests_properties(${test_name} PROPERTIES
+        WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_benchmark_sparse_query>")
+    endif()
+    if(test_name STREQUAL "test_benchmark_sdf_creation_cli" AND
+        TARGET adasdf_benchmark_sdf_creation)
+      set_tests_properties(${test_name} PROPERTIES
+        WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_benchmark_sdf_creation>")
+    endif()
+    if(test_name STREQUAL "test_audit_sdf_accuracy_cli")
+      set_tests_properties(${test_name} PROPERTIES
+        WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_audit_sdf_accuracy>")
+    endif()
+    if(test_name STREQUAL "test_audit_compression_near_surface")
+      set_tests_properties(${test_name} PROPERTIES
+        WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_audit_compression_near_surface>")
+    endif()
+    if(test_name STREQUAL "test_sign_cluster_audit")
+      set_tests_properties(${test_name} PROPERTIES
+        WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_audit_sdf_accuracy>")
+    endif()
+    if(test_name STREQUAL "test_mesh_sign_diagnostic")
+      set_tests_properties(${test_name} PROPERTIES
+        WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_diagnose_mesh_sign>")
     endif()
     if(test_name STREQUAL "test_build_cli_profile_options")
       set_tests_properties(${test_name} PROPERTIES
@@ -1574,6 +1821,10 @@ if(ADASDF_CL_BUILD_TESTS)
           WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_sweep_contact_band_sampling>")
       endif()
     endif()
+    if(test_name STREQUAL "test_contact_band_mask_sensitivity")
+      set_tests_properties(${test_name} PROPERTIES
+        WORKING_DIRECTORY "$<TARGET_FILE_DIR:adasdf_diagnose_contact_band_mask>")
+    endif()
     if(test_name STREQUAL "test_sweep_hierarchical_sampling_cli")
       if(TARGET adasdf_sweep_hierarchical_sampling)
         set_tests_properties(${test_name} PROPERTIES
@@ -1614,8 +1865,17 @@ set(ADASDF_CL_INSTALL_TOOL_TARGETS
   adasdf_mesh_check
   adasdf_mesh_clean
   adasdf_generate_synthetic_fixture
+  adasdf_generate_aabb_samples
   adasdf_build_dense_sdf
   adasdf_build_adaptive_sdf
+  adasdf_build_narrowband_brick_sdf
+  adasdf_create_sdf
+  adasdf_diagnose_adaptive_tree
+  adasdf_audit_sdf_accuracy
+  adasdf_audit_compression_near_surface
+  adasdf_diagnose_mismatch_cells
+  adasdf_diagnose_mesh_sign
+  adasdf_diagnose_contact_band_mask
   adasdf_compress_adaptive_sdf
   adasdf_build_compressed_sdf
   adasdf_build_adaptive_sdf_preview
@@ -1645,7 +1905,8 @@ if(ADASDF_CL_BUILD_BENCHMARKS)
     adasdf_benchmark_exact_hotpath
     adasdf_benchmark_contact_band_sampling
     adasdf_sweep_contact_band_sampling
-    adasdf_sweep_hierarchical_sampling)
+    adasdf_sweep_hierarchical_sampling
+    adasdf_benchmark_sdf_creation)
 endif()
 
 install(TARGETS ${ADASDF_CL_INSTALL_TARGETS}

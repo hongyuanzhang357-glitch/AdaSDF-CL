@@ -28,6 +28,12 @@
       "type": "object",
       "properties": {
         "sample_cache_enabled": {"type": "boolean"},
+        "num_adaptive_tree_nodes": {"type": "integer"},
+        "num_adaptive_leaf_blocks": {"type": "integer"},
+        "uniform_max_level_leaf_count": {"type": "integer"},
+        "total_logical_node_count": {"type": "integer"},
+        "uniform_max_level_logical_node_count": {"type": "integer"},
+        "adaptive_tree_sparsity_ratio": {"type": "number"},
         "sample_cache_scope": {"enum": ["off", "block", "global"]},
         "sample_cache_entries": {"type": "integer"},
         "sample_cache_hits": {"type": "integer"},
@@ -48,6 +54,30 @@
         "sign_queries_saved": {"type": "integer"},
         "box_triangle_distance_saved": {"type": "integer"},
         "cache_memory_estimate_bytes": {"type": "integer"}
+      }
+    },
+    "adaptive_tree": {
+      "type": "object",
+      "properties": {
+        "min_level": {"type": "integer"},
+        "max_level": {"type": "integer"},
+        "block_resolution": {"type": "integer"},
+        "leaf_count_by_level": {"type": "array"},
+        "internal_count_by_level": {"type": "array"},
+        "refined_count_by_level": {"type": "array"},
+        "far_field_leaf_count_by_level": {"type": "array"},
+        "contact_band_leaf_count_by_level": {"type": "array"},
+        "near_surface_leaf_count_by_level": {"type": "array"},
+        "logical_node_count_by_level": {"type": "array"},
+        "exact_node_count_by_level": {"type": "array"},
+        "predicted_node_count_by_level": {"type": "array"},
+        "theoretical_uniform_leaf_blocks_at_max_level": {"type": "integer"},
+        "theoretical_uniform_logical_nodes_at_max_level": {"type": "integer"},
+        "leaf_sparsity_ratio": {"type": "number"},
+        "logical_node_sparsity_ratio": {"type": "number"},
+        "appears_uniform_max_level": {"type": "boolean"},
+        "mixed_level_leaves_present": {"type": "boolean"},
+        "levels": {"type": "array"}
       }
     }
   }

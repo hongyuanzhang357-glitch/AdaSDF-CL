@@ -39,6 +39,21 @@ std::string CompressionReportWriter::toMarkdown(
   out << "- Compressed memory bytes: " << report.compressed_memory_bytes << "\n";
   out << "- Compression ratio: " << report.compression_ratio << "\n";
   out << "- Compression time ms: " << report.compression_time_ms << "\n\n";
+  out << "## Near-Zero Compression Guard\n\n";
+  out << "- Enabled: " << boolText(report.compression_guard_enabled) << "\n";
+  out << "- Guarded blocks: " << report.guarded_block_count << "\n";
+  out << "- Kept dense due to sign: "
+      << report.kept_dense_due_to_sign_count << "\n";
+  out << "- Kept dense due to error: "
+      << report.kept_dense_due_to_error_count << "\n";
+  out << "- Near-zero compression sign flips: "
+      << report.near_zero_compression_sign_flip_count << "\n";
+  out << "- Near-zero compression p95 error: "
+      << report.near_zero_compression_p95_error << "\n";
+  out << "- Dense fallback memory bytes: "
+      << report.dense_fallback_memory_bytes << "\n";
+  out << "- Compressed memory bytes after guard: "
+      << report.compressed_memory_bytes_after_guard << "\n\n";
   out << "## Error Metrics\n\n";
   out << "- Max abs error: " << report.global_max_abs_error << "\n";
   out << "- Mean abs error: " << report.global_mean_abs_error << "\n";
@@ -84,6 +99,21 @@ std::string CompressionReportWriter::toJson(
   out << "  \"original_memory_bytes\": " << report.original_memory_bytes << ",\n";
   out << "  \"compressed_memory_bytes\": " << report.compressed_memory_bytes << ",\n";
   out << "  \"compression_ratio\": " << report.compression_ratio << ",\n";
+  out << "  \"compression_guard_enabled\": "
+      << boolText(report.compression_guard_enabled) << ",\n";
+  out << "  \"guarded_block_count\": " << report.guarded_block_count << ",\n";
+  out << "  \"kept_dense_due_to_sign_count\": "
+      << report.kept_dense_due_to_sign_count << ",\n";
+  out << "  \"kept_dense_due_to_error_count\": "
+      << report.kept_dense_due_to_error_count << ",\n";
+  out << "  \"near_zero_compression_sign_flip_count\": "
+      << report.near_zero_compression_sign_flip_count << ",\n";
+  out << "  \"near_zero_compression_p95_error\": "
+      << report.near_zero_compression_p95_error << ",\n";
+  out << "  \"dense_fallback_memory_bytes\": "
+      << report.dense_fallback_memory_bytes << ",\n";
+  out << "  \"compressed_memory_bytes_after_guard\": "
+      << report.compressed_memory_bytes_after_guard << ",\n";
   out << "  \"global_max_abs_error\": " << report.global_max_abs_error << ",\n";
   out << "  \"global_rms_error\": " << report.global_rms_error << ",\n";
   out << "  \"global_p95_abs_error\": " << report.global_p95_abs_error << ",\n";

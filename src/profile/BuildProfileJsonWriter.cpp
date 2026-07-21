@@ -2,6 +2,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <string>
 
 #include "adasdf/contract/BackendJsonContract.h"
 #include "adasdf/contract/JsonContractWriter.h"
@@ -45,6 +46,128 @@ std::string timingsJson(const BuildProfileTimings& t) {
          JsonContractWriter::number(t.total_time_ms) + "}";
 }
 
+std::string levelCountArrayJson(
+    const std::vector<AdaptiveTreeLevelStats>& levels,
+    std::size_t AdaptiveTreeLevelStats::*field) {
+  std::string json = "[";
+  for (std::size_t i = 0; i < levels.size(); ++i) {
+    if (i > 0) {
+      json += ",";
+    }
+    json += "{\"level\":" + JsonContractWriter::integer(levels[i].level) +
+            ",\"count\":" + JsonContractWriter::integer(levels[i].*field) +
+            "}";
+  }
+  json += "]";
+  return json;
+}
+
+std::string vector3Json(double x, double y, double z) {
+  return "[" + JsonContractWriter::number(x) + "," +
+         JsonContractWriter::number(y) + "," +
+         JsonContractWriter::number(z) + "]";
+}
+
+std::string adaptiveTreeLevelsJson(
+    const std::vector<AdaptiveTreeLevelStats>& levels) {
+  std::string json = "[";
+  for (std::size_t i = 0; i < levels.size(); ++i) {
+    const AdaptiveTreeLevelStats& level = levels[i];
+    if (i > 0) {
+      json += ",";
+    }
+    json += "{\"level\":" + JsonContractWriter::integer(level.level) +
+            ",\"leaf_blocks\":" +
+            JsonContractWriter::integer(level.leaf_block_count) +
+            ",\"internal_nodes\":" +
+            JsonContractWriter::integer(level.internal_node_count) +
+            ",\"refined_nodes\":" +
+            JsonContractWriter::integer(level.refined_node_count) +
+            ",\"far_field\":" +
+            JsonContractWriter::integer(level.far_field_leaf_count) +
+            ",\"contact_band\":" +
+            JsonContractWriter::integer(level.contact_band_leaf_count) +
+            ",\"near_surface\":" +
+            JsonContractWriter::integer(level.near_surface_leaf_count) +
+            ",\"logical_nodes\":" +
+            JsonContractWriter::integer(level.logical_node_count) +
+            ",\"exact_nodes\":" +
+            JsonContractWriter::integer(level.exact_node_count) +
+            ",\"predicted_nodes\":" +
+            JsonContractWriter::integer(level.predicted_node_count) +
+            ",\"block_size\":" +
+            vector3Json(
+                level.avg_block_size_x,
+                level.avg_block_size_y,
+                level.avg_block_size_z) +
+            ",\"cell_size\":" +
+            vector3Json(
+                level.avg_cell_size_x,
+                level.avg_cell_size_y,
+                level.avg_cell_size_z) +
+            "}";
+  }
+  json += "]";
+  return json;
+}
+
+std::string adaptiveTreeJson(const AdaptiveTreeStats& stats) {
+  return "{\"min_level\":" + JsonContractWriter::integer(stats.min_level) +
+         ",\"max_level\":" + JsonContractWriter::integer(stats.max_level) +
+         ",\"block_resolution\":" +
+         JsonContractWriter::integer(stats.block_resolution) +
+         ",\"leaf_count_by_level\":" +
+         levelCountArrayJson(
+             stats.levels,
+             &AdaptiveTreeLevelStats::leaf_block_count) +
+         ",\"internal_count_by_level\":" +
+         levelCountArrayJson(
+             stats.levels,
+             &AdaptiveTreeLevelStats::internal_node_count) +
+         ",\"refined_count_by_level\":" +
+         levelCountArrayJson(
+             stats.levels,
+             &AdaptiveTreeLevelStats::refined_node_count) +
+         ",\"far_field_leaf_count_by_level\":" +
+         levelCountArrayJson(
+             stats.levels,
+             &AdaptiveTreeLevelStats::far_field_leaf_count) +
+         ",\"contact_band_leaf_count_by_level\":" +
+         levelCountArrayJson(
+             stats.levels,
+             &AdaptiveTreeLevelStats::contact_band_leaf_count) +
+         ",\"near_surface_leaf_count_by_level\":" +
+         levelCountArrayJson(
+             stats.levels,
+             &AdaptiveTreeLevelStats::near_surface_leaf_count) +
+         ",\"logical_node_count_by_level\":" +
+         levelCountArrayJson(
+             stats.levels,
+             &AdaptiveTreeLevelStats::logical_node_count) +
+         ",\"exact_node_count_by_level\":" +
+         levelCountArrayJson(
+             stats.levels,
+             &AdaptiveTreeLevelStats::exact_node_count) +
+         ",\"predicted_node_count_by_level\":" +
+         levelCountArrayJson(
+             stats.levels,
+             &AdaptiveTreeLevelStats::predicted_node_count) +
+         ",\"theoretical_uniform_leaf_blocks_at_max_level\":" +
+         JsonContractWriter::integer(stats.uniform_max_level_leaf_count) +
+         ",\"theoretical_uniform_logical_nodes_at_max_level\":" +
+         JsonContractWriter::integer(
+             stats.uniform_max_level_logical_node_count) +
+         ",\"leaf_sparsity_ratio\":" +
+         JsonContractWriter::number(stats.sparsity_ratio_vs_uniform_max_level) +
+         ",\"logical_node_sparsity_ratio\":" +
+         JsonContractWriter::number(stats.sparsity_ratio_vs_uniform_max_level) +
+         ",\"appears_uniform_max_level\":" +
+         JsonContractWriter::boolean(stats.appears_uniform_max_level) +
+         ",\"mixed_level_leaves_present\":" +
+         JsonContractWriter::boolean(stats.mixed_level_present) +
+         ",\"levels\":" + adaptiveTreeLevelsJson(stats.levels) + "}";
+}
+
 std::string countersJson(const BuildProfileCounters& c) {
   return "{\"num_vertices\":" + JsonContractWriter::integer(c.num_vertices) +
          ",\"num_triangles\":" +
@@ -52,6 +175,19 @@ std::string countersJson(const BuildProfileCounters& c) {
          ",\"num_grid_points\":" +
          JsonContractWriter::integer(c.num_grid_points) +
          ",\"num_blocks\":" + JsonContractWriter::integer(c.num_blocks) +
+         ",\"num_adaptive_tree_nodes\":" +
+         JsonContractWriter::integer(c.num_adaptive_tree_nodes) +
+         ",\"num_adaptive_leaf_blocks\":" +
+         JsonContractWriter::integer(c.num_adaptive_leaf_blocks) +
+         ",\"uniform_max_level_leaf_count\":" +
+         JsonContractWriter::integer(c.uniform_max_level_leaf_count) +
+         ",\"total_logical_node_count\":" +
+         JsonContractWriter::integer(c.total_logical_node_count) +
+         ",\"uniform_max_level_logical_node_count\":" +
+         JsonContractWriter::integer(
+             c.uniform_max_level_logical_node_count) +
+         ",\"adaptive_tree_sparsity_ratio\":" +
+         JsonContractWriter::number(c.adaptive_tree_sparsity_ratio) +
          ",\"num_contact_band_blocks\":" +
          JsonContractWriter::integer(c.num_contact_band_blocks) +
          ",\"num_distance_queries\":" +
@@ -75,6 +211,24 @@ std::string countersJson(const BuildProfileCounters& c) {
          ",\"dense_fallback_block_count\":" +
          JsonContractWriter::integer(c.dense_fallback_block_count) +
          ",\"output_bytes\":" + JsonContractWriter::integer(c.output_bytes) +
+         ",\"compression_guard_enabled\":" +
+         JsonContractWriter::boolean(c.compression_guard_enabled) +
+         ",\"guarded_block_count\":" +
+         JsonContractWriter::integer(c.guarded_block_count) +
+         ",\"kept_dense_due_to_sign_count\":" +
+         JsonContractWriter::integer(c.kept_dense_due_to_sign_count) +
+         ",\"kept_dense_due_to_error_count\":" +
+         JsonContractWriter::integer(c.kept_dense_due_to_error_count) +
+         ",\"near_zero_compression_sign_flip_count\":" +
+         JsonContractWriter::integer(
+             c.near_zero_compression_sign_flip_count) +
+         ",\"near_zero_compression_p95_error\":" +
+         JsonContractWriter::number(c.near_zero_compression_p95_error) +
+         ",\"dense_fallback_memory_bytes\":" +
+         JsonContractWriter::integer(c.dense_fallback_memory_bytes) +
+         ",\"compressed_memory_bytes_after_guard\":" +
+         JsonContractWriter::integer(
+             c.compressed_memory_bytes_after_guard) +
          ",\"sample_cache_enabled\":" +
          JsonContractWriter::boolean(c.sample_cache_enabled) +
          ",\"sample_cache_scope\":" +
@@ -138,6 +292,10 @@ std::string BuildProfileJsonWriter::toJson(const BuildProfiler& profiler) {
       {"output_path", JsonContractWriter::quote(profiler.output_path)});
   contract.payload_fields.push_back({"timings", timingsJson(profiler.timings)});
   contract.payload_fields.push_back({"counters", countersJson(profiler.counters)});
+  if (profiler.counters.has_adaptive_tree_stats) {
+    contract.payload_fields.push_back(
+        {"adaptive_tree", adaptiveTreeJson(profiler.counters.adaptive_tree)});
+  }
   contract.payload_fields.push_back(
       {"error_message", JsonContractWriter::quote(profiler.error_message)});
   return JsonContractWriter::writeObject(contract);

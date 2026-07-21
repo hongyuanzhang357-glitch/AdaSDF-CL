@@ -2,12 +2,15 @@
 
 #include "BuildCliProfileHelpers.h"
 
+#include <algorithm>
 #include <exception>
 #include <filesystem>
 #include <iostream>
 #include <map>
+#include <sstream>
 #include <string>
 #include <thread>
+#include <vector>
 
 namespace {
 
@@ -16,6 +19,7 @@ void usage() {
       << "Usage: adasdf_build_compressed_sdf input.stl output_compressed.sdfbin "
          "[--target-error 1e-3] [--max-level N] [--min-level N] "
          "[--block-resolution N] [--padding 0.05] [--signed|--unsigned] "
+         "[--adaptive-leaf-mode mixed|uniform] "
          "[--auto-clean] [--fixed-rank N] [--min-rank N] [--max-rank N] "
          "[--keep-near-surface-dense] [--report build_report.md] "
          "[--accel brute|bvh] [--threads N] [--benchmark-brute-reference] "
@@ -36,8 +40,18 @@ void usage() {
          "[--contact-band-normal-audit] [--coverage-audit] "
          "[--coverage-samples-per-axis N] "
          "[--contact-band-normal-error-limit-deg value] "
+         "[--near-surface-exact-mode off|contact-band-nodes|contact-band-cells|contact-band-blocks] "
+         "[--exact-sign-band value] [--exact-distance-band value] "
+         "[--disable-far-field-sign-reuse-near-surface] "
+         "[--force-exact-sign-in-contact-band] "
          "[--target-sampling-error 1e-3] "
          "[--compression-report compression_report.md] "
+         "[--keep-contact-blocks-dense] "
+         "[--keep-coverage-promoted-blocks-dense] "
+         "[--near-zero-compression-guard] "
+         "[--compression-sign-guard-band value] "
+         "[--compression-near-zero-error-limit value] "
+         "[--compression-sign-guard-action keep-dense|increase-rank] "
          "[--quality-report quality_report.md] "
          "[--strict-json report.json] [--case-id case_id] "
          "[--profile] [--profile-json profile.json] "
@@ -48,6 +62,15 @@ void usage() {
          "[--distance-cache off|on] [--marker-cache off|on] "
          "[--cache-max-entries N] "
          "[--cache-quantization-epsilon value] [--report-cache-stats] "
+         "[--coverage-audit-build] [--coverage-refine] "
+         "[--coverage-near-band value] [--coverage-samples N] "
+         "[--coverage-offsets comma_values] "
+         "[--coverage-require-exact-cell] "
+         "[--coverage-max-iterations N] "
+         "[--coverage-promote missed-blocks|missed-cells|refine-on-miss] "
+         "[--coverage-min-miss-count N] "
+         "[--coverage-json path] [--coverage-report path] "
+         "[--persist-provenance] [--provenance-json path] "
          "[--distance-backend brute_force|brute|bvh] [--threads auto|N] "
          "[--recommend] [--verbose]\n";
 }
@@ -77,6 +100,18 @@ int parseThreads(const std::string& value) {
     return static_cast<int>(hardware == 0 ? 1 : hardware);
   }
   return std::stoi(value);
+}
+
+std::vector<double> parseDoubleList(const std::string& text) {
+  std::vector<double> values;
+  std::stringstream stream(text);
+  std::string item;
+  while (std::getline(stream, item, ',')) {
+    if (!item.empty()) {
+      values.push_back(std::stod(item));
+    }
+  }
+  return values;
 }
 
 bool parseSamplingMode(
@@ -131,6 +166,9 @@ int main(int argc, char** argv) {
     std::filesystem::path build_report_path;
     std::filesystem::path compression_report_path;
     std::filesystem::path quality_report_path;
+    std::filesystem::path coverage_json_path;
+    std::filesystem::path coverage_report_path;
+    std::filesystem::path provenance_json_path;
     std::filesystem::path strict_json_path;
     std::filesystem::path profile_json_path;
     std::filesystem::path progress_json_path;
@@ -140,6 +178,14 @@ int main(int argc, char** argv) {
     double max_seconds = 0.0;
     adasdf::AdaptiveBlockSDFBuildOptions build_options;
     adasdf::BlockLowRankCompressionOptions compression_options;
+    adasdf::CoverageAuditOptions coverage_options;
+    adasdf::CoverageDrivenRefinementOptions coverage_refine_options;
+    bool coverage_audit_build = false;
+    bool coverage_refine = false;
+    bool persist_provenance = false;
+    bool keep_contact_blocks_dense = false;
+    bool keep_coverage_promoted_blocks_dense = false;
+    int coverage_max_iterations = 2;
     const auto strict_timer = adasdf::startStrictRunTimer();
     std::map<std::string, std::string> strict_parameters =
         adasdf::commandLineParameters(argc, argv);
@@ -203,6 +249,13 @@ int main(int argc, char** argv) {
         build_options.min_octree_level = std::stoi(argv[++i]);
       } else if (arg == "--block-resolution" && hasValue(i, argc)) {
         build_options.block_resolution = std::stoi(argv[++i]);
+      } else if (arg == "--adaptive-leaf-mode" && hasValue(i, argc)) {
+        if (!adasdf::parseAdaptiveLeafMode(
+                argv[++i],
+                &build_options.adaptive_leaf_mode)) {
+          std::cerr << "Unknown adaptive leaf mode: " << argv[i] << "\n";
+          return 1;
+        }
       } else if (arg == "--padding" && hasValue(i, argc)) {
         build_options.padding = std::stod(argv[++i]);
       } else if (arg == "--signed") {
@@ -325,6 +378,25 @@ int main(int argc, char** argv) {
                  hasValue(i, argc)) {
         build_options.contact_band_sampling.contact_band_normal_error_limit_deg =
             std::stod(argv[++i]);
+      } else if (arg == "--near-surface-exact-mode" && hasValue(i, argc)) {
+        adasdf::NearSurfaceExactMode mode;
+        if (!adasdf::parseNearSurfaceExactMode(argv[++i], &mode)) {
+          std::cerr << "Unknown near-surface exact mode: " << argv[i] << "\n";
+          return 1;
+        }
+        build_options.contact_band_sampling.near_surface_exact_mode = mode;
+      } else if (arg == "--exact-sign-band" && hasValue(i, argc)) {
+        build_options.contact_band_sampling.exact_sign_band =
+            std::stod(argv[++i]);
+      } else if (arg == "--exact-distance-band" && hasValue(i, argc)) {
+        build_options.contact_band_sampling.exact_distance_band =
+            std::stod(argv[++i]);
+      } else if (arg == "--disable-far-field-sign-reuse-near-surface") {
+        build_options.contact_band_sampling
+            .disable_far_field_sign_reuse_near_surface = true;
+      } else if (arg == "--force-exact-sign-in-contact-band") {
+        build_options.contact_band_sampling.force_exact_sign_in_contact_band =
+            true;
       } else if (arg == "--target-sampling-error" && hasValue(i, argc)) {
         setTargetSamplingError(&build_options, std::stod(argv[++i]));
       } else if (arg == "--fixed-rank" && hasValue(i, argc)) {
@@ -336,12 +408,75 @@ int main(int argc, char** argv) {
         compression_options.max_rank = std::stoi(argv[++i]);
       } else if (arg == "--keep-near-surface-dense") {
         compression_options.always_keep_near_surface_blocks_dense = true;
+      } else if (arg == "--keep-contact-blocks-dense") {
+        keep_contact_blocks_dense = true;
+      } else if (arg == "--keep-coverage-promoted-blocks-dense") {
+        keep_coverage_promoted_blocks_dense = true;
+      } else if (arg == "--near-zero-compression-guard") {
+        compression_options.near_zero_compression_guard = true;
+      } else if (arg == "--compression-sign-guard-band" &&
+                 hasValue(i, argc)) {
+        compression_options.compression_sign_guard_band =
+            std::stod(argv[++i]);
+      } else if (arg == "--compression-near-zero-error-limit" &&
+                 hasValue(i, argc)) {
+        compression_options.compression_near_zero_error_limit =
+            std::stod(argv[++i]);
+      } else if (arg == "--compression-sign-guard-action" &&
+                 hasValue(i, argc)) {
+        adasdf::CompressionSignGuardAction action;
+        if (!adasdf::parseCompressionSignGuardAction(argv[++i], &action)) {
+          std::cerr << "Unknown compression sign guard action: "
+                    << argv[i] << "\n";
+          return 1;
+        }
+        compression_options.compression_sign_guard_action = action;
       } else if (arg == "--report" && hasValue(i, argc)) {
         build_report_path = argv[++i];
       } else if (arg == "--compression-report" && hasValue(i, argc)) {
         compression_report_path = argv[++i];
       } else if (arg == "--quality-report" && hasValue(i, argc)) {
         quality_report_path = argv[++i];
+      } else if (arg == "--coverage-audit-build") {
+        coverage_audit_build = true;
+      } else if (arg == "--coverage-refine") {
+        coverage_audit_build = true;
+        coverage_refine = true;
+        coverage_options.require_exact_cell_hit = true;
+      } else if (arg == "--coverage-near-band" && hasValue(i, argc)) {
+        coverage_options.near_band = std::stod(argv[++i]);
+        coverage_refine_options.coverage_near_band = coverage_options.near_band;
+      } else if (arg == "--coverage-samples" && hasValue(i, argc)) {
+        coverage_options.surface_samples = std::stoi(argv[++i]);
+      } else if (arg == "--coverage-offsets" && hasValue(i, argc)) {
+        coverage_options.offsets = parseDoubleList(argv[++i]);
+        if (coverage_options.offsets.empty()) {
+          std::cerr << "--coverage-offsets must contain at least one value\n";
+          return 1;
+        }
+      } else if (arg == "--coverage-require-exact-cell") {
+        coverage_options.require_exact_cell_hit = true;
+      } else if (arg == "--coverage-max-iterations" && hasValue(i, argc)) {
+        coverage_max_iterations = std::max(0, std::stoi(argv[++i]));
+      } else if (arg == "--coverage-promote" && hasValue(i, argc)) {
+        adasdf::CoveragePromotionMode mode;
+        if (!adasdf::parseCoveragePromotionMode(argv[++i], &mode)) {
+          std::cerr << "Unknown coverage promotion mode: " << argv[i] << "\n";
+          return 1;
+        }
+        coverage_refine_options.mode = mode;
+      } else if (arg == "--coverage-min-miss-count" && hasValue(i, argc)) {
+        coverage_refine_options.min_miss_count =
+            static_cast<std::size_t>(std::stoull(argv[++i]));
+      } else if (arg == "--coverage-json" && hasValue(i, argc)) {
+        coverage_json_path = argv[++i];
+      } else if (arg == "--coverage-report" && hasValue(i, argc)) {
+        coverage_report_path = argv[++i];
+      } else if (arg == "--persist-provenance") {
+        persist_provenance = true;
+      } else if (arg == "--provenance-json" && hasValue(i, argc)) {
+        provenance_json_path = argv[++i];
+        persist_provenance = true;
       } else if (arg == "--strict-json" && hasValue(i, argc)) {
         strict_json_path = argv[++i];
       } else if (arg == "--case-id" && hasValue(i, argc)) {
@@ -448,6 +583,27 @@ int main(int argc, char** argv) {
     profiler.counters.num_grid_points =
         build_report.acceleration_stats.sample_count;
     profiler.counters.num_blocks = build_report.block_count;
+    profiler.counters.num_adaptive_tree_nodes = build_report.octree_node_count;
+    profiler.counters.num_adaptive_leaf_blocks = build_report.octree_leaf_count;
+    profiler.counters.uniform_max_level_leaf_count =
+        adasdf::adaptiveUniformLeafCountForLevel(
+            build_report.max_octree_level);
+    profiler.counters.total_logical_node_count =
+        build_report.block_count *
+        adasdf::adaptiveLogicalNodesPerBlock(build_report.block_resolution);
+    profiler.counters.uniform_max_level_logical_node_count =
+        profiler.counters.uniform_max_level_leaf_count *
+        adasdf::adaptiveLogicalNodesPerBlock(build_report.block_resolution);
+    profiler.counters.adaptive_tree_sparsity_ratio =
+        profiler.counters.uniform_max_level_logical_node_count > 0
+            ? static_cast<double>(
+                  profiler.counters.total_logical_node_count) /
+                  static_cast<double>(
+                      profiler.counters.uniform_max_level_logical_node_count)
+            : 0.0;
+    profiler.counters.has_adaptive_tree_stats =
+        !build_report.adaptive_tree_stats.levels.empty();
+    profiler.counters.adaptive_tree = build_report.adaptive_tree_stats;
     profiler.counters.num_contact_band_blocks =
         build_report.contact_band_sampling.contact_band_block_count;
     profiler.counters.num_distance_queries =
@@ -514,6 +670,109 @@ int main(int argc, char** argv) {
     }
     if (timeout.expired()) {
       return timeout_exit();
+    }
+
+    const std::string sampling_mode = samplingModeName(build_options);
+    adasdf::BlockProvenanceSet block_provenance =
+        adasdf::BlockProvenanceIO::fromAdaptiveModel(
+            *adaptive,
+            build_report,
+            sampling_mode,
+            build_options.contact_band_sampling.contact_band_width,
+            coverage_options.near_band);
+    block_provenance.sdf_path = output;
+    adasdf::CoverageAuditRunReport coverage_run;
+    coverage_run.case_id = case_id;
+    coverage_run.options = coverage_options;
+    if (coverage_audit_build || coverage_refine) {
+      const adasdf::STLReadResult coverage_read =
+          adasdf::STLReader::read(input.string());
+      if (!coverage_read.success) {
+        std::cerr << "adasdf_build_compressed_sdf: failed to read STL for "
+                     "coverage audit: "
+                  << coverage_read.error_message << "\n";
+        profiler.finishFailed(
+            adasdf::ErrorCode::IO_ERROR,
+            coverage_read.error_message);
+        write_profile();
+        write_strict(false, "failed", coverage_read.error_message);
+        return 1;
+      }
+      adasdf::CoverageAuditResult audit =
+          adasdf::ContactBandCoverageAudit::run(
+              *adaptive,
+              coverage_read.mesh,
+              coverage_options,
+              &block_provenance);
+      coverage_run.iterations.push_back({0, audit, {}});
+      for (int iteration = 1;
+           coverage_refine && iteration <= coverage_max_iterations;
+           ++iteration) {
+        if (audit.missed_samples == 0) {
+          break;
+        }
+        adasdf::CoverageDrivenRefinementResult refine_result =
+            adasdf::CoverageDrivenRefinement::promoteMisses(
+                coverage_read.mesh,
+                audit,
+                coverage_refine_options,
+                adaptive.get(),
+                &build_report,
+                &block_provenance);
+        if (!refine_result.applied) {
+          coverage_run.iterations.push_back(
+              {iteration, audit, refine_result});
+          break;
+        }
+        audit = adasdf::ContactBandCoverageAudit::run(
+            *adaptive,
+            coverage_read.mesh,
+            coverage_options,
+            &block_provenance);
+        coverage_run.iterations.push_back(
+            {iteration, audit, refine_result});
+      }
+      if (!coverage_json_path.empty() &&
+          !adasdf::CoverageAuditReportWriter::writeJson(
+              coverage_json_path,
+              coverage_run)) {
+        std::cerr << "adasdf_build_compressed_sdf: failed to write coverage "
+                     "JSON\n";
+        return 4;
+      }
+      if (!coverage_report_path.empty() &&
+          !adasdf::CoverageAuditReportWriter::writeMarkdown(
+              coverage_report_path,
+              coverage_run)) {
+        std::cerr << "adasdf_build_compressed_sdf: failed to write coverage "
+                     "report\n";
+        return 4;
+      }
+      profiler.counters.num_contact_band_blocks =
+          build_report.contact_band_sampling.contact_band_block_count;
+      profiler.counters.exact_node_count =
+          build_report.contact_band_sampling.exact_node_count;
+      profiler.counters.predicted_node_count =
+          build_report.contact_band_sampling.predicted_node_count;
+    }
+
+    if (keep_contact_blocks_dense || keep_coverage_promoted_blocks_dense) {
+      compression_options.force_dense_block_ids.clear();
+      for (const adasdf::BlockProvenance& block : block_provenance.blocks) {
+        if ((keep_contact_blocks_dense && block.is_contact_band_block) ||
+            (keep_coverage_promoted_blocks_dense &&
+             block.is_coverage_promoted)) {
+          compression_options.force_dense_block_ids.push_back(block.block_id);
+        }
+      }
+      std::sort(
+          compression_options.force_dense_block_ids.begin(),
+          compression_options.force_dense_block_ids.end());
+      compression_options.force_dense_block_ids.erase(
+          std::unique(
+              compression_options.force_dense_block_ids.begin(),
+              compression_options.force_dense_block_ids.end()),
+          compression_options.force_dense_block_ids.end());
     }
 
     adasdf::BlockLowRankCompressionReport compression_report;
@@ -587,6 +846,29 @@ int main(int argc, char** argv) {
       }
       std::filesystem::rename(temp_output, output);
       profiler.counters.output_bytes = std::filesystem::file_size(output);
+      block_provenance.sdf_path = output;
+      if (persist_provenance) {
+        std::string provenance_error;
+        const std::filesystem::path default_provenance =
+            adasdf::BlockProvenanceIO::defaultSidecarPath(output);
+        if (!adasdf::BlockProvenanceIO::writeJson(
+                default_provenance,
+                block_provenance,
+                &provenance_error)) {
+          throw std::runtime_error(
+              "failed to write provenance sidecar: " + provenance_error);
+        }
+        if (!provenance_json_path.empty() &&
+            std::filesystem::absolute(provenance_json_path) !=
+                std::filesystem::absolute(default_provenance) &&
+            !adasdf::BlockProvenanceIO::writeJson(
+                provenance_json_path,
+                block_provenance,
+                &provenance_error)) {
+          throw std::runtime_error(
+              "failed to write provenance JSON: " + provenance_error);
+        }
+      }
     } catch (const std::exception& exc) {
       std::cerr
           << "adasdf_build_compressed_sdf: write/reload validation failed: "
@@ -615,6 +897,8 @@ int main(int argc, char** argv) {
     std::cout << "Output: " << output.string() << "\n";
     std::cout << "Format: ADASDF_COMPRESSED_BLOCK_SDFBIN_V1\n";
     std::cout << "Adaptive blocks: " << build_report.block_count << "\n";
+    std::cout << "Adaptive leaf mode: "
+              << adasdf::toString(build_report.adaptive_leaf_mode) << "\n";
     std::cout << "Acceleration: "
               << adasdf::toString(build_report.acceleration_stats.acceleration)
               << "\n";
@@ -683,12 +967,47 @@ int main(int argc, char** argv) {
                 << build_report.contact_band_sampling.sign_query_reduction_ratio
                 << "\n";
     }
+    if (coverage_audit_build && !coverage_run.iterations.empty()) {
+      const adasdf::CoverageAuditResult& final_coverage =
+          coverage_run.iterations.back().audit;
+      std::cout << "Coverage near-surface samples: "
+                << final_coverage.near_surface_samples << "\n";
+      std::cout << "Coverage missed samples: "
+                << final_coverage.missed_samples << "\n";
+      std::cout << "Coverage missed rate: "
+                << final_coverage.missed_rate << "\n";
+      const adasdf::CoverageDrivenRefinementResult& final_refine =
+          coverage_run.iterations.back().refinement;
+      std::cout << "Coverage promoted blocks: "
+                << final_refine.promoted_block_count << "\n";
+      std::cout << "Coverage promoted cells: "
+                << final_refine.promoted_cell_count << "\n";
+    }
     std::cout << "Matrix-SVD blocks: "
               << compression_report.compressed_block_count << "\n";
     std::cout << "Dense fallback blocks: "
               << compression_report.dense_fallback_block_count << "\n";
     std::cout << "Compression ratio: "
               << compression_report.compression_ratio << "\n";
+    std::cout << "Compression guard enabled: "
+              << (compression_report.compression_guard_enabled ? "yes" : "no")
+              << "\n";
+    std::cout << "Guarded blocks: "
+              << compression_report.guarded_block_count << "\n";
+    std::cout << "Kept dense due to sign: "
+              << compression_report.kept_dense_due_to_sign_count << "\n";
+    std::cout << "Kept dense due to error: "
+              << compression_report.kept_dense_due_to_error_count << "\n";
+    std::cout << "Near-zero compression sign flips: "
+              << compression_report.near_zero_compression_sign_flip_count
+              << "\n";
+    std::cout << "Near-zero compression p95 error: "
+              << compression_report.near_zero_compression_p95_error << "\n";
+    std::cout << "Dense fallback memory bytes: "
+              << compression_report.dense_fallback_memory_bytes << "\n";
+    std::cout << "Compressed memory bytes after guard: "
+              << compression_report.compressed_memory_bytes_after_guard
+              << "\n";
     std::cout << "Max abs error: "
               << compression_report.global_max_abs_error << "\n";
     std::cout << "Quality samples: " << quality_report.sample_count << "\n";
@@ -735,6 +1054,15 @@ int main(int argc, char** argv) {
     }
     if (!quality_report_path.empty()) {
       std::cout << "Quality report: " << quality_report_path.string() << "\n";
+    }
+    if (persist_provenance) {
+      std::cout << "Provenance sidecar: "
+                << adasdf::BlockProvenanceIO::defaultSidecarPath(output).string()
+                << "\n";
+      if (!provenance_json_path.empty()) {
+        std::cout << "Provenance JSON: " << provenance_json_path.string()
+                  << "\n";
+      }
     }
     write_strict(
         true,
@@ -784,7 +1112,28 @@ int main(int argc, char** argv) {
              static_cast<double>(compression_report.sign_mismatch_count)},
             {"near_surface_sign_mismatch_count",
              static_cast<double>(
-                 compression_report.near_surface_sign_mismatch_count)}});
+                 compression_report.near_surface_sign_mismatch_count)},
+            {"compression_guard_enabled",
+             compression_report.compression_guard_enabled ? 1.0 : 0.0},
+            {"guarded_block_count",
+             static_cast<double>(compression_report.guarded_block_count)},
+            {"kept_dense_due_to_sign_count",
+             static_cast<double>(
+                 compression_report.kept_dense_due_to_sign_count)},
+            {"kept_dense_due_to_error_count",
+             static_cast<double>(
+                 compression_report.kept_dense_due_to_error_count)},
+            {"near_zero_compression_sign_flip_count",
+             static_cast<double>(
+                 compression_report.near_zero_compression_sign_flip_count)},
+            {"near_zero_compression_p95_error",
+             compression_report.near_zero_compression_p95_error},
+            {"dense_fallback_memory_bytes",
+             static_cast<double>(
+                 compression_report.dense_fallback_memory_bytes)},
+            {"compressed_memory_bytes_after_guard",
+             static_cast<double>(
+                 compression_report.compressed_memory_bytes_after_guard)}});
     write_profile();
     return 0;
   } catch (const std::exception& exc) {

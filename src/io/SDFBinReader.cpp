@@ -5,10 +5,12 @@
 
 #include "adasdf/io/AdaptiveBlockSDFBin.h"
 #include "adasdf/io/CompressedBlockSDFBin.h"
+#include "adasdf/io/ConstrainedSDFBin.h"
 #include "adasdf/io/DenseSDFBin.h"
 #include "adasdf/io/DemoAdaptiveSDFBin.h"
 #include "adasdf/io/DemoSDFBin.h"
 #include "adasdf/io/ExistingSDFBridge.h"
+#include "adasdf/geometry/ConstrainedSDFModel.h"
 
 namespace adasdf {
 
@@ -18,6 +20,9 @@ std::shared_ptr<SDFModel> SDFBinReader::read(const std::filesystem::path& path) 
   }
   if (!std::filesystem::exists(path)) {
     throw std::runtime_error("SDFBinReader::read file does not exist: " + path.string());
+  }
+  if (ConstrainedSDFBin::canRead(path)) {
+    return ConstrainedSDFModel::load(path);
   }
   if (AdaptiveBlockSDFBin::canRead(path)) {
     return AdaptiveBlockSDFBin::read(path);

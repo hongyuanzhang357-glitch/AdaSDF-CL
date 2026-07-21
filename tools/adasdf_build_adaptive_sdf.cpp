@@ -2,11 +2,14 @@
 
 #include "BuildCliProfileHelpers.h"
 
+#include <algorithm>
 #include <exception>
 #include <filesystem>
 #include <iostream>
 #include <map>
+#include <sstream>
 #include <string>
+#include <vector>
 
 namespace {
 
@@ -15,6 +18,7 @@ void usage() {
       << "Usage: adasdf_build_adaptive_sdf input.stl output.sdfbin "
          "[--target-error 1e-3] [--surface-band-factor 1.5] "
          "[--min-level N] [--max-level N] [--block-resolution N] "
+         "[--adaptive-leaf-mode mixed|uniform] "
          "[--padding 0.05] [--signed|--unsigned] [--require-watertight] "
          "[--allow-open-unsigned] [--auto-clean] [--report build_report.md] "
          "[--json build_report.json] [--dry-run] [--enable-low-rank] "
@@ -48,6 +52,14 @@ void usage() {
          "[--distance-cache off|on] [--marker-cache off|on] "
          "[--cache-max-entries N] "
          "[--cache-quantization-epsilon value] [--report-cache-stats] "
+         "[--coverage-audit-build] [--coverage-near-band value] "
+         "[--coverage-samples N] [--coverage-offsets comma_values] "
+         "[--coverage-require-exact-cell] [--coverage-refine] "
+         "[--coverage-max-iterations N] "
+         "[--coverage-promote missed-blocks|missed-cells|refine-on-miss] "
+         "[--coverage-min-miss-count N] "
+         "[--coverage-json path] [--coverage-report path] "
+         "[--persist-provenance] [--provenance-json path] "
          "[--distance-backend brute_force|brute|bvh] [--threads auto|N] "
          "[--recommend] [--verbose]\n";
 }
@@ -80,6 +92,7 @@ adasdf::AdaptiveBlockSDFBuildReport dryRunReport(
   report.min_octree_level = options.min_octree_level;
   report.max_octree_level = options.max_octree_level;
   report.max_octree_level_used = options.max_octree_level;
+  report.adaptive_leaf_mode = options.adaptive_leaf_mode;
   report.block_resolution = options.block_resolution;
   report.warnings.push_back(
       "dry-run only: no STL sampling and no .sdfbin output were written.");
@@ -120,6 +133,18 @@ bool parseSamplingMode(
   return false;
 }
 
+std::vector<double> parseDoubleList(const std::string& text) {
+  std::vector<double> values;
+  std::stringstream stream(text);
+  std::string item;
+  while (std::getline(stream, item, ',')) {
+    if (!item.empty()) {
+      values.push_back(std::stod(item));
+    }
+  }
+  return values;
+}
+
 void setTargetSamplingError(
     adasdf::AdaptiveBlockSDFBuildOptions* options,
     double value) {
@@ -150,13 +175,22 @@ int main(int argc, char** argv) {
     std::filesystem::path output;
     std::filesystem::path report_path;
     std::filesystem::path json_path;
+    std::filesystem::path coverage_json_path;
+    std::filesystem::path coverage_report_path;
+    std::filesystem::path provenance_json_path;
     std::filesystem::path strict_json_path;
     std::string case_id = "default";
     bool dry_run = false;
     bool enable_low_rank = false;
+    bool coverage_audit_build = false;
+    bool persist_provenance = false;
     adasdf::AdaptiveBlockSDFBuildOptions options;
     adasdf::BlockLowRankCompressionOptions compression_options;
+    adasdf::CoverageAuditOptions coverage_options;
+    adasdf::CoverageDrivenRefinementOptions coverage_refine_options;
     adasdf_tools::BuildCliRuntimeOptions runtime_options;
+    bool coverage_refine = false;
+    int coverage_max_iterations = 2;
     const auto strict_timer = adasdf::startStrictRunTimer();
     std::map<std::string, std::string> strict_parameters =
         adasdf::commandLineParameters(argc, argv);
@@ -230,6 +264,11 @@ int main(int argc, char** argv) {
         options.max_octree_level = std::stoi(argv[++i]);
       } else if (arg == "--block-resolution" && hasValue(i, argc)) {
         options.block_resolution = std::stoi(argv[++i]);
+      } else if (arg == "--adaptive-leaf-mode" && hasValue(i, argc)) {
+        if (!adasdf::parseAdaptiveLeafMode(argv[++i], &options.adaptive_leaf_mode)) {
+          std::cerr << "Unknown adaptive leaf mode: " << argv[i] << "\n";
+          return 1;
+        }
       } else if (arg == "--padding" && hasValue(i, argc)) {
         options.padding = std::stod(argv[++i]);
       } else if (arg == "--signed") {
@@ -349,6 +388,47 @@ int main(int argc, char** argv) {
         report_path = argv[++i];
       } else if (arg == "--json" && hasValue(i, argc)) {
         json_path = argv[++i];
+      } else if (arg == "--coverage-audit-build") {
+        coverage_audit_build = true;
+      } else if (arg == "--coverage-refine") {
+        coverage_audit_build = true;
+        coverage_refine = true;
+        coverage_options.require_exact_cell_hit = true;
+      } else if (arg == "--coverage-near-band" && hasValue(i, argc)) {
+        coverage_options.near_band = std::stod(argv[++i]);
+        coverage_refine_options.coverage_near_band =
+            coverage_options.near_band;
+      } else if (arg == "--coverage-samples" && hasValue(i, argc)) {
+        coverage_options.surface_samples = std::stoi(argv[++i]);
+      } else if (arg == "--coverage-offsets" && hasValue(i, argc)) {
+        coverage_options.offsets = parseDoubleList(argv[++i]);
+        if (coverage_options.offsets.empty()) {
+          std::cerr << "--coverage-offsets must contain at least one value\n";
+          return 1;
+        }
+      } else if (arg == "--coverage-require-exact-cell") {
+        coverage_options.require_exact_cell_hit = true;
+      } else if (arg == "--coverage-max-iterations" && hasValue(i, argc)) {
+        coverage_max_iterations = std::max(0, std::stoi(argv[++i]));
+      } else if (arg == "--coverage-promote" && hasValue(i, argc)) {
+        adasdf::CoveragePromotionMode mode;
+        if (!adasdf::parseCoveragePromotionMode(argv[++i], &mode)) {
+          std::cerr << "Unknown coverage promotion mode: " << argv[i] << "\n";
+          return 1;
+        }
+        coverage_refine_options.mode = mode;
+      } else if (arg == "--coverage-min-miss-count" && hasValue(i, argc)) {
+        coverage_refine_options.min_miss_count =
+            static_cast<std::size_t>(std::stoull(argv[++i]));
+      } else if (arg == "--coverage-json" && hasValue(i, argc)) {
+        coverage_json_path = argv[++i];
+      } else if (arg == "--coverage-report" && hasValue(i, argc)) {
+        coverage_report_path = argv[++i];
+      } else if (arg == "--persist-provenance") {
+        persist_provenance = true;
+      } else if (arg == "--provenance-json" && hasValue(i, argc)) {
+        provenance_json_path = argv[++i];
+        persist_provenance = true;
       } else if (arg == "--strict-json" && hasValue(i, argc)) {
         strict_json_path = argv[++i];
       } else if (arg == "--case-id" && hasValue(i, argc)) {
@@ -443,6 +523,8 @@ int main(int argc, char** argv) {
       std::cout << "Octree levels: " << options.min_octree_level << "-"
                 << options.max_octree_level << "\n";
       std::cout << "Block resolution: " << options.block_resolution << "\n";
+      std::cout << "Adaptive leaf mode: "
+                << adasdf::toString(options.adaptive_leaf_mode) << "\n";
       std::cout << "Acceleration: " << adasdf::toString(options.acceleration)
                 << "\n";
       std::cout << "Threads requested: " << options.threads << "\n";
@@ -516,6 +598,89 @@ int main(int argc, char** argv) {
       return timeout_exit();
     }
 
+    adasdf::BlockProvenanceSet block_provenance;
+    adasdf::CoverageAuditRunReport coverage_run;
+    coverage_run.case_id = case_id;
+    coverage_run.options = coverage_options;
+    if (auto adaptive =
+            std::dynamic_pointer_cast<adasdf::AdaptiveBlockSDFModel>(model)) {
+      block_provenance = adasdf::BlockProvenanceIO::fromAdaptiveModel(
+          *adaptive,
+          report,
+          samplingModeName(options),
+          options.contact_band_sampling.contact_band_width,
+          coverage_options.near_band);
+      block_provenance.sdf_path = output;
+      if (coverage_audit_build || coverage_refine) {
+        const adasdf::STLReadResult coverage_read =
+            adasdf::STLReader::read(input.string());
+        if (!coverage_read.success) {
+          std::cerr << "adasdf_build_adaptive_sdf: failed to read STL for "
+                       "coverage audit: "
+                    << coverage_read.error_message << "\n";
+          return 1;
+        }
+        adasdf::CoverageAuditResult audit =
+            adasdf::ContactBandCoverageAudit::run(
+                *adaptive,
+                coverage_read.mesh,
+                coverage_options,
+                &block_provenance);
+        coverage_run.iterations.push_back({0, audit, {}});
+        for (int iteration = 1;
+             coverage_refine && iteration <= coverage_max_iterations;
+             ++iteration) {
+          if (audit.missed_samples == 0) {
+            break;
+          }
+          adasdf::CoverageDrivenRefinementResult refine_result =
+              adasdf::CoverageDrivenRefinement::promoteMisses(
+                  coverage_read.mesh,
+                  audit,
+                  coverage_refine_options,
+                  adaptive.get(),
+                  &report,
+                  &block_provenance);
+          if (!refine_result.applied) {
+            coverage_run.iterations.push_back(
+                {iteration, audit, refine_result});
+            break;
+          }
+          audit = adasdf::ContactBandCoverageAudit::run(
+              *adaptive,
+              coverage_read.mesh,
+              coverage_options,
+              &block_provenance);
+          coverage_run.iterations.push_back(
+              {iteration, audit, refine_result});
+        }
+        if (!coverage_json_path.empty() &&
+            !adasdf::CoverageAuditReportWriter::writeJson(
+                coverage_json_path,
+                coverage_run)) {
+          std::cerr << "adasdf_build_adaptive_sdf: failed to write coverage "
+                       "JSON\n";
+          return 4;
+        }
+        if (!coverage_report_path.empty() &&
+            !adasdf::CoverageAuditReportWriter::writeMarkdown(
+                coverage_report_path,
+                coverage_run)) {
+          std::cerr << "adasdf_build_adaptive_sdf: failed to write coverage "
+                       "report\n";
+          return 4;
+        }
+        adasdf_tools::fillAdaptiveProfile(&profiler, report);
+        profiler.counters.num_contact_band_blocks =
+            report.contact_band_sampling.contact_band_block_count;
+        profiler.counters.exact_node_count =
+            report.contact_band_sampling.exact_node_count;
+        profiler.counters.predicted_node_count =
+            report.contact_band_sampling.predicted_node_count;
+        writeReports(report, report_path, json_path);
+      }
+    }
+
     adasdf::BlockLowRankCompressionReport compression_report;
     std::shared_ptr<adasdf::SDFModel> output_model = model;
     if (enable_low_rank) {
@@ -574,6 +739,29 @@ int main(int argc, char** argv) {
       }
       std::filesystem::rename(temp_output, output);
       profiler.counters.output_bytes = std::filesystem::file_size(output);
+      block_provenance.sdf_path = output;
+      if (persist_provenance && !block_provenance.blocks.empty()) {
+        std::string provenance_error;
+        const std::filesystem::path default_provenance =
+            adasdf::BlockProvenanceIO::defaultSidecarPath(output);
+        if (!adasdf::BlockProvenanceIO::writeJson(
+                default_provenance,
+                block_provenance,
+                &provenance_error)) {
+          throw std::runtime_error(
+              "failed to write provenance sidecar: " + provenance_error);
+        }
+        if (!provenance_json_path.empty() &&
+            std::filesystem::absolute(provenance_json_path) !=
+                std::filesystem::absolute(default_provenance) &&
+            !adasdf::BlockProvenanceIO::writeJson(
+                provenance_json_path,
+                block_provenance,
+                &provenance_error)) {
+          throw std::runtime_error(
+              "failed to write provenance JSON: " + provenance_error);
+        }
+      }
     } catch (const std::exception& exc) {
       std::cerr
           << "adasdf_build_adaptive_sdf: write/reload validation failed: "
@@ -595,6 +783,8 @@ int main(int argc, char** argv) {
               << report.max_octree_level << "\n";
     std::cout << "Max level used: " << report.max_octree_level_used << "\n";
     std::cout << "Block resolution: " << report.block_resolution << "\n";
+    std::cout << "Adaptive leaf mode: "
+              << adasdf::toString(report.adaptive_leaf_mode) << "\n";
     std::cout << "Target near-surface error: "
               << options.target_near_surface_error << "\n";
     std::cout << "Octree nodes: " << report.octree_node_count << "\n";
@@ -659,6 +849,22 @@ int main(int argc, char** argv) {
                 << report.contact_band_sampling.sign_query_reduction_ratio
                 << "\n";
     }
+    if (coverage_audit_build && !coverage_run.iterations.empty()) {
+      const adasdf::CoverageAuditResult& final_coverage =
+          coverage_run.iterations.back().audit;
+      std::cout << "Coverage near-surface samples: "
+                << final_coverage.near_surface_samples << "\n";
+      std::cout << "Coverage missed samples: "
+                << final_coverage.missed_samples << "\n";
+      std::cout << "Coverage missed rate: "
+                << final_coverage.missed_rate << "\n";
+      const adasdf::CoverageDrivenRefinementResult& final_refine =
+          coverage_run.iterations.back().refinement;
+      std::cout << "Coverage promoted blocks: "
+                << final_refine.promoted_block_count << "\n";
+      std::cout << "Coverage promoted cells: "
+                << final_refine.promoted_cell_count << "\n";
+    }
     std::cout << "Build time ms: " << report.build_time_ms << "\n";
     std::cout << "Format: "
               << (enable_low_rank ? "ADASDF_COMPRESSED_BLOCK_SDFBIN_V1"
@@ -710,6 +916,15 @@ int main(int argc, char** argv) {
     }
     if (!json_path.empty()) {
       std::cout << "JSON report: " << json_path.string() << "\n";
+    }
+    if (persist_provenance && !block_provenance.blocks.empty()) {
+      std::cout << "Provenance sidecar: "
+                << adasdf::BlockProvenanceIO::defaultSidecarPath(output).string()
+                << "\n";
+      if (!provenance_json_path.empty()) {
+        std::cout << "Provenance JSON: " << provenance_json_path.string()
+                  << "\n";
+      }
     }
     std::map<std::string, double> strict_metrics = {
         {"triangle_count",

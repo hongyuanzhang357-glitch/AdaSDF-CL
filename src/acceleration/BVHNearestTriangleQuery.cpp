@@ -51,8 +51,27 @@ BVHNearestTriangleQueryResult BVHNearestTriangleQuery::query(
     best2 = options.max_distance * options.max_distance;
   }
 
-  std::vector<int> stack;
-  stack.reserve(64);
+  const int initial_triangle = options.initial_triangle_index;
+  if (initial_triangle >= 0 &&
+      static_cast<std::size_t>(initial_triangle) < mesh.triangles.size()) {
+    const double initial2 =
+        distanceSquaredToTriangle(mesh, initial_triangle, point);
+    ++result.triangle_tests;
+    constexpr double eps = 1e-18;
+    if (std::isfinite(initial2) && initial2 <= best2 + eps) {
+      best2 = initial2;
+      result.triangle_index = initial_triangle;
+      result.distance_squared = initial2;
+      result.distance = std::sqrt(std::max(0.0, initial2));
+      result.success = true;
+    }
+  }
+
+  thread_local std::vector<int> stack;
+  stack.clear();
+  if (stack.capacity() < 64) {
+    stack.reserve(64);
+  }
   stack.push_back(0);
   while (!stack.empty()) {
     const int node_index = stack.back();
@@ -73,6 +92,9 @@ BVHNearestTriangleQueryResult BVHNearestTriangleQuery::query(
                               i < bvh.triangleIndices().size();
            ++i) {
         const int triangle_index = bvh.triangleIndices()[i];
+        if (triangle_index == initial_triangle) {
+          continue;
+        }
         const double d2 = distanceSquaredToTriangle(mesh, triangle_index, point);
         ++result.triangle_tests;
         if (!std::isfinite(d2)) {

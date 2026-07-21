@@ -25,6 +25,17 @@ int main() {
       std::cerr << "nearest triangle query failed\n";
       return 1;
     }
+    adasdf::BVHNearestTriangleQueryOptions hinted_options;
+    hinted_options.initial_triangle_index = 0;
+    const adasdf::BVHNearestTriangleQueryResult hinted =
+        adasdf::BVHNearestTriangleQuery::query(
+            bvh, {0.25, 0.25, 2.0}, hinted_options);
+    if (!hinted.success || hinted.triangle_index != result.triangle_index ||
+        !near(hinted.distance, result.distance) ||
+        hinted.triangle_tests != 1) {
+      std::cerr << "hinted nearest triangle query changed the exact result\n";
+      return 1;
+    }
     std::cout << "BVH nearest triangle query passed\n";
     return 0;
   } catch (const std::exception& exc) {

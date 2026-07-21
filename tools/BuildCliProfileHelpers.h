@@ -314,6 +314,25 @@ inline void fillAdaptiveProfile(
   profiler->counters.num_vertices = report.diagnostics.vertex_count;
   profiler->counters.num_triangles = report.diagnostics.triangle_count;
   profiler->counters.num_blocks = report.block_count;
+  profiler->counters.num_adaptive_tree_nodes = report.octree_node_count;
+  profiler->counters.num_adaptive_leaf_blocks = report.octree_leaf_count;
+  profiler->counters.uniform_max_level_leaf_count =
+      adasdf::adaptiveUniformLeafCountForLevel(report.max_octree_level);
+  profiler->counters.total_logical_node_count =
+      report.block_count *
+      adasdf::adaptiveLogicalNodesPerBlock(report.block_resolution);
+  profiler->counters.uniform_max_level_logical_node_count =
+      profiler->counters.uniform_max_level_leaf_count *
+      adasdf::adaptiveLogicalNodesPerBlock(report.block_resolution);
+  profiler->counters.adaptive_tree_sparsity_ratio =
+      profiler->counters.uniform_max_level_logical_node_count > 0
+          ? static_cast<double>(profiler->counters.total_logical_node_count) /
+                static_cast<double>(
+                    profiler->counters.uniform_max_level_logical_node_count)
+          : 0.0;
+  profiler->counters.has_adaptive_tree_stats =
+      !report.adaptive_tree_stats.levels.empty();
+  profiler->counters.adaptive_tree = report.adaptive_tree_stats;
   profiler->counters.num_contact_band_blocks =
       report.contact_band_sampling.contact_band_block_count;
   if (report.contact_band_sampling.distance_query_count > 0) {
@@ -343,6 +362,21 @@ inline void fillCompressionProfile(
   profiler->counters.compressed_block_count = report.compressed_block_count;
   profiler->counters.dense_fallback_block_count =
       report.dense_fallback_block_count;
+  profiler->counters.compression_guard_enabled =
+      report.compression_guard_enabled;
+  profiler->counters.guarded_block_count = report.guarded_block_count;
+  profiler->counters.kept_dense_due_to_sign_count =
+      report.kept_dense_due_to_sign_count;
+  profiler->counters.kept_dense_due_to_error_count =
+      report.kept_dense_due_to_error_count;
+  profiler->counters.near_zero_compression_sign_flip_count =
+      report.near_zero_compression_sign_flip_count;
+  profiler->counters.near_zero_compression_p95_error =
+      report.near_zero_compression_p95_error;
+  profiler->counters.dense_fallback_memory_bytes =
+      report.dense_fallback_memory_bytes;
+  profiler->counters.compressed_memory_bytes_after_guard =
+      report.compressed_memory_bytes_after_guard;
   addWarnings(profiler, "ADASDF_COMPRESSION_WARNING", report.warnings);
 }
 

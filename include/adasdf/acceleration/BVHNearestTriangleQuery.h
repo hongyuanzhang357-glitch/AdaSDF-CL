@@ -8,6 +8,7 @@ namespace adasdf {
 
 struct BVHNearestTriangleQueryOptions {
   double max_distance = std::numeric_limits<double>::infinity();
+  int initial_triangle_index = -1;
 };
 
 struct BVHNearestTriangleQueryResult {

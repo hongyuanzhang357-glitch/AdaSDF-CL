@@ -28,6 +28,11 @@ class AnalyticSDFModel final : public SDFModel {
       const Vector3& half_extent = Vector3{0.5, 0.5, 0.5},
       std::string unit = "m");
 
+  static std::shared_ptr<AnalyticSDFModel> createSphere(
+      const Vector3& center = Vector3::Zero(),
+      Scalar radius = 0.5,
+      std::string unit = "m");
+
   AnalyticShapeType shapeType() const {
     return description_.shape;
   }
